@@ -1,0 +1,28 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAgeExclude:
+  - '@turbo/darwin-64@2.11.8'
+  - '@turbo/darwin-arm64@2.11.8'
+  - '@turbo/linux-64@2.11.8'
+  - '@turbo/linux-arm64@2.11.8'
+  - '@turbo/windows-64@2.11.8'
+  - '@turbo/windows-arm64@2.11.8'
+  - turbo@2.11.8
+  - '@expo/cli@57.0.30'
+  - '@expo/prebuild-config@57.0.19'
+  - expo-asset@57.0.20
+  - expo-constants@57.0.22
+  - expo-modules-autolinking@57.0.16
+  - expo-modules-core@57.0.23
+  - expo@57.0.29
+  - '@expo/metro-runtime@57.0.17'
+  - '@expo/ui@57.0.24'
+  - expo-linking@57.0.13
+  - expo-router@57.0.27
+  - expo-notifications@57.0.23
+
+allowBuilds:
+  '@firebase/util': false
+  esbuild: true
+  protobufjs: false

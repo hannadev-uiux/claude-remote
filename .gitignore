@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.log
+.DS_Store
+# expo
+.expo/
+apps/mobile/ios/
+apps/mobile/android/
+*.tsbuildinfo
+# secrets
+GoogleService-Info.plist
+firebase-service-account*.json

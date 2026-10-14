@@ -1,0 +1,22 @@
+{
+  "name": "claude-remote",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "check": "turbo run typecheck test && biome check --error-on-warnings .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "turbo": "^2.11.8",
+    "typescript": "^7.0.2"
+  }
+}
