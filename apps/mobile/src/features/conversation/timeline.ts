@@ -1,0 +1,61 @@
+import type { TranscriptEntry } from '@claude-remote/protocol'
+
+type Of<K extends TranscriptEntry['kind']> = Extract<TranscriptEntry, { kind: K }>
+
+export type TimelineItem =
+  | { type: 'user'; key: string; text: string }
+  | { type: 'assistant'; key: string; text: string }
+  | { type: 'thinking'; key: string; text: string }
+  | { type: 'tool'; key: string; use: Of<'tool_use'> | null; result: Of<'tool_result'> | null }
+  | { type: 'system'; key: string; subtype: string; text: string }
+  | { type: 'unknown'; key: string; raw: string }
+
+/** Pairs each tool_use with its tool_result and maps the rest to display items, in order. */
+export function buildTimeline(entries: readonly TranscriptEntry[]): TimelineItem[] {
+  const results = new Map<string, Of<'tool_result'>>()
+  const uses = new Set<string>()
+  for (const entry of entries) {
+    if (entry.kind === 'tool_result') results.set(entry.toolUseId, entry)
+    if (entry.kind === 'tool_use') uses.add(entry.toolUseId)
+  }
+  const items: TimelineItem[] = []
+  for (const entry of entries) {
+    switch (entry.kind) {
+      case 'user':
+        items.push({ type: 'user', key: entry.key, text: entry.text })
+        break
+      case 'assistant_text':
+        items.push({ type: 'assistant', key: entry.key, text: entry.text })
+        break
+      case 'thinking':
+        items.push({ type: 'thinking', key: entry.key, text: entry.text })
+        break
+      case 'tool_use':
+        items.push({ type: 'tool', key: entry.key, use: entry, result: results.get(entry.toolUseId) ?? null })
+        break
+      case 'tool_result':
+        // Results of calls outside the loaded window are still shown, on their own.
+        if (!uses.has(entry.toolUseId)) items.push({ type: 'tool', key: entry.key, use: null, result: entry })
+        break
+      case 'system':
+        items.push({ type: 'system', key: entry.key, subtype: entry.subtype, text: entry.text })
+        break
+      case 'unknown':
+        items.push({ type: 'unknown', key: entry.key, raw: entry.raw })
+        break
+    }
+  }
+  return items
+}
+
+/** Sorted, de-duplicated merge of transcript entries (by line cursor, then index). */
+export function mergeEntries(
+  existing: readonly TranscriptEntry[],
+  incoming: readonly TranscriptEntry[],
+): TranscriptEntry[] {
+  if (incoming.length === 0) return existing as TranscriptEntry[]
+  const byKey = new Map<string, TranscriptEntry>()
+  for (const e of existing) byKey.set(e.key, e)
+  for (const e of incoming) byKey.set(e.key, e)
+  return [...byKey.values()].sort((a, b) => a.cursor - b.cursor || a.index - b.index)
+}
