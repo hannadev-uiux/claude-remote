@@ -23,4 +23,6 @@ export const paths = {
   firebaseServiceAccount: () => join(claudeRemoteHome(), 'firebase-service-account.json'),
   bin: () => join(claudeRemoteHome(), 'bin'),
   logs: () => join(claudeRemoteHome(), 'logs'),
+  /** App bundle launched by the LaunchAgent (gives the background item its name and icon). */
+  app: () => join(claudeRemoteHome(), 'Claude Remote.app'),
 }

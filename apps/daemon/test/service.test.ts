@@ -1,25 +1,42 @@
 import { execFileSync } from 'node:child_process'
+import { readFileSync, statSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
+import { createLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
 import { MuteStore } from '../src/features/mute/store.ts'
-import { installService, LAUNCHD_LABEL, renderPlist, serviceStatus } from '../src/features/service/launchd.ts'
+import {
+  APP_NAME,
+  appExecutablePath,
+  dedupePath,
+  installAppBundle,
+  installService,
+  LAUNCHD_LABEL,
+  renderAppInfoPlist,
+  renderAppLauncher,
+  renderPlist,
+  serviceStatus,
+} from '../src/features/service/launchd.ts'
+import { TAILSCALE_NOT_FOUND, waitForWsHost } from '../src/main.ts'
 import { fakeExecutor, useTempHome } from './helpers.ts'
 
 const home = useTempHome()
 const options = {
-  nodePath: '/opt/node/bin/node',
-  cliPath: '/repo/apps/daemon/dist/cli.js',
+  executable: '/Users/me/.claude-remote/Claude Remote.app/Contents/MacOS/claude-remote',
   logsDir: '/Users/me/.claude-remote/logs',
   path: '/opt/homebrew/bin:/usr/bin:/bin',
   home: '/Users/me',
 }
 
 describe('launchd', () => {
-  test('renders a valid plist with KeepAlive and the captured PATH', async () => {
+  test('renders a valid plist that runs the app bundle with KeepAlive and the captured PATH', async () => {
     const xml = renderPlist(options)
     expect(xml).toContain(`<string>${LAUNCHD_LABEL}</string>`)
+    expect(xml).toContain(
+      '<string>/Users/me/.claude-remote/Claude Remote.app/Contents/MacOS/claude-remote</string>',
+    )
+    expect(xml).toContain('<key>AssociatedBundleIdentifiers</key>')
     expect(xml).toContain('<key>KeepAlive</key>\n  <true/>')
     expect(xml).toContain('<string>/opt/homebrew/bin:/usr/bin:/bin</string>')
     const file = join(home.dir(), 'x.plist')
@@ -27,12 +44,47 @@ describe('launchd', () => {
     expect(execFileSync('plutil', ['-lint', file]).toString()).toContain('OK')
   })
 
-  test('install writes the plist and bootstraps it', async () => {
+  test('install writes the plist with a deduplicated PATH and bootstraps it', async () => {
     const exec = fakeExecutor()
-    const path = await installService(exec, { ...options, logsDir: join(home.dir(), 'logs') }, home.dir())
+    const path = await installService(
+      exec,
+      { ...options, path: '/a:/b:/a::/c:/b', logsDir: join(home.dir(), 'logs') },
+      home.dir(),
+    )
     expect(path).toBe(join(home.dir(), 'Library', 'LaunchAgents', `${LAUNCHD_LABEL}.plist`))
     expect(exec.calls.map((c) => c.args[0])).toEqual(['bootout', 'bootstrap'])
     expect(exec.calls[1]?.args[2]).toBe(path)
+    expect(readFileSync(path, 'utf8')).toContain('<string>/a:/b:/c</string>')
+  })
+
+  test('dedupePath keeps the first occurrence of each entry', () => {
+    expect(dedupePath('/x:/y:/x:/z')).toBe('/x:/y:/z')
+  })
+
+  test('app bundle is named Claude Remote and execs the daemon waiting for Tailscale', async () => {
+    const info = renderAppInfoPlist(true)
+    expect(info).toContain(`<string>${APP_NAME}</string>`)
+    expect(info).toContain(`<string>${LAUNCHD_LABEL}</string>`)
+    expect(info).toContain('<key>CFBundleIconFile</key>')
+    expect(renderAppInfoPlist(false)).not.toContain('CFBundleIconFile')
+    const file = join(home.dir(), 'Info.plist')
+    await writeFile(file, info)
+    expect(execFileSync('plutil', ['-lint', file]).toString()).toContain('OK')
+
+    expect(renderAppLauncher("/opt/it's/node", '/repo/cli.js')).toBe(
+      "#!/bin/sh\nexec '/opt/it'\\''s/node' '/repo/cli.js' start --wait-tailscale\n",
+    )
+  })
+
+  test('installAppBundle writes an executable launcher and signs the bundle', async () => {
+    const exec = fakeExecutor()
+    const appDir = join(home.dir(), 'Claude Remote.app')
+    const executable = await installAppBundle(exec, { appDir, nodePath: '/n', cliPath: '/c' })
+    expect(executable).toBe(appExecutablePath(appDir))
+    expect(statSync(executable).mode & 0o111).not.toBe(0)
+    expect(readFileSync(join(appDir, 'Contents', 'Info.plist'), 'utf8')).not.toContain('CFBundleIconFile')
+    expect(exec.calls.map((c) => c.file)).toEqual(['codesign'])
+    expect(exec.calls[0]?.args).toEqual(['--force', '--sign', '-', appDir])
   })
 
   test('status parses launchctl print', async () => {
@@ -58,5 +110,24 @@ describe('MuteStore', () => {
     const reloaded = new MuteStore(paths.mute())
     await reloaded.load()
     expect(reloaded.get()).toEqual({ profiles: [], sessions: ['s1'] })
+  })
+})
+
+describe('waitForWsHost', () => {
+  const logger = createLogger({ level: 'silent' })
+
+  test('fails fast without Tailscale unless asked to wait', async () => {
+    await expect(waitForWsHost({ logger }, 1, () => null)).rejects.toThrow(TAILSCALE_NOT_FOUND)
+  })
+
+  test('polls until the Tailscale interface shows up', async () => {
+    const answers = [null, null, '100.101.1.2']
+    const host = await waitForWsHost({ logger, waitForTailscale: true }, 1, () => answers.shift() ?? null)
+    expect(host).toBe('100.101.1.2')
+  })
+
+  test('--dev and --host skip discovery', async () => {
+    expect(await waitForWsHost({ logger, dev: true }, 1, () => null)).toBe('127.0.0.1')
+    expect(await waitForWsHost({ logger, host: '10.0.0.5' }, 1, () => null)).toBe('10.0.0.5')
   })
 })

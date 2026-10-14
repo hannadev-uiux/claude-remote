@@ -38,6 +38,8 @@ export type DaemonOptions = {
   dev?: boolean
   /** Explicit bind address for the WebSocket (overrides Tailscale discovery). */
   host?: string
+  /** Wait for the Tailscale interface instead of failing (service mode: avoids a launchd crash loop). */
+  waitForTailscale?: boolean
   configPath?: string
   /** Overrides config ports (0 = random, used in tests). */
   wsPort?: number
@@ -78,19 +80,42 @@ export function resolveWsHost(options: Pick<DaemonOptions, 'dev' | 'host'>): str
   if (options.host) return options.host
   if (options.dev) return '127.0.0.1'
   const address = findTailscaleAddress()
-  if (!address) {
-    throw new Error('Tailscale interface not found. Start Tailscale or run with --dev (binds to 127.0.0.1).')
-  }
+  if (!address) throw new Error(TAILSCALE_NOT_FOUND)
   return address
+}
+
+export const TAILSCALE_NOT_FOUND =
+  'Tailscale não encontrado (nenhuma interface 100.x). Instale e conecte o Tailscale, ou use --dev para 127.0.0.1.'
+
+/** Resolves the WebSocket host, polling for the Tailscale interface when `waitForTailscale` is set. */
+export async function waitForWsHost(
+  options: Pick<DaemonOptions, 'dev' | 'host' | 'waitForTailscale' | 'logger'>,
+  intervalMs = 5000,
+  find: () => string | null = findTailscaleAddress,
+): Promise<string> {
+  if (options.host) return options.host
+  if (options.dev) return '127.0.0.1'
+  let warned = false
+  for (;;) {
+    const address = find()
+    if (address) {
+      if (warned) options.logger.info({ address }, 'Tailscale interface found')
+      return address
+    }
+    if (!options.waitForTailscale) throw new Error(TAILSCALE_NOT_FOUND)
+    if (!warned) options.logger.warn(`${TAILSCALE_NOT_FOUND} Aguardando…`)
+    warned = true
+    await new Promise((resolve) => setTimeout(resolve, intervalMs))
+  }
 }
 
 export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon> {
   const { logger } = options
+  const wsHost = await waitForWsHost(options)
   const config = await loadConfig(logger, options.configPath)
   const profiles = await resolveProfiles(config, logger)
   let token = await ensureToken(options.tokenStore)
   const hookSecret = await ensureHookSecret()
-  const wsHost = resolveWsHost(options)
 
   const bus = new EventBus<DaemonEvents>()
   const hub = new ClientHub()

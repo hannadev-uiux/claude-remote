@@ -21,7 +21,7 @@ PRD completo em [`.docs/claude-remote-app.md`](.docs/claude-remote-app.md); spec
 
 - macOS com `tmux`, `git`, `rg` e o `claude` no PATH
 - Node 24+ e pnpm 12+
-- Tailscale no Mac e no iPhone (o WebSocket só escuta na interface Tailscale)
+- Tailscale no Mac (`brew install --cask tailscale` ou App Store) e no iPhone, logados na mesma conta — o WebSocket só escuta na interface Tailscale
 - Xcode para o development build do app (o Expo Go não serve: o app usa módulos nativos)
 - Opcional, para push: conta Apple Developer paga + projeto Firebase
 
@@ -36,7 +36,7 @@ node apps/daemon/dist/cli.js install
 source ~/.zshrc
 
 claude-remote doctor          # confere tmux, Tailscale, perfis, token…
-claude-remote service install # LaunchAgent: sobe no login e reinicia se cair
+claude-remote service install # LaunchAgent "Claude Remote": sobe no login, reinicia se cair e aguarda o Tailscale
 claude-remote pair            # mostra o QR de pareamento
 ```
 

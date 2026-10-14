@@ -24,8 +24,8 @@ Toda conexão WebSocket SHALL enviar `auth` com o token como primeira mensagem e
 O WebSocket SHALL escutar apenas no endereço Tailscale do Mac (faixa 100.64.0.0/10) ou, em modo de desenvolvimento explícito, em `127.0.0.1`. O endpoint de hooks MUST escutar apenas em `127.0.0.1` e exigir o segredo local.
 
 #### Scenario: Tailscale ausente
-- **WHEN** o daemon inicia sem interface Tailscale e sem modo dev
-- **THEN** encerra com erro explicando que o Tailscale é necessário
+- **WHEN** o daemon inicia manualmente sem interface Tailscale e sem modo dev
+- **THEN** encerra com erro explicando que o Tailscale é necessário (como serviço, aguarda a interface)
 
 #### Scenario: Hook sem segredo
 - **WHEN** uma requisição chega ao endpoint de hooks sem o segredo

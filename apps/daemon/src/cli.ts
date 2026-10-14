@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Command } from 'commander'
 import qrcode from 'qrcode-terminal'
 import { loadConfig, resolveProfiles } from './core/config.ts'
@@ -28,7 +28,13 @@ import {
   uninstallZshrc,
 } from './features/hooks/installer.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
-import { installService, LAUNCHD_LABEL, serviceStatus, uninstallService } from './features/service/launchd.ts'
+import {
+  installAppBundle,
+  installService,
+  LAUNCHD_LABEL,
+  serviceStatus,
+  uninstallService,
+} from './features/service/launchd.ts'
 import { execaExecutor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
@@ -78,7 +84,8 @@ program
   .description('inicia o daemon')
   .option('--dev', 'escuta em 127.0.0.1 em vez do Tailscale')
   .option('--host <host>', 'endereço de escuta do WebSocket')
-  .action(async (opts: { dev?: boolean; host?: string }) => {
+  .option('--wait-tailscale', 'aguarda a interface do Tailscale em vez de falhar (usado pelo launchd)')
+  .action(async (opts: { dev?: boolean; host?: string; waitTailscale?: boolean }) => {
     const logger = createLogger({ pretty: process.stdout.isTTY })
     try {
       const daemon = await startDaemon({
@@ -87,6 +94,7 @@ program
         tokenStore: tokenStore(),
         dev: opts.dev,
         host: opts.host,
+        waitForTailscale: opts.waitTailscale,
       })
       const shutdown = async () => {
         logger.info('stopping')
@@ -110,7 +118,16 @@ program
     const logger = createLogger({ level: 'silent' })
     const config = await loadConfig(logger)
     const token = await ensureToken(tokenStore())
-    const host = resolveWsHost(opts)
+    let host: string
+    try {
+      host = resolveWsHost(opts)
+    } catch (error) {
+      console.error(`✗ ${(error as Error).message}`)
+      console.error(
+        '  Para testar no simulador deste Mac: `claude-remote start --dev` e `claude-remote pair --dev`.',
+      )
+      process.exit(1)
+    }
     const url = pairingUrl(host, config.wsPort, token)
     qrcode.generate(url, { small: true })
     console.log(`\n${url}\n`)
@@ -224,21 +241,30 @@ service
       console.error('Build não encontrado. Rode `pnpm --filter @claude-remote/daemon build`.')
       process.exit(1)
     }
-    const path = await installService(execaExecutor, {
+    const iconPng = fileURLToPath(new URL('../../mobile/assets/icon.png', pathToFileURL(cliPath)))
+    const executable = await installAppBundle(execaExecutor, {
+      appDir: paths.app(),
       nodePath: process.execPath,
       cliPath,
+      iconPng: existsSync(iconPng) ? iconPng : undefined,
+    })
+    const path = await installService(execaExecutor, {
+      executable,
       logsDir: paths.logs(),
       path: process.env.PATH ?? '/usr/bin:/bin',
       home: homedir(),
     })
     console.log(`✓ LaunchAgent carregado: ${path}`)
+    console.log(`  app: ${paths.app()}`)
+    if (!findTailscaleAddress())
+      console.log('  ⚠ Tailscale não encontrado: o daemon fica aguardando a interface 100.x')
     console.log(`  logs em ${paths.logs()}`)
   })
 service
   .command('uninstall')
   .description('descarrega e remove o LaunchAgent')
   .action(async () => {
-    await uninstallService(execaExecutor)
+    await uninstallService(execaExecutor, homedir(), paths.app())
     console.log('✓ LaunchAgent removido')
   })
 service
