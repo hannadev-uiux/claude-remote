@@ -25,7 +25,9 @@ export const TerminalView = forwardRef<TerminalViewHandle, { onReady?: () => voi
     <WebView
       ref={webview}
       source={{ html: XTERM_HTML }}
-      originWhitelist={['about:blank']}
+      // Inline HTML loads as about:blank; allow it, but never navigate anywhere else.
+      originWhitelist={['*']}
+      onShouldStartLoadWithRequest={(request) => request.url === 'about:blank'}
       style={styles.web}
       scrollEnabled={false}
       javaScriptEnabled

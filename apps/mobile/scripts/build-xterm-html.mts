@@ -43,7 +43,8 @@ html,body{margin:0;padding:0;background:#0D0D0D;height:100%;overflow:hidden}
     fit(frame.cols);
     if (term.cols !== frame.cols || term.rows !== frame.rows) term.resize(frame.cols, frame.rows);
     term.reset();
-    term.write(frame.text.replace(/\\n$/, ''));
+    // iOS draws U+23FA (the Claude Code bullet) as an emoji; use a text glyph of the same width.
+    term.write(frame.text.replace(/\\n$/, '').replace(/\u23FA/g, '\u25CF'));
   };
   window.ReactNativeWebView && window.ReactNativeWebView.postMessage('ready');
 })();
