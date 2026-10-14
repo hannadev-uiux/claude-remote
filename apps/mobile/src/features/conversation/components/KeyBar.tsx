@@ -43,6 +43,7 @@ export function KeyBar({
       horizontal
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="always"
+      style={styles.bar}
       contentContainerStyle={styles.row}
     >
       {keys.map((spec) => (
@@ -70,6 +71,7 @@ export function KeyBar({
 }
 
 const styles = StyleSheet.create({
+  bar: { flexGrow: 0 },
   row: { gap: space.xs, paddingHorizontal: space.sm, paddingVertical: space.xs },
   key: {
     minWidth: 40,

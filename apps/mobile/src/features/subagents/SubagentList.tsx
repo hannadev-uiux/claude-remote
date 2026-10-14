@@ -37,7 +37,12 @@ export function NestedSubagents({ sessionId, subagents }: { sessionId: string; s
 export function SubagentStrip({ sessionId, subagents }: { sessionId: string; subagents: SubagentInfo[] }) {
   if (subagents.length === 0) return null
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.bar}
+      contentContainerStyle={styles.strip}
+    >
       {sortSubagents(subagents).map((sub) => (
         <Pressable
           key={sub.agentId}
@@ -62,6 +67,7 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   more: { marginLeft: space.xl + space.lg, marginBottom: space.sm },
+  bar: { flexGrow: 0 },
   strip: { gap: space.xs, paddingHorizontal: space.md, paddingVertical: space.xs },
   chip: {
     flexDirection: 'row',

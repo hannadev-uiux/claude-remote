@@ -2,7 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { SquareTerminal } from 'lucide-react-native'
 import { StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
-import { space } from '@/core/theme'
+import { colors, space } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
 import { SmartComposer } from '@/features/autocomplete/SmartComposer'
 import { ConversationScreen } from '@/features/conversation/ConversationScreen'
@@ -14,7 +14,7 @@ import { SessionPermissions } from '@/features/permissions/components/SessionPer
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
 import { SubagentStrip } from '@/features/subagents/SubagentList'
-import { IconButton, Text } from '@/ui'
+import { headerActions, IconButton, Text } from '@/ui'
 
 export default function SessionRoute() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -27,10 +27,9 @@ export default function SessionRoute() {
     <>
       <Stack.Screen
         options={{
-          headerRight: () =>
+          ...headerActions(
             session ? (
               <View style={styles.actions}>
-                <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
                 <SessionMuteButton sessionId={id} />
                 <IconButton
                   icon={SquareTerminal}
@@ -40,28 +39,37 @@ export default function SessionRoute() {
                 />
               </View>
             ) : null,
+          ),
           headerTitle: () => (
-            <View style={styles.header}>
-              <Text weight="bold" numberOfLines={1}>
-                {session?.title ?? 'Sessão'}
-              </Text>
-              <View style={styles.sub}>
-                <Text size="xs" style={{ color: profile?.color }}>
-                  {profile?.name ?? session?.profileId ?? ''}
-                </Text>
-                <Text size="xs" color="textMuted" numberOfLines={1}>
-                  {session ? shortPath(session.cwd) : ''}
-                </Text>
-                {session ? <StateBadge state={session.state} /> : null}
-              </View>
-            </View>
+            <Text weight="bold" numberOfLines={1} style={styles.title}>
+              {session?.title ?? 'Sessão'}
+            </Text>
           ),
         }}
       />
       <ConversationScreen
         sessionId={id}
         onKey={prompt.sendKey}
-        header={session ? <SubagentStrip sessionId={id} subagents={session.subagents} /> : null}
+        header={
+          session ? (
+            <>
+              {/* Session details live below the header: on iOS 26+ the bar has no room for them. */}
+              <View style={styles.info}>
+                <View style={styles.meta}>
+                  <Text size="xs" style={{ color: profile?.color }}>
+                    {profile?.name ?? session.profileId}
+                  </Text>
+                  <Text size="xs" color="textMuted" numberOfLines={1} style={styles.cwd}>
+                    {shortPath(session.cwd)}
+                  </Text>
+                  <StateBadge state={session.state} />
+                </View>
+                <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
+              </View>
+              <SubagentStrip sessionId={id} subagents={session.subagents} />
+            </>
+          ) : null
+        }
         footer={
           session ? (
             <>
@@ -77,7 +85,18 @@ export default function SessionRoute() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: 'center', maxWidth: 260 },
-  sub: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  title: { maxWidth: 200 },
+  info: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  meta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  cwd: { flexShrink: 1 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
 })
