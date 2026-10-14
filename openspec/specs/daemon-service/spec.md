@@ -24,7 +24,7 @@ O LaunchAgent SHALL executar o daemon por meio de um bundle `~/.claude-remote/Cl
 - **THEN** o macOS identifica o item como "Claude Remote"
 
 ### Requirement: Espera pelo Tailscale
-Rodando como serviço, o daemon SHALL aguardar a interface Tailscale aparecer (consultando periodicamente e registrando um aviso único) em vez de encerrar, evitando um ciclo de reinícios do launchd.
+Rodando como serviço, o daemon SHALL aguardar a interface Tailscale aparecer (consultando periodicamente e registrando um aviso único) em vez de encerrar, evitando um ciclo de reinícios do launchd. O endpoint de hooks MUST ficar disponível durante a espera, para que as sessões do Claude Code nunca encontrem a porta fechada.
 
 #### Scenario: Login antes do Tailscale conectar
 - **WHEN** o serviço inicia e ainda não há interface 100.x

@@ -111,7 +111,6 @@ export async function waitForWsHost(
 
 export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon> {
   const { logger } = options
-  const wsHost = await waitForWsHost(options)
   const config = await loadConfig(logger, options.configPath)
   const profiles = await resolveProfiles(config, logger)
   let token = await ensureToken(options.tokenStore)
@@ -155,6 +154,16 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   await hooks.listen({ host: '127.0.0.1', port: options.hookPort ?? config.hookPort })
   const hookAddress = hooks.server.address()
   const hookPort = typeof hookAddress === 'object' && hookAddress ? hookAddress.port : config.hookPort
+  // Hooks are live before the app transport: Claude Code sessions must never hit a closed port
+  // while the service waits for Tailscale.
+  let wsHost: string
+  try {
+    wsHost = await waitForWsHost(options)
+  } catch (error) {
+    await hooks.close()
+    for (const fn of stopHandlers.reverse()) await fn()
+    throw error
+  }
 
   const wss: WebSocketServer = await startWsServer({
     host: wsHost,
