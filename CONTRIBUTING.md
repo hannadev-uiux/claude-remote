@@ -1,0 +1,54 @@
+# Contributing to Claude Remote
+
+Thanks for your interest! Bug reports, ideas, docs and code are all welcome.
+
+## Ground rules
+
+- Be kind — see the [Code of Conduct](CODE_OF_CONDUCT.md).
+- **Security issues go to [SECURITY.md](SECURITY.md)**, never to public issues. The daemon is a remote shell; we take that seriously.
+- For anything bigger than a small fix, **open an issue first** so we can agree on the approach.
+
+## Setup
+
+Requirements: macOS, Node 24+, pnpm 12+, tmux, git, ripgrep, Xcode (for the app).
+
+```bash
+pnpm install
+pnpm check                                            # typecheck + tests + Biome — must be green
+pnpm --filter @claude-remote/daemon dev start --dev   # daemon from source on 127.0.0.1
+pnpm --filter @claude-remote/mobile ios               # app on the simulator
+```
+
+Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — please read it before changing code.
+
+## Workflow
+
+1. **Specs first (OpenSpec).** Features and behavior changes start as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change in `openspec/changes/`, with a proposal, spec deltas and tasks. Validate with `openspec validate <change> --strict`. When merged, the change is archived into `openspec/specs/`. Small fixes and docs don't need a change.
+2. **Branch** from `main`: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
+3. **Code** following the conventions:
+   - Strict TypeScript, no `any` — `unknown` + Zod at the edges.
+   - New WebSocket message? Schema in `packages/protocol` → handler in the daemon → usage in the app.
+   - Pure logic (parsers, selectors, detectors) in separate functions with Vitest tests; side effects live in `infra/` (daemon) and `core/` (app) and are injected.
+   - Only `features/transcript/parser.ts` knows the Claude Code `.jsonl` format; TUI labels live in one tested table.
+   - Writes to user files are read → merge → backup → atomic write, and idempotent.
+   - Native app dependencies are added with `npx expo install`.
+   - UI text is Brazilian Portuguese (translations welcome); code and identifiers are English.
+4. **Test.** `pnpm check` must pass. Add tests for new logic; describe manual checks (simulator, real tmux session) in the PR.
+5. **Commit** with [Conventional Commits](https://www.conventionalcommits.org/) in English:
+
+   ```
+   feat(daemon): add per-profile mute
+   fix(mobile): keep composer above the keyboard
+   docs: clarify Tailscale setup
+   ```
+
+   Types: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `chore`. Scopes: `daemon`, `mobile`, `protocol`, `openspec`.
+6. **Open a PR** using the template. Keep it focused; screenshots or a short video for UI changes are much appreciated.
+
+## Reporting bugs
+
+Use the bug report template and include `claude-remote doctor` output, versions (macOS, Node, Claude Code, iOS) and daemon logs from `~/.claude-remote/logs` — **redact tokens and session content**.
+
+## License
+
+By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).

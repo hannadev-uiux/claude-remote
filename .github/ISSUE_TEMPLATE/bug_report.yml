@@ -1,0 +1,46 @@
+name: Bug report
+description: Something is not working as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "**Security issue?** Do not file it here — see [SECURITY.md](../blob/main/SECURITY.md). Redact tokens and session content from anything you paste."
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [daemon, mobile app, protocol, install / launchd, docs]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Start a session with `claudin`\n2. …"
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`claude-remote doctor` output"
+      render: text
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: From `~/.claude-remote/logs` (redacted).
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: macOS 26.x, Node 24.x, Claude Code 2.x, iOS 26.x
+    validations:
+      required: true

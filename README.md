@@ -1,83 +1,214 @@
+<div align="center">
+
+<img src="apps/mobile/assets/icon.png" width="112" alt="Claude Remote icon" />
+
 # Claude Remote
 
-Acompanhe e controle pelo iPhone as sessões do Claude Code que estão rodando no seu Mac — sem `/rc`, com os dois perfis (`~/.claude` e `~/.claude-doctorx`) numa lista só.
+**Follow and drive the Claude Code sessions running on your Mac — from your iPhone.**
+
+Self-hosted: a small daemon on your Mac, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every Claude Code profile in one list.
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-D97757.svg)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-macOS%20%2B%20iOS-161616.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)
+![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000020.svg)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-98C379.svg)](CONTRIBUTING.md)
+
+[Português](README.pt-BR.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+
+</div>
+
+<p align="center">
+  <img src="docs/screenshots/sessions.png" width="23%" alt="Session list" />
+  <img src="docs/screenshots/conversation.png" width="23%" alt="Conversation" />
+  <img src="docs/screenshots/permission.png" width="23%" alt="Permission request" />
+  <img src="docs/screenshots/terminal.png" width="23%" alt="Raw terminal" />
+</p>
+
+---
+
+## Why
+
+Claude Code is at its best on long, autonomous tasks — which is exactly when you walk away from the desk. Then it stops to ask for permission to run `pnpm test`, and the whole task waits until you are back.
+
+The built-in remote control (`/rc`) helps, but it did not fit a real setup:
+
+- **It notifies every device on the account**, including ones that should never receive anything.
+- **It works with one account at a time.** Many of us run two Claude Code logins on the same Mac (personal and work, via `CLAUDE_CONFIG_DIR`) and want a single view of both.
+- **There is no public API to attach to a live interactive session** from another process.
+
+Claude Remote solves this with tools you already trust: sessions run inside **tmux**, Claude Code reports what happens through its native **HTTP hooks**, and a local **daemon** bridges both to the phone over **Tailscale**.
+
+## What it does
+
+| | |
+|---|---|
+| 📋 **One list, every profile** | Sessions from all your Claude Code profiles (`~/.claude`, `~/.claude-work`, …), grouped by project, with live state (running, waiting, idle). |
+| 💬 **Live conversation** | The same history you see on the Mac: markdown, thinking, tool calls, diffs, results — streamed in real time and paginated. |
+| ⌨️ **Send prompts** | Type into the very same process that is open on the Mac. `Esc` and `Ctrl+C` included. |
+| ✅ **Approve permissions** | Allow, deny or **always allow** (written as a rule by Claude Code itself, undoable with `claude-remote rules undo`). |
+| 🔀 **Switch permission mode** | Default, accept edits, plan, auto. `bypassPermissions` is intentionally never offered. |
+| 🔎 **Autocomplete** | `@files` (git/ripgrep + fuzzy search) and `/commands` (project, profile, plugins and built-ins). |
+| 🖥️ **Raw terminal** | An xterm.js view of the tmux pane for TUI menus and anything the structured view does not cover. |
+| 🤖 **Subagents** | Follow subagents and background tasks of a session. |
+| 🚀 **Start & resume** | Start a new session in any project, or resume a read-only one. |
+| 🔔 **Private push** | Notifications only to *your* registered phone, carrying no session content. Mute globally, per profile or per session. |
+
+## How it works
 
 ```
-iPhone (Expo) ◄── WebSocket (Tailscale) ──► daemon no Mac ──► tmux ──► claude
-                                               ▲
-                                    hooks HTTP do Claude Code
+┌──────────────┐  WebSocket over Tailscale   ┌─────────────────────────────────┐
+│  iPhone app  │ ◄─────────────────────────► │  claude-remote daemon (Mac)     │
+│  Expo / RN   │       token-authenticated   │  ├─ tmux: send-keys / capture   │
+└──────▲───────┘                             │  ├─ tails transcript .jsonl     │
+       │ push (FCM → APNs, no content)       │  └─ HTTP hooks on 127.0.0.1     │
+       └─────────────────────────────────────┤                                 │
+                                             └───────────────┬─────────────────┘
+                                                             │ hooks
+                                          ┌──────────────────┴──────────────────┐
+                                          │ tmux session "claude-remote"        │
+                                          │  ├─ claudin  → CLAUDE_CONFIG_DIR=…  │
+                                          │  └─ drclaude → CLAUDE_CONFIG_DIR=…  │
+                                          └─────────────────────────────────────┘
 ```
 
-- Conversa em tempo real (markdown, tool calls, diffs), envio de prompts, Esc/Ctrl+C
-- Aprovar / negar / **permitir sempre** pedidos de permissão
-- Trocar o modo de permissão (padrão, aceitar edições, plano, auto)
-- Autocomplete de `@arquivos` e `/comandos` (skills do perfil, do projeto e de plugins)
-- Terminal bruto (xterm.js) para menus da TUI, subagentes, iniciar/retomar sessões
-- Push via FCM só para o seu aparelho, sem conteúdo da sessão
+1. You start Claude Code with a tiny launcher (`claudin`, `drclaude`, … one per profile) that runs it inside a tmux window.
+2. Claude Code's HTTP hooks tell the daemon when a session starts, stops, needs permission or gets a prompt.
+3. The daemon tails the session transcript, reads the tmux pane, and serves everything to the app over an authenticated WebSocket bound **only** to the Tailscale interface.
+4. Prompts and keys go back through tmux; permission answers go back through the pending hook request.
 
-PRD completo em [`.docs/claude-remote-app.md`](.docs/claude-remote-app.md); specs em [`openspec/specs`](openspec/specs).
+Sessions started with plain `claude` (outside tmux) still show up — read-only — and can be resumed from the phone.
 
-## Requisitos
+## Security model
 
-- macOS com `tmux`, `git`, `rg` e o `claude` no PATH
-- Node 24+ e pnpm 12+
-- Tailscale no Mac (`brew install --cask tailscale` ou App Store) e no iPhone, logados na mesma conta — o WebSocket só escuta na interface Tailscale
-- Xcode para o development build do app (o Expo Go não serve: o app usa módulos nativos)
-- Opcional, para push: conta Apple Developer paga + projeto Firebase
+The daemon is effectively a remote shell, so it is locked down by default:
 
-## Instalação no Mac
+- The WebSocket listens **only on the Tailscale interface** (100.64.0.0/10) — or `127.0.0.1` with an explicit `--dev`.
+- Every connection must present a token (macOS **Keychain** on the Mac, **SecureStore** on the phone). `claude-remote rotate-token` invalidates it and drops all clients.
+- The hooks endpoint listens **only on `127.0.0.1`** and requires a local shared secret.
+- Push payloads carry **only** a title, profile and session id — never session content.
+- `bypassPermissions` is never offered by the app.
+- Edits to your files (`settings.json`, `~/.zshrc`) are merge → backup → atomic write, idempotent, and fully reverted by `claude-remote uninstall`.
+
+See [SECURITY.md](SECURITY.md) to report a vulnerability.
+
+## Requirements
+
+- macOS with `tmux`, `git`, `rg` (ripgrep) and `claude` on the `PATH`
+- Node 24+ and pnpm 12+
+- [Tailscale](https://tailscale.com) on the Mac (`brew install --cask tailscale`) and the iPhone, signed in to the same tailnet
+- Xcode, for the iOS development build (Expo Go is not enough: the app uses native modules)
+- Optional, for push: a paid Apple Developer account and a Firebase project
+
+## Getting started
+
+### 1. Mac: daemon
 
 ```bash
+git clone https://github.com/maarkN/claude-remote.git
+cd claude-remote
 pnpm install
 pnpm --filter @claude-remote/daemon build
 
-# launchers claudin/drclaude, atalho claude-remote, PATH no ~/.zshrc e hooks nos dois perfis
+# launchers, `claude-remote` shortcut, PATH in ~/.zshrc and hooks in every profile (with backups)
 node apps/daemon/dist/cli.js install
 source ~/.zshrc
 
-claude-remote doctor          # confere tmux, Tailscale, perfis, token…
-claude-remote service install # LaunchAgent "Claude Remote": sobe no login, reinicia se cair e aguarda o Tailscale
-claude-remote pair            # mostra o QR de pareamento
+claude-remote doctor          # checks tmux, Tailscale, profiles, token…
+claude-remote service install # LaunchAgent "Claude Remote": starts at login, restarts on crash, waits for Tailscale
+claude-remote pair            # prints the pairing QR code
 ```
 
-Perfis e portas ficam em `~/.claude-remote/config.json` (criado na primeira execução com `claudin → ~/.claude` e `drclaude → ~/.claude-doctorx`). O token fica no Keychain; `claude-remote rotate-token` gera outro e derruba as conexões.
+Profiles and ports live in `~/.claude-remote/config.json`, created on first run:
 
-### Uso
+```json
+{
+  "profiles": [
+    { "id": "claudin", "name": "Personal", "configDir": "~/.claude", "color": "#D97757" },
+    { "id": "drclaude", "name": "Work", "configDir": "~/.claude-doctorx", "color": "#61AFEF" }
+  ]
+}
+```
 
-Abra as sessões com `claudin` ou `drclaude` (mesmos argumentos do `claude`). Elas rodam numa janela da sessão tmux `claude-remote` e aparecem no app como controláveis. Sessões abertas com o `claude` puro aparecem como somente leitura e podem ser retomadas pelo app.
+Each profile `id` becomes a launcher with the same name. Re-run `claude-remote install` after editing profiles.
 
-Regras de "permitir sempre" criadas pelo celular: `claude-remote rules list` / `claude-remote rules undo <id>`.
-
-## App (iOS)
+### 2. iPhone: app
 
 ```bash
 cd apps/mobile
-pnpm ios        # expo run:ios — development build no simulador ou no iPhone conectado
-pnpm start      # Metro para o dev client
+pnpm ios     # expo run:ios — development build on the simulator or a connected iPhone
 ```
 
-Sem Tailscale (simulador no mesmo Mac): `claude-remote start --dev` escuta em `127.0.0.1` e `claude-remote pair --dev` gera o QR correspondente (ou use o pareamento manual).
+Open the app, scan the QR code from `claude-remote pair`, and you are in.
 
-### Push (opcional)
+> **Trying it on the simulator without Tailscale?** Run `claude-remote start --dev` (binds to `127.0.0.1`) and `claude-remote pair --dev`.
 
-1. Crie um app iOS no Firebase com o bundle `tech.doctorx.clauderemote` e envie a chave APNs ao projeto.
-2. Coloque o `GoogleService-Info.plist` em `apps/mobile/` (ignorado pelo git) e rode `pnpm ios` de novo — o Firebase só entra no build quando o arquivo existe.
-3. Salve a service account do Firebase em `~/.claude-remote/firebase-service-account.json` e reinicie o daemon.
-
-## Desenvolvimento
+### 3. Use it
 
 ```bash
-pnpm check                                             # typecheck + testes + Biome em tudo
-pnpm --filter @claude-remote/daemon dev start --dev    # daemon a partir do código-fonte
-pnpm --filter @claude-remote/mobile icons              # regenera ícone/splash
-pnpm --filter @claude-remote/mobile xterm              # regenera o HTML do terminal
+claudin              # same arguments as `claude`
+drclaude --resume    # another profile
 ```
 
-Arquitetura e convenções: [`CLAUDE.md`](CLAUDE.md).
+Both appear in the app, fully controllable. "Always allow" rules created from the phone: `claude-remote rules list` / `claude-remote rules undo <id>`.
 
-## Desinstalar
+### Push notifications (optional)
+
+1. Create an iOS app in Firebase with bundle id `tech.doctorx.clauderemote` and upload your APNs key.
+2. Put `GoogleService-Info.plist` in `apps/mobile/` (git-ignored) and run `pnpm ios` again — Firebase is only linked when the file exists.
+3. Save the Firebase service account to `~/.claude-remote/firebase-service-account.json` and restart the daemon.
+
+### Uninstall
 
 ```bash
 claude-remote service uninstall
-claude-remote uninstall   # remove launchers, bloco do ~/.zshrc e só os hooks que o instalador criou
+claude-remote uninstall   # removes launchers, the ~/.zshrc block and only the hooks it created
 ```
+
+## Tech stack
+
+| Area | Tools |
+|---|---|
+| Monorepo | pnpm workspaces, Turborepo, TypeScript (strict), Biome, Vitest |
+| Protocol | Zod schemas shared by daemon and app — single source of truth |
+| Daemon | Node 24, `ws`, Fastify, Pino, Commander, execa, chokidar, fuzzysort, firebase-admin, tsup |
+| App | Expo SDK 57, React Native, Expo Router, Zustand, TanStack Query, FlashList, react-native-marked, xterm.js (WebView), expo-secure-store, expo-camera, React Native Firebase |
+| Planning | [OpenSpec](https://github.com/Fission-AI/OpenSpec) — every feature started as a numbered change with specs and tasks |
+
+## Project structure
+
+```
+apps/daemon        Node daemon: WebSocket for the app, HTTP for hooks, tmux, transcripts, push
+apps/mobile        Expo app (Expo Router, feature folders, terminal-style dark theme)
+packages/protocol  Zod schemas + types of the WebSocket protocol
+openspec/          Specs and the 20 archived changes that built the project
+.docs/             Original product requirements document (Portuguese)
+```
+
+Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
+
+## Development
+
+```bash
+pnpm check                                             # typecheck + tests + Biome across the monorepo
+pnpm --filter @claude-remote/daemon dev start --dev    # daemon from source on 127.0.0.1
+pnpm --filter @claude-remote/mobile icons              # regenerate icon/splash
+pnpm --filter @claude-remote/mobile xterm              # regenerate the terminal HTML
+```
+
+## Limitations
+
+- macOS only for the daemon, iOS only for the app (React Native + FCM keep Android open).
+- Sessions must run inside tmux to be controllable; others are read-only until resumed.
+- Permission-mode switching reads the Claude Code status line, so a TUI change may need a label update (they live in one tested table).
+- The UI is in Brazilian Portuguese for now — translations are welcome.
+
+## Contributing
+
+Issues and pull requests are welcome! Read [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow (OpenSpec, Conventional Commits, `pnpm check`).
+
+## License
+
+[MIT](LICENSE) © Marco Filho
+
+<sub>Claude Remote is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.</sub>
