@@ -1,0 +1,74 @@
+import type { PermissionRequestInfo, Profile } from '@claude-remote/protocol'
+import type { Logger } from '../../core/logger.ts'
+import type { HookEvent } from '../hooks/payloads.ts'
+import type { DeviceRegistry } from './devices.ts'
+import type { PushMessage, PushSender } from './sender.ts'
+
+export const PERMISSION_CATEGORY = 'PERMISSION'
+
+export type PushServiceOptions = {
+  profiles: readonly Profile[]
+  /** True when some app is connected and in the foreground: it shows the event itself. */
+  hasForegroundClient: () => boolean
+  isMuted: (profileId: string | null, sessionId: string) => boolean
+}
+
+/** Decides which events become a push and builds content-free payloads. */
+export class PushService {
+  constructor(
+    private readonly sender: PushSender | null,
+    private readonly devices: DeviceRegistry,
+    private readonly logger: Logger,
+    private readonly options: PushServiceOptions,
+  ) {}
+
+  private profileName(profileId: string | null): string {
+    return this.options.profiles.find((p) => p.id === profileId)?.name ?? profileId ?? 'Claude'
+  }
+
+  messageForHook(hook: HookEvent): PushMessage | null {
+    const sessionId = hook.payload.session_id
+    const base = { sessionId, profileId: hook.profileId ?? '', event: hook.event }
+    if (hook.event === 'Stop') {
+      return { title: 'Sessão concluída', body: this.profileName(hook.profileId), data: base }
+    }
+    if (hook.event === 'Notification') {
+      const type = hook.payload.notification_type
+      // permission prompts are announced by the PermissionRequest flow (with actions).
+      if (type === 'permission_prompt' || type === 'auth_success') return null
+      return { title: 'Sessão aguardando você', body: this.profileName(hook.profileId), data: base }
+    }
+    return null
+  }
+
+  messageForPermission(info: PermissionRequestInfo): PushMessage {
+    return {
+      title: 'Permissão pendente',
+      body: this.profileName(info.profileId),
+      data: {
+        sessionId: info.sessionId,
+        profileId: info.profileId,
+        event: 'PermissionRequest',
+        requestId: info.requestId,
+      },
+      category: PERMISSION_CATEGORY,
+    }
+  }
+
+  async notify(message: PushMessage | null): Promise<boolean> {
+    if (!message || !this.sender) return false
+    const sessionId = message.data.sessionId ?? ''
+    if (this.options.hasForegroundClient()) return false
+    if (this.options.isMuted(message.data.profileId || null, sessionId)) return false
+    const tokens = this.devices.list()
+    if (tokens.length === 0) return false
+    try {
+      const { invalidTokens } = await this.sender.send(tokens, message)
+      await this.devices.remove(invalidTokens)
+      return true
+    } catch (error) {
+      this.logger.warn({ err: error }, 'push failed')
+      return false
+    }
+  }
+}

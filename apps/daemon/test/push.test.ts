@@ -1,0 +1,161 @@
+import { readFile } from 'node:fs/promises'
+import { describe, expect, test } from 'vitest'
+import { silentLogger } from '../src/core/logger.ts'
+import { paths } from '../src/core/paths.ts'
+import { DeviceRegistry, MAX_DEVICES } from '../src/features/push/devices.ts'
+import type { PushMessage, PushSender } from '../src/features/push/sender.ts'
+import { PERMISSION_CATEGORY, PushService } from '../src/features/push/service.ts'
+import { hookEvent, useTempHome } from './helpers.ts'
+
+useTempHome()
+
+function fakeSender(invalid: string[] = []) {
+  const sent: { tokens: readonly string[]; message: PushMessage }[] = []
+  const sender: PushSender = {
+    async send(tokens, message) {
+      sent.push({ tokens, message })
+      return { invalidTokens: invalid }
+    },
+  }
+  return { sender, sent }
+}
+
+async function setup(
+  opts: { foreground?: boolean; muted?: boolean; invalid?: string[]; tokens?: string[] } = {},
+) {
+  const devices = new DeviceRegistry(paths.devices())
+  await devices.load()
+  for (const t of opts.tokens ?? ['tok-1']) await devices.register(t)
+  const { sender, sent } = fakeSender(opts.invalid)
+  const service = new PushService(sender, devices, silentLogger, {
+    profiles: [{ id: 'drclaude', name: 'DoctorX', configDir: '', color: '' }],
+    hasForegroundClient: () => opts.foreground ?? false,
+    isMuted: () => opts.muted ?? false,
+  })
+  return { service, sent, devices }
+}
+
+describe('DeviceRegistry', () => {
+  test('keeps the newest tokens first and persists them', async () => {
+    const devices = new DeviceRegistry(paths.devices())
+    for (const t of ['a', 'b', 'c', 'd', 'b']) await devices.register(t)
+    expect(devices.list()).toEqual(['b', 'd', 'c'].slice(0, MAX_DEVICES))
+    const again = new DeviceRegistry(paths.devices())
+    await again.load()
+    expect(again.list()).toEqual(devices.list())
+    expect(JSON.parse(await readFile(paths.devices(), 'utf8')).tokens).toHaveLength(3)
+  })
+})
+
+describe('PushService', () => {
+  test('Stop becomes a content-free push', async () => {
+    const { service, sent } = await setup()
+    const hook = hookEvent(
+      'Stop',
+      { session_id: 's', last_assistant_message: 'segredo' },
+      { profileId: 'drclaude' },
+    )
+    expect(await service.notify(service.messageForHook(hook))).toBe(true)
+    expect(sent[0]).toEqual({
+      tokens: ['tok-1'],
+      message: {
+        title: 'Sessão concluída',
+        body: 'DoctorX',
+        data: { sessionId: 's', profileId: 'drclaude', event: 'Stop' },
+      },
+    })
+    expect(JSON.stringify(sent)).not.toContain('segredo')
+  })
+
+  test('permission requests carry the request id and action category, never the command', async () => {
+    const { service, sent } = await setup()
+    const message = service.messageForPermission({
+      requestId: 'r1',
+      sessionId: 's',
+      profileId: 'drclaude',
+      tool: 'Bash',
+      input: { command: 'rm -rf /secret' },
+      suggestedRule: null,
+      defaultScope: 'project',
+      createdAt: '',
+      expiresAt: '',
+    })
+    await service.notify(message)
+    expect(sent[0]?.message).toMatchObject({
+      title: 'Permissão pendente',
+      category: PERMISSION_CATEGORY,
+      data: { requestId: 'r1' },
+    })
+    expect(JSON.stringify(sent)).not.toContain('secret')
+  })
+
+  test('permission_prompt notifications are left to the permission flow', async () => {
+    const { service } = await setup()
+    expect(
+      service.messageForHook(
+        hookEvent('Notification', { session_id: 's', notification_type: 'permission_prompt' }),
+      ),
+    ).toBeNull()
+    expect(
+      service.messageForHook(
+        hookEvent('Notification', { session_id: 's', notification_type: 'idle_prompt' }),
+      ),
+    ).toMatchObject({
+      title: 'Sessão aguardando você',
+    })
+  })
+
+  test('suppressed in the foreground, when muted, or without a sender', async () => {
+    const msg = { title: 't', body: 'b', data: { sessionId: 's', profileId: 'p' } }
+    expect(await (await setup({ foreground: true })).service.notify(msg)).toBe(false)
+    expect(await (await setup({ muted: true })).service.notify(msg)).toBe(false)
+    const devices = new DeviceRegistry(paths.devices())
+    const disabled = new PushService(null, devices, silentLogger, {
+      profiles: [],
+      hasForegroundClient: () => false,
+      isMuted: () => false,
+    })
+    expect(await disabled.notify(msg)).toBe(false)
+  })
+
+  test('drops tokens FCM reports as invalid', async () => {
+    const { service, devices } = await setup({ tokens: ['good', 'bad'], invalid: ['bad'] })
+    await service.notify({ title: 't', body: 'b', data: { sessionId: 's', profileId: 'p' } })
+    expect(devices.list()).toEqual(['good'])
+  })
+})
+
+describe('integration: hook → push', () => {
+  test('a Stop hook pushes to registered devices', async () => {
+    const { startDaemon } = await import('../src/main.ts')
+    const { FileTokenStore } = await import('../src/core/secrets.ts')
+    const { SECRET_HEADER } = await import('../src/transport/hooks-server.ts')
+    const { fakeExecutor, writeTestConfig } = await import('./helpers.ts')
+    const root = paths.devices().replace(/\/\.claude-remote\/devices\.json$/, '')
+    await writeTestConfig(root)
+    await new DeviceRegistry(paths.devices()).register('phone')
+    const { sender, sent } = fakeSender()
+    const daemon = await startDaemon({
+      logger: silentLogger,
+      exec: fakeExecutor(),
+      tokenStore: new FileTokenStore(),
+      dev: true,
+      wsPort: 0,
+      hookPort: 0,
+      pushSender: sender,
+    })
+    try {
+      const secret = (await readFile(paths.hookSecret(), 'utf8')).trim()
+      await fetch(`http://127.0.0.1:${daemon.hookPort}/hooks/Stop`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', [SECRET_HEADER]: secret },
+        body: JSON.stringify({ session_id: 's', cwd: '/w' }),
+      })
+      const start = Date.now()
+      while (sent.length === 0 && Date.now() - start < 2000) await new Promise((r) => setTimeout(r, 20))
+      expect(sent[0]).toMatchObject({ tokens: ['phone'], message: { title: 'Sessão concluída' } })
+    } finally {
+      await daemon.stop()
+    }
+  })
+})
