@@ -53,3 +53,10 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
 export function getClient(): DaemonClient | null {
   return useConnectionStore.getState().client
 }
+
+const NO_PROFILES: Hello['profiles'] = []
+
+/** Stable selector: returns the same empty array until the daemon says hello (avoids render loops). */
+export function selectProfiles(s: ConnectionState): Hello['profiles'] {
+  return s.hello?.profiles ?? NO_PROFILES
+}

@@ -168,3 +168,11 @@ describe('DaemonClient', () => {
     expect(daemonUrl('fd7a::1', 7337)).toBe('ws://[fd7a::1]:7337')
   })
 })
+
+describe('selectProfiles', () => {
+  test('returns a stable empty array before hello', async () => {
+    const { selectProfiles, useConnectionStore } = await import('./connection-store')
+    const state = useConnectionStore.getState()
+    expect(selectProfiles(state)).toBe(selectProfiles({ ...state }))
+  })
+})

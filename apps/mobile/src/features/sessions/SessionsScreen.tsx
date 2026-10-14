@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list'
 import { useMemo, useState } from 'react'
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
-import { useConnectionStore, useDaemonClient } from '@/core/connection'
+import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { colors, space } from '@/core/theme'
 import { Button, ConnectionBanner, EmptyState, Screen, Text } from '@/ui'
 import { NestedSubagents } from '../subagents/SubagentList'
@@ -12,7 +12,7 @@ import { refreshSessions, useSessionsStore } from './store'
 
 export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: Record<string, number> }) {
   const client = useDaemonClient()
-  const profiles = useConnectionStore((s) => s.hello?.profiles ?? [])
+  const profiles = useConnectionStore(selectProfiles)
   const sessions = useSessionsStore((s) => s.sessions)
   const loaded = useSessionsStore((s) => s.loaded)
   const refreshing = useSessionsStore((s) => s.refreshing)
@@ -31,7 +31,12 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
     <Screen>
       <ConnectionBanner />
       {profiles.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterBar}
+          contentContainerStyle={styles.filters}
+        >
           <Button
             label="todos"
             compact
@@ -90,7 +95,9 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
 }
 
 const styles = StyleSheet.create({
-  filters: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm },
+  // A horizontal ScrollView grows to fill a column parent; keep it at the height of the chips.
+  filterBar: { flexGrow: 0 },
+  filters: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm, alignItems: 'center' },
   list: { paddingBottom: space.xxl },
   code: { backgroundColor: colors.surface, padding: space.md, borderRadius: 8, gap: space.xs },
 })

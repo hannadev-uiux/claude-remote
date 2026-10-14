@@ -1,6 +1,6 @@
 import { Bell, BellOff } from 'lucide-react-native'
 import { Alert, StyleSheet, Switch, View } from 'react-native'
-import { useConnectionStore, useDaemonClient } from '@/core/connection'
+import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { colors, space } from '@/core/theme'
 import { Card, IconButton, Text } from '@/ui'
 import { setMuted, useMuteStore } from './store'
@@ -18,7 +18,7 @@ function toggle(
 /** Per-profile switches for the settings screen. */
 export function ProfileMuteCard() {
   const client = useDaemonClient()
-  const profiles = useConnectionStore((s) => s.hello?.profiles ?? [])
+  const profiles = useConnectionStore(selectProfiles)
   const mutedProfiles = useMuteStore((s) => s.profiles)
   return (
     <Card>

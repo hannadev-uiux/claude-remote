@@ -7,7 +7,7 @@
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@react-native-firebase/app": "^26.4.0",
     "@react-native-firebase/messaging": "^26.4.0",
-    "@shopify/flash-list": "2.0.2",
+    "@shopify/flash-list": "2.3.3",
     "@tanstack/react-query": "^5.104.2",
     "diff": "^9.0.0",
     "expo": "~57.0.29",
@@ -55,5 +55,12 @@
     "doctor": "expo-doctor",
     "xterm": "tsx scripts/build-xterm-html.mts"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "install": {
+      "exclude": [
+        "@shopify/flash-list"
+      ]
+    }
+  }
 }

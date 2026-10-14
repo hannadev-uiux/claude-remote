@@ -3,7 +3,7 @@ import { router } from 'expo-router'
 import { Folder } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native'
-import { useConnectionStore, useDaemonClient, useIsConnected } from '@/core/connection'
+import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } from '@/core/connection'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { Button, Card, Screen, Text } from '@/ui'
@@ -11,7 +11,7 @@ import { Button, Card, Screen, Text } from '@/ui'
 export function NewSessionScreen() {
   const client = useDaemonClient()
   const connected = useIsConnected()
-  const profiles = useConnectionStore((s) => s.hello?.profiles ?? [])
+  const profiles = useConnectionStore(selectProfiles)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [cwd, setCwd] = useState('')
   const [busy, setBusy] = useState(false)
