@@ -1,0 +1,57 @@
+import { PermissionModeSchema } from '@claude-remote/protocol'
+import { DaemonError } from '../../core/errors.ts'
+import type { DaemonContext } from '../../main.ts'
+import type { SessionStore } from '../sessions/store.ts'
+import { oneLine } from '../sessions/transcript-meta.ts'
+import { type StreamTarget, TranscriptService } from './service.ts'
+
+/** Resolves the transcript file for a session or one of its subagents. */
+export type TranscriptPathResolver = (sessionId: string, agentId?: string) => string | null
+
+export function registerTranscriptFeature(ctx: DaemonContext, store: SessionStore) {
+  const service = new TranscriptService(ctx.logger, (sessionId, update) => {
+    const mode = PermissionModeSchema.safeParse(update.permissionMode)
+    store.upsert(sessionId, {
+      ...(mode.success ? { permissionMode: mode.data } : {}),
+      ...(update.customTitle ? { title: oneLine(update.customTitle) } : {}),
+    })
+  })
+
+  const resolvers: TranscriptPathResolver[] = [
+    (sessionId, agentId) => (agentId ? null : (store.get(sessionId)?.transcriptPath ?? null)),
+  ]
+
+  function target(sessionId: string, agentId?: string): StreamTarget {
+    for (const resolve of resolvers) {
+      const path = resolve(sessionId, agentId)
+      if (path) return { sessionId, agentId, path }
+    }
+    throw new DaemonError(
+      'not_found',
+      agentId ? `subagent ${agentId} not found` : `session ${sessionId} not found`,
+    )
+  }
+
+  ctx.router.register('session.subscribe', async (msg, connection) => ({
+    type: 'transcript.page',
+    ...(await service.subscribe(target(msg.sessionId, msg.agentId), connection, msg.sinceCursor)),
+  }))
+  ctx.router.register('session.unsubscribe', (msg, connection) => {
+    service.unsubscribe(msg.sessionId, connection, msg.agentId)
+    return undefined
+  })
+  ctx.router.register('session.history', async (msg) => ({
+    type: 'transcript.page',
+    ...(await service.history(target(msg.sessionId, msg.agentId), msg.before, msg.limit)),
+  }))
+
+  ctx.onStop(() => service.dispose())
+
+  return {
+    service,
+    /** Lets other features (subagents) teach the stream how to find more transcripts. */
+    addResolver(resolver: TranscriptPathResolver) {
+      resolvers.push(resolver)
+    },
+  }
+}
