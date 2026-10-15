@@ -74,7 +74,16 @@ export class LifecycleService {
     const profile = this.profile(profileId)
     const session = this.store.get(sessionId)
     if (!session) throw new DaemonError('not_found', `session ${sessionId} not found`)
-    if (session.controllable) throw new DaemonError('bad_request', 'the session is already open in tmux')
+    if (session.controllable) {
+      // Open in a window this service launched (linked by `link`): a repeated tap gets the same pane
+      // while it is alive, and a new window when it closed before the pane reconciliation noticed.
+      const launched = await this.resuming.get(sessionId)?.catch(() => null)
+      if (!launched || launched !== session.paneId) {
+        throw new DaemonError('bad_request', 'the session is already open in tmux')
+      }
+      if (await this.hasPane(launched)) return { paneId: launched }
+      this.store.upsert(sessionId, { paneId: null, controllable: false })
+    }
     // A repeated tap while Claude is still booting (or while the launcher is still running)
     // must not open another window; the promise is stored before any await.
     const pending = this.resuming.get(sessionId)
@@ -90,11 +99,28 @@ export class LifecycleService {
     )
     this.resuming.set(sessionId, launch)
     try {
-      return { paneId: await launch }
+      const paneId = await launch
+      this.link(sessionId, paneId)
+      return { paneId }
     } catch (error) {
       if (this.resuming.get(sessionId) === launch) this.resuming.delete(sessionId)
       throw error
     }
+  }
+
+  /**
+   * Links the new window to the session without waiting for its SessionStart hook: a session running
+   * in the background (`claude --bg`) turns `--resume` into `claude attach`, whose window fires no
+   * hooks. A later SessionStart from the pane (same or new id) still takes over the link.
+   */
+  private link(sessionId: string, paneId: string): void {
+    const current = this.store.get(sessionId)
+    if (!current || current.controllable || this.store.findByPane(paneId).length > 0) return
+    this.store.upsert(sessionId, {
+      paneId,
+      controllable: true,
+      state: current.state === 'ended' ? 'idle' : current.state,
+    })
   }
 
   /** Recent working directories of a profile, most recent first. */
