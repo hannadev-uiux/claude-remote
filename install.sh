@@ -32,6 +32,7 @@ pt*)
   T_SRC='Código em: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='instalador'
   T_UNSUPPORTED='Sistema não suportado (%s). O Claude Remote roda em macOS e Linux.'
+  T_WINDOWS='No Windows, o Claude Remote roda dentro do WSL2. No PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='É preciso o Node.js %s+: https://nodejs.org (ou `brew install node`, nvm, fnm…).'
   T_NODE_OLD='É preciso o Node.js %s+ (encontrado %s).'
   T_NEED_GIT='É preciso o git: rode `xcode-select --install`.'
@@ -59,6 +60,7 @@ es*)
   T_SRC='Código en: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='instalador'
   T_UNSUPPORTED='Sistema no compatible (%s). Claude Remote funciona en macOS y Linux.'
+  T_WINDOWS='En Windows, Claude Remote funciona dentro de WSL2. En PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='Necesitas Node.js %s+: https://nodejs.org (o `brew install node`, nvm, fnm…).'
   T_NODE_OLD='Necesitas Node.js %s+ (encontrado %s).'
   T_NEED_GIT='Necesitas git: ejecuta `xcode-select --install`.'
@@ -86,6 +88,7 @@ es*)
   T_SRC='Source in: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='installer'
   T_UNSUPPORTED='Unsupported system (%s). Claude Remote runs on macOS and Linux.'
+  T_WINDOWS='On Windows, Claude Remote runs inside WSL2. In PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='Node.js %s+ is required: https://nodejs.org (or `brew install node`, nvm, fnm…).'
   T_NODE_OLD='Node.js %s+ is required (found %s).'
   T_NEED_GIT='git is required: run `xcode-select --install`.'
@@ -147,6 +150,7 @@ detect_platform() {
   case "$system" in
   Darwin) PLATFORM=darwin ;;
   Linux) PLATFORM=linux ;;
+  MINGW* | MSYS* | CYGWIN*) die "$T_WINDOWS" ;;
   *) die "$(t "$T_UNSUPPORTED" "$system")" ;;
   esac
 }
