@@ -20,10 +20,11 @@ import {
 } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import {
+  existingRcFiles,
   settingsPath,
   uninstallHooks,
   uninstallLaunchers,
-  uninstallZshrc,
+  uninstallShellPath,
 } from './features/hooks/installer.ts'
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
@@ -31,7 +32,13 @@ import { LaunchdService } from './features/service/launchd.ts'
 import type { ServiceManager } from './features/service/service-manager.ts'
 import { SystemdUserService } from './features/service/systemd.ts'
 import { colorEnabled, createPaint } from './features/setup/banner.ts'
-import { type InstallOptions, installAll, installServiceFromCli } from './features/setup/install.ts'
+import {
+  displayPaths,
+  type InstallOptions,
+  installAll,
+  installServiceFromCli,
+  userRcFiles,
+} from './features/setup/install.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
@@ -93,7 +100,13 @@ function printPairing(host: string, port: number, token: string): void {
 }
 
 function installOptions(): InstallOptions {
-  return { exec: execaExecutor, cliPath: builtCliPath(), nodePath: process.execPath }
+  return {
+    exec: execaExecutor,
+    cliPath: builtCliPath(),
+    nodePath: process.execPath,
+    platform,
+    rcFiles: userRcFiles(platform),
+  }
 }
 
 function builtCliPath(): string | null {
@@ -301,7 +314,7 @@ program
     const profiles = await resolveProfiles(config, createLogger({ level: 'warn' }))
     const lines = await installAll(config, profiles, installOptions(), m.install)
     for (const line of lines) console.log(`${line.status === 'done' ? '✓' : '·'} ${line.text}`)
-    console.log(`\n${m.cli.install.openTerminal}`)
+    console.log(`\n${m.cli.install.openTerminal(displayPaths(userRcFiles(platform).slice(0, 1)))}`)
   })
 
 program
@@ -312,7 +325,11 @@ program
     const config = await loadConfig(logger)
     const profiles = await resolveProfiles(config, logger)
     await uninstallLaunchers(config.profiles, paths.bin())
-    console.log(`${(await uninstallZshrc()) ? '✓' : '·'} ${m.cli.uninstall.zshrcRemoved}`)
+    const rcFiles = existingRcFiles(homedir(), existsSync)
+    const removed = await uninstallShellPath(rcFiles)
+    console.log(
+      `${removed.length > 0 ? '✓' : '·'} ${m.cli.uninstall.shellRemoved(displayPaths(removed.length > 0 ? removed : rcFiles))}`,
+    )
     for (const profile of profiles) {
       console.log(
         `${(await uninstallHooks(profile)) ? '✓' : '·'} ${m.cli.uninstall.hooksRemoved(settingsPath(profile))}`,

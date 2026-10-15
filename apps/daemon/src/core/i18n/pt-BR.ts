@@ -57,12 +57,14 @@ export const ptBR = {
       runPair: 'rode `claude-remote pair`',
     },
     install: {
-      description: 'instala launchers, PATH no ~/.zshrc e hooks nos perfis do config (sem perguntas)',
-      openTerminal: 'Abra um novo terminal (ou `source ~/.zshrc`) e use os launchers no lugar do `claude`.',
+      description:
+        'instala launchers, PATH no ~/.zshrc / ~/.bashrc e hooks nos perfis do config (sem perguntas)',
+      openTerminal: (rc: string) =>
+        `Abra um novo terminal (ou \`source ${rc}\`) e use os launchers no lugar do \`claude\`.`,
     },
     uninstall: {
-      description: 'remove launchers, bloco do ~/.zshrc e hooks instalados',
-      zshrcRemoved: 'bloco removido do ~/.zshrc',
+      description: 'remove launchers, bloco do PATH no ~/.zshrc / ~/.bashrc e hooks instalados',
+      shellRemoved: (files: string) => `bloco do PATH removido de ${files}`,
       hooksRemoved: (path: string) => `hooks removidos de ${path}`,
     },
     service: {
@@ -97,7 +99,7 @@ export const ptBR = {
   },
   install: {
     shortcut: (path: string) => `atalho ${path}`,
-    zshrcPath: 'PATH no ~/.zshrc',
+    shellPath: (files: string) => `PATH em ${files}`,
     hooksIn: (path: string) => `hooks em ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} removido`,
     hooksRemovedFrom: (path: string) => `hooks removidos de ${path}`,

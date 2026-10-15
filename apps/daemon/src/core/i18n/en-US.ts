@@ -59,12 +59,14 @@ export const enUS = {
       runPair: 'run `claude-remote pair`',
     },
     install: {
-      description: 'install launchers, PATH in ~/.zshrc and hooks in the configured profiles (no questions)',
-      openTerminal: 'Open a new terminal (or `source ~/.zshrc`) and use the launchers instead of `claude`.',
+      description:
+        'install launchers, PATH in ~/.zshrc / ~/.bashrc and hooks in the configured profiles (no questions)',
+      openTerminal: (rc: string) =>
+        `Open a new terminal (or \`source ${rc}\`) and use the launchers instead of \`claude\`.`,
     },
     uninstall: {
-      description: 'remove launchers, the ~/.zshrc block and the installed hooks',
-      zshrcRemoved: 'block removed from ~/.zshrc',
+      description: 'remove launchers, the PATH block in ~/.zshrc / ~/.bashrc and the installed hooks',
+      shellRemoved: (files: string) => `PATH block removed from ${files}`,
       hooksRemoved: (path: string) => `hooks removed from ${path}`,
     },
     service: {
@@ -99,7 +101,7 @@ export const enUS = {
   },
   install: {
     shortcut: (path: string) => `shortcut ${path}`,
-    zshrcPath: 'PATH in ~/.zshrc',
+    shellPath: (files: string) => `PATH in ${files}`,
     hooksIn: (path: string) => `hooks in ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} removed`,
     hooksRemovedFrom: (path: string) => `hooks removed from ${path}`,

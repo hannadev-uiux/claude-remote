@@ -10,7 +10,7 @@ import { isDirectory, readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 import { BACKUP_SUFFIX } from '../hooks/installer.ts'
 import type { ServiceManager } from '../service/service-manager.ts'
 import { box, type Paint, renderLogo, renderWelcome } from './banner.ts'
-import { type InstallLine, type InstallOptions, installAll, removeProfiles } from './install.ts'
+import { displayPaths, type InstallLine, type InstallOptions, installAll, removeProfiles } from './install.ts'
 import {
   detectConfigDirs,
   mergeConfig,
@@ -410,7 +410,7 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
       [
         `${paint('success', '✓')} ${paint('bold', s.done.installed)}`,
         '',
-        s.done.openTerminal(paint('bold', 'source ~/.zshrc')),
+        s.done.openTerminal(paint('bold', `source ${displayPaths(o.rcFiles.slice(0, 1), o.home)}`)),
         s.done.useAliases(aliases, paint('muted', 'claude')),
         host
           ? s.done.pairIfNeeded(paint('bold', 'claude-remote pair'))

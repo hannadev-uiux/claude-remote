@@ -58,12 +58,13 @@ export const esES = {
     },
     install: {
       description:
-        'instala los launchers, el PATH en ~/.zshrc y los hooks de los perfiles configurados (sin preguntas)',
-      openTerminal: 'Abre un terminal nuevo (o `source ~/.zshrc`) y usa los launchers en lugar de `claude`.',
+        'instala los launchers, el PATH en ~/.zshrc / ~/.bashrc y los hooks de los perfiles configurados (sin preguntas)',
+      openTerminal: (rc: string) =>
+        `Abre un terminal nuevo (o \`source ${rc}\`) y usa los launchers en lugar de \`claude\`.`,
     },
     uninstall: {
-      description: 'elimina los launchers, el bloque de ~/.zshrc y los hooks instalados',
-      zshrcRemoved: 'bloque eliminado de ~/.zshrc',
+      description: 'elimina los launchers, el bloque del PATH en ~/.zshrc / ~/.bashrc y los hooks instalados',
+      shellRemoved: (files: string) => `bloque del PATH eliminado de ${files}`,
       hooksRemoved: (path: string) => `hooks eliminados de ${path}`,
     },
     service: {
@@ -99,7 +100,7 @@ export const esES = {
   },
   install: {
     shortcut: (path: string) => `atajo ${path}`,
-    zshrcPath: 'PATH en ~/.zshrc',
+    shellPath: (files: string) => `PATH en ${files}`,
     hooksIn: (path: string) => `hooks en ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} eliminado`,
     hooksRemovedFrom: (path: string) => `hooks eliminados de ${path}`,

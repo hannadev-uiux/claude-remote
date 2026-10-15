@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Profile } from '@claude-remote/protocol'
@@ -9,11 +10,13 @@ import { expandHome, paths } from '../../core/paths.ts'
 import { ensureHookSecret } from '../../core/secrets.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory } from '../../infra/fs.ts'
+import type { Platform } from '../../infra/platform.ts'
 import {
   installHooks,
   installLaunchers,
-  installZshrc,
+  installShellPath,
   settingsPath,
+  shellRcFiles,
   uninstallHooks,
   uninstallLaunchers,
 } from '../hooks/installer.ts'
@@ -27,9 +30,27 @@ export type InstallOptions = {
   /** dist/cli.js, used by the `claude-remote` shortcut; null when running from source without a build. */
   cliPath: string | null
   nodePath: string
+  platform: Platform
+  /** Startup files that get the PATH block (see `shellRcFiles`). */
+  rcFiles: readonly string[]
 }
 
-/** Launchers, `claude-remote` shortcut, PATH in ~/.zshrc and hooks in every (resolved) profile. */
+/** The rc files for this user: `$SHELL`'s first; ~/.zshrc on macOS / ~/.bashrc on Linux as fallback. */
+export function userRcFiles(platform: Platform, home = homedir(), shell = process.env.SHELL): string[] {
+  return shellRcFiles({
+    home,
+    shell,
+    exists: existsSync,
+    fallback: platform === 'darwin' ? '.zshrc' : '.bashrc',
+  })
+}
+
+/** `~/…` form of paths under home, joined for display. */
+export function displayPaths(files: readonly string[], home = homedir()): string {
+  return files.map((f) => (f.startsWith(`${home}/`) ? `~/${f.slice(home.length + 1)}` : f)).join(', ')
+}
+
+/** Launchers, `claude-remote` shortcut, PATH in the shell rc files and hooks in every (resolved) profile. */
 export async function installAll(
   config: Config,
   profiles: readonly Profile[],
@@ -50,7 +71,11 @@ export async function installAll(
     await writeFile(shim, `#!/bin/sh\nexec "${o.nodePath}" "${o.cliPath}" "$@"\n`, { mode: 0o755 })
     lines.push({ status: 'done', text: m.shortcut(shim) })
   }
-  lines.push({ status: (await installZshrc(paths.bin())) ? 'done' : 'skip', text: m.zshrcPath })
+  const changed = await installShellPath(paths.bin(), o.rcFiles)
+  lines.push({
+    status: changed.length > 0 ? 'done' : 'skip',
+    text: m.shellPath(displayPaths(changed.length > 0 ? changed : o.rcFiles)),
+  })
   const secret = await ensureHookSecret()
   for (const profile of profiles) {
     const changed = await installHooks(profile, {

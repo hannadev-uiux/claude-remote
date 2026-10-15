@@ -2,8 +2,8 @@ import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import type { Profile } from '@claude-remote/protocol'
 
-const ZSHRC_START = '# >>> claude-remote >>>'
-const ZSHRC_END = '# <<< claude-remote <<<'
+const PATH_BLOCK_START = '# >>> claude-remote >>>'
+const PATH_BLOCK_END = '# <<< claude-remote <<<'
 
 function zshQuote(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`
@@ -71,23 +71,24 @@ fi
 `
 }
 
-export function zshrcBlock(binDir: string): string {
-  return `${ZSHRC_START}\nexport PATH=${zshQuote(binDir)}:"$PATH"\n${ZSHRC_END}`
+/** Same block (and markers) in ~/.zshrc and ~/.bashrc: the syntax is valid in both shells. */
+export function pathBlock(binDir: string): string {
+  return `${PATH_BLOCK_START}\nexport PATH=${zshQuote(binDir)}:"$PATH"\n${PATH_BLOCK_END}`
 }
 
-export function removeZshrcBlock(content: string): string {
-  const start = content.indexOf(ZSHRC_START)
+export function removePathBlock(content: string): string {
+  const start = content.indexOf(PATH_BLOCK_START)
   if (start === -1) return content
-  const end = content.indexOf(ZSHRC_END, start)
+  const end = content.indexOf(PATH_BLOCK_END, start)
   if (end === -1) return content
   const before = content.slice(0, start).replace(/\n+$/, '\n')
-  const after = content.slice(end + ZSHRC_END.length).replace(/^\n+/, '')
+  const after = content.slice(end + PATH_BLOCK_END.length).replace(/^\n+/, '')
   const joined = `${before}${after}`
   return joined === '\n' ? '' : joined
 }
 
-export function upsertZshrcBlock(content: string, binDir: string): string {
-  const base = removeZshrcBlock(content)
+export function upsertPathBlock(content: string, binDir: string): string {
+  const base = removePathBlock(content)
   const separator = base.length === 0 || base.endsWith('\n') ? '' : '\n'
-  return `${base}${separator}${base.length > 0 ? '\n' : ''}${zshrcBlock(binDir)}\n`
+  return `${base}${separator}${base.length > 0 ? '\n' : ''}${pathBlock(binDir)}\n`
 }
