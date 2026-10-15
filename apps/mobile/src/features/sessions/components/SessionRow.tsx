@@ -1,7 +1,7 @@
 import type { Session } from '@claude-remote/protocol'
 import { router } from 'expo-router'
 import { ChevronRight } from 'lucide-react-native'
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
@@ -9,15 +9,37 @@ import { relativeTime, shortPath } from '@/core/utils/time'
 import { Badge, Text } from '@/ui'
 import { StateBadge } from './StateBadge'
 
-type Props = { session: Session; pendingPermissions?: number }
+type Props = {
+  session: Session
+  pendingPermissions?: number
+  /** The session is open in the detail pane. */
+  selected?: boolean
+  /** Keyboard navigation cursor (arrow keys) — may point to a session other than the open one. */
+  keyboardFocused?: boolean
+}
 
-export const SessionRow = memo(function SessionRow({ session, pendingPermissions = 0 }: Props) {
+export const SessionRow = memo(function SessionRow({
+  session,
+  pendingPermissions = 0,
+  selected = false,
+  keyboardFocused = false,
+}: Props) {
   const { t } = useTranslation()
   const waiting = pendingPermissions > 0 || session.state === 'waiting'
+  const [hovered, setHovered] = useState(false)
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/session/[id]', params: { id: session.id } })}
-      style={({ pressed }) => [styles.row, waiting && styles.waiting, pressed && styles.pressed]}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={({ pressed }) => [
+        styles.row,
+        waiting && styles.waiting,
+        selected && styles.selected,
+        keyboardFocused && styles.keyboardFocused,
+        hovered && styles.hovered,
+        pressed && styles.pressed,
+      ]}
     >
       <View style={styles.main}>
         <Text weight="medium" numberOfLines={1}>
@@ -59,6 +81,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   waiting: { borderColor: colors.warning },
+  selected: { borderColor: colors.accent, backgroundColor: colors.accentMuted },
+  keyboardFocused: { borderColor: colors.accent },
+  hovered: { backgroundColor: colors.surfaceRaised },
   pressed: { opacity: 0.7 },
   main: { flex: 1, gap: space.xs },
   badges: {

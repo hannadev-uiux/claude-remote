@@ -1,7 +1,9 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { useMemo, useRef, useState } from 'react'
+import { router } from 'expo-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
+import { RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native'
+import { addListener, constants } from 'react-native-key-command'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { colors, space } from '@/core/theme'
 import { Button, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
@@ -18,9 +20,21 @@ import {
   type SessionListItem,
   type StateFilter,
 } from './grouping'
+import { moveCursor } from './keyboard-nav'
 import { refreshSessions, useSessionsStore } from './store'
 
-export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: Record<string, number> }) {
+type Props = {
+  pendingBySession?: Record<string, number>
+  selectedSessionId?: string | null
+  /** Arrow keys + Enter navigate the list — only makes sense when shown as the master pane. */
+  interactive?: boolean
+}
+
+export function SessionsScreen({
+  pendingBySession = {},
+  selectedSessionId = null,
+  interactive = false,
+}: Props) {
   const { t } = useTranslation()
   const client = useDaemonClient()
   const profiles = useConnectionStore(selectProfiles)
@@ -28,6 +42,7 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
   const loaded = useSessionsStore((s) => s.loaded)
   const refreshing = useSessionsStore((s) => s.refreshing)
   const [filter, setFilter] = useState<SessionFilter>(NO_FILTER)
+  const [keyboardCursor, setKeyboardCursor] = useState<string | null>(null)
   const listRef = useRef<FlashListRef<SessionListItem>>(null)
 
   // A new filter is a new list: start from the top.
@@ -42,6 +57,38 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
     () => flattenSections(groupSessions(Object.values(sessions), profiles, filter)),
     [sessions, profiles, filter],
   )
+  const sessionIds = useMemo(
+    () => items.flatMap((item) => (item.type === 'session' ? [item.session.id] : [])),
+    [items],
+  )
+  const sessionIdsRef = useRef(sessionIds)
+  sessionIdsRef.current = sessionIds
+  const keyboardCursorRef = useRef(keyboardCursor)
+  keyboardCursorRef.current = keyboardCursor
+
+  useEffect(() => {
+    if (!interactive) return
+    const unsubscribers = [
+      addListener({ input: constants.keyInputDownArrow }, () => {
+        if (TextInput.State.currentlyFocusedInput()) return
+        setKeyboardCursor(moveCursor(sessionIdsRef.current, keyboardCursorRef.current, 1))
+      }),
+      addListener({ input: constants.keyInputUpArrow }, () => {
+        if (TextInput.State.currentlyFocusedInput()) return
+        setKeyboardCursor(moveCursor(sessionIdsRef.current, keyboardCursorRef.current, -1))
+      }),
+      addListener({ input: constants.keyInputEnter }, () => {
+        if (TextInput.State.currentlyFocusedInput()) return
+        const id = keyboardCursorRef.current
+        if (id) router.push({ pathname: '/session/[id]', params: { id } })
+      }),
+    ]
+    return () => {
+      unsubscribers.forEach((unsubscribe) => {
+        unsubscribe()
+      })
+    }
+  }, [interactive])
 
   const onRefresh = () => {
     if (client) void refreshSessions(client).catch(() => undefined)
@@ -108,6 +155,8 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
               <SessionRow
                 session={item.session}
                 pendingPermissions={pendingBySession[item.session.id] ?? 0}
+                selected={item.session.id === selectedSessionId}
+                keyboardFocused={item.session.id === keyboardCursor}
               />
               <NestedSubagents sessionId={item.session.id} subagents={item.session.subagents} />
             </>

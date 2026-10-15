@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react-native'
+import { useState } from 'react'
 import { Pressable, StyleSheet } from 'react-native'
 import { type ColorName, colors, radius } from '@/core/theme'
 
@@ -17,6 +18,7 @@ export function IconButton({
   size?: number
   disabled?: boolean
 }) {
+  const [hovered, setHovered] = useState(false)
   return (
     <Pressable
       accessibilityRole="button"
@@ -24,7 +26,13 @@ export function IconButton({
       hitSlop={8}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.base, { opacity: disabled ? 0.4 : pressed ? 0.6 : 1 }]}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={({ pressed }) => [
+        styles.base,
+        hovered && !disabled && styles.hovered,
+        { opacity: disabled ? 0.4 : pressed ? 0.6 : 1 },
+      ]}
     >
       <Icon size={size} color={colors[color]} strokeWidth={2} />
     </Pressable>
@@ -33,4 +41,5 @@ export function IconButton({
 
 const styles = StyleSheet.create({
   base: { padding: 6, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  hovered: { backgroundColor: colors.surfaceRaised },
 })
