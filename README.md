@@ -4,12 +4,12 @@
 
 # Claude Remote
 
-**Follow and drive the Claude Code sessions running on your Mac — from your iPhone.**
+**Follow and drive the Claude Code sessions running on your Mac or Linux machine — from your iPhone.**
 
-Self-hosted: a small daemon on your Mac, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every Claude Code profile in one list.
+Self-hosted: a small daemon on your computer, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every Claude Code profile in one list.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-D97757.svg)](LICENSE)
-![Platform](https://img.shields.io/badge/platform-macOS%20%2B%20iOS-161616.svg)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%2B%20iOS-161616.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)
 ![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000020.svg)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-98C379.svg)](CONTRIBUTING.md)
@@ -84,31 +84,31 @@ Sessions started with plain `claude` (outside tmux) still show up — read-only 
 The daemon is effectively a remote shell, so it is locked down by default:
 
 - The WebSocket listens **only on the Tailscale interface** (100.64.0.0/10) — or `127.0.0.1` with an explicit `--dev`.
-- Every connection must present a token (macOS **Keychain** on the Mac, **SecureStore** on the phone). `claude-remote rotate-token` invalidates it and drops all clients.
+- Every connection must present a token (**Keychain** on macOS, the **Secret Service** via `secret-tool` or a `0600` file on Linux, **SecureStore** on the phone). `claude-remote rotate-token` invalidates it and drops all clients.
 - The hooks endpoint listens **only on `127.0.0.1`** and requires a local shared secret.
 - Push payloads carry **only** a title, profile and session id — never session content.
 - `bypassPermissions` is never offered by the app.
-- Edits to your files (`settings.json`, `~/.zshrc`) are merge → backup → atomic write, idempotent, and fully reverted by `claude-remote uninstall`.
+- Edits to your files (`settings.json`, `~/.zshrc`, `~/.bashrc`) are merge → backup → atomic write, idempotent, and fully reverted by `claude-remote uninstall`.
 
 See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## Requirements
 
-- macOS with `tmux`, `git`, `rg` (ripgrep) and `claude` on the `PATH`
+- macOS or Linux (systemd recommended) with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` on the `PATH` (the installer adds the missing tools)
 - Node 24+ and pnpm 12+
-- [Tailscale](https://tailscale.com) on the Mac (`brew install --cask tailscale`) and the iPhone, signed in to the same tailnet
-- Xcode, for the iOS development build (Expo Go is not enough: the app uses native modules)
+- [Tailscale](https://tailscale.com) on the computer and the iPhone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
+- Xcode on a Mac, for the iOS development build (Expo Go is not enough: the app uses native modules)
 - Optional, for push: a paid Apple Developer account and a Firebase project
 
 ## Getting started
 
-### 1. Mac: one-line install
+### 1. Computer (macOS or Linux): one-line install
 
 ```bash
 curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 ```
 
-The installer checks macOS, Node and git, installs `tmux`/`ripgrep` with Homebrew if needed, puts the source in `~/.claude-remote/src`, builds the daemon and opens a guided setup (`claude-remote setup`) that:
+The installer checks the system (macOS or Linux) and Node, installs missing `tmux`/`ripgrep`/`zsh`/`git` (Homebrew on macOS; apt, dnf, pacman or zypper on Linux, with `sudo` after telling you why), puts the source in `~/.claude-remote/src`, builds the daemon and opens a guided setup (`claude-remote setup`) that:
 
 - finds your Claude Code accounts (`~/.claude`, `~/.claude-*`) and lets you pick which ones to control, or creates a new one (makes the folder and opens Claude Code there so you log in);
 - asks the **alias** of each one: the command that opens that account inside tmux (e.g. `pessoal`, `trabalho`);
@@ -116,6 +116,17 @@ The installer checks macOS, Node and git, installs `tmux`/`ripgrep` with Homebre
 - helps with Tailscale and shows the pairing QR code.
 
 Run it again to update. `claude-remote setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
+
+<details>
+<summary>Linux notes</summary>
+
+- **Service**: a systemd user unit, `~/.config/systemd/user/claude-remote.service` (restarts on failure, logs in `~/.claude-remote/logs`). Check it with `claude-remote service status` or `systemctl --user status claude-remote`.
+- **Lingering**: user services stop when you log out. The setup asks before running `loginctl enable-linger $USER`, which keeps the daemon running after logout and starts it at boot (needed on servers you reach over SSH).
+- **No systemd** (containers, some WSL setups): the setup says so; run `claude-remote start` yourself, e.g. in a tmux window.
+- **Token**: kept in the Secret Service (GNOME Keyring, KWallet…) through `secret-tool` when it is available, otherwise in `~/.claude-remote/token` (mode `0600`), which is what headless servers use. `claude-remote doctor` shows which one; `CLAUDE_REMOTE_TOKEN_STORE=secret-tool|file` forces it.
+- **Shell**: the `PATH` entry goes to `~/.bashrc` and/or `~/.zshrc`; the launchers themselves run with `zsh`.
+
+</details>
 
 <details>
 <summary>Manual install (from a clone)</summary>
@@ -148,7 +159,7 @@ cd apps/mobile
 pnpm ios     # expo run:ios — development build on the simulator or a connected iPhone
 ```
 
-Open the app, scan the QR code from `claude-remote pair`, and you are in. Installed the app first? The pairing screen has a step-by-step guide for setting up the Mac.
+Open the app, scan the QR code from `claude-remote pair`, and you are in. Installed the app first? The pairing screen has a step-by-step guide for setting up the computer.
 
 > **Trying it on the simulator without Tailscale?** Run `claude-remote start --dev` (binds to `127.0.0.1`) and `claude-remote pair --dev`.
 
@@ -171,7 +182,7 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
 
 ```bash
 claude-remote service uninstall
-claude-remote uninstall   # removes launchers, the ~/.zshrc block and only the hooks it created
+claude-remote uninstall   # removes launchers, the PATH block in ~/.zshrc / ~/.bashrc and only the hooks it created
 ```
 
 ## Tech stack
@@ -207,7 +218,7 @@ pnpm --filter @claude-remote/mobile xterm              # regenerate the terminal
 
 ## Limitations
 
-- macOS only for the daemon, iOS only for the app (React Native + FCM keep Android open).
+- The daemon runs on macOS and Linux (no Windows yet); the app is iOS only (React Native + FCM keep Android open).
 - Sessions must run inside tmux to be controllable; others are read-only until resumed.
 - Permission-mode switching reads the Claude Code status line, so a TUI change may need a label update (they live in one tested table).
 - The UI is in Brazilian Portuguese for now — translations are welcome.

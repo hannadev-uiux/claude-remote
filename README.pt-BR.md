@@ -4,9 +4,9 @@
 
 # Claude Remote
 
-**Acompanhe e controle pelo iPhone as sessões do Claude Code que estão rodando no seu Mac.**
+**Acompanhe e controle pelo iPhone as sessões do Claude Code que estão rodando no seu Mac ou Linux.**
 
-Auto-hospedado: um daemon pequeno no Mac, um app nativo no celular e um link privado do Tailscale entre os dois.<br/>Sem relay na nuvem, sem notificação para a conta inteira, todos os perfis do Claude Code numa lista só.
+Auto-hospedado: um daemon pequeno no computador, um app nativo no celular e um link privado do Tailscale entre os dois.<br/>Sem relay na nuvem, sem notificação para a conta inteira, todos os perfis do Claude Code numa lista só.
 
 [English](README.md) · [Contribuindo](CONTRIBUTING.md) · [Segurança](SECURITY.md)
 
@@ -63,9 +63,17 @@ curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 
 O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude-remote/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `claude-remote setup` muda contas e aliases depois.
 
-No iPhone, instale o app e o Tailscale (mesma conta do Mac). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o Mac.
+No iPhone, instale o app e o Tailscale (mesma conta do computador). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o computador.
 
-Requisitos: macOS com Node 24+ e git (o instalador cuida de `tmux` e `rg` via Homebrew); Claude Code; Tailscale no Mac e no iPhone.
+Requisitos: macOS ou Linux (de preferência com systemd) com Node 24+ (o instalador cuida de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê); Claude Code; Tailscale no computador e no iPhone.
+
+### Linux
+
+- **Serviço**: uma unit de usuário do systemd, `~/.config/systemd/user/claude-remote.service` (reinicia se cair, logs em `~/.claude-remote/logs`). Veja com `claude-remote service status` ou `systemctl --user status claude-remote`.
+- **Lingering**: serviços de usuário param no logout. O assistente pergunta antes de rodar `loginctl enable-linger $USER`, que mantém o daemon rodando após o logout e o inicia no boot (necessário em servidores acessados por SSH).
+- **Sem systemd** (containers, alguns WSL): o assistente avisa; rode `claude-remote start` você mesmo, por exemplo numa janela do tmux.
+- **Token**: fica no Secret Service (GNOME Keyring, KWallet…) via `secret-tool` quando disponível; senão em `~/.claude-remote/token` (modo `0600`), caso dos servidores sem interface gráfica. `claude-remote doctor` mostra qual; `CLAUDE_REMOTE_TOKEN_STORE=secret-tool|file` força um deles.
+- **Shell**: o `PATH` vai para `~/.bashrc` e/ou `~/.zshrc`; os launchers rodam com `zsh`.
 
 ## Licença
 
