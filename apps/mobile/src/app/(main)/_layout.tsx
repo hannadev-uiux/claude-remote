@@ -1,9 +1,44 @@
-import { Redirect, Stack } from 'expo-router'
+import { Redirect, router, Stack, usePathname } from 'expo-router'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { StyleSheet, TextInput, View } from 'react-native'
+import { addListener, constants } from 'react-native-key-command'
+import { useShallow } from 'zustand/react/shallow'
 import { useConnectionStore } from '@/core/connection'
-import { colors, fonts } from '@/core/theme'
+import { useWidthClass, type WidthClass } from '@/core/layout'
+import { colors, fonts, space } from '@/core/theme'
+import { selectPendingCounts, usePermissionsStore } from '@/features/permissions/store'
 import { usePush } from '@/features/push/use-push'
+import { extractSessionIdFromPathname } from '@/features/sessions/active-session'
+import { SessionListActions } from '@/features/sessions/components/SessionListActions'
+import { SessionsScreen } from '@/features/sessions/SessionsScreen'
 import { useDaemonSync } from '@/features/sync/use-daemon-sync'
+import { MasterDetailLayout, Text } from '@/ui'
+
+/** Cmd+N, Cmd+, and Esc outside a text field (closes the detail pane). */
+function useShellKeyCommands(widthClass: WidthClass) {
+  const widthClassRef = useRef(widthClass)
+  widthClassRef.current = widthClass
+
+  useEffect(() => {
+    const unsubscribers = [
+      addListener({ input: 'n', modifierFlags: constants.keyModifierCommand }, () => router.push('/new')),
+      addListener({ input: ',', modifierFlags: constants.keyModifierCommand }, () =>
+        router.push('/settings'),
+      ),
+      addListener({ input: constants.keyInputEscape }, () => {
+        if (widthClassRef.current === 'regular' && !TextInput.State.currentlyFocusedInput()) {
+          router.navigate('/')
+        }
+      }),
+    ]
+    return () => {
+      unsubscribers.forEach((unsubscribe) => {
+        unsubscribe()
+      })
+    }
+  }, [])
+}
 
 /** Everything under (main) requires a paired daemon. */
 export default function MainLayout() {
@@ -11,24 +46,58 @@ export default function MainLayout() {
   const credentials = useConnectionStore((s) => s.credentials)
   useDaemonSync()
   usePush()
+  const widthClass = useWidthClass()
+  const pathname = usePathname()
+  const pending = usePermissionsStore(useShallow(selectPendingCounts))
+  useShellKeyCommands(widthClass)
   if (!credentials) return <Redirect href="/pair" />
+
+  const selectedSessionId = extractSessionIdFromPathname(pathname)
+
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
-        headerTitleStyle: { fontFamily: fonts.bold, fontSize: 16 },
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: colors.background },
-        headerBackButtonDisplayMode: 'minimal',
-      }}
+    <MasterDetailLayout
+      sidebar={
+        widthClass === 'regular' ? (
+          <>
+            <View style={styles.sidebarHeader}>
+              <Text weight="bold" size="lg">
+                Claude Remote
+              </Text>
+              <SessionListActions />
+            </View>
+            <SessionsScreen pendingBySession={pending} selectedSessionId={selectedSessionId} interactive />
+          </>
+        ) : null
+      }
     >
-      <Stack.Screen name="index" options={{ title: 'Claude Remote' }} />
-      <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
-      <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
-      <Stack.Screen name="session/[id]/index" options={{ title: '' }} />
-      <Stack.Screen name="session/[id]/terminal" options={{ title: t('nav.terminal') }} />
-      <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: t('nav.subagent') }} />
-    </Stack>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontFamily: fonts.bold, fontSize: 16 },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.background },
+          headerBackButtonDisplayMode: 'minimal',
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: 'Claude Remote' }} />
+        <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
+        <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
+        <Stack.Screen name="session/[id]/index" options={{ title: '' }} />
+        <Stack.Screen name="session/[id]/terminal" options={{ title: t('nav.terminal') }} />
+        <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: t('nav.subagent') }} />
+      </Stack>
+    </MasterDetailLayout>
   )
 }
+
+const styles = StyleSheet.create({
+  sidebarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+    paddingBottom: space.sm,
+  },
+})

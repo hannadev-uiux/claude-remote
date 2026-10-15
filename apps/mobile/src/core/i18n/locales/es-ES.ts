@@ -184,6 +184,17 @@ const esES = {
       plugin: 'plugin',
     },
   },
+  voice: {
+    start: 'Grabar un mensaje de voz',
+    stop: 'Detener la grabación',
+    cancel: 'Cancelar',
+    done: 'Listo',
+    permissionDenied:
+      'La grabación no está disponible: se denegó el acceso al micrófono o al reconocimiento de voz.',
+    offlineUnavailable:
+      'El reconocimiento en el dispositivo no está disponible para este idioma. ¿Enviar la grabación por la red en su lugar?',
+    retryOnline: 'Enviar en línea',
+  },
   newSession: {
     profile: 'perfil',
     directory: 'directorio',
@@ -191,6 +202,15 @@ const esES = {
     start: 'Crear sesión',
     recent: 'recientes',
     noRecent: 'No hay directorios recientes en este perfil.',
+    detached: 'HEAD separado',
+    worktree: 'Copia aislada (git worktree)',
+    worktreeHint: 'Claude Code trabaja en su propia rama en .claude/worktrees, sin tocar este checkout.',
+    busy_one: 'Otra sesión está trabajando en este checkout:',
+    busy_other: '{{count}} sesiones están trabajando en este checkout:',
+    confirmTitle: '¿Crear en el mismo checkout?',
+    confirmBody: 'Las sesiones pueden editar los mismos archivos y cambiarse la rama entre sí.',
+    confirmStart: 'Crear de todos modos',
+    confirmWorktree: 'Usar un worktree',
   },
   resume: {
     title: 'Sesión de solo lectura',
@@ -235,10 +255,20 @@ const esES = {
   },
   sessions: {
     all: 'todos',
+    active: 'activas',
+    ended: 'terminadas',
+    searchPlaceholder: 'Buscar por nombre o carpeta',
+    clearSearch: 'Borrar búsqueda',
+    noMatch: 'Ninguna sesión coincide con los filtros',
+    clearFilters: 'Quitar filtros',
     emptyTitle: 'No hay sesiones',
     emptyBody: 'Inicia una sesión en el ordenador con los launchers:',
     emptyHint: 'Las sesiones abiertas con `claude` a secas aparecen como solo lectura.',
+    detailEmptyTitle: 'Selecciona una sesión',
+    detailEmptyBody: 'Elige una sesión de la lista para ver la conversación aquí.',
     background: 'segundo plano {{count}}',
+    sharedCheckout: 'mismo checkout ({{count}})',
+    branch: 'Rama {{branch}}',
     states: {
       running: 'en marcha',
       waiting: 'esperando',
@@ -271,6 +301,13 @@ const esES = {
     update: 'actualización',
     builtIn: 'integrada',
     channel: 'canal',
+    channels: { production: 'producción', development: 'desarrollo' },
+    developmentTitle: '¿Recibir actualizaciones de desarrollo?',
+    developmentBody:
+      'Se publican con cada merge en development: más nuevas, pero pueden fallar. Puedes volver a producción aquí cuando quieras.',
+    developmentConfirm: 'Usar desarrollo',
+    developmentStillRunning:
+      'Todavía no hay actualización de producción para este build: la versión de desarrollo sigue funcionando hasta que se publique una.',
     check: 'Buscar actualizaciones',
     upToDate: 'La app está actualizada.',
     downloaded: 'Actualización descargada: se aplica la próxima vez que se abra la app.',

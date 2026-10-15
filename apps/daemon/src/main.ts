@@ -9,6 +9,7 @@ import type { Logger } from './core/logger.ts'
 import { ensureHookSecret, ensureToken, type TokenStore } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import { registerAutocompleteFeature } from './features/autocomplete/index.ts'
+import { registerCheckoutFeature } from './features/checkout/index.ts'
 import { HookReceiver } from './features/hooks/receiver.ts'
 import { registerInputFeature } from './features/input/index.ts'
 import { registerLifecycleFeature } from './features/lifecycle/index.ts'
@@ -218,7 +219,8 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
   registerModeFeature(ctx, sessions.store, sessionLock, (id) => permissions.broker.hasPending(id))
   registerAutocompleteFeature(ctx, sessions.store)
   registerPaneFeature(ctx, sessions.store)
-  registerLifecycleFeature(ctx, sessions.store, sessions.service)
+  const checkout = registerCheckoutFeature(ctx, sessions.store)
+  registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver)
   const mute = await registerMuteFeature(ctx)
   await registerPushFeature(ctx, {
     isMuted: (profileId, sessionId) => mute.store.isMuted(profileId, sessionId),

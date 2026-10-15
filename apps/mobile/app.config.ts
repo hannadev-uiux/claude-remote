@@ -1,9 +1,11 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 import {
   type ConfigPlugin,
   type ExportedConfig,
   withAppDelegate,
+  withDangerousMod,
   withInfoPlist,
   withPlugins,
   withPodfile,
@@ -35,16 +37,25 @@ const SYSTEM_PROMPTS = {
     NSCameraUsageDescription:
       'The camera is used to read the pairing QR code shown by the daemon on your computer.',
     NSLocalNetworkUsageDescription: 'Claude Remote connects to the daemon on your computer.',
+    NSMicrophoneUsageDescription: 'The microphone is used to record voice messages for the prompt.',
+    NSSpeechRecognitionUsageDescription:
+      'Speech recognition turns your voice messages into text, on this device.',
   },
   'pt-BR': {
     NSCameraUsageDescription:
       'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no computador.',
     NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu computador.',
+    NSMicrophoneUsageDescription: 'O microfone é usado para gravar mensagens de voz do prompt.',
+    NSSpeechRecognitionUsageDescription:
+      'O reconhecimento de voz transforma suas mensagens de voz em texto, neste aparelho.',
   },
   es: {
     NSCameraUsageDescription:
       'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el ordenador.',
     NSLocalNetworkUsageDescription: 'Claude Remote se conecta al daemon de tu ordenador.',
+    NSMicrophoneUsageDescription: 'El micrófono se usa para grabar mensajes de voz del mensaje.',
+    NSSpeechRecognitionUsageDescription:
+      'El reconocimiento de voz convierte tus mensajes de voz en texto, en este dispositivo.',
   },
 }
 /** Languages the system offers for the app (matching the catalogs pt-BR, en-US and es-ES). */
@@ -58,7 +69,7 @@ const APP_LOCALIZATIONS = Object.keys(SYSTEM_PROMPTS)
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID || undefined
 const CUSTOM_UPDATES_URL = process.env.CLAUDE_REMOTE_UPDATES_URL || undefined
 const UPDATES_URL = CUSTOM_UPDATES_URL ?? (EAS_PROJECT_ID && `https://u.expo.dev/${EAS_PROJECT_ID}`)
-const UPDATES_CERTIFICATE = './certs/updates-certificate.pem'
+const UPDATES_CERTIFICATE = './certs/certificate.pem'
 const signedUpdates = existsSync(UPDATES_CERTIFICATE)
 if (CUSTOM_UPDATES_URL && !signedUpdates) {
   throw new Error(`CLAUDE_REMOTE_UPDATES_URL needs a code-signing certificate at ${UPDATES_CERTIFICATE}`)
@@ -73,7 +84,6 @@ const ANDROID_PERMISSIONS = [
 ]
 /** Added by the template or by libraries but not needed (no audio, files, overlays or scheduled alarms). */
 const ANDROID_BLOCKED_PERMISSIONS = [
-  'android.permission.RECORD_AUDIO',
   'android.permission.READ_EXTERNAL_STORAGE',
   'android.permission.WRITE_EXTERNAL_STORAGE',
   'android.permission.SYSTEM_ALERT_WINDOW',
@@ -127,6 +137,64 @@ const withSceneLifecycle: ConfigPlugin = (config) => {
 }
 
 /**
+ * On iPad only, allow landscape alongside portrait (`orientation` above only ever writes the
+ * unsuffixed `UISupportedInterfaceOrientations`, never the `~ipad` key — checked in
+ * `@expo/config-plugins`'s `ios/Orientation.ts` and `ios/DeviceFamily.ts` — so this plugin can only
+ * add a key, never race with it regardless of plugin order).
+ */
+const withPerIdiomOrientation: ConfigPlugin = (config) =>
+  withInfoPlist(config, (plist) => {
+    plist.modResults['UISupportedInterfaceOrientations~ipad'] = [
+      'UIInterfaceOrientationPortrait',
+      'UIInterfaceOrientationPortraitUpsideDown',
+      'UIInterfaceOrientationLandscapeLeft',
+      'UIInterfaceOrientationLandscapeRight',
+    ]
+    return plist
+  })
+
+/**
+ * react-native-key-command is a static pod (no `use_frameworks!`), so its ObjC `HardwareShortcuts`
+ * class is only visible to `AppDelegate.swift` through the project's Swift bridging header.
+ */
+const withKeyCommandBridgingHeader: ConfigPlugin = (config) =>
+  withDangerousMod(config, [
+    'ios',
+    (config) => {
+      const name = config.modRequest.projectName
+      const headerPath = join(config.modRequest.platformProjectRoot, name ?? '', `${name}-Bridging-Header.h`)
+      const contents = readFileSync(headerPath, 'utf8')
+      const importLine = '#import "HardwareShortcuts.h"'
+      if (!contents.includes(importLine)) writeFileSync(headerPath, `${contents}\n${importLine}\n`)
+      return config
+    },
+  ])
+
+/** `keyCommands`/`handleKeyCommand` are the contract react-native-key-command requires on AppDelegate. */
+const withKeyCommandAppDelegate: ConfigPlugin = (config) =>
+  withAppDelegate(config, (delegate) => {
+    let source = delegate.modResults.contents
+    const marker = 'HardwareShortcuts.sharedInstance()'
+    if (!source.includes(marker)) {
+      const methods = [
+        '  override var keyCommands: [UIKeyCommand]? {',
+        '    return HardwareShortcuts.sharedInstance().keyCommands() as? [UIKeyCommand]',
+        '  }',
+        '',
+        '  @objc func handleKeyCommand(_ keyCommand: UIKeyCommand) {',
+        '    HardwareShortcuts.sharedInstance().handleKeyCommand(keyCommand)',
+        '  }',
+        '}',
+        '',
+        'class ReactNativeDelegate',
+      ].join('\n')
+      source = source.replace('}\n\nclass ReactNativeDelegate', methods)
+    }
+    delegate.modResults.contents = source
+    return delegate
+  })
+
+/**
  * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
  * drop the native mods of the platforms that have no file.
  */
@@ -144,7 +212,9 @@ const withFirebase: ConfigPlugin = (config) => {
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const expo = withSceneLifecycle(appConfig(config))
+  const expo = withKeyCommandAppDelegate(
+    withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+  )
   return firebase.ios || firebase.android ? withFirebase(expo) : expo
 }
 
@@ -152,7 +222,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Claude Remote',
   slug: 'claude-remote',
-  version: '0.4.0',
+  version: '0.5.0',
   scheme: 'claude-remote',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -160,8 +230,11 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   backgroundColor: BACKGROUND,
   ios: {
     bundleIdentifier: APP_ID,
+    // With certificates of several teams on the Mac, Expo would pick one on its own: pin it with
+    // APPLE_TEAM_ID (e.g. in .env.local).
+    ...(process.env.APPLE_TEAM_ID ? { appleTeamId: process.env.APPLE_TEAM_ID } : {}),
     ...(firebase.ios ? { googleServicesFile: GOOGLE_SERVICES.ios } : {}),
-    supportsTablet: false,
+    supportsTablet: true,
     infoPlist: {
       // Personal dev build talking ws:// to the computer over Tailscale (WireGuard encrypts the link).
       NSAppTransportSecurity: { NSAllowsArbitraryLoads: true, NSAllowsLocalNetworking: true },
@@ -191,6 +264,8 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   updates: UPDATES_URL
     ? {
         url: UPDATES_URL,
+        // Builds follow production; Settings can switch to development at runtime.
+        requestHeaders: { 'expo-channel-name': 'production' },
         checkAutomatically: 'NEVER',
         fallbackToCacheTimeout: 0,
         ...(signedUpdates
@@ -221,9 +296,18 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
       'expo-camera',
       {
         cameraPermission: SYSTEM_PROMPTS.en.NSCameraUsageDescription,
-        microphonePermission: false,
+        // Same text passed to expo-speech-recognition below: whichever plugin runs last must not
+        // matter, since `false` here would otherwise delete the key the other plugin just set.
+        microphonePermission: SYSTEM_PROMPTS.en.NSMicrophoneUsageDescription,
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,
+      },
+    ],
+    [
+      'expo-speech-recognition',
+      {
+        microphonePermission: SYSTEM_PROMPTS.en.NSMicrophoneUsageDescription,
+        speechRecognitionPermission: SYSTEM_PROMPTS.en.NSSpeechRecognitionUsageDescription,
       },
     ],
     [

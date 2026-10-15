@@ -1,0 +1,17 @@
+## 1. Protocol
+
+- [x] 1.1 `SessionSchema.checkout`, `checkout.inspect`/`checkout.info`, `session.start.worktree`, `checkoutPeers` helper; verify with tests
+
+## 2. Daemon
+
+- [x] 2.1 `infra/git.ts` (`GitClient.checkout`) and the `checkout` feature (cache, store listener); verify with tests
+- [x] 2.2 `checkout.inspect` and `session.start { worktree }` (`worktreeName`, `--worktree`); verify with tests and a run against a temporary repository
+
+## 3. App
+
+- [x] 3.1 Session row: branch and shared checkout badge (pure helper reused); texts in the three languages
+- [x] 3.2 New-session screen: inspection, warning with confirmation, worktree switch; texts in the three languages
+
+## 4. Docs
+
+- [x] 4.1 README; `pnpm check` and `openspec validate --strict`

@@ -52,6 +52,7 @@ Claude Remote solves this with tools you already trust: sessions run inside **tm
 | 🖥️ **Raw terminal** | An xterm.js view of the tmux pane for TUI menus and anything the structured view does not cover. |
 | 🤖 **Subagents** | Follow subagents and background tasks of a session. |
 | 🚀 **Start & resume** | Start a new session in any project, or resume a read-only one. |
+| 🌿 **Shared checkout warning** | Each session shows its git branch; sessions working in the same checkout are flagged, and a new one can start in its own git worktree. |
 | 🔔 **Private push** | Notifications only to *your* registered phone, carrying no session content. Mute globally, per profile or per session. |
 
 ## How it works
@@ -193,6 +194,8 @@ trabalho --resume    # another account
 
 Both appear in the app, fully controllable. "Always allow" rules created from the phone: `claude-remote rules list` / `claude-remote rules undo <id>`.
 
+**Two sessions in the same repository?** They edit the same files and can switch the branch under each other. The app marks live sessions that share a git checkout ("shared checkout"), and **New session** warns before starting in a busy one. Turn on **Isolated copy (git worktree)** to start Claude Code with `--worktree`: it works on its own branch in `<repo>/.claude/worktrees/<name>` and asks on exit whether to keep or remove it (needs a Claude Code with `--worktree`).
+
 ### Push notifications (optional)
 
 1. In one Firebase project, create the apps you need with the id `tech.doctorx.clauderemote`: an iOS app (upload your APNs key) and/or an Android app.
@@ -203,12 +206,24 @@ On Android 13+ the app asks for the notification permission; notifications use t
 
 ### App updates over the air (optional)
 
-Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, build with one of:
+Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, the app uses a self-hosted [Expo Updates](https://docs.expo.dev/technical-specs/expo-updates-1/) server — the one at `maarkn.dev` (no EAS account or fees), or any other implementation of the protocol.
 
-- `EAS_PROJECT_ID=<id>` — [EAS Update](https://docs.expo.dev/eas-update/introduction/) (`https://u.expo.dev/<id>`), or
-- `CLAUDE_REMOTE_UPDATES_URL=<url>` — any server that implements the Expo Updates protocol; it requires a code-signing certificate.
+1. **Signing key, once.** `cd apps/mobile && npx expo-updates codesigning:generate --key-output-directory ~/.claude-remote-keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Claude Remote"`. Commit `certs/certificate.pem`; keep the private key out of the repo (and backed up: losing it means a new build for every phone).
+2. **Build** with the server URL, e.g. in `apps/mobile/.env.local` (git-ignored, read by the build and the publisher):
+   ```dotenv
+   CLAUDE_REMOTE_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest
+   ```
+   A custom URL without `certs/certificate.pem` is refused. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
+3. **Publish** a JavaScript change:
+   ```bash
+   CLAUDE_REMOTE_UPDATES_TOKEN=… CLAUDE_REMOTE_UPDATES_KEY=~/.claude-remote-keys/private-key.pem \
+     pnpm --filter @claude-remote/mobile ota:publish          # --platform ios|android, --dry-run
+   ```
+   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `CLAUDE_REMOTE_UPDATES_TOKEN`.
 
-With `apps/mobile/certs/updates-certificate.pem` (from `npx expo-updates codesigning:generate`, private key kept outside the repo) updates are verified before they run; on EAS this needs a paid plan. Publish with `pnpm --filter @claude-remote/mobile update:publish --channel preview` (add `--private-key-path` when signing). The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
+**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the server's `CLAUDE_REMOTE_UPDATES_DEV_TOKEN`, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
+
+The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 
 ### Uninstall
 
@@ -240,6 +255,8 @@ openspec/          Specs and the 20 archived changes that built the project
 Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Development
+
+`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `CLAUDE_REMOTE_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
 
 ```bash
 pnpm check                                             # typecheck + tests + Biome across the monorepo

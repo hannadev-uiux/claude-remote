@@ -6,7 +6,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleShee
 import { useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
 import { keyboardBehavior } from '@/core/platform/platform'
-import { colors, radius, space } from '@/core/theme'
+import { colors, maxContentWidth, radius, space } from '@/core/theme'
 import { ConnectionBanner, Screen, Text } from '@/ui'
 import { useSessionsStore } from '../sessions/store'
 import { KeyBar } from './components/KeyBar'
@@ -136,7 +136,9 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { paddingBottom: space.lg },
+  // In wide panes (iPad) the content is centered in a column; in narrow panes `maxWidth` is never
+  // reached and the column takes up 100% of the width, same as before.
+  content: { paddingBottom: space.lg, width: '100%', maxWidth: maxContentWidth, alignSelf: 'center' },
   loader: { padding: space.md },
   top: { height: space.sm },
   empty: { padding: space.xl, textAlign: 'center' },

@@ -4,5 +4,5 @@ import { defineConfig } from 'vitest/config'
 // Only pure TypeScript (no react-native imports) is unit-tested here.
 export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  test: { include: ['src/**/*.test.ts'], environment: 'node' },
+  test: { include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'], environment: 'node' },
 })

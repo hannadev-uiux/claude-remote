@@ -14,8 +14,10 @@ type Props = {
   sending: boolean
   disabled: boolean
   error: string | null
-  /** Rendered above the input (autocomplete suggestions). */
+  /** Rendered above the input (autocomplete suggestions, the voice recording overlay). */
   accessory?: ReactNode
+  /** Rendered between the input and the send button (the voice mic button). */
+  voiceButton?: ReactNode
 }
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
@@ -47,6 +49,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           autoCorrect={false}
           style={styles.input}
         />
+        {props.voiceButton}
         <Pressable
           accessibilityLabel={t('common.send')}
           disabled={!canSend}

@@ -184,6 +184,16 @@ const ptBR = {
       plugin: 'plugin',
     },
   },
+  voice: {
+    start: 'Gravar uma mensagem de voz',
+    stop: 'Parar a gravação',
+    cancel: 'Cancelar',
+    done: 'Concluir',
+    permissionDenied: 'Gravação indisponível: o acesso ao microfone ou ao reconhecimento de voz foi negado.',
+    offlineUnavailable:
+      'O reconhecimento no aparelho não está disponível para este idioma. Enviar a gravação pela rede em vez disso?',
+    retryOnline: 'Enviar online',
+  },
   newSession: {
     profile: 'perfil',
     directory: 'diretório',
@@ -191,6 +201,16 @@ const ptBR = {
     start: 'Iniciar sessão',
     recent: 'recentes',
     noRecent: 'Nenhum diretório recente neste perfil.',
+    detached: 'HEAD destacado',
+    worktree: 'Cópia isolada (git worktree)',
+    worktreeHint:
+      'O Claude Code trabalha numa branch própria em .claude/worktrees, sem mexer neste checkout.',
+    busy_one: 'Outra sessão está trabalhando neste checkout:',
+    busy_other: '{{count}} sessões estão trabalhando neste checkout:',
+    confirmTitle: 'Iniciar no mesmo checkout?',
+    confirmBody: 'As sessões podem editar os mesmos arquivos e trocar a branch uma da outra.',
+    confirmStart: 'Iniciar mesmo assim',
+    confirmWorktree: 'Usar uma worktree',
   },
   resume: {
     title: 'Sessão somente leitura',
@@ -235,10 +255,20 @@ const ptBR = {
   },
   sessions: {
     all: 'todos',
+    active: 'ativas',
+    ended: 'encerradas',
+    searchPlaceholder: 'Buscar por nome ou pasta',
+    clearSearch: 'Limpar busca',
+    noMatch: 'Nenhuma sessão com esses filtros',
+    clearFilters: 'Limpar filtros',
     emptyTitle: 'Nenhuma sessão',
     emptyBody: 'Inicie uma sessão no computador usando os launchers:',
+    detailEmptyTitle: 'Selecione uma sessão',
+    detailEmptyBody: 'Escolha uma sessão na lista para ver a conversa aqui.',
     emptyHint: 'Sessões abertas com o `claude` puro aparecem como somente leitura.',
     background: 'background {{count}}',
+    sharedCheckout: 'mesmo checkout ({{count}})',
+    branch: 'Branch {{branch}}',
     states: {
       running: 'rodando',
       waiting: 'aguardando',
@@ -271,6 +301,13 @@ const ptBR = {
     update: 'atualização',
     builtIn: 'embutida',
     channel: 'canal',
+    channels: { production: 'produção', development: 'desenvolvimento' },
+    developmentTitle: 'Receber atualizações de desenvolvimento?',
+    developmentBody:
+      'Elas são publicadas a cada merge na development: mais novas, mas podem quebrar. Dá para voltar para produção aqui a qualquer momento.',
+    developmentConfirm: 'Usar desenvolvimento',
+    developmentStillRunning:
+      'Ainda não há atualização de produção para este build: a versão de desenvolvimento continua rodando até uma ser publicada.',
     check: 'Procurar atualizações',
     upToDate: 'O app está atualizado.',
     downloaded: 'Atualização baixada: ela entra na próxima vez que o app abrir.',

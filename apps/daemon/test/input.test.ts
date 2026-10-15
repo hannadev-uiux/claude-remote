@@ -23,6 +23,7 @@ function session(patch: Partial<SessionRecord> = {}): SessionRecord {
     updatedAt: '',
     subagents: [],
     backgroundTasks: 0,
+    checkout: null,
     transcriptPath: null,
     ...patch,
   }

@@ -1,0 +1,80 @@
+name: OTA (development)
+
+# Every merge into development that touches the app publishes its JavaScript to the `development`
+# update channel; phones that chose it in Settings → App get it on the next start. Production is
+# published by hand (`make publish-ota`). Only `push` triggers it, so pull requests never see the
+# secrets.
+on:
+  push:
+    branches: [development]
+    paths:
+      - apps/mobile/**
+      - packages/protocol/**
+      - pnpm-lock.yaml
+      - .github/workflows/ota-development.yml
+  workflow_dispatch:
+
+# One publish at a time, in order (the newest update is the last one stored).
+concurrency:
+  group: ota-development
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to the development channel
+    # The update runtime (fingerprint) computed on Linux matches the macOS builds.
+    runs-on: ubuntu-latest
+    env:
+      # Must be the URL the installed builds were made with: it is part of their runtime version.
+      CLAUDE_REMOTE_UPDATES_URL: https://maarkn.dev/api/claude-remote/updates/manifest
+      # Part of the runtime version too (ios.appleTeamId): the team the local builds are signed with.
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+    steps:
+      - name: Check the secrets
+        id: secrets
+        env:
+          KEY: ${{ secrets.OTA_SIGNING_KEY }}
+          TOKEN: ${{ secrets.OTA_DEV_TOKEN }}
+        run: |
+          if [ -n "$KEY" ] && [ -n "$TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::OTA_SIGNING_KEY or OTA_DEV_TOKEN is not set; nothing to publish."
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        if: steps.secrets.outputs.ready == 'true'
+      - uses: actions/setup-node@v5
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: steps.secrets.outputs.ready == 'true'
+
+      - name: Write the signing key
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          KEY: ${{ secrets.OTA_SIGNING_KEY }}
+        run: |
+          umask 077
+          printf '%s\n' "$KEY" > "$RUNNER_TEMP/ota-signing-key.pem"
+
+      - name: Publish
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          CLAUDE_REMOTE_UPDATES_KEY: ${{ runner.temp }}/ota-signing-key.pem
+          # Development-only token: the server refuses it for any other channel.
+          CLAUDE_REMOTE_UPDATES_TOKEN: ${{ secrets.OTA_DEV_TOKEN }}
+        run: pnpm --filter @claude-remote/mobile ota:publish --channel development
+
+      - name: Remove the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/ota-signing-key.pem"

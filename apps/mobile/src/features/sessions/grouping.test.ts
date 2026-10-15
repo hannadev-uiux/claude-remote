@@ -1,6 +1,13 @@
 import type { Profile, Session } from '@claude-remote/protocol'
 import { describe, expect, test } from 'vitest'
-import { flattenSections, groupSessions } from './grouping'
+import {
+  flattenSections,
+  groupSessions,
+  isFiltering,
+  matchesFilter,
+  NO_FILTER,
+  normalizeSearch,
+} from './grouping'
 
 const profiles: Profile[] = [
   { id: 'claudin', name: 'Pessoal', configDir: '', color: '#D97757' },
@@ -20,6 +27,7 @@ function s(id: string, profileId: string, state: Session['state'], updatedAt: st
     paneId: null,
     subagents: [],
     backgroundTasks: 0,
+    checkout: null,
   }
 }
 
@@ -42,11 +50,52 @@ describe('groupSessions', () => {
   })
 
   test('filters by profile', () => {
-    expect(groupSessions(sessions, profiles, 'drclaude').map((x) => x.profile.id)).toEqual(['drclaude'])
+    expect(
+      groupSessions(sessions, profiles, { ...NO_FILTER, profileId: 'drclaude' }).map((x) => x.profile.id),
+    ).toEqual(['drclaude'])
   })
 
   test('flattens into header + rows', () => {
-    const items = flattenSections(groupSessions(sessions, profiles, 'drclaude'))
+    const items = flattenSections(groupSessions(sessions, profiles, { ...NO_FILTER, profileId: 'drclaude' }))
     expect(items.map((i) => i.type)).toEqual(['header', 'session', 'session'])
   })
+})
+
+describe('matchesFilter', () => {
+  const session = {
+    ...s('x', 'claudin', 'idle', '2026-10-14T10:00:00Z'),
+    title: 'Corrigir sessão',
+    cwd: '/w/claude-remote',
+  }
+
+  test('filters by state', () => {
+    expect(matchesFilter(session, { ...NO_FILTER, state: 'active' })).toBe(true)
+    expect(matchesFilter(session, { ...NO_FILTER, state: 'ended' })).toBe(false)
+    const ended = { ...session, state: 'ended' as const }
+    expect(matchesFilter(ended, { ...NO_FILTER, state: 'active' })).toBe(false)
+    expect(matchesFilter(ended, { ...NO_FILTER, state: 'ended' })).toBe(true)
+  })
+
+  test('searches title and folder, ignoring case and accents, every word', () => {
+    expect(matchesFilter(session, { ...NO_FILTER, query: 'SESSAO' })).toBe(true)
+    expect(matchesFilter(session, { ...NO_FILTER, query: 'remote' })).toBe(true)
+    expect(matchesFilter(session, { ...NO_FILTER, query: 'corrigir remote' })).toBe(true)
+    expect(matchesFilter(session, { ...NO_FILTER, query: 'corrigir mobile' })).toBe(false)
+    expect(matchesFilter(session, { ...NO_FILTER, query: '   ' })).toBe(true)
+  })
+
+  test('combines profile, state and search', () => {
+    expect(matchesFilter(session, { profileId: 'drclaude', state: 'all', query: '' })).toBe(false)
+    expect(matchesFilter(session, { profileId: 'claudin', state: 'active', query: 'sessão' })).toBe(true)
+  })
+})
+
+test('normalizeSearch', () => {
+  expect(normalizeSearch('  Ação Rápida ')).toBe('acao rapida')
+})
+
+test('isFiltering', () => {
+  expect(isFiltering(NO_FILTER)).toBe(false)
+  expect(isFiltering({ ...NO_FILTER, query: ' ' })).toBe(false)
+  expect(isFiltering({ ...NO_FILTER, state: 'ended' })).toBe(true)
 })

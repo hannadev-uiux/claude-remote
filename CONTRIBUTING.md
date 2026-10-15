@@ -33,7 +33,7 @@ Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — pl
    | `main` | Stable releases only, merged from `development` and tagged (`vX.Y.Z`). The one-line installer installs from `main`. |
 
    Urgent fixes to a release may branch from `main` as `hotfix/<topic>` and are merged back into `development` too.
-   When a release only changes app JavaScript, it can also go out over the air: publish to the `preview` channel first, then `production` (see *App updates over the air* in the README). Releases that add native modules need a new build.
+   When a release only changes app JavaScript, it can also go out over the air: publish it with `ota:publish` (see *App updates over the air* in the README). Releases that add native modules need a new build.
 3. **Code** following the conventions:
    - Strict TypeScript, no `any` — `unknown` + Zod at the edges.
    - New WebSocket message? Schema in `packages/protocol` → handler in the daemon → usage in the app.
