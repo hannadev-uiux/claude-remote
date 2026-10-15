@@ -8,8 +8,10 @@
 # pacman or zypper (with sudo, after saying why) or Homebrew; Node 24+ must already be installed.
 # Installs (or updates) the daemon from source into ~/.claude-remote/src, builds it and opens
 # the guided `claude-remote setup` (accounts and aliases, hooks, background service, pairing).
-# Running it again updates to the latest version. Everything lives in main() so a partially
-# downloaded script never runs. Messages follow LC_ALL/LC_MESSAGES/LANG (pt*, es*, else English); the
+# Running it again updates to the latest version; `--update` (what `claude-remote update` runs)
+# skips the wizard and only refreshes launchers/hooks and restarts the service. Everything lives in
+# main() so a partially downloaded script never runs. Messages follow CLAUDE_REMOTE_LANG, then
+# LC_ALL/LC_MESSAGES/LANG (pt*, es*, else English); the
 # detected language is passed to the setup as CLAUDE_REMOTE_LANG, the default of its language question.
 
 set -euo pipefail
@@ -22,11 +24,11 @@ MIN_NODE_MAJOR=24
 NODE_DIR="${CLAUDE_REMOTE_NODE_DIR:-$HOME/.claude-remote/node}"
 
 # Messages, in the language of the system. `%s` placeholders are filled with printf.
-LOCALE_TAG="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
+LOCALE_TAG="${CLAUDE_REMOTE_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}"
 case "$LOCALE_TAG" in
 pt*)
   UI_LANG=pt-BR
-  T_USAGE='Uso: install.sh [--ref <branch|tag>] [--yes] [--no-service]'
+  T_USAGE='Uso: install.sh [--ref <branch|tag>] [--yes] [--no-service] [--update]'
   T_OPT_REF='versão a instalar (padrão: main). Env: CLAUDE_REMOTE_REF'
   T_OPT_YES='sem perguntas: mantém o config ou usa as contas encontradas'
   T_OPT_NO_SERVICE='não instala o serviço em segundo plano'
@@ -52,10 +54,12 @@ pt*)
   T_BUILD='Compilando o daemon'
   T_REF_VALUE='--ref precisa de um valor'
   T_UNKNOWN='Opção desconhecida: %s (veja --help)'
+  T_OPT_UPDATE='só atualiza: compila e reinicia o serviço, sem o assistente (= claude-remote update)'
+  T_NOT_INSTALLED='O Claude Remote ainda não está instalado em %s: rode o instalador sem --update.'
   ;;
 es*)
   UI_LANG=es-ES
-  T_USAGE='Uso: install.sh [--ref <rama|tag>] [--yes] [--no-service]'
+  T_USAGE='Uso: install.sh [--ref <rama|tag>] [--yes] [--no-service] [--update]'
   T_OPT_REF='versión que se instala (por defecto: main). Env: CLAUDE_REMOTE_REF'
   T_OPT_YES='sin preguntas: mantiene la configuración o usa las cuentas encontradas'
   T_OPT_NO_SERVICE='no instala el servicio en segundo plano'
@@ -81,10 +85,12 @@ es*)
   T_BUILD='Compilando el daemon'
   T_REF_VALUE='--ref necesita un valor'
   T_UNKNOWN='Opción desconocida: %s (consulta --help)'
+  T_OPT_UPDATE='solo actualiza: compila y reinicia el servicio, sin el asistente (= claude-remote update)'
+  T_NOT_INSTALLED='Claude Remote todavía no está instalado en %s: ejecuta el instalador sin --update.'
   ;;
 *)
   UI_LANG=en-US
-  T_USAGE='Usage: install.sh [--ref <branch|tag>] [--yes] [--no-service]'
+  T_USAGE='Usage: install.sh [--ref <branch|tag>] [--yes] [--no-service] [--update]'
   T_OPT_REF='version to install (default: main). Env: CLAUDE_REMOTE_REF'
   T_OPT_YES='no questions: keep the config or use the accounts found'
   T_OPT_NO_SERVICE='do not install the background service'
@@ -110,6 +116,8 @@ es*)
   T_BUILD='Building the daemon'
   T_REF_VALUE='--ref needs a value'
   T_UNKNOWN='Unknown option: %s (see --help)'
+  T_OPT_UPDATE='update only: build and restart the service, without the wizard (= claude-remote update)'
+  T_NOT_INSTALLED='Claude Remote is not installed in %s yet: run the installer without --update.'
   ;;
 esac
 
@@ -142,6 +150,7 @@ $T_USAGE
   --ref <ref>     $T_OPT_REF
   --yes, -y       $T_OPT_YES
   --no-service    $T_OPT_NO_SERVICE
+  --update        $T_OPT_UPDATE
   -h, --help      $T_OPT_HELP
 
 $(t "$T_SRC" "$SRC_DIR")
@@ -316,8 +325,13 @@ build_daemon() {
   quiet "${PNPM[@]}" --filter @claude-remote/daemon build
 }
 
+# Version of the code in $SRC_DIR (before fetching), shown by `claude-remote update --finish`.
+installed_version() {
+  sed -n 's/^  "version": "\(.*\)",$/\1/p' "$SRC_DIR/apps/daemon/package.json" 2>/dev/null | head -n 1
+}
+
 main() {
-  local setup_args=()
+  local setup_args=() update=false from
   while (($# > 0)); do
     case "$1" in
     --ref)
@@ -327,6 +341,10 @@ main() {
       ;;
     --no-service | --yes | -y)
       setup_args+=("$1")
+      shift
+      ;;
+    --update)
+      update=true
       shift
       ;;
     -h | --help)
@@ -341,8 +359,19 @@ main() {
   detect_platform
   require_node
   require_tools
+  if $update; then
+    [[ -d "$SRC_DIR/.git" ]] || die "$(t "$T_NOT_INSTALLED" "$SRC_DIR")"
+    # `claude-remote update` checks out the new code first, so it passes the version it replaced.
+    from="${CLAUDE_REMOTE_UPDATE_FROM:-$(installed_version)}"
+  fi
   fetch_source
   build_daemon
+
+  # No wizard: the new CLI refreshes launchers and hooks and restarts the service when installed.
+  if $update; then
+    node "$SRC_DIR/apps/daemon/dist/cli.js" update --finish ${from:+--from "$from"} </dev/null
+    return
+  fi
 
   # The wizard asks questions; under `curl | bash` stdin is this script, so it reads the terminal.
   # CLAUDE_REMOTE_LANG is only the default of its language question (an explicit choice still wins).

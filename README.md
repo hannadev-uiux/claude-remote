@@ -115,7 +115,7 @@ The installer checks the system (macOS or Linux) and Node, installs missing `tmu
 - installs the launchers, the `PATH` entry and the hooks (with backups), and the background service;
 - helps with Tailscale and shows the pairing QR code.
 
-Run it again to update. `claude-remote setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
+To update, run `claude-remote update` (or `--ref <branch|tag>`): it fetches the new version, rebuilds, refreshes the hooks and restarts the service, without the setup questions; the same as `bash -s -- --update` with the line above. `claude-remote setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
 
 <details>
 <summary>Linux notes</summary>
@@ -200,6 +200,15 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
 3. Save the Firebase service account to `~/.claude-remote/firebase-service-account.json` and restart the daemon. `claude-remote doctor` lists the phones registered for push and their platform.
 
 On Android 13+ the app asks for the notification permission; notifications use the high-priority `claude-remote` channel (it can be tuned in the system settings) and, like on iOS, carry only the event and the profile.
+
+### App updates over the air (optional)
+
+Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, build with one of:
+
+- `EAS_PROJECT_ID=<id>` — [EAS Update](https://docs.expo.dev/eas-update/introduction/) (`https://u.expo.dev/<id>`), or
+- `CLAUDE_REMOTE_UPDATES_URL=<url>` — any server that implements the Expo Updates protocol; it requires a code-signing certificate.
+
+With `apps/mobile/certs/updates-certificate.pem` (from `npx expo-updates codesigning:generate`, private key kept outside the repo) updates are verified before they run; on EAS this needs a paid plan. Publish with `pnpm --filter @claude-remote/mobile update:publish --channel preview` (add `--private-key-path` when signing). The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 
 ### Uninstall
 
