@@ -102,8 +102,20 @@ describe('LifecycleService', () => {
     store.upsert('old', {}, () => record('old', { cwd: project }))
     await service.resume('claudin', 'old')
     expect(exec.calls[0]).toMatchObject({ args: ['--resume', 'old'], options: { cwd: project } })
+    // Linked right away: a background session (`claude --bg`) is attached, and that window fires no hooks.
+    expect(store.get('old')).toMatchObject({ paneId: '%9', controllable: true, state: 'idle' })
     store.upsert('live', {}, () => record('live', { cwd: project, controllable: true, paneId: '%1' }))
     await expect(service.resume('claudin', 'live')).rejects.toMatchObject({ code: 'bad_request' })
+  })
+
+  test('does not link a pane that a hook already gave to another session', async () => {
+    const { store, service, project } = await setup()
+    store.upsert('old', {}, () => record('old', { cwd: project }))
+    store.upsert('copy', {}, () =>
+      record('copy', { cwd: project, paneId: '%9', controllable: true, state: 'idle' }),
+    )
+    await service.resume('claudin', 'old')
+    expect(store.get('old')).toMatchObject({ paneId: null, controllable: false })
   })
 
   test('a repeated resume reuses the pane while it is alive', async () => {
