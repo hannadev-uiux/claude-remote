@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { homedir, userInfo } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { LOCALES, type Locale, LocaleSchema } from '@claude-remote/protocol'
-import { Command, InvalidArgumentError } from 'commander'
+import { Command, InvalidArgumentError, Option } from 'commander'
 import qrcode from 'qrcode-terminal'
 import { configuredLocaleSync, loadConfig, resolveProfiles } from './core/config.ts'
 import { type Messages, messagesFor } from './core/i18n/index.ts'
@@ -40,7 +40,9 @@ import {
   installServiceFromCli,
   userRcFiles,
 } from './features/setup/install.ts'
+import { tildify } from './features/setup/profiles.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
+import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
 import { WslHost } from './features/wsl/host.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
@@ -431,6 +433,87 @@ service
       console.log(`${task ? '✓' : '·'} ${task ? m.wsl.logonTask : m.wsl.logonTaskMissing}`)
     }
   })
+
+program
+  .command('update')
+  .description(m.cli.update.description)
+  .option('--ref <ref>', m.cli.update.ref, process.env.CLAUDE_REMOTE_REF || 'main')
+  .option('--force', m.cli.update.force)
+  // Second half, run by `install.sh --update` with the freshly built CLI.
+  .addOption(new Option('--finish').hideHelp())
+  .addOption(new Option('--from <version>').hideHelp())
+  .action(async (options: { ref: string; force?: boolean; finish?: boolean; from?: string }) => {
+    if (options.finish) {
+      await finishUpdate(options.from)
+      return
+    }
+    const u = m.cli.update
+    const source = updateSource(builtCliPath(), installerSourceDir())
+    if (!source.ok) {
+      console.error(
+        `✗ ${source.reason === 'not-built' ? m.cli.buildMissing : u.notInstaller(tildify(source.root))}`,
+      )
+      process.exit(1)
+    }
+    console.log(`▸ ${u.checking(options.ref)}`)
+    const updater = new SourceUpdater(execaExecutor, source.root)
+    const result = await updater.fetch(options.ref)
+    if (result.status === 'dirty' || result.status === 'failed') {
+      console.error(
+        `✗ ${result.status === 'dirty' ? u.dirty(tildify(source.root)) : u.fetchFailed(result.error)}`,
+      )
+      process.exit(1)
+    }
+    if (result.status === 'current' && !options.force) {
+      console.log(`✓ ${u.upToDate(DAEMON_VERSION, result.commit.slice(0, 7))}`)
+      return
+    }
+    if (result.status === 'available') {
+      console.log(`  ${u.available(result.version ?? '?', result.commit.slice(0, 7))}`)
+      if (!(await updater.checkout())) {
+        console.error(`✗ ${u.checkoutFailed}`)
+        process.exit(1)
+      }
+    }
+    // The new install.sh checks the tools, builds and calls `update --finish` with the new CLI.
+    const code = await runInteractive(
+      'bash',
+      [`${source.root}/install.sh`, '--update', '--ref', options.ref],
+      {
+        env: {
+          ...process.env,
+          CLAUDE_REMOTE_SRC: source.root,
+          CLAUDE_REMOTE_LANG: configuredLocaleSync(),
+          CLAUDE_REMOTE_UPDATE_FROM: DAEMON_VERSION,
+        },
+      },
+    )
+    if (code !== 0) {
+      console.error(`✗ ${u.failed}`)
+      process.exit(code)
+    }
+  })
+
+/** Refreshes what the new version installs (idempotent) and restarts the service when it is loaded. */
+async function finishUpdate(from: string | undefined): Promise<void> {
+  const u = m.cli.update
+  const logger = createLogger({ level: 'silent' })
+  const config = await loadConfig(logger)
+  const profiles = await resolveProfiles(config, logger)
+  const lines = await installAll(config, profiles, installOptions(), m.install)
+  for (const line of lines) if (line.status === 'done') console.log(`✓ ${line.text}`)
+  const manager = serviceManager()
+  const cliPath = builtCliPath()
+  if (cliPath && (await manager.status()).loaded) {
+    await installServiceFromCli({ ...installOptions(), cliPath, service: manager })
+    console.log(`✓ ${u.serviceRestarted}`)
+  } else {
+    console.log(`· ${u.serviceNotInstalled}`)
+  }
+  console.log(
+    `\n✓ ${from && from !== DAEMON_VERSION ? u.updated(from, DAEMON_VERSION) : u.rebuilt(DAEMON_VERSION)}`,
+  )
+}
 
 const rules = program.command('rules').description(m.cli.rules.description)
 rules

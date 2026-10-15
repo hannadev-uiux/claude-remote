@@ -96,6 +96,27 @@ export const esES = {
           ? 'lingering activado (sigue en marcha tras cerrar sesión, arranca al iniciar el sistema)'
           : 'lingering desactivado (se detiene al cerrar sesión)',
     },
+    update: {
+      description:
+        'actualiza a la última versión: compila, actualiza los hooks y reinicia el servicio (sin preguntas)',
+      ref: 'rama o tag que se instala',
+      force: 'vuelve a compilar aunque ya esté actualizado',
+      checking: (ref: string) => `Buscando una versión nueva en ${ref}`,
+      notInstaller: (dir: string) =>
+        `Esta no es la copia del instalador (${dir}). En un clon de desarrollo usa \`git pull\` y \`pnpm --filter @claude-remote/daemon build\`.`,
+      dirty: (dir: string) => `${dir} tiene cambios locales. Haz commit o descártalos y vuelve a ejecutarlo.`,
+      fetchFailed: (error: string) => `No pude descargar la versión nueva: ${error}`,
+      checkoutFailed: 'No pude cambiar a la versión nueva.',
+      upToDate: (version: string, commit: string) => `Ya está actualizado (${version}, ${commit}).`,
+      available: (version: string, commit: string) => `Versión nueva: ${version} (${commit})`,
+      failed:
+        'La actualización falló (ver arriba). La versión anterior sigue funcionando hasta el próximo reinicio.',
+      serviceRestarted: 'servicio en segundo plano reiniciado',
+      serviceNotInstalled:
+        'servicio en segundo plano no instalado (opcional: `claude-remote service install`)',
+      updated: (from: string, to: string) => `Claude Remote actualizado: ${from} → ${to}`,
+      rebuilt: (version: string) => `Claude Remote ${version} compilado de nuevo`,
+    },
     rules: {
       description: 'reglas de "permitir siempre" creadas por la app',
       list: 'lista las reglas creadas por la app',
