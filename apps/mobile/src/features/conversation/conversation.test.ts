@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
 import { diffForTool } from './diff'
 import { summarizeTool } from './summarize-tool'
-import { buildTimeline, mergeEntries } from './timeline'
+import { buildTimeline, mergeEntries, systemText } from './timeline'
 
 const en = createI18n('en-US').t
 const pt = createI18n('pt-BR').t
@@ -103,5 +103,18 @@ describe('diffForTool', () => {
     const content = Array.from({ length: 405 }, (_, i) => `l${i}`).join('\n')
     expect(diffForTool('Write', { content }, en)?.at(-1)).toEqual({ kind: 'context', text: '… +5 lines' })
     expect(diffForTool('Write', { content }, pt)?.at(-1)).toEqual({ kind: 'context', text: '… +5 linhas' })
+  })
+})
+
+describe('systemText', () => {
+  test('writes duration and compaction lines in the app language', () => {
+    const t = createI18n('pt-BR').t
+    expect(
+      systemText({ subtype: 'turn_duration', text: 'Turn completed in 1m 15s', durationMs: 75_000 }, t),
+    ).toBe('Turno concluído em 1m 15s')
+    expect(systemText({ subtype: 'compact_boundary', text: 'Conversation compacted' }, t)).toBe(
+      'Conversa compactada',
+    )
+    expect(systemText({ subtype: 'info', text: 'raw' }, t)).toBe('raw')
   })
 })

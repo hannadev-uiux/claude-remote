@@ -1,4 +1,5 @@
 import type { TranscriptEntry } from '@claude-remote/protocol'
+import type { TFunction } from '../../core/i18n/create'
 
 type Of<K extends TranscriptEntry['kind']> = Extract<TranscriptEntry, { kind: K }>
 
@@ -7,7 +8,7 @@ export type TimelineItem =
   | { type: 'assistant'; key: string; text: string }
   | { type: 'thinking'; key: string; text: string }
   | { type: 'tool'; key: string; use: Of<'tool_use'> | null; result: Of<'tool_result'> | null }
-  | { type: 'system'; key: string; subtype: string; text: string }
+  | { type: 'system'; key: string; subtype: string; text: string; durationMs?: number }
   | { type: 'unknown'; key: string; raw: string }
 
 /** Pairs each tool_use with its tool_result and maps the rest to display items, in order. */
@@ -38,7 +39,13 @@ export function buildTimeline(entries: readonly TranscriptEntry[]): TimelineItem
         if (!uses.has(entry.toolUseId)) items.push({ type: 'tool', key: entry.key, use: null, result: entry })
         break
       case 'system':
-        items.push({ type: 'system', key: entry.key, subtype: entry.subtype, text: entry.text })
+        items.push({
+          type: 'system',
+          key: entry.key,
+          subtype: entry.subtype,
+          text: entry.text,
+          durationMs: entry.durationMs,
+        })
         break
       case 'unknown':
         items.push({ type: 'unknown', key: entry.key, raw: entry.raw })
@@ -58,4 +65,20 @@ export function mergeEntries(
   for (const e of existing) byKey.set(e.key, e)
   for (const e of incoming) byKey.set(e.key, e)
   return [...byKey.values()].sort((a, b) => a.cursor - b.cursor || a.index - b.index)
+}
+
+function formatDuration(ms: number): string {
+  const s = Math.round(ms / 1000)
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`
+}
+
+/** System lines the daemon describes in English are written again in the app's language. */
+export function systemText(
+  item: { subtype: string; text: string; durationMs?: number },
+  t: TFunction,
+): string {
+  if (item.subtype === 'turn_duration' && item.durationMs !== undefined)
+    return t('conversation.turnDuration', { duration: formatDuration(item.durationMs) })
+  if (item.subtype === 'compact_boundary') return t('conversation.compacted')
+  return item.text
 }

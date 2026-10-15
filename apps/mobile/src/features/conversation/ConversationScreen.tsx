@@ -25,7 +25,7 @@ function renderItem({ item }: { item: TimelineItem }) {
     case 'tool':
       return <ToolCallCard use={item.use} result={item.result} />
     case 'system':
-      return <SystemLine text={item.text} subtype={item.subtype} />
+      return <SystemLine text={item.text} subtype={item.subtype} durationMs={item.durationMs} />
     case 'unknown':
       return <UnknownEntry raw={item.raw} />
   }

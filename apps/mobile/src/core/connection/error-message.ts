@@ -15,6 +15,8 @@ export function errorMessage(
     if (custom) return custom
     if (error.code === 'disconnected') return t('errors.disconnected')
     if (error.code === 'timeout') return t('errors.timeout')
+    if (error.code === 'invalid_cwd') return t('errors.invalidCwd')
+    if (error.code === 'not_found') return t('errors.notFound')
     return error.message
   }
   return error instanceof Error ? error.message : String(error)

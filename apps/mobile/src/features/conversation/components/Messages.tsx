@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
+import { systemText } from '../timeline'
 import { Markdown } from './Markdown'
 
 export const UserMessage = memo(function UserMessage({ text }: { text: string }) {
@@ -53,7 +54,17 @@ export const ThinkingBlock = memo(function ThinkingBlock({ text }: { text: strin
   )
 })
 
-export const SystemLine = memo(function SystemLine({ text, subtype }: { text: string; subtype: string }) {
+export const SystemLine = memo(function SystemLine({
+  text: raw,
+  subtype,
+  durationMs,
+}: {
+  text: string
+  subtype: string
+  durationMs?: number
+}) {
+  const { t } = useTranslation()
+  const text = systemText({ subtype, text: raw, durationMs }, t)
   return (
     <View style={styles.system}>
       <Text size="xs" color={subtype === 'command' ? 'info' : 'textDim'} selectable>

@@ -161,9 +161,10 @@ function formatDuration(ms: number): string {
 function parseSystem(line: Json): Draft[] {
   const subtype = str(line.subtype) ?? 'info'
   if (subtype === 'turn_duration' && typeof line.durationMs === 'number') {
-    return [{ kind: 'system', subtype, text: `Turno concluído em ${formatDuration(line.durationMs)}` }]
+    const durationMs = line.durationMs
+    return [{ kind: 'system', subtype, text: `Turn completed in ${formatDuration(durationMs)}`, durationMs }]
   }
-  if (subtype === 'compact_boundary') return [{ kind: 'system', subtype, text: 'Conversa compactada' }]
+  if (subtype === 'compact_boundary') return [{ kind: 'system', subtype, text: 'Conversation compacted' }]
   const text = str(line.content)
   return text?.trim() ? [{ kind: 'system', subtype, text }] : []
 }

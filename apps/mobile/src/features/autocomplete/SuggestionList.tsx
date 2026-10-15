@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { colors, space } from '@/core/theme'
 import { Text } from '@/ui'
+import { commandDescription } from './describe-command'
 import type { Suggestions } from './use-suggestions'
 
 type Props = {
@@ -53,9 +54,9 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
                   <Text size="sm" weight="medium">
                     /{item.name}
                   </Text>
-                  {item.description ? (
+                  {commandDescription(item, t) ? (
                     <Text size="xs" color="textMuted" numberOfLines={1}>
-                      {item.description}
+                      {commandDescription(item, t)}
                     </Text>
                   ) : null}
                 </View>
