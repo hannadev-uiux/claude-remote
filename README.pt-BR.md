@@ -4,7 +4,7 @@
 
 # Claude Remote
 
-**Acompanhe e controle pelo iPhone as sessões do Claude Code que estão rodando no seu Mac ou Linux.**
+**Acompanhe e controle pelo celular (iPhone ou Android) as sessões do Claude Code que estão rodando no seu Mac, Linux ou Windows (WSL).**
 
 Auto-hospedado: um daemon pequeno no computador, um app nativo no celular e um link privado do Tailscale entre os dois.<br/>Sem relay na nuvem, sem notificação para a conta inteira, todos os perfis do Claude Code numa lista só.
 
@@ -37,7 +37,7 @@ O Claude Remote resolve isso com ferramentas em que você já confia: as sessõe
 
 - **Uma lista, todos os perfis** — sessões de todos os perfis, agrupadas por projeto, com estado ao vivo.
 - **Conversa em tempo real** — markdown, raciocínio, tool calls, diffs e resultados, paginados.
-- **Enviar prompts** — para o mesmo processo aberto no Mac, com `Esc` e `Ctrl+C`.
+- **Enviar prompts** — para o mesmo processo aberto no computador, com `Esc` e `Ctrl+C`.
 - **Aprovar permissões** — permitir, negar ou **permitir sempre** (a regra é gravada pelo próprio Claude Code e pode ser desfeita com `claude-remote rules undo`).
 - **Trocar o modo de permissão** — padrão, aceitar edições, plano, auto. O `bypassPermissions` nunca é oferecido.
 - **Autocomplete** — `@arquivos` e `/comandos` (projeto, perfil, plugins e nativos).
@@ -63,9 +63,23 @@ curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 
 O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude-remote/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `claude-remote setup` muda contas e aliases depois.
 
-No iPhone, instale o app e o Tailscale (mesma conta do computador). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o computador.
+No celular, instale o app e o Tailscale (App Store ou Google Play, mesma conta do computador). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o computador.
 
-Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo); o instalador cuida do Node 24+, baixando um Node privado em `~/.claude-remote/node` se faltar, e de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê. Também: Claude Code; Tailscale no computador e no iPhone.
+Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo); o instalador cuida do Node 24+, baixando um Node privado em `~/.claude-remote/node` se faltar, e de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê. Também: Claude Code; Tailscale no computador e no celular.
+
+### Android
+
+O app roda no Android 10+. Sem loja por enquanto: gere o build de desenvolvimento com o Android Studio / Android SDK (JDK 17) instalado:
+
+```bash
+cd apps/mobile
+pnpm android         # expo run:android — emulador ou celular conectado
+pnpm build:android   # APK de release local (o eas.json também tem os perfis development/preview/production)
+```
+
+Push (opcional): no mesmo projeto do Firebase, crie um app Android com o id `tech.doctorx.clauderemote`, coloque o `google-services.json` em `apps/mobile/` (fora do git, como o `GoogleService-Info.plist` do iOS) e rode `pnpm android` de novo; sem o arquivo o app compila sem Firebase. O daemon precisa da conta de serviço em `~/.claude-remote/firebase-service-account.json`. No Android 13+ o app pede a permissão de notificações; elas usam o canal `claude-remote` (alta prioridade) e, como no iOS, levam só o evento e o perfil. Os botões Permitir/Negar não aparecem na notificação do Android: toque nela para responder no app. `claude-remote doctor` lista os celulares registrados e a plataforma de cada um.
+
+No emulador sem Tailscale: `claude-remote start --dev`, `claude-remote pair --dev` e `adb reverse tcp:7337 tcp:7337`.
 
 ### Linux
 

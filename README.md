@@ -4,12 +4,12 @@
 
 # Claude Remote
 
-**Follow and drive the Claude Code sessions running on your Mac or Linux machine — from your iPhone.**
+**Follow and drive the Claude Code sessions running on your Mac, Linux or Windows (WSL) machine — from your iPhone or Android phone.**
 
 Self-hosted: a small daemon on your computer, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every Claude Code profile in one list.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-D97757.svg)](LICENSE)
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%2B%20iOS-161616.svg)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20WSL%20%2B%20iOS%20%7C%20Android-161616.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)
 ![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000020.svg)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-98C379.svg)](CONTRIBUTING.md)
@@ -34,7 +34,7 @@ Claude Code is at its best on long, autonomous tasks — which is exactly when y
 The built-in remote control (`/rc`) helps, but it did not fit a real setup:
 
 - **It notifies every device on the account**, including ones that should never receive anything.
-- **It works with one account at a time.** Many of us run two Claude Code logins on the same Mac (personal and work, via `CLAUDE_CONFIG_DIR`) and want a single view of both.
+- **It works with one account at a time.** Many of us run two Claude Code logins on the same computer (personal and work, via `CLAUDE_CONFIG_DIR`) and want a single view of both.
 - **There is no public API to attach to a live interactive session** from another process.
 
 Claude Remote solves this with tools you already trust: sessions run inside **tmux**, Claude Code reports what happens through its native **HTTP hooks**, and a local **daemon** bridges both to the phone over **Tailscale**.
@@ -44,8 +44,8 @@ Claude Remote solves this with tools you already trust: sessions run inside **tm
 | | |
 |---|---|
 | 📋 **One list, every profile** | Sessions from all your Claude Code profiles (`~/.claude`, `~/.claude-work`, …), grouped by project, with live state (running, waiting, idle). |
-| 💬 **Live conversation** | The same history you see on the Mac: markdown, thinking, tool calls, diffs, results — streamed in real time and paginated. |
-| ⌨️ **Send prompts** | Type into the very same process that is open on the Mac. `Esc` and `Ctrl+C` included. |
+| 💬 **Live conversation** | The same history you see on the computer: markdown, thinking, tool calls, diffs, results — streamed in real time and paginated. |
+| ⌨️ **Send prompts** | Type into the very same process that is open on the computer. `Esc` and `Ctrl+C` included. |
 | ✅ **Approve permissions** | Allow, deny or **always allow** (written as a rule by Claude Code itself, undoable with `claude-remote rules undo`). |
 | 🔀 **Switch permission mode** | Default, accept edits, plan, auto. `bypassPermissions` is intentionally never offered. |
 | 🔎 **Autocomplete** | `@files` (git/ripgrep + fuzzy search) and `/commands` (project, profile, plugins and built-ins). |
@@ -58,10 +58,10 @@ Claude Remote solves this with tools you already trust: sessions run inside **tm
 
 ```
 ┌──────────────┐  WebSocket over Tailscale   ┌─────────────────────────────────┐
-│  iPhone app  │ ◄─────────────────────────► │  claude-remote daemon (Mac)     │
-│  Expo / RN   │       token-authenticated   │  ├─ tmux: send-keys / capture   │
+│  phone app   │ ◄─────────────────────────► │  claude-remote daemon (computer)│
+│ iOS / Android│       token-authenticated   │  ├─ tmux: send-keys / capture   │
 └──────▲───────┘                             │  ├─ tails transcript .jsonl     │
-       │ push (FCM → APNs, no content)       │  └─ HTTP hooks on 127.0.0.1     │
+       │ push (FCM, no content)              │  └─ HTTP hooks on 127.0.0.1     │
        └─────────────────────────────────────┤                                 │
                                              └───────────────┬─────────────────┘
                                                              │ hooks
@@ -96,9 +96,9 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 - macOS, Linux (systemd recommended) or Windows 10 2004+/11 through WSL2, with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` on the `PATH` (the installer adds the missing tools)
 - Node 24+ (the one-line installer downloads a private Node into `~/.claude-remote/node` when it is missing; pnpm 12+ only for development)
-- [Tailscale](https://tailscale.com) on the computer and the iPhone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
-- Xcode on a Mac, for the iOS development build (Expo Go is not enough: the app uses native modules)
-- Optional, for push: a paid Apple Developer account and a Firebase project
+- [Tailscale](https://tailscale.com) on the computer and the phone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
+- For the app (Expo Go is not enough: it uses native modules): Xcode on a Mac for the iOS development build, or Android Studio / the Android SDK (JDK 17) for Android 10+
+- Optional, for push: a Firebase project (plus a paid Apple Developer account on iOS)
 
 ## Getting started
 
@@ -171,16 +171,18 @@ Profiles and ports live in `~/.claude-remote/config.json`:
 }
 ```
 
-### 2. iPhone: app
+### 2. Phone: app
 
 ```bash
 cd apps/mobile
-pnpm ios     # expo run:ios — development build on the simulator or a connected iPhone
+pnpm ios             # expo run:ios — development build on the simulator or a connected iPhone
+pnpm android         # expo run:android — development build on an emulator or a connected Android phone
+pnpm build:android   # release APK built locally (eas.json also has development/preview/production profiles)
 ```
 
 Open the app, scan the QR code from `claude-remote pair`, and you are in. Installed the app first? The pairing screen has a step-by-step guide for setting up the computer.
 
-> **Trying it on the simulator without Tailscale?** Run `claude-remote start --dev` (binds to `127.0.0.1`) and `claude-remote pair --dev`.
+> **Trying it on the simulator without Tailscale?** Run `claude-remote start --dev` (binds to `127.0.0.1`) and `claude-remote pair --dev`. On the Android emulator also run `adb reverse tcp:7337 tcp:7337` so its `127.0.0.1` reaches the computer.
 
 ### 3. Use it
 
@@ -193,9 +195,11 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
 
 ### Push notifications (optional)
 
-1. Create an iOS app in Firebase with bundle id `tech.doctorx.clauderemote` and upload your APNs key.
-2. Put `GoogleService-Info.plist` in `apps/mobile/` (git-ignored) and run `pnpm ios` again — Firebase is only linked when the file exists.
-3. Save the Firebase service account to `~/.claude-remote/firebase-service-account.json` and restart the daemon.
+1. In one Firebase project, create the apps you need with the id `tech.doctorx.clauderemote`: an iOS app (upload your APNs key) and/or an Android app.
+2. Put `GoogleService-Info.plist` (iOS) and/or `google-services.json` (Android) in `apps/mobile/` (both git-ignored) and run `pnpm ios` / `pnpm android` again — Firebase is only linked on a platform when its file exists.
+3. Save the Firebase service account to `~/.claude-remote/firebase-service-account.json` and restart the daemon. `claude-remote doctor` lists the phones registered for push and their platform.
+
+On Android 13+ the app asks for the notification permission; notifications use the high-priority `claude-remote` channel (it can be tuned in the system settings) and, like on iOS, carry only the event and the profile.
 
 ### Uninstall
 
@@ -237,7 +241,7 @@ pnpm --filter @claude-remote/mobile xterm              # regenerate the terminal
 
 ## Limitations
 
-- The daemon runs on macOS and Linux (no Windows yet); the app is iOS only (React Native + FCM keep Android open).
+- The daemon runs on macOS, Linux and Windows through WSL2; the app runs on iOS and Android 10+ (built locally or with EAS, not published to the stores yet). On Android the Allow/Deny buttons are not shown on the notification: tap it to answer in the app.
 - Sessions must run inside tmux to be controllable; others are read-only until resumed.
 - Permission-mode switching reads the Claude Code status line, so a TUI change may need a label update (they live in one tested table).
 - The UI is in Brazilian Portuguese for now — translations are welcome.

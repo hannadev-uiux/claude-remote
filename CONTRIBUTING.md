@@ -10,13 +10,14 @@ Thanks for your interest! Bug reports, ideas, docs and code are all welcome.
 
 ## Setup
 
-Requirements: macOS or Linux, Node 24+, pnpm 12+, tmux, git, ripgrep, zsh; Xcode on a Mac for the app.
+Requirements: macOS or Linux, Node 24+, pnpm 12+, tmux, git, ripgrep, zsh; Xcode on a Mac (iOS) or the Android SDK with JDK 17 (Android) for the app.
 
 ```bash
 pnpm install
 pnpm check                                            # typecheck + tests + Biome — must be green
 pnpm --filter @claude-remote/daemon dev start --dev   # daemon from source on 127.0.0.1
-pnpm --filter @claude-remote/mobile ios               # app on the simulator
+pnpm --filter @claude-remote/mobile ios               # app on the iOS simulator
+pnpm --filter @claude-remote/mobile android           # app on an Android emulator
 ```
 
 Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — please read it before changing code.
