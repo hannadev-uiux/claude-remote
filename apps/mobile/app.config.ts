@@ -222,6 +222,9 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   backgroundColor: BACKGROUND,
   ios: {
     bundleIdentifier: APP_ID,
+    // With certificates of several teams on the Mac, Expo would pick one on its own: pin it with
+    // APPLE_TEAM_ID (e.g. in .env.local).
+    ...(process.env.APPLE_TEAM_ID ? { appleTeamId: process.env.APPLE_TEAM_ID } : {}),
     ...(firebase.ios ? { googleServicesFile: GOOGLE_SERVICES.ios } : {}),
     supportsTablet: true,
     infoPlist: {

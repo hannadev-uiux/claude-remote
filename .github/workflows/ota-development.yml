@@ -30,6 +30,8 @@ jobs:
     env:
       # Must be the URL the installed builds were made with: it is part of their runtime version.
       CLAUDE_REMOTE_UPDATES_URL: https://maarkn.dev/api/claude-remote/updates/manifest
+      # Part of the runtime version too (ios.appleTeamId): the team the local builds are signed with.
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
     steps:
       - name: Check the secrets
         id: secrets

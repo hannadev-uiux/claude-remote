@@ -23,14 +23,18 @@ function stateOf(device: RawDevice): DeviceState {
 
 export function parseDevices(json: unknown): IosDevice[] {
   const devices = (json as { result?: { devices?: RawDevice[] } })?.result?.devices ?? []
-  return devices
-    // `reality` is missing for a device that was just paired, so only simulators are left out.
-    .filter((d) => d.hardwareProperties?.reality !== 'simulated' && d.hardwareProperties?.platform === 'iOS')
-    .map((d) => ({
-      name: d.deviceProperties?.name ?? '?',
-      udid: d.hardwareProperties?.udid ?? '?',
-      state: stateOf(d),
-    }))
+  return (
+    devices
+      // `reality` is missing for a device that was just paired, so only simulators are left out.
+      .filter(
+        (d) => d.hardwareProperties?.reality !== 'simulated' && d.hardwareProperties?.platform === 'iOS',
+      )
+      .map((d) => ({
+        name: d.deviceProperties?.name ?? '?',
+        udid: d.hardwareProperties?.udid ?? '?',
+        state: stateOf(d),
+      }))
+  )
 }
 
 /** The device to build to: the one named (name or UDID) or the first ready one. */
