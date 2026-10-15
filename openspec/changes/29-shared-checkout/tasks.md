@@ -9,8 +9,8 @@
 
 ## 3. App
 
-- [ ] 3.1 Session row: branch and shared checkout badge (pure helper reused); texts in the three languages
-- [ ] 3.2 New-session screen: inspection, warning with confirmation, worktree switch; texts in the three languages
+- [x] 3.1 Session row: branch and shared checkout badge (pure helper reused); texts in the three languages
+- [x] 3.2 New-session screen: inspection, warning with confirmation, worktree switch; texts in the three languages
 
 ## 4. Docs
 

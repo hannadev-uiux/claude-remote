@@ -5,7 +5,7 @@ Each session row SHALL show the branch of its checkout next to the directory, an
 
 #### Scenario: Two sessions in the same checkout
 - **WHEN** two live sessions have the same `checkout.root`
-- **THEN** both rows show the badge "Same checkout as 1"
+- **THEN** both rows show the badge "shared checkout (1)"
 
 #### Scenario: Ended session
 - **WHEN** one of them ends

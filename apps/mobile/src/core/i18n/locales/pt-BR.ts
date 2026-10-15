@@ -191,6 +191,16 @@ const ptBR = {
     start: 'Iniciar sessão',
     recent: 'recentes',
     noRecent: 'Nenhum diretório recente neste perfil.',
+    detached: 'HEAD destacado',
+    worktree: 'Cópia isolada (git worktree)',
+    worktreeHint:
+      'O Claude Code trabalha numa branch própria em .claude/worktrees, sem mexer neste checkout.',
+    busy_one: 'Outra sessão está trabalhando neste checkout:',
+    busy_other: '{{count}} sessões estão trabalhando neste checkout:',
+    confirmTitle: 'Iniciar no mesmo checkout?',
+    confirmBody: 'As sessões podem editar os mesmos arquivos e trocar a branch uma da outra.',
+    confirmStart: 'Iniciar mesmo assim',
+    confirmWorktree: 'Usar uma worktree',
   },
   resume: {
     title: 'Sessão somente leitura',
@@ -247,6 +257,8 @@ const ptBR = {
     detailEmptyBody: 'Escolha uma sessão na lista para ver a conversa aqui.',
     emptyHint: 'Sessões abertas com o `claude` puro aparecem como somente leitura.',
     background: 'background {{count}}',
+    sharedCheckout: 'mesmo checkout ({{count}})',
+    branch: 'Branch {{branch}}',
     states: {
       running: 'rodando',
       waiting: 'aguardando',

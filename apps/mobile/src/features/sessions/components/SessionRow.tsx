@@ -1,6 +1,6 @@
 import type { Session } from '@claude-remote/protocol'
 import { router } from 'expo-router'
-import { ChevronRight } from 'lucide-react-native'
+import { ChevronRight, GitBranch } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
@@ -12,6 +12,8 @@ import { StateBadge } from './StateBadge'
 type Props = {
   session: Session
   pendingPermissions?: number
+  /** Other live sessions in the same git checkout. */
+  sharedCheckout?: number
   /** The session is open in the detail pane. */
   selected?: boolean
   /** Keyboard navigation cursor (arrow keys) — may point to a session other than the open one. */
@@ -21,6 +23,7 @@ type Props = {
 export const SessionRow = memo(function SessionRow({
   session,
   pendingPermissions = 0,
+  sharedCheckout = 0,
   selected = false,
   keyboardFocused = false,
 }: Props) {
@@ -45,13 +48,30 @@ export const SessionRow = memo(function SessionRow({
         <Text weight="medium" numberOfLines={1}>
           {session.title || t('common.session')}
         </Text>
-        <Text size="xs" color="textMuted" numberOfLines={1}>
-          {shortPath(session.cwd)}
-        </Text>
+        <View style={styles.path}>
+          <Text size="xs" color="textMuted" numberOfLines={1} style={styles.shrink}>
+            {shortPath(session.cwd)}
+          </Text>
+          {session.checkout?.branch ? (
+            <View
+              style={styles.branch}
+              accessible
+              accessibilityLabel={t('sessions.branch', { branch: session.checkout.branch })}
+            >
+              <GitBranch size={12} color={colors.textDim} />
+              <Text size="xs" color="textDim" numberOfLines={1} style={styles.shrink}>
+                {session.checkout.branch}
+              </Text>
+            </View>
+          ) : null}
+        </View>
         <View style={styles.badges}>
           <StateBadge state={session.state} />
           {pendingPermissions > 0 ? (
             <Badge label={t('permissions.pending', { count: pendingPermissions })} tone="warning" />
+          ) : null}
+          {sharedCheckout > 0 ? (
+            <Badge label={t('sessions.sharedCheckout', { count: sharedCheckout })} tone="warning" />
           ) : null}
           {!session.controllable ? <Badge label={t('common.readOnly')} /> : null}
           {session.backgroundTasks > 0 ? (
@@ -86,6 +106,9 @@ const styles = StyleSheet.create({
   hovered: { backgroundColor: colors.surfaceRaised },
   pressed: { opacity: 0.7 },
   main: { flex: 1, gap: space.xs },
+  path: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  branch: { flexDirection: 'row', alignItems: 'center', gap: space.xxs, flexShrink: 1 },
+  shrink: { flexShrink: 1 },
   badges: {
     flexDirection: 'row',
     flexWrap: 'wrap',

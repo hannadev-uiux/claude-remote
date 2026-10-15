@@ -8,6 +8,7 @@ import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/conn
 import { colors, space } from '@/core/theme'
 import { Button, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
 import { NestedSubagents } from '../subagents/SubagentList'
+import { sharedCheckoutCounts } from './checkout'
 import { ProfileHeader } from './components/ProfileHeader'
 import { SessionRow } from './components/SessionRow'
 import { SessionSearch } from './components/SessionSearch'
@@ -57,6 +58,7 @@ export function SessionsScreen({
     () => flattenSections(groupSessions(Object.values(sessions), profiles, filter)),
     [sessions, profiles, filter],
   )
+  const sharedCheckout = useMemo(() => sharedCheckoutCounts(Object.values(sessions)), [sessions])
   const sessionIds = useMemo(
     () => items.flatMap((item) => (item.type === 'session' ? [item.session.id] : [])),
     [items],
@@ -155,6 +157,7 @@ export function SessionsScreen({
               <SessionRow
                 session={item.session}
                 pendingPermissions={pendingBySession[item.session.id] ?? 0}
+                sharedCheckout={sharedCheckout[item.session.id] ?? 0}
                 selected={item.session.id === selectedSessionId}
                 keyboardFocused={item.session.id === keyboardCursor}
               />

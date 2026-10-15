@@ -1,17 +1,8 @@
 import type { CommandItem, FileItem } from '@claude-remote/protocol'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
 import { useDaemonClient, useIsConnected } from '@/core/connection'
+import { useDebounced } from '@/core/utils/use-debounced'
 import { filterCommands, type Trigger } from './trigger'
-
-function useDebounced<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), ms)
-    return () => clearTimeout(timer)
-  }, [value, ms])
-  return debounced
-}
 
 export function useCommands(sessionId: string) {
   const client = useDaemonClient()
