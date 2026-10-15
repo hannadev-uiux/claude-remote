@@ -95,7 +95,7 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 ## Requirements
 
 - macOS, Linux (systemd recommended) or Windows 10 2004+/11 through WSL2, with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` on the `PATH` (the installer adds the missing tools)
-- Node 24+ and pnpm 12+
+- Node 24+ (the one-line installer downloads a private Node into `~/.claude-remote/node` when it is missing; pnpm 12+ only for development)
 - [Tailscale](https://tailscale.com) on the computer and the iPhone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
 - Xcode on a Mac, for the iOS development build (Expo Go is not enough: the app uses native modules)
 - Optional, for push: a paid Apple Developer account and a Firebase project

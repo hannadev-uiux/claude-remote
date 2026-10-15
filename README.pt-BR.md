@@ -65,7 +65,7 @@ O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude
 
 No iPhone, instale o app e o Tailscale (mesma conta do computador). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o computador.
 
-Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo) com Node 24+ (o instalador cuida de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê); Claude Code; Tailscale no computador e no iPhone.
+Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo); o instalador cuida do Node 24+, baixando um Node privado em `~/.claude-remote/node` se faltar, e de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê. Também: Claude Code; Tailscale no computador e no iPhone.
 
 ### Linux
 

@@ -1,7 +1,7 @@
 ## 1. Windows installer
 
 - [x] 1.1 `install.ps1` (checks, WSL install, Linux installer inside WSL, three languages); verify with PSScriptAnalyzer/`pwsh -NoProfile -Command` parse and a dry run
-- [ ] 1.2 Redirect `maarkn.dev/claude-remote/install.ps1`; verify with the redirect test
+- [x] 1.2 Redirect `maarkn.dev/claude-remote/install.ps1`; verify with the redirect test (maarkN/maarkn.dev#3)
 
 ## 2. Daemon on WSL
 
