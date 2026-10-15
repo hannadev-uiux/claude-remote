@@ -9,6 +9,7 @@ import type { Executor } from '../../infra/exec.ts'
 import { isDirectory, readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 import { BACKUP_SUFFIX } from '../hooks/installer.ts'
 import type { ServiceManager } from '../service/service-manager.ts'
+import type { WslHost } from '../wsl/host.ts'
 import { box, type Paint, renderLogo, renderWelcome } from './banner.ts'
 import { displayPaths, type InstallLine, type InstallOptions, installAll, removeProfiles } from './install.ts'
 import {
@@ -38,6 +39,8 @@ export type WizardOptions = InstallOptions & {
   pair: (host: string) => Promise<void>
   /** Opens Claude Code on this terminal with CLAUDE_CONFIG_DIR=configDir (for the login). */
   runClaude: (configDir: string) => Promise<number>
+  /** Present inside WSL2: systemd in /etc/wsl.conf, mirrored networking and the Windows logon task. */
+  wsl?: WslHost
   /** `--lang`: skips the language question. */
   lang?: Locale
   /** Called as soon as the language is known, so the caller speaks it too (e.g. on Ctrl+C). */
@@ -305,6 +308,10 @@ async function setupService(o: Ctx): Promise<void> {
     console.log(paint('muted', `  ${s.noService}`))
     return
   }
+  if (o.wsl && !o.wsl.systemdRunning()) {
+    await setupWslSystemd(o, o.wsl)
+    return
+  }
   if (!(await service.available())) {
     console.log(paint('muted', s.serviceUnavailable))
     return
@@ -318,16 +325,87 @@ async function setupService(o: Ctx): Promise<void> {
   }
   const path = await o.installService(service)
   printLines(paint, [{ status: 'done', text: `${SERVICE_LABELS[service.kind]} ${path}` }], o.home)
+  await setupLinger(o, service)
+  if (o.wsl) await setupLogonTask(o, o.wsl)
+}
+
+async function setupLinger(o: Ctx, service: ServiceManager): Promise<void> {
+  const { paint } = o
+  const s = o.m.setup
   const linger = service.linger
   if (!linger || (await linger.enabled())) return
   // Lingering changes how the system treats the user's processes: never without asking.
-  const consent = o.interactive && (await confirm({ message: s.lingerQuestion, default: true, theme: yesNo }))
+  const consent =
+    o.interactive &&
+    (await confirm({ message: s.lingerQuestion, default: true, theme: yesNoTheme(paint, o.m) }))
   if (!consent) {
     console.log(paint('muted', s.lingerSkipped))
     return
   }
   if (await linger.enable()) printLines(paint, [{ status: 'done', text: s.lingerEnabled }])
   else console.log(paint('danger', s.lingerFailed))
+}
+
+/** WSL without systemd: offers `[boot] systemd=true` in /etc/wsl.conf (sudo, only with consent). */
+async function setupWslSystemd(o: Ctx, wsl: WslHost): Promise<void> {
+  const { paint } = o
+  const t = o.m.wsl
+  if (await wsl.systemdConfigured()) {
+    console.log(paint('muted', t.systemdPending))
+    console.log(paint('muted', t.restart))
+    return
+  }
+  console.log(paint('muted', t.systemdIntro))
+  console.log(paint('accent', t.systemdCommand(await wsl.systemdCommand())))
+  // A root file and a WSL restart: never without asking.
+  const consent =
+    o.interactive &&
+    (await confirm({ message: t.systemdQuestion, default: true, theme: yesNoTheme(paint, o.m) }))
+  if (!consent) {
+    console.log(paint('muted', t.systemdSkipped))
+    return
+  }
+  const result = await wsl.enableSystemd()
+  if (result.status === 'failed') {
+    console.log(paint('danger', t.systemdFailed(result.error)))
+    return
+  }
+  printLines(paint, [{ status: result.status === 'written' ? 'done' : 'skip', text: t.systemdEnabled }])
+  console.log(paint('muted', t.restart))
+}
+
+/** WSL: optional Windows Scheduled Task that boots the distribution (and so the service) at logon. */
+async function setupLogonTask(o: Ctx, wsl: WslHost): Promise<void> {
+  const { paint } = o
+  const t = o.m.wsl
+  const task = wsl.logonTask
+  if (await task.exists()) {
+    printLines(paint, [{ status: 'skip', text: t.logonTaskCreated }])
+    return
+  }
+  const consent =
+    o.interactive &&
+    (await confirm({ message: t.logonTaskQuestion, default: true, theme: yesNoTheme(paint, o.m) }))
+  if (!consent) {
+    console.log(paint('muted', t.logonTaskSkipped))
+    return
+  }
+  const result = await task.create()
+  if (result.ok) printLines(paint, [{ status: 'done', text: t.logonTaskCreated }])
+  else console.log(paint('danger', t.logonTaskFailed(result.error, task.command)))
+}
+
+/** WSL: writes `networkingMode=mirrored` to .wslconfig; WSL must restart before the address shows up. */
+async function enableMirrored(o: Ctx, wsl: WslHost): Promise<void> {
+  const t = o.m.wsl
+  const result = await wsl.enableMirroredNetworking()
+  if (!result) {
+    console.log(o.paint('danger', t.mirroredNoConfig))
+    return
+  }
+  const text = result.changed ? t.mirroredEnabled(result.path) : t.mirroredAlready(result.path)
+  printLines(o.paint, [{ status: result.changed ? 'done' : 'skip', text }], o.home)
+  console.log(o.paint('muted', t.restart))
 }
 
 /** Guided setup: profiles and aliases, launchers/hooks, background service, Tailscale and pairing. */
@@ -382,25 +460,39 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   await setupService(o)
 
   step(paint, 4, total, s.steps.tailscale)
+  const wslMode = o.wsl ? await o.wsl.networkingMode() : null
   let host = o.tailscaleAddress()
   if (!host && o.interactive) {
-    console.log(paint('muted', s.tailscaleIntro(machine, s.tailscaleInstall[o.platform])))
+    console.log(
+      paint(
+        'muted',
+        o.wsl ? m.wsl.tailscaleIntro : s.tailscaleIntro(machine, s.tailscaleInstall[o.platform]),
+      ),
+    )
+    // Inside WSL with NAT networking a Tailscale on Windows is invisible: offer mirrored networking.
+    const offerMirrored = o.wsl !== undefined && wslMode !== 'mirrored'
     for (;;) {
       const next = await select({
         message: s.tailscaleQuestion(machine),
         choices: [
           { name: s.tailscaleRetry, value: 'retry' },
+          ...(offerMirrored ? [{ name: m.wsl.tailscaleMirrored, value: 'mirrored' }] : []),
           { name: s.tailscaleSkip, value: 'skip' },
         ],
         theme,
       })
+      if (next === 'mirrored' && o.wsl) {
+        await enableMirrored(o, o.wsl)
+        break
+      }
       host = o.tailscaleAddress()
       if (host || next === 'skip') break
       console.log(paint('danger', s.tailscaleNotYet))
     }
   }
   if (host) {
-    console.log(`  ${paint('success', '✓')} Tailscale ${host}`)
+    const source = o.wsl?.tailscale(wslMode)?.source
+    console.log(`  ${paint('success', '✓')} Tailscale ${host}${source ? ` (${m.wsl.source[source]})` : ''}`)
     console.log(paint('muted', s.iphoneHint))
     if (o.interactive && (await confirm({ message: s.showQr, default: true, theme: yesNo }))) {
       await o.pair(host)
