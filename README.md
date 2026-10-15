@@ -110,7 +110,7 @@ curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 
 The installer checks macOS, Node and git, installs `tmux`/`ripgrep` with Homebrew if needed, puts the source in `~/.claude-remote/src`, builds the daemon and opens a guided setup (`claude-remote setup`) that:
 
-- finds your Claude Code accounts (`~/.claude`, `~/.claude-*`) and lets you pick which ones to control;
+- finds your Claude Code accounts (`~/.claude`, `~/.claude-*`) and lets you pick which ones to control, or creates a new one (makes the folder and opens Claude Code there so you log in);
 - asks the **alias** of each one: the command that opens that account inside tmux (e.g. `pessoal`, `trabalho`);
 - installs the launchers, the `PATH` entry and the hooks (with backups), and the background service;
 - helps with Tailscale and shows the pairing QR code.

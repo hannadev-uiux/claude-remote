@@ -22,12 +22,13 @@ import {
   uninstallLaunchers,
   uninstallZshrc,
 } from './features/hooks/installer.ts'
+import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
 import { LAUNCHD_LABEL, serviceStatus, uninstallService } from './features/service/launchd.ts'
 import { colorEnabled, createPaint } from './features/setup/banner.ts'
 import { type InstallOptions, installAll, installServiceFromCli } from './features/setup/install.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
-import { execaExecutor } from './infra/exec.ts'
+import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
@@ -159,6 +160,12 @@ program
         pair: async (host) => {
           const config = await loadConfig(createLogger({ level: 'silent' }))
           printPairing(host, config.wsPort, await ensureToken(tokenStore()))
+        },
+        runClaude: (configDir) => {
+          // Like the launcher: ~/.claude is the default and must not be passed as CLAUDE_CONFIG_DIR.
+          const { CLAUDE_CONFIG_DIR: _, ...env } = process.env
+          if (!isDefaultConfigDir(configDir)) env.CLAUDE_CONFIG_DIR = configDir
+          return runInteractive('claude', [], { cwd: homedir(), env })
         },
       })
     } catch (error) {

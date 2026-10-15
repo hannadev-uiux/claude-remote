@@ -33,7 +33,7 @@ export const SETUP_GUIDE: readonly GuideStep[] = [
   },
   {
     title: 'Claude Remote no Mac',
-    body: 'No Terminal do Mac, rode o instalador. Ele verifica os pré-requisitos e pergunta quais contas do Claude Code você quer controlar e o comando (alias) de cada uma.',
+    body: 'No Terminal do Mac, rode o instalador. Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
     code: INSTALL_COMMAND,
     actions: [{ kind: 'share', label: 'Enviar o comando (AirDrop, Notas…)', text: INSTALL_COMMAND }],
   },
