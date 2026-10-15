@@ -12,7 +12,8 @@ export const ptBR = {
       description: 'inicia o daemon',
       dev: 'escuta em 127.0.0.1 em vez do Tailscale',
       host: 'endereço de escuta do WebSocket',
-      waitTailscale: 'aguarda a interface do Tailscale em vez de falhar (usado pelo launchd)',
+      waitTailscale:
+        'aguarda a interface do Tailscale em vez de falhar (usado pelo serviço em segundo plano)',
     },
     pair: {
       description: 'mostra o QR code de pareamento (endereço + token)',
@@ -60,16 +61,24 @@ export const ptBR = {
       hooksRemoved: (path: string) => `hooks removidos de ${path}`,
     },
     service: {
-      description: 'daemon como serviço do macOS (launchd)',
-      install: 'instala e carrega o LaunchAgent (inicia com o login e reinicia se cair)',
-      loaded: (path: string) => `LaunchAgent carregado: ${path}`,
+      description: 'daemon como serviço em segundo plano (launchd no macOS, systemd no Linux)',
+      install: 'instala e inicia o serviço em segundo plano (inicia com o login e reinicia se cair)',
+      loaded: (path: string) => `serviço instalado: ${path}`,
       app: (path: string) => `app: ${path}`,
       tailscaleWaiting: '⚠ Tailscale não encontrado: o daemon fica aguardando a interface 100.x',
       logs: (path: string) => `logs em ${path}`,
-      uninstall: 'descarrega e remove o LaunchAgent',
-      removed: 'LaunchAgent removido',
+      uninstall: 'para e remove o serviço em segundo plano',
+      removed: 'serviço removido',
       status: 'mostra se o serviço está carregado',
       notLoaded: 'não carregado',
+      unavailable:
+        'Serviços de usuário do systemd não estão disponíveis aqui (`systemctl --user` falhou). Rode `claude-remote start` quando quiser usar (por exemplo, numa janela do tmux).',
+      lingerHint:
+        'Lingering desligado: o serviço para quando você sai da sessão. Para mantê-lo rodando e iniciar no boot: `loginctl enable-linger $USER`',
+      linger: (enabled: boolean) =>
+        enabled
+          ? 'lingering ligado (continua rodando após o logout, inicia no boot)'
+          : 'lingering desligado (para no logout)',
     },
     rules: {
       description: 'regras de "permitir sempre" criadas pelo app',
@@ -117,6 +126,16 @@ export const ptBR = {
     nothingChanged: 'Nada foi alterado.',
     serviceQuestion: 'Iniciar o Claude Remote junto com o Mac (e reiniciar se cair)?',
     noService: 'Sem serviço: rode `claude-remote start` quando quiser usar.',
+    serviceUnavailable:
+      '  Serviços de usuário do systemd não estão disponíveis aqui (`systemctl --user`).\n' +
+      '  Rode `claude-remote start` quando quiser usar (por exemplo, numa janela do tmux ou pelo seu sistema de init).',
+    lingerQuestion:
+      'Manter o Claude Remote rodando depois do logout e iniciar no boot? (loginctl enable-linger)',
+    lingerEnabled: 'lingering ativado (loginctl enable-linger)',
+    lingerFailed:
+      '  Não consegui ativar o lingering. Rode `sudo loginctl enable-linger $USER` para manter o daemon rodando após o logout.',
+    lingerSkipped:
+      '  Sem lingering o daemon para quando você sai da sessão. Ative depois com `loginctl enable-linger $USER`.',
     tailscaleIntro:
       '  O Mac e o iPhone conversam por uma rede privada do Tailscale (grátis), de qualquer lugar.\n' +
       '  1. No Mac: instale em https://tailscale.com/download/mac (ou `brew install --cask tailscale`) e entre\n' +

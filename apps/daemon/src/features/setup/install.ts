@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Profile } from '@claude-remote/protocol'
@@ -18,7 +17,7 @@ import {
   uninstallHooks,
   uninstallLaunchers,
 } from '../hooks/installer.ts'
-import { installAppBundle, installService } from '../service/launchd.ts'
+import type { ServiceManager } from '../service/service-manager.ts'
 
 /** One line of installer output: `done` = changed now, `skip` = already in place. */
 export type InstallLine = { status: 'done' | 'skip'; text: string }
@@ -83,19 +82,16 @@ export async function removeProfiles(
   return lines
 }
 
-/** Builds the "Claude Remote" app bundle and (re)loads the LaunchAgent with the current PATH. */
-export async function installServiceFromCli(o: InstallOptions & { cliPath: string }): Promise<string> {
+/** (Re)installs the background service for this build with the current PATH. */
+export async function installServiceFromCli(
+  o: InstallOptions & { cliPath: string; service: ServiceManager },
+): Promise<string> {
   const iconPng = fileURLToPath(new URL('../../mobile/assets/icon.png', pathToFileURL(o.cliPath)))
-  const executable = await installAppBundle(o.exec, {
-    appDir: paths.app(),
+  return o.service.install({
     nodePath: o.nodePath,
     cliPath: o.cliPath,
-    iconPng: existsSync(iconPng) ? iconPng : undefined,
-  })
-  return installService(o.exec, {
-    executable,
     logsDir: paths.logs(),
     path: process.env.PATH ?? '/usr/bin:/bin',
-    home: homedir(),
+    iconPng: existsSync(iconPng) ? iconPng : undefined,
   })
 }

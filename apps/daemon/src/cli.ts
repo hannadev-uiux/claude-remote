@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { homedir, userInfo } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { LOCALES, type Locale, LocaleSchema } from '@claude-remote/protocol'
 import { Command, InvalidArgumentError } from 'commander'
@@ -26,7 +26,9 @@ import {
 } from './features/hooks/installer.ts'
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
-import { LAUNCHD_LABEL, serviceStatus, uninstallService } from './features/service/launchd.ts'
+import { LaunchdService } from './features/service/launchd.ts'
+import type { ServiceManager } from './features/service/service-manager.ts'
+import { SystemdUserService } from './features/service/systemd.ts'
 import { colorEnabled, createPaint } from './features/setup/banner.ts'
 import { type InstallOptions, installAll, installServiceFromCli } from './features/setup/install.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
@@ -49,7 +51,14 @@ function currentPlatform(): Platform {
     process.exit(1)
   }
 }
-currentPlatform()
+const platform = currentPlatform()
+
+/** launchd on macOS, systemd user unit on Linux. */
+function serviceManager(): ServiceManager {
+  return platform === 'darwin'
+    ? new LaunchdService(execaExecutor, { home: homedir(), appDir: paths.app() })
+    : new SystemdUserService(execaExecutor, { home: homedir(), user: userInfo().username })
+}
 
 function tokenStore(): TokenStore {
   return process.env.CLAUDE_REMOTE_TOKEN_STORE === 'file'
@@ -178,10 +187,11 @@ program
         onLocale: (locale) => {
           m = messagesFor(locale)
         },
-        installService: async () => {
+        serviceManager: serviceManager(),
+        installService: async (service) => {
           const cliPath = builtCliPath()
           if (!cliPath) throw new SetupAborted(m.cli.buildMissing)
-          return installServiceFromCli({ ...installOptions(), cliPath })
+          return installServiceFromCli({ ...installOptions(), cliPath, service })
         },
         tailscaleAddress: () => findTailscaleAddress(),
         pair: async (host) => {
@@ -295,9 +305,15 @@ service
       console.error(m.cli.buildMissing)
       process.exit(1)
     }
-    const path = await installServiceFromCli({ ...installOptions(), cliPath })
+    const manager = serviceManager()
+    if (!(await manager.available())) {
+      console.error(`✗ ${m.cli.service.unavailable}`)
+      process.exit(1)
+    }
+    const path = await installServiceFromCli({ ...installOptions(), cliPath, service: manager })
     console.log(`✓ ${m.cli.service.loaded(path)}`)
-    console.log(`  ${m.cli.service.app(paths.app())}`)
+    if (manager.kind === 'launchd') console.log(`  ${m.cli.service.app(paths.app())}`)
+    if (manager.linger && !(await manager.linger.enabled())) console.log(`  ${m.cli.service.lingerHint}`)
     if (!findTailscaleAddress()) console.log(`  ${m.cli.service.tailscaleWaiting}`)
     console.log(`  ${m.cli.service.logs(paths.logs())}`)
   })
@@ -305,16 +321,21 @@ service
   .command('uninstall')
   .description(m.cli.service.uninstall)
   .action(async () => {
-    await uninstallService(execaExecutor, homedir(), paths.app())
+    await serviceManager().uninstall()
     console.log(`✓ ${m.cli.service.removed}`)
   })
 service
   .command('status')
   .description(m.cli.service.status)
   .action(async () => {
-    const status = await serviceStatus(execaExecutor)
+    const manager = serviceManager()
+    const status = await manager.status()
     const detail = status.loaded ? status.detail : m.cli.service.notLoaded
-    console.log(`${status.loaded ? '✓' : '✗'} ${LAUNCHD_LABEL}: ${detail}`)
+    console.log(`${status.loaded ? '✓' : '✗'} ${manager.name}: ${detail}`)
+    if (status.loaded && manager.linger) {
+      const lingering = await manager.linger.enabled()
+      console.log(`${lingering ? '✓' : '·'} ${m.cli.service.linger(lingering)}`)
+    }
   })
 
 const rules = program.command('rules').description(m.cli.rules.description)

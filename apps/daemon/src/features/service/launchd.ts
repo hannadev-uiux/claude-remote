@@ -3,6 +3,14 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import type { Executor } from '../../infra/exec.ts'
+import {
+  dedupePath,
+  type ServiceInstallOptions,
+  type ServiceManager,
+  type ServiceStatus,
+} from './service-manager.ts'
+
+export { dedupePath }
 
 export const LAUNCHD_LABEL = 'tech.doctorx.claude-remote'
 /** Name shown by macOS in "Login Items" and in the background activity notification. */
@@ -69,11 +77,6 @@ export function renderPlist(o: PlistOptions): string {
 </dict>
 </plist>
 `
-}
-
-/** Removes duplicated PATH entries (login shells often repeat them), keeping the first occurrence. */
-export function dedupePath(path: string): string {
-  return [...new Set(path.split(':').filter(Boolean))].join(':')
 }
 
 export function renderAppInfoPlist(hasIcon: boolean): string {
@@ -193,10 +196,48 @@ export async function uninstallService(exec: Executor, home = homedir(), appDir?
   if (appDir) await rm(appDir, { recursive: true, force: true })
 }
 
-export async function serviceStatus(exec: Executor): Promise<{ loaded: boolean; detail: string }> {
+export async function serviceStatus(exec: Executor): Promise<ServiceStatus> {
   const result = await exec('launchctl', ['print', `${domain()}/${LAUNCHD_LABEL}`])
   if (result.exitCode !== 0) return { loaded: false, detail: 'not loaded' }
   const state = /state = (\w+)/.exec(result.stdout)?.[1] ?? 'unknown'
   const pid = /pid = (\d+)/.exec(result.stdout)?.[1]
   return { loaded: true, detail: pid ? `${state} (pid ${pid})` : state }
+}
+
+/** macOS: a LaunchAgent that runs the "Claude Remote" app bundle (KeepAlive, starts at login). */
+export class LaunchdService implements ServiceManager {
+  readonly kind = 'launchd'
+  readonly name = LAUNCHD_LABEL
+
+  constructor(
+    private readonly exec: Executor,
+    private readonly o: { home: string; appDir: string; sleep?: (ms: number) => Promise<unknown> },
+  ) {}
+
+  async available(): Promise<boolean> {
+    return true
+  }
+
+  async install(options: ServiceInstallOptions): Promise<string> {
+    const executable = await installAppBundle(this.exec, {
+      appDir: this.o.appDir,
+      nodePath: options.nodePath,
+      cliPath: options.cliPath,
+      iconPng: options.iconPng,
+    })
+    return installService(
+      this.exec,
+      { executable, logsDir: options.logsDir, path: options.path, home: this.o.home },
+      this.o.home,
+      this.o.sleep,
+    )
+  }
+
+  uninstall(): Promise<void> {
+    return uninstallService(this.exec, this.o.home, this.o.appDir)
+  }
+
+  status(): Promise<ServiceStatus> {
+    return serviceStatus(this.exec)
+  }
 }
