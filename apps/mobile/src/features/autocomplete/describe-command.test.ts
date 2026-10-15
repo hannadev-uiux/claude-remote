@@ -9,11 +9,15 @@ describe('commandDescription', () => {
       name: 'clear',
       description: 'Clear the conversation history',
       source: 'builtin' as const,
+      interactive: false,
     }
     expect(commandDescription(builtin, t)).toBe('Borra el historial de la conversación')
     expect(commandDescription({ ...builtin, name: 'brand-new' }, t)).toBe('Clear the conversation history')
-    expect(commandDescription({ name: 'deploy', description: 'Deploy it', source: 'project' }, t)).toBe(
-      'Deploy it',
-    )
+    expect(
+      commandDescription(
+        { name: 'deploy', description: 'Deploy it', source: 'project', interactive: false },
+        t,
+      ),
+    ).toBe('Deploy it')
   })
 })
