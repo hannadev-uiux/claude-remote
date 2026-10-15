@@ -1,6 +1,16 @@
 import type { CommandItem } from '@claude-remote/protocol'
 import { describe, expect, test } from 'vitest'
-import { applySuggestion, filterCommands, findTrigger, isInteractiveCommand } from './trigger'
+import { applySuggestion, filterCommands, findTrigger, isInteractiveCommand, triggerKey } from './trigger'
+
+describe('triggerKey', () => {
+  test('stays the same while typing the same token and changes for a new one', () => {
+    const typing = triggerKey(findTrigger('olha @sr', 8))
+    expect(triggerKey(findTrigger('olha @src/a', 11))).toBe(typing)
+    expect(triggerKey(findTrigger('olha @src/a @b', 14))).not.toBe(typing)
+    expect(triggerKey(findTrigger('/mo', 3))).toBe('command:0')
+    expect(triggerKey(null)).toBeNull()
+  })
+})
 
 const commands: CommandItem[] = [
   { name: 'model', description: 'Escolhe o modelo', source: 'builtin', interactive: true },

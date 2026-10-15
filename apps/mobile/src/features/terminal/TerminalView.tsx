@@ -31,6 +31,13 @@ export const TerminalView = forwardRef<TerminalViewHandle, { onReady?: () => voi
       style={styles.web}
       scrollEnabled={false}
       javaScriptEnabled
+      // Android: the page is self-contained, so no file/content access, popups or mixed content.
+      allowFileAccess={false}
+      allowFileAccessFromFileURLs={false}
+      allowUniversalAccessFromFileURLs={false}
+      setSupportMultipleWindows={false}
+      mixedContentMode="never"
+      overScrollMode="never"
       onMessage={(e) => {
         if (e.nativeEvent.data === 'ready') onReady?.()
       }}
