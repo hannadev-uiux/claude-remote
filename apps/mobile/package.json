@@ -1,6 +1,6 @@
 {
   "name": "@claude-remote/mobile",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@claude-remote/protocol": "workspace:*",
