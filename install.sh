@@ -18,6 +18,8 @@ REPO_URL="${CLAUDE_REMOTE_REPO:-https://github.com/maarkN/claude-remote.git}"
 REF="${CLAUDE_REMOTE_REF:-main}"
 SRC_DIR="${CLAUDE_REMOTE_SRC:-$HOME/.claude-remote/src}"
 MIN_NODE_MAJOR=24
+# Private Node used when the system one is missing or too old (never added to the user's shell).
+NODE_DIR="${CLAUDE_REMOTE_NODE_DIR:-$HOME/.claude-remote/node}"
 
 # Messages, in the language of the system. `%s` placeholders are filled with printf.
 LOCALE_TAG="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
@@ -32,8 +34,10 @@ pt*)
   T_SRC='Código em: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='instalador'
   T_UNSUPPORTED='Sistema não suportado (%s). O Claude Remote roda em macOS e Linux.'
+  T_WINDOWS='No Windows, o Claude Remote roda dentro do WSL2. No PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='É preciso o Node.js %s+: https://nodejs.org (ou `brew install node`, nvm, fnm…).'
-  T_NODE_OLD='É preciso o Node.js %s+ (encontrado %s).'
+  T_NODE_PRIVATE='Node.js %s+ não encontrado: baixando o Node %s só para o Claude Remote em %s (não muda o seu Node).'
+  T_NODE_DOWNLOAD_FAILED='Não consegui baixar o Node.js (%s). Instale o Node.js %s+ (https://nodejs.org) e rode de novo.'
   T_NEED_GIT='É preciso o git: rode `xcode-select --install`.'
   T_MISSING='Faltando: %s. Instale com o gerenciador de pacotes do sistema e rode de novo.'
   T_INSTALLING='Instalando %s com %s'
@@ -59,8 +63,10 @@ es*)
   T_SRC='Código en: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='instalador'
   T_UNSUPPORTED='Sistema no compatible (%s). Claude Remote funciona en macOS y Linux.'
+  T_WINDOWS='En Windows, Claude Remote funciona dentro de WSL2. En PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='Necesitas Node.js %s+: https://nodejs.org (o `brew install node`, nvm, fnm…).'
-  T_NODE_OLD='Necesitas Node.js %s+ (encontrado %s).'
+  T_NODE_PRIVATE='No se encontró Node.js %s+: descargando Node %s solo para Claude Remote en %s (no cambia tu Node).'
+  T_NODE_DOWNLOAD_FAILED='No se pudo descargar Node.js (%s). Instala Node.js %s+ (https://nodejs.org) y vuelve a ejecutarlo.'
   T_NEED_GIT='Necesitas git: ejecuta `xcode-select --install`.'
   T_MISSING='Falta: %s. Instálalo con el gestor de paquetes del sistema y vuelve a ejecutarlo.'
   T_INSTALLING='Instalando %s con %s'
@@ -86,8 +92,10 @@ es*)
   T_SRC='Source in: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='installer'
   T_UNSUPPORTED='Unsupported system (%s). Claude Remote runs on macOS and Linux.'
+  T_WINDOWS='On Windows, Claude Remote runs inside WSL2. In PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='Node.js %s+ is required: https://nodejs.org (or `brew install node`, nvm, fnm…).'
-  T_NODE_OLD='Node.js %s+ is required (found %s).'
+  T_NODE_PRIVATE='Node.js %s+ not found: downloading Node %s just for Claude Remote into %s (your Node is untouched).'
+  T_NODE_DOWNLOAD_FAILED='Could not download Node.js (%s). Install Node.js %s+ (https://nodejs.org) and run this again.'
   T_NEED_GIT='git is required: run `xcode-select --install`.'
   T_MISSING='Missing: %s. Install it with your package manager and run this again.'
   T_INSTALLING='Installing %s with %s'
@@ -147,15 +155,59 @@ detect_platform() {
   case "$system" in
   Darwin) PLATFORM=darwin ;;
   Linux) PLATFORM=linux ;;
+  MINGW* | MSYS* | CYGWIN*) die "$T_WINDOWS" ;;
   *) die "$(t "$T_UNSUPPORTED" "$system")" ;;
   esac
 }
 
+node_major() {
+  "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0
+}
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi
+}
+
+# Downloads the latest Node $MIN_NODE_MAJOR for this OS/CPU from nodejs.org into $NODE_DIR, checking
+# its SHA-256 against the official SHASUMS256.txt.
+install_private_node() {
+  local os arch base sums file version tmp
+  os="$PLATFORM"
+  case "$(uname -m)" in
+  x86_64 | amd64) arch=x64 ;;
+  arm64 | aarch64) arch=arm64 ;;
+  *) die "$(t "$T_NODE_DOWNLOAD_FAILED" "$(uname -m)" "$MIN_NODE_MAJOR")" ;;
+  esac
+  base="https://nodejs.org/dist/latest-v${MIN_NODE_MAJOR}.x"
+  sums="$(curl -fsSL "$base/SHASUMS256.txt")" || die "$(t "$T_NODE_DOWNLOAD_FAILED" "$base" "$MIN_NODE_MAJOR")"
+  file="$(printf '%s\n' "$sums" | awk -v suffix="-$os-$arch.tar.gz" '$2 ~ suffix"$" {print $2; exit}')"
+  [[ -n "$file" ]] || die "$(t "$T_NODE_DOWNLOAD_FAILED" "$os-$arch" "$MIN_NODE_MAJOR")"
+  version="${file#node-}"
+  version="${version%%-*}"
+  step "$(t "$T_NODE_PRIVATE" "$MIN_NODE_MAJOR" "$version" "$NODE_DIR")"
+  tmp="$(mktemp -d)"
+  if ! curl -fsSL "$base/$file" -o "$tmp/$file" ||
+    [[ "$(sha256_of "$tmp/$file")" != "$(printf '%s\n' "$sums" | awk -v f="$file" '$2 == f {print $1}')" ]]; then
+    rm -rf "$tmp"
+    die "$(t "$T_NODE_DOWNLOAD_FAILED" "$file" "$MIN_NODE_MAJOR")"
+  fi
+  tar -xzf "$tmp/$file" -C "$tmp"
+  rm -rf "$NODE_DIR"
+  mkdir -p "$(dirname "$NODE_DIR")"
+  mv "$tmp/${file%.tar.gz}" "$NODE_DIR"
+  rm -rf "$tmp"
+}
+
+# Uses the system Node when it is new enough, else the private one (downloading it when needed).
 require_node() {
-  command -v node >/dev/null 2>&1 || die "$(t "$T_NEED_NODE" "$MIN_NODE_MAJOR")"
-  local major
-  major="$(node -p 'process.versions.node.split(".")[0]')"
-  ((major >= MIN_NODE_MAJOR)) || die "$(t "$T_NODE_OLD" "$MIN_NODE_MAJOR" "$(node --version)")"
+  if command -v node >/dev/null 2>&1 && (($(node_major node) >= MIN_NODE_MAJOR)); then
+    return 0
+  fi
+  if [[ ! -x "$NODE_DIR/bin/node" ]] || (($(node_major "$NODE_DIR/bin/node") < MIN_NODE_MAJOR)); then
+    command -v curl >/dev/null 2>&1 || die "$(t "$T_NEED_NODE" "$MIN_NODE_MAJOR")"
+    install_private_node
+  fi
+  export PATH="$NODE_DIR/bin:$PATH"
 }
 
 # First package manager found: the system one on Linux, else Homebrew.

@@ -40,3 +40,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo run typecheck test --filter '@claude-remote/daemon...'
       - run: bash -n install.sh
+      # Windows installer: parse and lint with the PowerShell preinstalled on the runner.
+      - name: Check install.ps1
+        shell: pwsh
+        run: |
+          $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile("$PWD/install.ps1", [ref]$null, [ref]$errors)
+          if ($errors) { $errors | ForEach-Object { Write-Error -ErrorAction Continue $_.ToString() }; exit 1 }
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { Install-Module PSScriptAnalyzer -Scope CurrentUser -Force }
+          $findings = Invoke-ScriptAnalyzer -Path install.ps1 -Severity Error, Warning
+          $findings | Format-Table -AutoSize
+          if ($findings) { exit 1 }

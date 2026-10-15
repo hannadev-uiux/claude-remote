@@ -77,6 +77,21 @@ describe('catalogs', () => {
     expect(unsupported).toContain('macOS, Linux')
   })
 
+  test.each(LOCALES)('%s explains the WSL steps with the exact commands', (locale) => {
+    const w = messagesFor(locale).wsl
+    expect(w.windowsHint).toContain('irm https://maarkn.dev/claude-remote/install.ps1 | iex')
+    expect(w.restart).toContain('wsl --shutdown')
+    expect(w.serviceNoSystemd).toContain('wsl --shutdown')
+    expect(w.systemdIntro).toContain('[boot] systemd=true')
+    expect(w.systemdFailed('x')).toContain('[boot]\n    systemd=true')
+    expect(w.tailscaleIntro).toContain('curl -fsSL https://tailscale.com/install.sh | sh')
+    expect(w.tailscaleIntro).toContain('sudo tailscale up')
+    expect(w.tailscaleIntro).toContain('networkingMode=mirrored')
+    expect(w.logonTaskFailed('denied', 'schtasks.exe /Create')).toContain('schtasks.exe /Create')
+    expect(w.detected('Ubuntu')).toContain('Ubuntu')
+    expect(w.tailscaleIntro).not.toMatch(/\bMac\b|brew/)
+  })
+
   test('createI18n returns the catalog of the locale', () => {
     expect(createI18n('es-ES')).toEqual({ locale: 'es-ES', m: CATALOGS['es-ES'] })
     expect(messagesFor('en-US').push.sessionDone).toBe('Session finished')

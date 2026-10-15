@@ -94,8 +94,8 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## Requirements
 
-- macOS or Linux (systemd recommended) with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` on the `PATH` (the installer adds the missing tools)
-- Node 24+ and pnpm 12+
+- macOS, Linux (systemd recommended) or Windows 10 2004+/11 through WSL2, with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` on the `PATH` (the installer adds the missing tools)
+- Node 24+ (the one-line installer downloads a private Node into `~/.claude-remote/node` when it is missing; pnpm 12+ only for development)
 - [Tailscale](https://tailscale.com) on the computer and the iPhone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
 - Xcode on a Mac, for the iOS development build (Expo Go is not enough: the app uses native modules)
 - Optional, for push: a paid Apple Developer account and a Firebase project
@@ -125,6 +125,25 @@ Run it again to update. `claude-remote setup` changes accounts and aliases later
 - **No systemd** (containers, some WSL setups): the setup says so; run `claude-remote start` yourself, e.g. in a tmux window.
 - **Token**: kept in the Secret Service (GNOME Keyring, KWallet…) through `secret-tool` when it is available, otherwise in `~/.claude-remote/token` (mode `0600`), which is what headless servers use. `claude-remote doctor` shows which one; `CLAUDE_REMOTE_TOKEN_STORE=secret-tool|file` forces it.
 - **Shell**: the `PATH` entry goes to `~/.bashrc` and/or `~/.zshrc`; the launchers themselves run with `zsh`.
+
+</details>
+
+<details>
+<summary>Windows (WSL2)</summary>
+
+Claude Remote drives Claude Code through tmux, so on Windows it runs inside **WSL2** (Linux on Windows), where Claude Code is best supported too. In PowerShell:
+
+```powershell
+irm https://maarkn.dev/claude-remote/install.ps1 | iex
+```
+
+The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when it is missing (Windows asks for administrator permission; reboot if asked, then run the same command again), helps create the Linux user, and then runs the Linux installer above inside the distribution. Options: `& ([scriptblock]::Create((irm https://maarkn.dev/claude-remote/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+
+- **Node and Claude Code** must be installed **inside WSL** (not only on Windows); the installer says what is missing.
+- **systemd**: the background service is a systemd user unit, and WSL only boots systemd with `[boot] systemd=true` in `/etc/wsl.conf`. The setup shows the exact `sudo` command, runs it only if you agree (with a backup), and asks you to run `wsl --shutdown` from PowerShell.
+- **Starting at logon**: WSL only runs while something uses it. The setup can create a Windows Scheduled Task, "Claude Remote", that starts the distribution when you log in (`schtasks.exe /Create /SC ONLOGON … /TR "wsl.exe -d <distro> --exec /bin/true"`); `claude-remote service uninstall` removes it. If WSL still stops when idle, raise `vmIdleTimeout` in `[wsl2]` of `%UserProfile%\.wslconfig`.
+- **Tailscale**: WSL2 uses NAT by default, so a Tailscale running on Windows is not visible inside WSL. Either run Tailscale **inside WSL** (`curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`; works on any Windows), or keep it on Windows and turn on **mirrored networking** (Windows 11 22H2+): the setup can add `networkingMode=mirrored` to `[wsl2]` in `%UserProfile%\.wslconfig` (with a backup); then run `wsl --shutdown`.
+- `claude-remote doctor` shows the distribution, the networking mode, systemd and the logon task.
 
 </details>
 

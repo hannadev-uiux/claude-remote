@@ -214,6 +214,62 @@ export const enUS = {
       giveUp: 'Give up on this account',
     },
   },
+  /** Windows (WSL2) texts: CLI, doctor and setup. */
+  wsl: {
+    windowsHint:
+      'On Windows, Claude Remote runs inside WSL2. In PowerShell: `irm https://maarkn.dev/claude-remote/install.ps1 | iex`',
+    detected: (distro: string) => `WSL2 (distribution ${distro})`,
+    unknownDistro: 'unknown',
+    systemd: 'systemd running in WSL',
+    systemdHint: 'run `claude-remote setup` to enable it ([boot] systemd=true in /etc/wsl.conf)',
+    systemdPendingHint:
+      'already enabled in /etc/wsl.conf: run `wsl --shutdown` in Windows PowerShell and open the distribution again',
+    networking: (mode: string) => `WSL networking: ${mode}`,
+    networkingUnknown: 'unknown (%UserProfile%\\.wslconfig not found)',
+    tailscaleHint:
+      'run Tailscale inside WSL or use mirrored networking with Tailscale on Windows (`claude-remote setup` explains both)',
+    source: {
+      wsl: 'inside WSL',
+      mirrored: 'Windows, mirrored networking',
+      unknown: 'WSL',
+    },
+    logonTask: 'Windows logon task "Claude Remote" (starts WSL at logon)',
+    logonTaskHint: 'optional: `claude-remote setup` creates it',
+    logonTaskMissing: 'no Windows logon task: WSL (and the daemon) only start when you open the distribution',
+    logonTaskRemoved: 'Windows logon task "Claude Remote" removed',
+    serviceNoSystemd:
+      'systemd is not running in this WSL distribution, so there is no background service. Run `claude-remote setup` to enable it ([boot] systemd=true in /etc/wsl.conf), then `wsl --shutdown` in Windows PowerShell.',
+    restart:
+      '  For it to take effect, in Windows PowerShell run `wsl --shutdown`, open the distribution again and run `claude-remote setup`.',
+    systemdIntro:
+      '  Inside WSL the background service needs systemd, which is off in this distribution.\n' +
+      '  It is turned on by [boot] systemd=true in /etc/wsl.conf (a root file, backed up first) with:',
+    systemdCommand: (command: string) => `    ${command}`,
+    systemdQuestion: 'Enable systemd in WSL now? (sudo may ask for your Linux password)',
+    systemdEnabled: 'systemd enabled in /etc/wsl.conf',
+    systemdFailed: (error: string) =>
+      `  Couldn't change /etc/wsl.conf (${error}). Add these lines to it with \`sudo nano /etc/wsl.conf\`:\n    [boot]\n    systemd=true`,
+    systemdSkipped:
+      '  Without systemd there is no background service: run `claude-remote start` whenever you want to use it.',
+    systemdPending: '  systemd is already enabled in /etc/wsl.conf, but WSL has not restarted since.',
+    logonTaskQuestion:
+      'Start WSL when you log in to Windows, so the daemon runs without opening a terminal? (Scheduled Task "Claude Remote")',
+    logonTaskCreated: 'Windows logon task "Claude Remote"',
+    logonTaskFailed: (error: string, command: string) =>
+      `  Couldn't create the task (${error}). In PowerShell (as administrator if access is denied):\n    ${command}`,
+    logonTaskSkipped:
+      '  Without the logon task, WSL and the daemon start when you open the distribution. Create it later with `claude-remote setup`.',
+    tailscaleIntro:
+      '  The computer and the iPhone talk over a private Tailscale network (free). Inside WSL there are two ways:\n' +
+      '  A. Tailscale inside WSL (any Windows): `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`\n' +
+      '  B. Tailscale on Windows + WSL mirrored networking (Windows 11 22H2+): networkingMode=mirrored in .wslconfig\n' +
+      '  On the iPhone: install "Tailscale" from the App Store and sign in with the same account',
+    tailscaleMirrored: 'Tailscale runs on Windows: enable mirrored networking (.wslconfig)',
+    mirroredEnabled: (path: string) => `networkingMode=mirrored in ${path}`,
+    mirroredAlready: (path: string) => `networkingMode=mirrored was already in ${path}`,
+    mirroredNoConfig:
+      "  Couldn't find %UserProfile%\\.wslconfig (is Windows interop off?). Add [wsl2] networkingMode=mirrored to it by hand.",
+  },
   /** How texts name this machine (with the article in each text). */
   machine: { darwin: 'Mac', linux: 'computer' },
   profiles: {

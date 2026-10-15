@@ -213,6 +213,62 @@ export const ptBR = {
       giveUp: 'Desistir desta conta',
     },
   },
+  wsl: {
+    windowsHint:
+      'No Windows, o Claude Remote roda dentro do WSL2. No PowerShell: `irm https://maarkn.dev/claude-remote/install.ps1 | iex`',
+    detected: (distro: string) => `WSL2 (distribuição ${distro})`,
+    unknownDistro: 'desconhecida',
+    systemd: 'systemd rodando no WSL',
+    systemdHint: 'rode `claude-remote setup` para ativá-lo ([boot] systemd=true em /etc/wsl.conf)',
+    systemdPendingHint:
+      'já ativado em /etc/wsl.conf: rode `wsl --shutdown` no PowerShell do Windows e abra a distribuição de novo',
+    networking: (mode: string) => `rede do WSL: ${mode}`,
+    networkingUnknown: 'desconhecida (%UserProfile%\\.wslconfig não encontrado)',
+    tailscaleHint:
+      'rode o Tailscale dentro do WSL ou use a rede espelhada com o Tailscale no Windows (`claude-remote setup` explica os dois)',
+    source: {
+      wsl: 'dentro do WSL',
+      mirrored: 'Windows, rede espelhada',
+      unknown: 'WSL',
+    },
+    logonTask: 'tarefa de logon do Windows "Claude Remote" (inicia o WSL no logon)',
+    logonTaskHint: 'opcional: `claude-remote setup` cria a tarefa',
+    logonTaskMissing:
+      'sem tarefa de logon no Windows: o WSL (e o daemon) só iniciam quando você abre a distribuição',
+    logonTaskRemoved: 'tarefa de logon do Windows "Claude Remote" removida',
+    serviceNoSystemd:
+      'O systemd não está rodando nesta distribuição do WSL, então não há serviço em segundo plano. Rode `claude-remote setup` para ativá-lo ([boot] systemd=true em /etc/wsl.conf) e depois `wsl --shutdown` no PowerShell do Windows.',
+    restart:
+      '  Para valer, rode `wsl --shutdown` no PowerShell do Windows, abra a distribuição de novo e rode `claude-remote setup`.',
+    systemdIntro:
+      '  Dentro do WSL o serviço em segundo plano precisa do systemd, que está desligado nesta distribuição.\n' +
+      '  Ele é ligado por [boot] systemd=true em /etc/wsl.conf (arquivo do root, com backup antes) com:',
+    systemdCommand: (command: string) => `    ${command}`,
+    systemdQuestion: 'Ativar o systemd no WSL agora? (o sudo pode pedir sua senha do Linux)',
+    systemdEnabled: 'systemd ativado em /etc/wsl.conf',
+    systemdFailed: (error: string) =>
+      `  Não deu para alterar o /etc/wsl.conf (${error}). Adicione estas linhas com \`sudo nano /etc/wsl.conf\`:\n    [boot]\n    systemd=true`,
+    systemdSkipped:
+      '  Sem systemd não há serviço em segundo plano: rode `claude-remote start` quando quiser usar.',
+    systemdPending: '  O systemd já está ativado em /etc/wsl.conf, mas o WSL não foi reiniciado desde então.',
+    logonTaskQuestion:
+      'Iniciar o WSL quando você entrar no Windows, para o daemon rodar sem abrir um terminal? (Tarefa Agendada "Claude Remote")',
+    logonTaskCreated: 'tarefa de logon do Windows "Claude Remote"',
+    logonTaskFailed: (error: string, command: string) =>
+      `  Não deu para criar a tarefa (${error}). No PowerShell (como administrador se o acesso for negado):\n    ${command}`,
+    logonTaskSkipped:
+      '  Sem a tarefa de logon, o WSL e o daemon iniciam quando você abre a distribuição. Crie depois com `claude-remote setup`.',
+    tailscaleIntro:
+      '  O computador e o iPhone conversam por uma rede privada do Tailscale (gratuita). Dentro do WSL há dois jeitos:\n' +
+      '  A. Tailscale dentro do WSL (qualquer Windows): `curl -fsSL https://tailscale.com/install.sh | sh` e `sudo tailscale up`\n' +
+      '  B. Tailscale no Windows + rede espelhada do WSL (Windows 11 22H2+): networkingMode=mirrored no .wslconfig\n' +
+      '  No iPhone: instale o "Tailscale" da App Store e entre com a mesma conta',
+    tailscaleMirrored: 'O Tailscale roda no Windows: ativar a rede espelhada (.wslconfig)',
+    mirroredEnabled: (path: string) => `networkingMode=mirrored em ${path}`,
+    mirroredAlready: (path: string) => `networkingMode=mirrored já estava em ${path}`,
+    mirroredNoConfig:
+      '  Não encontrei o %UserProfile%\\.wslconfig (a interoperabilidade com o Windows está desligada?). Adicione [wsl2] networkingMode=mirrored nele à mão.',
+  },
   machine: { darwin: 'Mac', linux: 'computador' },
   profiles: {
     defaultName: 'Pessoal',

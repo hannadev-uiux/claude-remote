@@ -40,9 +40,16 @@ import {
   userRcFiles,
 } from './features/setup/install.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
+import { WslHost } from './features/wsl/host.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
-import { PLATFORM_NAMES, type Platform, resolvePlatform, UnsupportedPlatformError } from './infra/platform.ts'
+import {
+  currentWsl,
+  PLATFORM_NAMES,
+  type Platform,
+  resolvePlatform,
+  UnsupportedPlatformError,
+} from './infra/platform.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
 
@@ -56,10 +63,14 @@ function currentPlatform(): Platform {
   } catch (error) {
     if (!(error instanceof UnsupportedPlatformError)) throw error
     console.error(`✗ ${m.cli.unsupportedPlatform(error.platform, Object.values(PLATFORM_NAMES).join(', '))}`)
+    if (error.platform === 'win32') console.error(`  ${m.wsl.windowsHint}`)
     process.exit(1)
   }
 }
 const platform = currentPlatform()
+/** Linux inside WSL2: extra steps for systemd, networking and the Windows logon task. */
+const wsl = currentWsl(platform)
+const wslHost = wsl ? new WslHost(execaExecutor, { wsl }) : undefined
 
 /** launchd on macOS, systemd user unit on Linux. */
 function serviceManager(): ServiceManager {
@@ -221,6 +232,7 @@ program
           m = messagesFor(locale)
         },
         serviceManager: serviceManager(),
+        wsl: wslHost,
         installService: async (service) => {
           const cliPath = builtCliPath()
           if (!cliPath) throw new SetupAborted(m.cli.buildMissing)
@@ -276,7 +288,20 @@ program
       check(result.exitCode === 0, bin, d.notOnPath)
     }
     const ip = findTailscaleAddress()
-    check(ip !== null, `Tailscale ${ip ?? ''}`.trim(), d.tailscaleMissing)
+    if (wslHost) {
+      const w = m.wsl
+      check(true, w.detected(wslHost.distro ?? w.unknownDistro))
+      const mode = await wslHost.networkingMode()
+      console.log(`· ${w.networking(mode ?? w.networkingUnknown)}`)
+      const source = wslHost.tailscale(mode)
+      const label = source ? `Tailscale ${source.address} (${w.source[source.source]})` : 'Tailscale'
+      check(source !== null, label, w.tailscaleHint)
+      const systemd = wslHost.systemdRunning()
+      check(systemd, w.systemd, (await wslHost.systemdConfigured()) ? w.systemdPendingHint : w.systemdHint)
+      check(await wslHost.logonTask.exists(), w.logonTask, w.logonTaskHint)
+    } else {
+      check(ip !== null, `Tailscale ${ip ?? ''}`.trim(), d.tailscaleMissing)
+    }
     try {
       const config = await loadConfig(logger)
       check(true, `config ${paths.config()}`)
@@ -357,6 +382,10 @@ service
       process.exit(1)
     }
     const manager = serviceManager()
+    if (wslHost && !wslHost.systemdRunning()) {
+      console.error(`✗ ${m.wsl.serviceNoSystemd}`)
+      process.exit(1)
+    }
     if (!(await manager.available())) {
       console.error(`✗ ${m.cli.service.unavailable}`)
       process.exit(1)
@@ -365,6 +394,9 @@ service
     console.log(`✓ ${m.cli.service.loaded(path)}`)
     if (manager.kind === 'launchd') console.log(`  ${m.cli.service.app(paths.app())}`)
     if (manager.linger && !(await manager.linger.enabled())) console.log(`  ${m.cli.service.lingerHint}`)
+    if (wslHost && !(await wslHost.logonTask.exists())) {
+      console.log(`  ${m.wsl.logonTaskMissing}: ${wslHost.logonTask.command}`)
+    }
     if (!findTailscaleAddress()) console.log(`  ${m.cli.service.tailscaleWaiting}`)
     console.log(`  ${m.cli.service.logs(paths.logs())}`)
   })
@@ -374,6 +406,7 @@ service
   .action(async () => {
     await serviceManager().uninstall()
     console.log(`✓ ${m.cli.service.removed}`)
+    if (wslHost && (await wslHost.logonTask.remove())) console.log(`✓ ${m.wsl.logonTaskRemoved}`)
   })
 service
   .command('status')
@@ -386,6 +419,10 @@ service
     if (status.loaded && manager.linger) {
       const lingering = await manager.linger.enabled()
       console.log(`${lingering ? '✓' : '·'} ${m.cli.service.linger(lingering)}`)
+    }
+    if (wslHost) {
+      const task = await wslHost.logonTask.exists()
+      console.log(`${task ? '✓' : '·'} ${task ? m.wsl.logonTask : m.wsl.logonTaskMissing}`)
     }
   })
 
