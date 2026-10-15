@@ -7,6 +7,9 @@ import {
   restartIntoUpdate,
   runningUpdate,
   shortUpdateId,
+  switchChannel,
+  UPDATE_CHANNELS,
+  type UpdateChannel,
   updatesEnabled,
   useUpdatesStore,
 } from '@/core/updates'
@@ -29,7 +32,18 @@ function Row({ label, value }: { label: string; value: string }) {
 export function AppUpdatesCard() {
   const { t, i18n } = useTranslation()
   const status = useUpdatesStore((s) => s.status)
+  const channel = useUpdatesStore((s) => s.channel)
   const running = runningUpdate()
+
+  const chooseChannel = (next: UpdateChannel) => {
+    if (next === channel) return
+    const go = () => void switchChannel(next)
+    if (next !== 'development') return go()
+    Alert.alert(t('updates.developmentTitle'), t('updates.developmentBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('updates.developmentConfirm'), onPress: go },
+    ])
+  }
 
   const restart = () => {
     Alert.alert(t('updates.restartTitle'), t('updates.restartBody'), [
@@ -38,14 +52,18 @@ export function AppUpdatesCard() {
     ])
   }
 
+  // Back on production with no production update for this build: the development one stays.
+  const stillOnDevelopment = channel === 'production' && running.channel === 'development'
   const message =
-    status === 'upToDate'
-      ? t('updates.upToDate')
-      : status === 'downloaded'
-        ? t('updates.downloaded')
-        : status === 'error'
-          ? t('updates.error')
-          : null
+    status === 'upToDate' && stillOnDevelopment
+      ? t('updates.developmentStillRunning')
+      : status === 'upToDate'
+        ? t('updates.upToDate')
+        : status === 'downloaded'
+          ? t('updates.downloaded')
+          : status === 'error'
+            ? t('updates.error')
+            : null
 
   return (
     <Card>
@@ -59,11 +77,36 @@ export function AppUpdatesCard() {
               label={t('updates.update')}
               value={
                 running.updateId && running.createdAt
-                  ? `${shortUpdateId(running.updateId)} · ${running.createdAt.toLocaleDateString(i18n.language)}`
+                  ? [
+                      shortUpdateId(running.updateId),
+                      running.createdAt.toLocaleDateString(i18n.language),
+                      running.channel
+                        ? t(
+                            `updates.channels.${running.channel === 'development' ? 'development' : 'production'}`,
+                          )
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
                   : t('updates.builtIn')
               }
             />
-            {running.channel ? <Row label={t('updates.channel')} value={running.channel} /> : null}
+            <View style={styles.row}>
+              <Text size="sm" color="textMuted">
+                {t('updates.channel')}
+              </Text>
+              <View style={styles.chips}>
+                {UPDATE_CHANNELS.map((c) => (
+                  <Button
+                    key={c}
+                    label={t(`updates.channels.${c}`)}
+                    compact
+                    variant={channel === c ? 'primary' : 'secondary'}
+                    onPress={() => chooseChannel(c)}
+                  />
+                ))}
+              </View>
+            </View>
             {message ? (
               <Text size="sm" color={status === 'error' ? 'warning' : 'textMuted'}>
                 {message}
@@ -91,5 +134,6 @@ export function AppUpdatesCard() {
 
 const styles = StyleSheet.create({
   gap: { gap: space.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: space.md },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.md },
+  chips: { flexDirection: 'row', gap: space.sm },
 })

@@ -277,6 +277,13 @@ const ptBR = {
     update: 'atualização',
     builtIn: 'embutida',
     channel: 'canal',
+    channels: { production: 'produção', development: 'desenvolvimento' },
+    developmentTitle: 'Receber atualizações de desenvolvimento?',
+    developmentBody:
+      'Elas são publicadas a cada merge na development: mais novas, mas podem quebrar. Dá para voltar para produção aqui a qualquer momento.',
+    developmentConfirm: 'Usar desenvolvimento',
+    developmentStillRunning:
+      'Ainda não há atualização de produção para este build: a versão de desenvolvimento continua rodando até uma ser publicada.',
     check: 'Procurar atualizações',
     upToDate: 'O app está atualizado.',
     downloaded: 'Atualização baixada: ela entra na próxima vez que o app abrir.',
