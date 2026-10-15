@@ -27,6 +27,7 @@ function s(id: string, profileId: string, state: Session['state'], updatedAt: st
     paneId: null,
     subagents: [],
     backgroundTasks: 0,
+    checkout: null,
   }
 }
 

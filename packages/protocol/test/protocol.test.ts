@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   type ClientMessage,
+  checkoutPeers,
   parseClientMessage,
   parseServerMessage,
   type ServerMessage,
@@ -31,6 +32,8 @@ const clientSamples: ClientMessage[] = [
   { type: 'commands.list', id: '1', sessionId: 's' },
   { type: 'projects.list', id: '1', profileId: 'claudin' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
+  { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
+  { type: 'checkout.inspect', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.resume', id: '1', profileId: 'claudin', sessionId: 's' },
   { type: 'pane.subscribe', id: '1', sessionId: 's' },
   { type: 'pane.unsubscribe', id: '1', sessionId: 's' },
@@ -49,6 +52,7 @@ const session: Session = {
   updatedAt: '2026-10-14T00:00:00Z',
   subagents: [],
   backgroundTasks: 0,
+  checkout: { root: '/tmp', branch: 'main' },
 }
 
 const serverSamples: ServerMessage[] = [
@@ -112,6 +116,8 @@ const serverSamples: ServerMessage[] = [
   },
   { type: 'projects.results', replyTo: '1', items: [{ cwd: '/tmp', lastUsedAt: 'now' }] },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
+  { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
+  { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
 ]
 
 describe('client messages', () => {
@@ -170,5 +176,37 @@ describe('server messages', () => {
   test('correlates replies by replyTo', () => {
     const result = parseServerMessage({ type: 'sessions.snapshot', replyTo: 'abc', sessions: [] })
     expect(result).toMatchObject({ ok: true, value: { replyTo: 'abc' } })
+  })
+})
+
+describe('session checkout', () => {
+  test('defaults to null for older daemons', () => {
+    const { checkout: _omit, ...old } = session
+    const result = parseServerMessage({ type: 'session.updated', session: old })
+    expect(result).toMatchObject({ ok: true, value: { session: { checkout: null } } })
+  })
+
+  const at = (id: string, root: string | null, patch: Partial<Session> = {}): Session => ({
+    ...session,
+    id,
+    checkout: root ? { root, branch: 'main' } : null,
+    ...patch,
+  })
+
+  test('peers are the other live sessions in the same checkout', () => {
+    const me = at('a', '/w/api')
+    const all = [
+      me,
+      at('b', '/w/api'),
+      at('c', '/w/api/.claude/worktrees/remote-1'),
+      at('d', '/w/api', { state: 'ended' }),
+      at('e', '/w/api', { controllable: false }),
+      at('f', '/w/web'),
+    ]
+    expect(checkoutPeers(me, all).map((s) => s.id)).toEqual(['b'])
+  })
+
+  test('no peers outside git', () => {
+    expect(checkoutPeers(at('a', null), [at('a', null), at('b', null)])).toEqual([])
   })
 })

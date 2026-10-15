@@ -58,7 +58,15 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('commands.list'), id, sessionId }),
   z.object({ type: z.literal('projects.list'), id, profileId: z.string().min(1) }),
-  z.object({ type: z.literal('session.start'), id, profileId: z.string().min(1), cwd: z.string().min(1) }),
+  z.object({
+    type: z.literal('session.start'),
+    id,
+    profileId: z.string().min(1),
+    cwd: z.string().min(1),
+    /** Runs Claude Code with `--worktree`: its own git worktree and branch. */
+    worktree: z.boolean().optional(),
+  }),
+  z.object({ type: z.literal('checkout.inspect'), id, profileId: z.string().min(1), cwd: z.string().min(1) }),
   z.object({ type: z.literal('session.resume'), id, profileId: z.string().min(1), sessionId }),
   z.object({ type: z.literal('pane.subscribe'), id, sessionId }),
   z.object({ type: z.literal('pane.unsubscribe'), id, sessionId }),

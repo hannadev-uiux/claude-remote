@@ -34,6 +34,10 @@ export const SubagentInfoSchema = z.object({
 })
 export type SubagentInfo = z.infer<typeof SubagentInfoSchema>
 
+/** Git checkout of a session's directory: the worktree root and its branch (`null` when detached). */
+export const CheckoutSchema = z.object({ root: z.string(), branch: z.string().nullable() })
+export type Checkout = z.infer<typeof CheckoutSchema>
+
 export const SessionSchema = z.object({
   id: z.string(),
   profileId: z.string(),
@@ -46,8 +50,28 @@ export const SessionSchema = z.object({
   updatedAt: z.string(),
   subagents: z.array(SubagentInfoSchema).default([]),
   backgroundTasks: z.number().int().nonnegative().default(0),
+  /** `null` outside git (and from older daemons). */
+  checkout: CheckoutSchema.nullable().default(null),
 })
 export type Session = z.infer<typeof SessionSchema>
+
+/** A live session can still change files: open in tmux and not ended. */
+export function isLiveSession(session: Pick<Session, 'controllable' | 'state'>): boolean {
+  return session.controllable && session.state !== 'ended'
+}
+
+/** Other live sessions working in the same git checkout as `session` (none outside git). */
+export function checkoutPeers<T extends Pick<Session, 'id' | 'controllable' | 'state' | 'checkout'>>(
+  session: Pick<Session, 'id' | 'checkout'>,
+  sessions: readonly T[],
+): T[] {
+  const root = session.checkout?.root
+  if (!root) return []
+  return sessions.filter((s) => s.id !== session.id && s.checkout?.root === root && isLiveSession(s))
+}
+
+export const CheckoutPeerSchema = z.object({ id: z.string(), title: z.string() })
+export type CheckoutPeer = z.infer<typeof CheckoutPeerSchema>
 
 const entryBase = {
   /** Stable unique key: `<uuid>:<index>`. */

@@ -1,10 +1,11 @@
 import { homedir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
-import type { Profile, ProjectItem } from '@claude-remote/protocol'
+import type { Checkout, Profile, ProjectItem } from '@claude-remote/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import { expandHome } from '../../core/paths.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory } from '../../infra/fs.ts'
+import { worktreeName } from '../checkout/resolver.ts'
 import type { SessionStore } from '../sessions/store.ts'
 
 export const MAX_PROJECTS = 30
@@ -29,6 +30,8 @@ export class LifecycleService {
     private readonly binDir: string,
     private readonly home = homedir(),
     private readonly hasPane: (paneId: string) => Promise<boolean> = async () => false,
+    private readonly checkout: (dir: string) => Promise<Checkout | null> = async () => null,
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   private profile(id: string): Profile {
@@ -51,10 +54,20 @@ export class LifecycleService {
     return result.stdout.trim()
   }
 
-  async start(profileId: string, rawCwd: string): Promise<{ paneId: string }> {
+  /** `worktree` runs Claude Code with `--worktree <name>`: its own git worktree and branch. */
+  async start(
+    profileId: string,
+    rawCwd: string,
+    options: { worktree?: boolean } = {},
+  ): Promise<{ paneId: string }> {
     const profile = this.profile(profileId)
     const cwd = await validateCwd(rawCwd, this.home)
-    return { paneId: await this.launch(profile, cwd, []) }
+    const args: string[] = []
+    if (options.worktree) {
+      if (!(await this.checkout(cwd))) throw new DaemonError('bad_request', `not a git checkout: ${cwd}`)
+      args.push('--worktree', worktreeName(this.now()))
+    }
+    return { paneId: await this.launch(profile, cwd, args) }
   }
 
   async resume(profileId: string, sessionId: string): Promise<{ paneId: string }> {

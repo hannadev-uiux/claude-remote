@@ -53,6 +53,7 @@ export class SessionService {
       updatedAt: hook.receivedAt,
       subagents: [],
       backgroundTasks: 0,
+      checkout: null,
       transcriptPath: hook.payload.transcript_path ?? null,
     }
   }
@@ -175,6 +176,7 @@ export class SessionService {
         updatedAt: new Date().toISOString(),
         subagents: [],
         backgroundTasks: 0,
+        checkout: null,
         transcriptPath: link.transcriptPath,
       }))
     }
@@ -205,6 +207,7 @@ export class SessionService {
         updatedAt: file.mtime.toISOString(),
         subagents: [],
         backgroundTasks: 0,
+        checkout: null,
         transcriptPath: file.path,
       }))
     }
