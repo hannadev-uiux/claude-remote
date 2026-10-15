@@ -50,6 +50,20 @@ const SYSTEM_PROMPTS = {
 /** Languages the system offers for the app (matching the catalogs pt-BR, en-US and es-ES). */
 const APP_LOCALIZATIONS = Object.keys(SYSTEM_PROMPTS)
 
+/**
+ * Over-the-air updates (expo-updates): any Expo Updates server (`CLAUDE_REMOTE_UPDATES_URL`) or EAS
+ * Update (`EAS_PROJECT_ID`). Without either, updates are off. Manifests are verified against the
+ * certificate when it exists; a self-hosted server must have one.
+ */
+const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID || undefined
+const CUSTOM_UPDATES_URL = process.env.CLAUDE_REMOTE_UPDATES_URL || undefined
+const UPDATES_URL = CUSTOM_UPDATES_URL ?? (EAS_PROJECT_ID && `https://u.expo.dev/${EAS_PROJECT_ID}`)
+const UPDATES_CERTIFICATE = './certs/updates-certificate.pem'
+const signedUpdates = existsSync(UPDATES_CERTIFICATE)
+if (CUSTOM_UPDATES_URL && !signedUpdates) {
+  throw new Error(`CLAUDE_REMOTE_UPDATES_URL needs a code-signing certificate at ${UPDATES_CERTIFICATE}`)
+}
+
 /** Camera for the pairing QR, notifications (Android 13+), network for the daemon, haptics. */
 const ANDROID_PERMISSIONS = [
   'android.permission.CAMERA',
@@ -172,6 +186,21 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
     blockedPermissions: ANDROID_BLOCKED_PERMISSIONS,
   },
   locales: SYSTEM_PROMPTS,
+  // Updates only reach binaries with the same native code; src/core/updates decides when to check.
+  runtimeVersion: { policy: 'fingerprint' },
+  updates: UPDATES_URL
+    ? {
+        url: UPDATES_URL,
+        checkAutomatically: 'NEVER',
+        fallbackToCacheTimeout: 0,
+        ...(signedUpdates
+          ? {
+              codeSigningCertificate: UPDATES_CERTIFICATE,
+              codeSigningMetadata: { keyid: 'main', alg: 'rsa-v1_5-sha256' },
+            }
+          : {}),
+      }
+    : { enabled: false },
   web: { favicon: './assets/favicon.png' },
   plugins: [
     'expo-router',
@@ -215,6 +244,6 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
       },
     ],
   ],
-  extra: { firebase },
+  extra: { firebase, ...(EAS_PROJECT_ID ? { eas: { projectId: EAS_PROJECT_ID } } : {}) },
   experiments: { typedRoutes: true },
 })

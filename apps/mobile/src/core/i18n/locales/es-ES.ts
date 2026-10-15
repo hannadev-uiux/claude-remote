@@ -264,6 +264,26 @@ const esES = {
     forgetBody: 'El token se borrará de este dispositivo. Tendrás que volver a vincularlo.',
     forget: 'Olvidar',
   },
+  updates: {
+    title: 'App',
+    version: 'versión',
+    runtime: 'runtime',
+    update: 'actualización',
+    builtIn: 'integrada',
+    channel: 'canal',
+    check: 'Buscar actualizaciones',
+    upToDate: 'La app está actualizada.',
+    downloaded: 'Actualización descargada: se aplica la próxima vez que se abra la app.',
+    restart: 'Reiniciar ahora',
+    restartTitle: '¿Reiniciar la app?',
+    restartBody: 'La versión nueva está lista. Las sesiones se recargan desde el ordenador.',
+    error: 'No pude buscar actualizaciones. Inténtalo más tarde.',
+    disabled:
+      'Las actualizaciones por aire están desactivadas en este build: instala un build nuevo para actualizar.',
+    daemonOutdated:
+      'El ordenador ejecuta Claude Remote {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta claude-remote update.',
+    dismiss: 'Descartar',
+  },
   terminal: {
     space: 'espacio',
   },

@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionProvider, useConnectionStore } from '@/core/connection'
 import '@/core/i18n'
 import { colors, fonts } from '@/core/theme'
+import { useBackgroundUpdates } from '@/core/updates'
 
 void SplashScreen.preventAutoHideAsync()
 
@@ -33,6 +34,7 @@ export default function RootLayout() {
   const { t } = useTranslation()
   const credentialsLoaded = useConnectionStore((s) => s.credentialsLoaded)
   const ready = fontsLoaded && credentialsLoaded
+  useBackgroundUpdates()
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync()
