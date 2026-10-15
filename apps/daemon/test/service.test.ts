@@ -45,16 +45,41 @@ describe('launchd', () => {
   })
 
   test('install writes the plist with a deduplicated PATH and bootstraps it', async () => {
-    const exec = fakeExecutor()
+    const exec = fakeExecutor((c) => (c.args[0] === 'print' ? { exitCode: 113 } : undefined))
     const path = await installService(
       exec,
       { ...options, path: '/a:/b:/a::/c:/b', logsDir: join(home.dir(), 'logs') },
       home.dir(),
+      async () => {},
     )
     expect(path).toBe(join(home.dir(), 'Library', 'LaunchAgents', `${LAUNCHD_LABEL}.plist`))
-    expect(exec.calls.map((c) => c.args[0])).toEqual(['bootout', 'bootstrap'])
-    expect(exec.calls[1]?.args[2]).toBe(path)
+    expect(exec.calls.map((c) => c.args[0])).toEqual(['bootout', 'print', 'bootstrap'])
+    expect(exec.calls[2]?.args[2]).toBe(path)
     expect(readFileSync(path, 'utf8')).toContain('<string>/a:/b:/c</string>')
+  })
+
+  test('install waits for the old job to unload and retries a failed bootstrap', async () => {
+    let prints = 0
+    let bootstraps = 0
+    const exec = fakeExecutor((c) => {
+      if (c.args[0] === 'print') return { exitCode: ++prints < 3 ? 0 : 113 }
+      if (c.args[0] === 'bootstrap' && ++bootstraps < 2)
+        return { exitCode: 5, stderr: 'Bootstrap failed: 5: Input/output error' }
+      return undefined
+    })
+    const waits: number[] = []
+    await installService(exec, { ...options, logsDir: join(home.dir(), 'logs') }, home.dir(), async (ms) => {
+      waits.push(ms)
+    })
+    expect(exec.calls.map((c) => c.args[0])).toEqual([
+      'bootout',
+      'print',
+      'print',
+      'print',
+      'bootstrap',
+      'bootstrap',
+    ])
+    expect(waits).toEqual([100, 100, 500])
   })
 
   test('dedupePath keeps the first occurrence of each entry', () => {

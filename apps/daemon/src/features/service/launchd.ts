@@ -1,6 +1,7 @@
 import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 import type { Executor } from '../../infra/exec.ts'
 
 export const LAUNCHD_LABEL = 'tech.doctorx.claude-remote'
@@ -160,17 +161,28 @@ function domain(): string {
   return `gui/${process.getuid?.() ?? 501}`
 }
 
+/**
+ * `bootout` returns before the old job is gone; bootstrapping meanwhile fails with
+ * "5: Input/output error". So wait for the job to disappear and retry bootstrap a few times.
+ */
 export async function installService(
   exec: Executor,
   options: PlistOptions,
   home = homedir(),
+  sleep: (ms: number) => Promise<unknown> = delay,
 ): Promise<string> {
   const path = plistPath(home)
+  const target = `${domain()}/${LAUNCHD_LABEL}`
   await mkdir(join(home, 'Library', 'LaunchAgents'), { recursive: true })
   await mkdir(options.logsDir, { recursive: true })
   await writeFile(path, renderPlist({ ...options, path: dedupePath(options.path) }))
-  await exec('launchctl', ['bootout', `${domain()}/${LAUNCHD_LABEL}`])
-  const result = await exec('launchctl', ['bootstrap', domain(), path])
+  await exec('launchctl', ['bootout', target])
+  for (let i = 0; i < 50 && (await exec('launchctl', ['print', target])).exitCode === 0; i++) await sleep(100)
+  let result = await exec('launchctl', ['bootstrap', domain(), path])
+  for (let attempt = 1; result.exitCode !== 0 && attempt < 5; attempt++) {
+    await sleep(500 * attempt)
+    result = await exec('launchctl', ['bootstrap', domain(), path])
+  }
   if (result.exitCode !== 0) throw new Error(`launchctl bootstrap falhou: ${result.stderr.trim()}`)
   return path
 }

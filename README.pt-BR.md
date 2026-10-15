@@ -61,7 +61,7 @@ Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [R
 curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 ```
 
-O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude-remote/src` e abre um assistente que encontra suas contas do Claude Code, pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `claude-remote setup` muda contas e aliases depois.
+O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude-remote/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `claude-remote setup` muda contas e aliases depois.
 
 No iPhone, instale o app e o Tailscale (mesma conta do Mac). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o Mac.
 

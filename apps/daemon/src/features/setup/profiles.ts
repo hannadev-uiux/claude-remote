@@ -1,13 +1,17 @@
-import { readdir } from 'node:fs/promises'
+import { existsSync, statSync } from 'node:fs'
+import { readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import type { Profile } from '@claude-remote/protocol'
 import { expandHome } from '../../core/paths.ts'
 import { isDirectory } from '../../infra/fs.ts'
 
-/** `~/.claude` and `~/.claude-<name>`; `~/.claude-remote` is ours, not a Claude Code profile. */
+/** `~/.claude` and `~/.claude-<name>`. */
 const CONFIG_DIR = /^\.claude(-[\w.-]+)?$/
-const NOT_PROFILES = new Set(['.claude-remote'])
+/** Same naming, but data of other tools: ours and the claude-mem plugin. */
+const NOT_PROFILES = new Set(['.claude-remote', '.claude-mem'])
+/** Any of these marks a dir Claude Code has already used as CLAUDE_CONFIG_DIR. */
+const PROFILE_MARKERS = ['.claude.json', 'settings.json', '.credentials.json', 'projects']
 const ALIAS = /^[a-z][a-z0-9_-]{0,31}$/
 /** The launcher runs `claude` and its directory comes first on PATH; these would call themselves. */
 const RESERVED_ALIASES = new Set(['claude', 'claude-remote', 'tmux'])
@@ -18,13 +22,21 @@ export function tildify(path: string, home = homedir()): string {
   return path.startsWith(`${home}/`) ? `~/${path.slice(home.length + 1)}` : path
 }
 
-/** Claude Code config dirs in the home, `~/.claude` first, as `~/...` paths. */
+function looksLikeConfigDir(path: string): boolean {
+  return PROFILE_MARKERS.some((marker) => existsSync(join(path, marker)))
+}
+
+/**
+ * Claude Code config dirs in the home, `~/.claude` first, as `~/...` paths. `~/.claude-*` dirs
+ * only count when Claude Code has written to them, so other tools' `~/.claude-x` data is skipped.
+ */
 export async function detectConfigDirs(home = homedir()): Promise<string[]> {
   const entries = await readdir(home).catch(() => [] as string[])
   const found: string[] = []
   for (const name of entries) {
     if (!CONFIG_DIR.test(name) || NOT_PROFILES.has(name)) continue
-    if (await isDirectory(join(home, name))) found.push(name)
+    const path = join(home, name)
+    if ((await isDirectory(path)) && (name === '.claude' || looksLikeConfigDir(path))) found.push(name)
   }
   return found
     .sort((a, b) => (a === '.claude' ? -1 : b === '.claude' ? 1 : a.localeCompare(b)))
@@ -71,5 +83,47 @@ export function profilesToRemove(
   return {
     launchers: previous.filter((p) => !next.some((n) => n.id === p.id)),
     hooks: previous.filter((p) => !next.some((n) => sameDir(n.configDir, p.configDir))),
+  }
+}
+
+/** `~/.claude` (Claude Code's default) when free, otherwise the first free `~/.claude-<name>`. */
+export function suggestNewConfigDir(taken: readonly string[], home = homedir()): string {
+  if (!taken.some((t) => sameDir(t, '~/.claude')) && !existsSync(join(home, '.claude'))) return '~/.claude'
+  const names = ['trabalho', 'pessoal', ...Array.from({ length: 98 }, (_, i) => `conta-${i + 2}`)]
+  const free = names
+    .map((name) => `~/.claude-${name}`)
+    .find((dir) => !taken.some((t) => sameDir(t, dir)) && !existsSync(join(home, basename(dir))))
+  return free ?? '~/.claude-nova'
+}
+
+/** Folder for a new account: absolute or `~/`, not in use by another account or another tool. */
+export function validateNewConfigDir(value: string, taken: readonly string[]): true | string {
+  const dir = value.trim()
+  if (!dir.startsWith('~/') && !dir.startsWith('/')) return 'Use um caminho absoluto ou começando com ~/.'
+  const path = expandHome(dir).replace(/\/+$/, '')
+  if (NOT_PROFILES.has(basename(path))) return `${dir} é de outra ferramenta; escolha outro nome.`
+  if (taken.some((t) => sameDir(t, path))) return 'Essa pasta já está na lista de contas.'
+  if (existsSync(path) && !statSync(path).isDirectory()) return 'Já existe um arquivo com esse nome.'
+  return true
+}
+
+/**
+ * Who is logged in to a config dir, from its `.claude.json` (`~/.claude.json` for `~/.claude`):
+ * the account email, "chave de API", or null when Claude Code was never logged in there.
+ */
+export async function readLogin(configDir: string, home = homedir()): Promise<string | null> {
+  const dir = expandHome(configDir).replace(/\/+$/, '')
+  const file = dir === join(home, '.claude') ? join(home, '.claude.json') : join(dir, '.claude.json')
+  try {
+    const data: unknown = JSON.parse(await readFile(file, 'utf8'))
+    if (!data || typeof data !== 'object') return null
+    const { oauthAccount, primaryApiKey } = data as { oauthAccount?: unknown; primaryApiKey?: unknown }
+    if (oauthAccount && typeof oauthAccount === 'object') {
+      const email = (oauthAccount as { emailAddress?: unknown }).emailAddress
+      return typeof email === 'string' && email ? email : 'conta Claude'
+    }
+    return typeof primaryApiKey === 'string' && primaryApiKey ? 'chave de API' : null
+  } catch {
+    return null
   }
 }
