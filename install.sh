@@ -4,6 +4,8 @@
 #   curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 #   curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash -s -- --yes   # no questions
 #
+# Runs on macOS and Linux. Missing tools (tmux, ripgrep, zsh, git) are installed with apt-get, dnf,
+# pacman or zypper (with sudo, after saying why) or Homebrew; Node 24+ must already be installed.
 # Installs (or updates) the daemon from source into ~/.claude-remote/src, builds it and opens
 # the guided `claude-remote setup` (accounts and aliases, hooks, background service, pairing).
 # Running it again updates to the latest version. Everything lives in main() so a partially
@@ -29,12 +31,14 @@ pt*)
   T_OPT_HELP='mostra esta ajuda'
   T_SRC='Código em: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='instalador'
-  T_MACOS_ONLY='O daemon do Claude Remote roda só no macOS.'
-  T_NEED_NODE='É preciso o Node.js %s+: https://nodejs.org (ou `brew install node`).'
+  T_UNSUPPORTED='Sistema não suportado (%s). O Claude Remote roda em macOS e Linux.'
+  T_NEED_NODE='É preciso o Node.js %s+: https://nodejs.org (ou `brew install node`, nvm, fnm…).'
   T_NODE_OLD='É preciso o Node.js %s+ (encontrado %s).'
   T_NEED_GIT='É preciso o git: rode `xcode-select --install`.'
-  T_MISSING='Faltando: %s. Instale (por exemplo com o Homebrew) e rode de novo.'
-  T_BREW='Instalando %s com o Homebrew'
+  T_MISSING='Faltando: %s. Instale com o gerenciador de pacotes do sistema e rode de novo.'
+  T_INSTALLING='Instalando %s com %s'
+  T_SUDO_WHY='Instalar pacotes do sistema exige permissão de administrador: o sudo pode pedir sua senha.'
+  T_NO_SUDO='Faltando: %s. Instale como root (sudo não encontrado) e rode de novo.'
   T_NO_CLAUDE='Claude Code (`claude`) não encontrado no PATH: https://claude.com/claude-code'
   T_UPDATING='Atualizando %s para %s'
   T_DIRTY='%s tem mudanças locais. Faça commit ou descarte, ou use outro diretório em CLAUDE_REMOTE_SRC.'
@@ -54,12 +58,14 @@ es*)
   T_OPT_HELP='muestra esta ayuda'
   T_SRC='Código en: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='instalador'
-  T_MACOS_ONLY='El daemon de Claude Remote solo funciona en macOS.'
-  T_NEED_NODE='Necesitas Node.js %s+: https://nodejs.org (o `brew install node`).'
+  T_UNSUPPORTED='Sistema no compatible (%s). Claude Remote funciona en macOS y Linux.'
+  T_NEED_NODE='Necesitas Node.js %s+: https://nodejs.org (o `brew install node`, nvm, fnm…).'
   T_NODE_OLD='Necesitas Node.js %s+ (encontrado %s).'
   T_NEED_GIT='Necesitas git: ejecuta `xcode-select --install`.'
-  T_MISSING='Falta: %s. Instálalo (por ejemplo con Homebrew) y vuelve a ejecutarlo.'
-  T_BREW='Instalando %s con Homebrew'
+  T_MISSING='Falta: %s. Instálalo con el gestor de paquetes del sistema y vuelve a ejecutarlo.'
+  T_INSTALLING='Instalando %s con %s'
+  T_SUDO_WHY='Instalar paquetes del sistema requiere permisos de administrador: sudo puede pedirte la contraseña.'
+  T_NO_SUDO='Falta: %s. Instálalo como root (no se encontró sudo) y vuelve a ejecutarlo.'
   T_NO_CLAUDE='No se encontró Claude Code (`claude`) en el PATH: https://claude.com/claude-code'
   T_UPDATING='Actualizando %s a %s'
   T_DIRTY='%s tiene cambios locales. Haz commit o descártalos, o usa otro directorio en CLAUDE_REMOTE_SRC.'
@@ -79,12 +85,14 @@ es*)
   T_OPT_HELP='show this help'
   T_SRC='Source in: %s (env: CLAUDE_REMOTE_SRC)'
   T_INSTALLER='installer'
-  T_MACOS_ONLY='The Claude Remote daemon runs on macOS only.'
-  T_NEED_NODE='Node.js %s+ is required: https://nodejs.org (or `brew install node`).'
+  T_UNSUPPORTED='Unsupported system (%s). Claude Remote runs on macOS and Linux.'
+  T_NEED_NODE='Node.js %s+ is required: https://nodejs.org (or `brew install node`, nvm, fnm…).'
   T_NODE_OLD='Node.js %s+ is required (found %s).'
   T_NEED_GIT='git is required: run `xcode-select --install`.'
-  T_MISSING='Missing: %s. Install it (e.g. with Homebrew) and run this again.'
-  T_BREW='Installing %s with Homebrew'
+  T_MISSING='Missing: %s. Install it with your package manager and run this again.'
+  T_INSTALLING='Installing %s with %s'
+  T_SUDO_WHY='Installing system packages needs administrator rights: sudo may ask for your password.'
+  T_NO_SUDO='Missing: %s. Install it as root (sudo not found) and run this again.'
   T_NO_CLAUDE='Claude Code (`claude`) not found in PATH: https://claude.com/claude-code'
   T_UPDATING='Updating %s to %s'
   T_DIRTY='%s has local changes. Commit or discard them, or use another directory in CLAUDE_REMOTE_SRC.'
@@ -132,8 +140,15 @@ $(t "$T_SRC" "$SRC_DIR")
 EOF
 }
 
-require_macos() {
-  [[ "$(uname -s)" == "Darwin" ]] || die "$T_MACOS_ONLY"
+# darwin or linux; anything else stops here.
+detect_platform() {
+  local system
+  system="$(uname -s)"
+  case "$system" in
+  Darwin) PLATFORM=darwin ;;
+  Linux) PLATFORM=linux ;;
+  *) die "$(t "$T_UNSUPPORTED" "$system")" ;;
+  esac
 }
 
 require_node() {
@@ -143,17 +158,66 @@ require_node() {
   ((major >= MIN_NODE_MAJOR)) || die "$(t "$T_NODE_OLD" "$MIN_NODE_MAJOR" "$(node --version)")"
 }
 
-# tmux and ripgrep are installed with Homebrew when missing; git ships with the Xcode CLT.
-require_tools() {
-  command -v git >/dev/null 2>&1 || die "$T_NEED_GIT"
-  local missing=()
-  command -v tmux >/dev/null 2>&1 || missing+=(tmux)
-  command -v rg >/dev/null 2>&1 || missing+=(ripgrep)
-  if ((${#missing[@]} > 0)); then
-    command -v brew >/dev/null 2>&1 || die "$(t "$T_MISSING" "${missing[*]}")"
-    step "$(t "$T_BREW" "${missing[*]}")"
-    brew install "${missing[@]}" </dev/null
+# First package manager found: the system one on Linux, else Homebrew.
+package_manager() {
+  local pm
+  for pm in apt-get dnf pacman zypper brew; do
+    if command -v "$pm" >/dev/null 2>&1; then
+      printf '%s\n' "$pm"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# install_packages <package>...: installs with the package manager found. System managers need root,
+# so sudo is used (after saying why) unless this already runs as root. Homebrew never uses sudo.
+install_packages() {
+  local pm
+  pm="$(package_manager)" || die "$(t "$T_MISSING" "$*")"
+  step "$(t "$T_INSTALLING" "$*" "$pm")"
+  if [[ "$pm" == brew ]]; then
+    brew install "$@" </dev/null
+    return
   fi
+  local sudo=()
+  if ((EUID != 0)); then
+    command -v sudo >/dev/null 2>&1 || die "$(t "$T_NO_SUDO" "$*")"
+    info "$T_SUDO_WHY"
+    sudo=(sudo)
+  fi
+  case "$pm" in
+  apt-get)
+    "${sudo[@]+"${sudo[@]}"}" env DEBIAN_FRONTEND=noninteractive apt-get update -qq </dev/null
+    "${sudo[@]+"${sudo[@]}"}" env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$@" </dev/null
+    ;;
+  dnf) "${sudo[@]+"${sudo[@]}"}" dnf install -y "$@" </dev/null ;;
+  pacman) "${sudo[@]+"${sudo[@]}"}" pacman -S --needed --noconfirm "$@" </dev/null ;;
+  zypper) "${sudo[@]+"${sudo[@]}"}" zypper --non-interactive install "$@" </dev/null ;;
+  esac
+}
+
+# Packages whose command is missing: tmux, ripgrep, zsh (runs the launchers) and git (on macOS git
+# comes with the Xcode Command Line Tools and is checked before).
+missing_packages() {
+  local pkg cmd
+  for pkg in tmux ripgrep zsh git; do
+    cmd="$pkg"
+    [[ "$pkg" == ripgrep ]] && cmd=rg
+    command -v "$cmd" >/dev/null 2>&1 || printf '%s\n' "$pkg"
+  done
+}
+
+require_tools() {
+  if [[ "$PLATFORM" == darwin ]]; then
+    command -v git >/dev/null 2>&1 || die "$T_NEED_GIT"
+  fi
+  local missing=()
+  local pkg
+  while IFS= read -r pkg; do
+    [[ -n "$pkg" ]] && missing+=("$pkg")
+  done < <(missing_packages)
+  ((${#missing[@]} == 0)) || install_packages "${missing[@]}"
   command -v claude >/dev/null 2>&1 || warn "$T_NO_CLAUDE"
 }
 
@@ -222,7 +286,7 @@ main() {
   done
 
   printf '\n%s✻%s %sClaude Remote%s %s· %s%s\n\n' "$ORANGE" "$RESET" "$BOLD" "$RESET" "$DIM" "$T_INSTALLER" "$RESET"
-  require_macos
+  detect_platform
   require_node
   require_tools
   fetch_source
@@ -239,4 +303,7 @@ main() {
   fi
 }
 
-main "$@"
+# Runs only when executed (`bash install.sh`, `curl … | bash`), not when sourced (tests).
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
+  main "$@"
+fi
