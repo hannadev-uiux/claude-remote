@@ -1,22 +1,22 @@
 ## Why
 
-Instalar exigia clonar o repositório, rodar `pnpm`, `build`, `install` e `service install` na mão, e os perfis vinham fixos (`claudin`/`drclaude`). Quem chega pelo repositório público precisa de uma instalação de uma linha, como a do Claude Code, que guie as escolhas e deixe nomear os launchers de cada conta.
+Installing required cloning the repository and running `pnpm`, `build`, `install` and `service install` by hand, and the profiles were hardcoded (`claudin`/`drclaude`). People arriving from the public repository need a one-line install, like Claude Code's, that guides their choices and lets them name the launcher for each account.
 
 ## What Changes
 
-- `install.sh` na raiz: `curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash` verifica macOS/Node/git, instala `tmux`/`ripgrep` via Homebrew se faltarem, baixa ou atualiza o código em `~/.claude-remote/src`, compila o daemon e abre o assistente. Rodar de novo atualiza.
-- `claude-remote setup`: assistente interativo com a logo do app no estilo da tela inicial do Claude Code. Detecta os diretórios `~/.claude*`, pergunta quais perfis controlar, o alias (nome do launcher) e o nome exibido de cada um, confirma, grava o `config.json` (mesclando), instala launchers/PATH/hooks, oferece o serviço e o pareamento. Perfis desmarcados têm launcher e hooks removidos. `--yes` roda sem perguntas.
-- `claude-remote install` passa a reutilizar a mesma rotina de instalação.
-- App: passo a passo na tela de pareamento para quem instalou o app primeiro (Tailscale no iPhone e no Mac, comando de instalação compartilhável, pareamento).
-- `maarkn.dev/claude-remote/install.sh` redireciona (307) para o `install.sh` da `main` no GitHub.
+- `install.sh` at the root: `curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash` checks macOS/Node/git, installs `tmux`/`ripgrep` via Homebrew if missing, downloads or updates the code in `~/.claude-remote/src`, builds the daemon and opens the wizard. Running it again updates.
+- `claude-remote setup`: interactive wizard with the app logo in the style of Claude Code's welcome screen. It detects the `~/.claude*` directories, asks which profiles to control, the alias (launcher name) and display name of each, confirms, writes `config.json` (merging), installs launchers/PATH/hooks, and offers the service and pairing. Unselected profiles have their launcher and hooks removed. `--yes` runs without questions.
+- `claude-remote install` now reuses the same installation routine.
+- App: step-by-step guide on the pairing screen for those who installed the app first (Tailscale on the iPhone and the Mac, shareable install command, pairing).
+- `maarkn.dev/claude-remote/install.sh` redirects (307) to the `install.sh` on `main` on GitHub.
 
 ## Capabilities
 
 ### New Capabilities
-- `guided-installer`: instalação por uma linha e assistente de configuração de perfis.
+- `guided-installer`: one-line installation and profile setup wizard.
 
 ### Modified Capabilities
 
 ## Impact
 
-`install.sh`, app (pareamento), CLI do daemon (`features/setup`), nova dependência `@inquirer/prompts`, README, site `maarkn.dev` (redirect).
+`install.sh`, app (pairing), daemon CLI (`features/setup`), new `@inquirer/prompts` dependency, README, `maarkn.dev` website (redirect).

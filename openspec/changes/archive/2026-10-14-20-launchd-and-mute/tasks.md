@@ -1,10 +1,10 @@
-## 1. Serviço
+## 1. Service
 
-- [x] 1.1 Configurar build `tsup` do daemon e binário `claude-remote`; verificar com `pnpm --filter daemon build` e `node dist/cli.js --help`
-- [x] 1.2 Implementar `service install|uninstall|status` com geração do plist; verificar com teste do plist gerado e `plutil -lint`
-- [x] 1.3 Tratar "no server running" do tmux como lista vazia; verificar com teste do `TmuxClient`
+- [x] 1.1 Set up the daemon `tsup` build and the `claude-remote` binary; verify with `pnpm --filter daemon build` and `node dist/cli.js --help`
+- [x] 1.2 Implement `service install|uninstall|status` with plist generation; verify with a test of the generated plist and `plutil -lint`
+- [x] 1.3 Treat tmux "no server running" as an empty list; verify with a `TmuxClient` test
 
-## 2. Silenciar
+## 2. Mute
 
-- [x] 2.1 Implementar `MuteStore` no daemon e checagem no `PushService`; verificar com testes
-- [x] 2.2 Criar interruptores por perfil nas configurações e botão de sino na sessão; verificar com typecheck e `expo export`
+- [x] 2.1 Implement `MuteStore` in the daemon and the check in `PushService`; verify with tests
+- [x] 2.2 Create per-profile toggles in settings and a bell button in the session; verify with typecheck and `expo export`

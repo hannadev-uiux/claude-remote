@@ -1,38 +1,38 @@
 # push-notifications Specification
 
 ## Purpose
-Avisa o aparelho pareado quando uma sessão precisa de atenção, sem expor o conteúdo da sessão a serviços externos.
+Alerts the paired device when a session needs attention, without exposing session content to external services.
 
 ## Requirements
 
-### Requirement: Registro do aparelho
-O app SHALL pedir permissão de notificação, obter o token FCM e enviar `device.register`; o daemon MUST guardar apenas tokens recebidos por conexões autenticadas.
+### Requirement: Device registration
+The app SHALL request notification permission, obtain the FCM token and send `device.register`; the daemon MUST store only tokens received over authenticated connections.
 
-#### Scenario: Token renovado
-- **WHEN** o FCM renova o token
-- **THEN** o app envia o novo token e o daemon substitui o antigo
+#### Scenario: Token refreshed
+- **WHEN** FCM refreshes the token
+- **THEN** the app sends the new token and the daemon replaces the old one
 
-### Requirement: Disparo de push
-O daemon SHALL enviar push para os tokens registrados quando uma sessão termina um turno (`Stop`), recebe `Notification` ou gera pedido de permissão, exceto se houver cliente conectado com o app em primeiro plano. Sem configuração do Firebase, o daemon MUST seguir funcionando sem push.
+### Requirement: Push delivery
+The daemon SHALL send a push to the registered tokens when a session finishes a turn (`Stop`), receives `Notification` or produces a permission request, unless a connected client has the app in the foreground. Without Firebase configuration, the daemon MUST keep working without push.
 
-#### Scenario: Sessão termina
-- **WHEN** chega `Stop` e o app está em segundo plano
-- **THEN** o aparelho recebe "Sessão concluída" com o perfil
+#### Scenario: Session finishes
+- **WHEN** `Stop` arrives and the app is in the background
+- **THEN** the device receives "Session finished" with the profile
 
-#### Scenario: Firebase não configurado
-- **WHEN** não há service account
-- **THEN** o daemon registra um aviso e não envia push
+#### Scenario: Firebase not configured
+- **WHEN** there is no service account
+- **THEN** the daemon logs a warning and does not send push
 
-### Requirement: Payload sem conteúdo
-O payload MUST conter apenas título genérico, nome do perfil, `sessionId`, tipo do evento e `requestId` quando houver; nunca prompts, comandos ou caminhos.
+### Requirement: Content-free payload
+The payload MUST contain only a generic title, the profile name, `sessionId`, the event type and `requestId` when present; never prompts, commands or paths.
 
-#### Scenario: Pedido de permissão
-- **WHEN** um `Bash` pede permissão
-- **THEN** o push diz "Permissão pendente" e o perfil, sem o comando
+#### Scenario: Permission request
+- **WHEN** a `Bash` call asks for permission
+- **THEN** the push says "Permission pending" and the profile, without the command
 
-### Requirement: Deep link e ações
-Tocar na notificação SHALL abrir a sessão; as ações "Permitir"/"Negar" MUST responder o pedido conectando ao daemon em segundo plano.
+### Requirement: Deep link and actions
+Tapping the notification SHALL open the session; the "Allow"/"Deny" actions MUST answer the request by connecting to the daemon in the background.
 
-#### Scenario: Negar pela notificação
-- **WHEN** o usuário toca "Negar" na notificação
-- **THEN** o app envia `permission.respond` com `deny`
+#### Scenario: Deny from the notification
+- **WHEN** the user taps "Deny" on the notification
+- **THEN** the app sends `permission.respond` with `deny`

@@ -1,14 +1,14 @@
 ## Context
 
-Subagentes: `<configDir>/projects/<projeto>/<sessionId>/subagents/agent-<agentId>.jsonl`. `Stop` traz `background_tasks`.
+Subagents: `<configDir>/projects/<project>/<sessionId>/subagents/agent-<agentId>.jsonl`. `Stop` carries `background_tasks`.
 
 ## Decisions
 
-- **Watcher** chokidar na pasta `subagents` das sessões ativas (`depth: 0`, só `add`/`change`).
-- **Estado**: `running` ao ver o arquivo ou mudança; `done` no `SubagentStop` ou após 2 min sem mudanças com sessão `idle`.
-- **Reuso** do leitor incremental do change 06, parametrizado pelo caminho; chave de assinatura `sessionId#agentId`.
-- `agentType` lido da primeira linha do transcript do subagente quando disponível, senão do hook.
+- **Watcher**: chokidar on the `subagents` folder of active sessions (`depth: 0`, only `add`/`change`).
+- **State**: `running` when the file appears or changes; `done` on `SubagentStop` or after 2 min without changes while the session is `idle`.
+- **Reuse** of the incremental reader from change 06, parameterized by path; subscription key `sessionId#agentId`.
+- `agentType` read from the first line of the subagent transcript when available, otherwise from the hook.
 
 ## Risks / Trade-offs
 
-- [Formato de `background_tasks` não documentado em detalhe] → schema tolerante (`z.array(z.unknown())`) e exibição genérica.
+- [`background_tasks` format not documented in detail] → tolerant schema (`z.array(z.unknown())`) and generic display.

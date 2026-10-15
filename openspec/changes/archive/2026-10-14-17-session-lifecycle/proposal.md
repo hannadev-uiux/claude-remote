@@ -1,21 +1,21 @@
 ## Why
 
-Começar uma tarefa ou retomar uma sessão antiga a partir do celular evita ter que ir ao Mac (D8, D9, A9).
+Starting a task or resuming an old session from the phone avoids having to go to the Mac (D8, D9, A9).
 
 ## What Changes
 
-- Daemon: `session.start { profileId, cwd }` abre nova janela tmux com o launcher do perfil no diretório escolhido.
-- Daemon: `session.resume { profileId, sessionId }` abre janela com `claude --resume <id>` no `cwd` original.
-- Daemon: lista de diretórios recentes por perfil (a partir dos projetos do perfil).
-- App: botão "Nova sessão" (perfil + diretório recente ou digitado) e "Retomar" em sessões encerradas.
+- Daemon: `session.start { profileId, cwd }` opens a new tmux window with the profile's launcher in the chosen directory.
+- Daemon: `session.resume { profileId, sessionId }` opens a window with `claude --resume <id>` in the original `cwd`.
+- Daemon: list of recent directories per profile (from the profile's projects).
+- App: "New session" button (profile + recent or typed directory) and "Resume" on ended sessions.
 
 ## Capabilities
 
 ### New Capabilities
-- `session-lifecycle`: iniciar e retomar sessões remotamente.
+- `session-lifecycle`: start and resume sessions remotely.
 
 ### Modified Capabilities
 
 ## Impact
 
-`features/lifecycle` no daemon; `src/features/sessions` no app.
+`features/lifecycle` in the daemon; `src/features/sessions` in the app.
