@@ -218,6 +218,8 @@ Builds are created without an update server, so updates are off. To ship JavaScr
    ```
    It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `CLAUDE_REMOTE_UPDATES_TOKEN`.
 
+**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the server's `CLAUDE_REMOTE_UPDATES_DEV_TOKEN`, which can only publish to `development`). Without them it does nothing.
+
 The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 
 ### Uninstall
@@ -251,7 +253,7 @@ Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Development
 
-`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone, `DEVICE="…"` to skip the device question) and `make publish-ota` (`PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `CLAUDE_REMOTE_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
+`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone, `DEVICE="…"` to skip the device question) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `CLAUDE_REMOTE_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
 
 ```bash
 pnpm check                                             # typecheck + tests + Biome across the monorepo

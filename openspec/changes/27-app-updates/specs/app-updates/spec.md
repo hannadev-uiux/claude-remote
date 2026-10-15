@@ -36,3 +36,22 @@ The app SHALL compare `hello.daemonVersion` with the minimum daemon version it n
 #### Scenario: Old daemon
 - **WHEN** the app needs daemon 0.4.0 and connects to 0.3.0
 - **THEN** a banner suggests running `claude-remote update` on the computer
+
+### Requirement: Update channels
+Builds SHALL follow the `production` channel (`expo-channel-name`). Settings → App SHALL let the user switch to `development` (after a confirmation) and back; the choice MUST persist and be applied before every check. Every update SHALL carry its channel in the signed `metadata.channel`, and the server's manifest filters MUST make the app leave an update of another channel once that channel has an update. A merge into `development` that touches the app SHALL publish to the `development` channel from CI with a token that cannot publish to other channels; production stays a manual publish.
+
+#### Scenario: Following development
+- **WHEN** the user picks `development` and a merge into `development` has been published
+- **THEN** the app downloads that update and offers to restart into it
+
+#### Scenario: Back to production
+- **WHEN** a phone running a development update switches back to `production` and production has an update for its runtime
+- **THEN** the production update is applied on the next start even if it is older
+
+#### Scenario: Production not published yet
+- **WHEN** it switches back to `production` and there is no production update for its runtime
+- **THEN** Settings says the development version keeps running until one is published
+
+#### Scenario: CI token
+- **WHEN** the CI token is used to publish to `production`
+- **THEN** the server refuses it (403)

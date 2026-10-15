@@ -34,3 +34,26 @@ export function daemonOutdated(daemonVersion: string | undefined, minimum: strin
 export function shortUpdateId(id: string | null): string | null {
   return id ? (id.split('-')[0] ?? id) : null
 }
+
+/** Update channels on the server (`expo-channel-name`); builds follow `production`. */
+export const UPDATE_CHANNELS = ['production', 'development'] as const
+export type UpdateChannel = (typeof UPDATE_CHANNELS)[number]
+export const DEFAULT_CHANNEL: UpdateChannel = 'production'
+
+export function isUpdateChannel(value: unknown): value is UpdateChannel {
+  return UPDATE_CHANNELS.includes(value as UpdateChannel)
+}
+
+/** Header override for a channel; null keeps the build's headers (`production`). */
+export function channelHeaders(channel: UpdateChannel): Record<string, string> | null {
+  return channel === DEFAULT_CHANNEL ? null : { 'expo-channel-name': channel }
+}
+
+/** Channel an update was published to (`metadata.channel`, signed with the manifest), or null. */
+export function updateChannelOf(manifest: unknown): string | null {
+  const metadata =
+    manifest && typeof manifest === 'object' ? (manifest as { metadata?: unknown }).metadata : undefined
+  const channel =
+    metadata && typeof metadata === 'object' ? (metadata as { channel?: unknown }).channel : undefined
+  return typeof channel === 'string' ? channel : null
+}

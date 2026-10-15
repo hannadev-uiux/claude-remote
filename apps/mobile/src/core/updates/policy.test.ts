@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'vitest'
-import { compareVersions, daemonOutdated, shortUpdateId, shouldCheck } from './policy'
+import {
+  channelHeaders,
+  compareVersions,
+  daemonOutdated,
+  isUpdateChannel,
+  shortUpdateId,
+  shouldCheck,
+  updateChannelOf,
+} from './policy'
 
 describe('shouldCheck', () => {
   test('always checks the first time, then every interval', () => {
@@ -35,4 +43,23 @@ describe('daemonOutdated', () => {
 test('shortUpdateId', () => {
   expect(shortUpdateId('0f3c2a1b-1111-2222-3333-444455556666')).toBe('0f3c2a1b')
   expect(shortUpdateId(null)).toBeNull()
+})
+
+describe('channels', () => {
+  test('production keeps the build headers; other channels override them', () => {
+    expect(channelHeaders('production')).toBeNull()
+    expect(channelHeaders('development')).toEqual({ 'expo-channel-name': 'development' })
+  })
+
+  test('isUpdateChannel', () => {
+    expect(isUpdateChannel('development')).toBe(true)
+    expect(isUpdateChannel('staging')).toBe(false)
+    expect(isUpdateChannel(null)).toBe(false)
+  })
+
+  test('updateChannelOf reads the signed metadata', () => {
+    expect(updateChannelOf({ metadata: { channel: 'development' } })).toBe('development')
+    expect(updateChannelOf({ metadata: {} })).toBeNull()
+    expect(updateChannelOf(null)).toBeNull()
+  })
 })

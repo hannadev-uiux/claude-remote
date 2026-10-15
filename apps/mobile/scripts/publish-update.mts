@@ -4,7 +4,8 @@
  *
  *   CLAUDE_REMOTE_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest \
  *   CLAUDE_REMOTE_UPDATES_TOKEN=… CLAUDE_REMOTE_UPDATES_KEY=~/keys/private-key.pem \
- *   pnpm --filter @claude-remote/mobile ota:publish [--platform ios|android] [--dry-run]
+ *   pnpm --filter @claude-remote/mobile ota:publish [--channel production|development]
+ *     [--platform ios|android] [--dry-run]
  *
  * The URL must be the one the installed builds were made with (it is part of their runtime
  * version). The private key never leaves this machine; the server only stores the signature.
@@ -27,10 +28,12 @@ for (const file of ['.env.local', '.env']) {
 const { values } = parseArgs({
   options: {
     platform: { type: 'string', multiple: true },
+    channel: { type: 'string', default: 'production' },
     'dry-run': { type: 'boolean', default: false },
   },
 })
 const platforms = (values.platform ?? ['ios', 'android']) as Array<'ios' | 'android'>
+const channel = values.channel ?? 'production'
 
 function fail(message: string): never {
   console.error(`✗ ${message}`)
@@ -38,6 +41,7 @@ function fail(message: string): never {
 }
 
 const updatesUrl = process.env.CLAUDE_REMOTE_UPDATES_URL
+if (!/^[a-z][a-z0-9-]{0,31}$/.test(channel)) fail(`invalid channel: ${channel}`)
 if (!updatesUrl) fail('CLAUDE_REMOTE_UPDATES_URL is not set (the URL the builds were made with)')
 const server = new URL(updatesUrl).origin
 const keyPath = (process.env.CLAUDE_REMOTE_UPDATES_KEY ?? '').replace(/^~(?=\/)/, homedir())
@@ -79,13 +83,14 @@ try {
       id: randomUUID(),
       createdAt: new Date().toISOString(),
       runtimeVersion,
+      channel,
       server,
       bundle: { data: readFileSync(join(out, files.bundle)) },
       assets: files.assets.map((a) => ({ data: readFileSync(join(out, a.path)), ext: a.ext })),
       expoClient,
     })
     const signature = signatureHeader(manifest, privateKey)
-    console.log(`▸ ${platform}: runtime ${runtimeVersion.slice(0, 12)}, ${uploads.length} files`)
+    console.log(`▸ ${platform} → ${channel}: runtime ${runtimeVersion.slice(0, 12)}, ${uploads.length} files`)
     if (values['dry-run']) continue
 
     let sent = 0
@@ -93,7 +98,7 @@ try {
     const res = await fetch(`${server}/api/claude-remote/updates/manifests`, {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ platform, runtimeVersion, manifest, signature }),
+      body: JSON.stringify({ platform, channel, runtimeVersion, manifest, signature }),
     })
     if (!res.ok) fail(`manifest ${platform}: ${res.status} ${await res.text()}`)
     const { id } = (await res.json()) as { id: string }

@@ -191,6 +191,8 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   updates: UPDATES_URL
     ? {
         url: UPDATES_URL,
+        // Builds follow production; Settings can switch to development at runtime.
+        requestHeaders: { 'expo-channel-name': 'production' },
         checkAutomatically: 'NEVER',
         fallbackToCacheTimeout: 0,
         ...(signedUpdates
