@@ -48,7 +48,7 @@ O Claude Remote resolve isso com ferramentas em que você já confia: as sessõe
 
 ## Como funciona
 
-1. Você abre o Claude Code com um launcher (`claudin`, `drclaude`, … um por perfil) que o roda numa janela do tmux.
+1. Você abre o Claude Code com um launcher (um por conta, com o nome que você escolher, como `pessoal` ou `trabalho`) que o roda numa janela do tmux.
 2. Os hooks HTTP do Claude Code avisam o daemon quando a sessão começa, para, pede permissão ou recebe um prompt.
 3. O daemon acompanha o transcript, lê o painel do tmux e entrega tudo ao app por um WebSocket autenticado, escutando **só** na interface do Tailscale.
 4. Prompts e teclas voltam pelo tmux; respostas de permissão voltam pela requisição do hook pendente.
@@ -58,14 +58,14 @@ Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [R
 ## Início rápido
 
 ```bash
-git clone https://github.com/maarkN/claude-remote.git && cd claude-remote
-pnpm install && pnpm --filter @claude-remote/daemon build
-node apps/daemon/dist/cli.js install && source ~/.zshrc
-claude-remote service install && claude-remote pair
-cd apps/mobile && pnpm ios
+curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 ```
 
-Requisitos: macOS com `tmux`, `git`, `rg` e `claude`; Node 24+ e pnpm 12+; Tailscale no Mac e no iPhone; Xcode.
+O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude-remote/src` e abre um assistente que encontra suas contas do Claude Code, pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `claude-remote setup` muda contas e aliases depois.
+
+No iPhone, instale o app e o Tailscale (mesma conta do Mac). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o Mac.
+
+Requisitos: macOS com Node 24+ e git (o instalador cuida de `tmux` e `rg` via Homebrew); Claude Code; Tailscale no Mac e no iPhone.
 
 ## Licença
 

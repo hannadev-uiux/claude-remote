@@ -12,3 +12,4 @@ apps/mobile/android/
 # secrets
 GoogleService-Info.plist
 firebase-service-account*.json
+.install.log
