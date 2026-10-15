@@ -8,7 +8,16 @@ import { Button, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text 
 import { NestedSubagents } from '../subagents/SubagentList'
 import { ProfileHeader } from './components/ProfileHeader'
 import { SessionRow } from './components/SessionRow'
-import { flattenSections, groupSessions, type SessionListItem } from './grouping'
+import { SessionSearch } from './components/SessionSearch'
+import {
+  flattenSections,
+  groupSessions,
+  isFiltering,
+  NO_FILTER,
+  type SessionFilter,
+  type SessionListItem,
+  type StateFilter,
+} from './grouping'
 import { refreshSessions, useSessionsStore } from './store'
 
 export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: Record<string, number> }) {
@@ -18,14 +27,16 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
   const sessions = useSessionsStore((s) => s.sessions)
   const loaded = useSessionsStore((s) => s.loaded)
   const refreshing = useSessionsStore((s) => s.refreshing)
-  const [filter, setFilter] = useState<string | null>(null)
+  const [filter, setFilter] = useState<SessionFilter>(NO_FILTER)
   const listRef = useRef<FlashListRef<SessionListItem>>(null)
 
   // A new filter is a new list: start from the top.
-  const changeFilter = (next: string | null) => {
-    setFilter(next)
+  const changeFilter = (patch: Partial<SessionFilter>) => {
+    setFilter((current) => ({ ...current, ...patch }))
     listRef.current?.scrollToOffset({ offset: 0, animated: false })
   }
+  const toggleState = (state: Exclude<StateFilter, 'all'>) =>
+    changeFilter({ state: filter.state === state ? 'all' : state })
 
   const items = useMemo(
     () => flattenSections(groupSessions(Object.values(sessions), profiles, filter)),
@@ -40,30 +51,47 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
     <Screen>
       <ConnectionBanner />
       <DaemonUpdateBanner />
-      {profiles.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterBar}
-          contentContainerStyle={styles.filters}
-        >
-          <Button
-            label={t('sessions.all')}
-            compact
-            variant={filter === null ? 'primary' : 'secondary'}
-            onPress={() => changeFilter(null)}
-          />
-          {profiles.map((p) => (
+      <SessionSearch value={filter.query} onChange={(query) => changeFilter({ query })} />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={styles.filterBar}
+        contentContainerStyle={styles.filters}
+      >
+        {profiles.length > 1 ? (
+          <>
             <Button
-              key={p.id}
-              label={p.name}
+              label={t('sessions.all')}
               compact
-              variant={filter === p.id ? 'primary' : 'secondary'}
-              onPress={() => changeFilter(filter === p.id ? null : p.id)}
+              variant={filter.profileId === null ? 'primary' : 'secondary'}
+              onPress={() => changeFilter({ profileId: null })}
             />
-          ))}
-        </ScrollView>
-      ) : null}
+            {profiles.map((p) => (
+              <Button
+                key={p.id}
+                label={p.name}
+                compact
+                variant={filter.profileId === p.id ? 'primary' : 'secondary'}
+                onPress={() => changeFilter({ profileId: filter.profileId === p.id ? null : p.id })}
+              />
+            ))}
+            <View style={styles.divider} />
+          </>
+        ) : null}
+        <Button
+          label={t('sessions.active')}
+          compact
+          variant={filter.state === 'active' ? 'primary' : 'secondary'}
+          onPress={() => toggleState('active')}
+        />
+        <Button
+          label={t('sessions.ended')}
+          compact
+          variant={filter.state === 'ended' ? 'primary' : 'secondary'}
+          onPress={() => toggleState('ended')}
+        />
+      </ScrollView>
       <FlashList<SessionListItem>
         ref={listRef}
         data={items}
@@ -88,8 +116,14 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         ListEmptyComponent={
-          loaded ? (
+          loaded && isFiltering(filter) && Object.keys(sessions).length > 0 ? (
+            <EmptyState title={t('sessions.noMatch')}>
+              <Button label={t('sessions.clearFilters')} onPress={() => changeFilter(NO_FILTER)} />
+            </EmptyState>
+          ) : loaded ? (
             <EmptyState title={t('sessions.emptyTitle')}>
               <Text color="textMuted">{t('sessions.emptyBody')}</Text>
               <View style={styles.code}>
@@ -115,6 +149,7 @@ const styles = StyleSheet.create({
   // A horizontal ScrollView grows to fill a column parent; keep it at the height of the chips.
   filterBar: { flexGrow: 0 },
   filters: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm, alignItems: 'center' },
+  divider: { width: 1, alignSelf: 'stretch', backgroundColor: colors.border, marginHorizontal: space.xs },
   list: { paddingBottom: space.xxl },
   code: { backgroundColor: colors.surface, padding: space.md, borderRadius: 8, gap: space.xs },
 })

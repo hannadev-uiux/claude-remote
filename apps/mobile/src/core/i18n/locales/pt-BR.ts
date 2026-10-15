@@ -235,6 +235,12 @@ const ptBR = {
   },
   sessions: {
     all: 'todos',
+    active: 'ativas',
+    ended: 'encerradas',
+    searchPlaceholder: 'Buscar por nome ou pasta',
+    clearSearch: 'Limpar busca',
+    noMatch: 'Nenhuma sessão com esses filtros',
+    clearFilters: 'Limpar filtros',
     emptyTitle: 'Nenhuma sessão',
     emptyBody: 'Inicie uma sessão no computador usando os launchers:',
     emptyHint: 'Sessões abertas com o `claude` puro aparecem como somente leitura.',
