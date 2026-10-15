@@ -1,24 +1,24 @@
 # daemon-config Specification
 
 ## Purpose
-Permite configurar os perfis do Claude Code (diretórios de configuração) e os parâmetros do daemon em um arquivo local.
+Allows configuring the Claude Code profiles (configuration directories) and the daemon parameters in a local file.
 
 ## Requirements
 
-### Requirement: Perfis configuráveis
-O daemon SHALL carregar perfis com `id`, `name`, `configDir` e `color` de `~/.claude-remote/config.json`. Na ausência do arquivo, MUST criar um com os perfis padrão `claudin` (`~/.claude`) e `drclaude` (`~/.claude-doctorx`).
+### Requirement: Configurable profiles
+The daemon SHALL load profiles with `id`, `name`, `configDir` and `color` from `~/.claude-remote/config.json`. If the file is missing, it MUST create one with the default profiles `claudin` (`~/.claude`) and `drclaude` (`~/.claude-doctorx`).
 
-#### Scenario: Primeira execução
-- **WHEN** o daemon inicia sem arquivo de configuração
-- **THEN** cria o arquivo com os dois perfis padrão e segue executando
+#### Scenario: First run
+- **WHEN** the daemon starts without a configuration file
+- **THEN** it creates the file with the two default profiles and keeps running
 
-#### Scenario: Configuração inválida
-- **WHEN** o arquivo existe mas tem JSON inválido ou campo obrigatório ausente
-- **THEN** o daemon encerra com mensagem indicando o campo inválido
+#### Scenario: Invalid configuration
+- **WHEN** the file exists but has invalid JSON or a missing required field
+- **THEN** the daemon exits with a message pointing to the invalid field
 
-### Requirement: Diretório de perfil inexistente
-O daemon SHALL ignorar perfis cujo `configDir` não exista, registrando um aviso.
+### Requirement: Nonexistent profile directory
+The daemon SHALL ignore profiles whose `configDir` does not exist, logging a warning.
 
-#### Scenario: Perfil sem diretório
-- **WHEN** um perfil aponta para um diretório que não existe
-- **THEN** o perfil não aparece na lista e um aviso é registrado no log
+#### Scenario: Profile without directory
+- **WHEN** a profile points to a directory that does not exist
+- **THEN** the profile does not appear in the list and a warning is logged

@@ -1,21 +1,21 @@
 ## Context
 
-Projeto novo, sem código. Node 24 e pnpm 12 instalados na máquina.
+New project, no code yet. Node 24 and pnpm 12 are installed on the machine.
 
 ## Goals / Non-Goals
 
-**Goals:** um único comando (`pnpm check`) roda typecheck, lint e testes em todos os pacotes.
+**Goals:** a single command (`pnpm check`) runs typecheck, lint and tests across all packages.
 
-**Non-Goals:** CI remoto, publicação de pacotes.
+**Non-Goals:** remote CI, package publishing.
 
 ## Decisions
 
-- **pnpm workspaces + Turborepo**: cache de tarefas e grafo de dependências entre pacotes. Alternativa Nx descartada por ser mais pesada para três pacotes.
-- **Biome** em vez de ESLint + Prettier: uma ferramenta, rápida, sem plugins. Expo funciona bem com Biome.
-- **Vitest** para daemon e protocolo (ESM nativo, rápido). O app usa Jest via `jest-expo` apenas onde for necessário testar componentes; lógica pura do app é testada com Vitest.
-- **Protocolo consumido como fonte TypeScript** (`exports` apontando para `src/index.ts`): o Metro e o `tsx` resolvem TS direto, evitando etapa de build no desenvolvimento.
-- Pacotes com `"type": "module"`.
+- **pnpm workspaces + Turborepo**: task caching and a dependency graph between packages. Nx was ruled out as too heavy for three packages.
+- **Biome** instead of ESLint + Prettier: one tool, fast, no plugins. Expo works well with Biome.
+- **Vitest** for the daemon and the protocol (native ESM, fast). The app uses Jest via `jest-expo` only where components need testing; the app's pure logic is tested with Vitest.
+- **Protocol consumed as TypeScript source** (`exports` pointing to `src/index.ts`): Metro and `tsx` resolve TS directly, avoiding a build step during development.
+- Packages use `"type": "module"`.
 
 ## Risks / Trade-offs
 
-- [Metro e symlinks do pnpm] → `node-linker=hoisted` no `.npmrc`, recomendado pela Expo para monorepos pnpm.
+- [Metro and pnpm symlinks] → `node-linker=hoisted` in `.npmrc`, as recommended by Expo for pnpm monorepos.

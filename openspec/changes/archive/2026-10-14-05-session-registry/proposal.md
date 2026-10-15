@@ -1,23 +1,23 @@
 ## Why
 
-O app precisa de uma lista única com as sessões dos dois perfis, sabendo quais estão vivas no tmux e quais são só histórico (requisito D2).
+The app needs a single list with the sessions of both profiles, knowing which ones are alive in tmux and which are only history (requirement D2).
 
 ## What Changes
 
-- Registro de sessões no daemon que combina hooks (`SessionStart`, `SessionEnd`, `Stop`, `Notification`), painéis tmux existentes e transcripts recentes em disco.
-- Estados `running`, `waiting` (aguardando entrada ou permissão), `idle` e `ended`; flag `controllable` (tem painel tmux vivo).
-- Hook `UserPromptSubmit` adicionado aos hooks instalados.
-- Persistência do vínculo sessão ↔ painel em `~/.claude-remote/state.json` para sobreviver a reinício do daemon.
-- Mensagens `sessions.list` → `sessions.snapshot` e eventos `session.updated`/`session.removed`.
+- Session registry in the daemon that combines hooks (`SessionStart`, `SessionEnd`, `Stop`, `Notification`), existing tmux panes and recent transcripts on disk.
+- States `running`, `waiting` (waiting for input or permission), `idle` and `ended`; `controllable` flag (has a live tmux pane).
+- `UserPromptSubmit` hook added to the installed hooks.
+- Persistence of the session ↔ pane link in `~/.claude-remote/state.json` to survive daemon restarts.
+- Messages `sessions.list` → `sessions.snapshot` and events `session.updated`/`session.removed`.
 
 ## Capabilities
 
 ### New Capabilities
-- `session-registry`: descoberta, estado e listagem das sessões de todos os perfis.
+- `session-registry`: discovery, state and listing of the sessions of all profiles.
 
 ### Modified Capabilities
-- `hooks-integration`: passa a instalar também o hook `UserPromptSubmit`, usado para marcar a sessão como `running`.
+- `hooks-integration`: now also installs the `UserPromptSubmit` hook, used to mark the session as `running`.
 
 ## Impact
 
-Módulos `infra/tmux`, `features/sessions` no daemon.
+`infra/tmux` and `features/sessions` modules in the daemon.

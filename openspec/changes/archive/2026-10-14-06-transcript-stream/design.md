@@ -1,22 +1,22 @@
 ## Context
 
-Observado no Claude Code 2.1.x: cada bloco de conteúdo de uma mensagem do assistente vira uma linha separada com o mesmo `message.id`; `tool_result` vem em linhas `user`; existem linhas `system` (`turn_duration`), `attachment`, `permission-mode`, `custom-title`.
+Observed in Claude Code 2.1.x: each content block of an assistant message becomes a separate line with the same `message.id`; `tool_result` comes in `user` lines; there are `system` (`turn_duration`), `attachment`, `permission-mode` and `custom-title` lines.
 
 ## Goals / Non-Goals
 
-**Goals:** parser puro e 100% testado com fixtures reais anonimizadas.
+**Goals:** a pure parser, 100% tested with anonymized real fixtures.
 
-**Non-Goals:** renderização (app), subagentes (change 18).
+**Non-Goals:** rendering (app), subagents (change 18).
 
 ## Decisions
 
-- **Cursor = índice da linha** (0-based). Uma linha pode gerar várias entradas; cada entrada leva `cursor` da linha e `index` dentro dela; o app deduplica por `uuid + index`.
-- **Leitura incremental por offset de bytes**: guarda `byteOffset` por arquivo; ao mudar, lê do offset até o fim e só processa linhas completas (buffer da linha parcial).
-- **Índice de linhas em memória** (offsets) por sessão assinada para paginação sem reler tudo; construído na primeira assinatura com stream.
-- **`chokidar` com `awaitWriteFinish` desligado** e `usePolling: false` (FSEvents no macOS) para latência baixa.
-- **`tool_result`** truncado em 20 KB por entrada (com flag `truncated`), evitando mensagens WS gigantes.
-- Linhas `permission-mode` e `custom-title` não viram entradas, mas atualizam a sessão no registro.
+- **Cursor = line index** (0-based). A line can produce several entries; each entry carries the line's `cursor` and an `index` within it; the app deduplicates by `uuid + index`.
+- **Incremental reading by byte offset**: stores a `byteOffset` per file; on change, reads from the offset to the end and only processes complete lines (buffering the partial line).
+- **In-memory line index** (offsets) per subscribed session for pagination without rereading everything; built on the first subscription with a stream.
+- **`chokidar` with `awaitWriteFinish` disabled** and `usePolling: false` (FSEvents on macOS) for low latency.
+- **`tool_result`** truncated at 20 KB per entry (with a `truncated` flag), avoiding huge WS messages.
+- `permission-mode` and `custom-title` lines do not become entries, but they update the session in the registry.
 
 ## Risks / Trade-offs
 
-- [Formato muda] → testes com fixtures; tipo `unknown` exibido como bloco cinza no app com o JSON bruto recolhido.
+- [Format changes] → tests with fixtures; the `unknown` type is shown as a gray block in the app with the raw JSON collapsed.
