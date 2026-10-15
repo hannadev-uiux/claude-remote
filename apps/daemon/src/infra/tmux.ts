@@ -16,7 +16,9 @@ export class TmuxClient {
   ) {}
 
   private async run(args: string[], input?: string): Promise<string> {
-    const result = await this.exec(this.bin, args, input === undefined ? undefined : { input })
+    // Without a UTF-8 locale (e.g. under launchd) tmux replaces the tabs in -F output with "_";
+    // -u makes it assume UTF-8 regardless of LANG/LC_*.
+    const result = await this.exec(this.bin, ['-u', ...args], input === undefined ? undefined : { input })
     if (result.exitCode !== 0) throw new TmuxError(result.stderr.trim() || `tmux ${args[0]} failed`)
     return result.stdout
   }

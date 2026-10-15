@@ -20,7 +20,13 @@ export function useTempHome(): { dir: () => string } {
   return { dir: () => dir }
 }
 
-export type ExecCall = { file: string; args: readonly string[]; options?: ExecOptions }
+/** \`args\` omits TmuxClient's global \`-u\` flag so tests read like the tmux command; \`rawArgs\` keeps it. */
+export type ExecCall = {
+  file: string
+  args: readonly string[]
+  rawArgs: readonly string[]
+  options?: ExecOptions
+}
 
 /** Records calls and answers with a scripted responder. */
 export function fakeExecutor(
@@ -28,7 +34,12 @@ export function fakeExecutor(
 ): Executor & { calls: ExecCall[] } {
   const calls: ExecCall[] = []
   const exec = (async (file: string, args: readonly string[], options?: ExecOptions) => {
-    const call = { file, args, options }
+    const call = {
+      file,
+      args: file === 'tmux' && args[0] === '-u' ? args.slice(1) : args,
+      rawArgs: args,
+      options,
+    }
     calls.push(call)
     const result = respond(call) ?? {}
     return { stdout: '', stderr: '', exitCode: 0, ...result }

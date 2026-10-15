@@ -9,6 +9,7 @@ import { Button, Text } from '@/ui'
 export function ResumeBanner({ session }: { session: Session }) {
   const client = useDaemonClient()
   const [busy, setBusy] = useState(false)
+  const [launched, setLaunched] = useState(false)
   const [error, setError] = useState<string | null>(null)
   if (session.controllable) return null
 
@@ -18,6 +19,7 @@ export function ResumeBanner({ session }: { session: Session }) {
     setError(null)
     try {
       await client.request({ type: 'session.resume', profileId: session.profileId, sessionId: session.id })
+      setLaunched(true)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -30,10 +32,20 @@ export function ResumeBanner({ session }: { session: Session }) {
       <View style={styles.flex}>
         <Text size="sm">Sessão somente leitura</Text>
         <Text size="xs" color={error ? 'danger' : 'textMuted'}>
-          {error ?? 'Retome para continuar no tmux do Mac.'}
+          {error ??
+            (launched
+              ? 'Abrindo no tmux do Mac. Se demorar, veja o terminal.'
+              : 'Retome para continuar no tmux do Mac.')}
         </Text>
       </View>
-      <Button label="Retomar" variant="primary" compact loading={busy} onPress={() => void resume()} />
+      <Button
+        label={launched ? 'Abrindo…' : 'Retomar'}
+        variant="primary"
+        compact
+        loading={busy}
+        disabled={launched}
+        onPress={() => void resume()}
+      />
     </View>
   )
 }
