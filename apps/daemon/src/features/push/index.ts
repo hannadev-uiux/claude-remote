@@ -24,7 +24,7 @@ export async function registerPushFeature(
   })
 
   ctx.router.register('device.register', async (msg) => {
-    await devices.register(msg.fcmToken)
+    await devices.register(msg.fcmToken, msg.platform)
     return undefined
   })
   ctx.router.register('app.visibility', (msg, connection) => {
