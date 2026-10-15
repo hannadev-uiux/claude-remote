@@ -7,6 +7,29 @@ const BACKGROUND = '#0D0D0D'
 const GOOGLE_SERVICES = './GoogleService-Info.plist'
 const firebaseEnabled = existsSync(GOOGLE_SERVICES)
 
+/**
+ * iOS system prompts per language (`<lang>.lproj/InfoPlist.strings`). The `infoPlist` values below
+ * are the English base; the app texts themselves live in `src/core/i18n/locales`.
+ */
+const SYSTEM_PROMPTS = {
+  en: {
+    NSCameraUsageDescription:
+      'The camera is used to read the pairing QR code shown by the daemon on your Mac.',
+    NSLocalNetworkUsageDescription: 'Claude Remote connects to the daemon on your Mac.',
+  },
+  'pt-BR': {
+    NSCameraUsageDescription: 'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no Mac.',
+    NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu Mac.',
+  },
+  es: {
+    NSCameraUsageDescription:
+      'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el Mac.',
+    NSLocalNetworkUsageDescription: 'Claude Remote se conecta al daemon de tu Mac.',
+  },
+}
+/** Localizations iOS shows the app in (matching the catalogs pt-BR, en-US and es-ES). */
+const IOS_LOCALIZATIONS = Object.keys(SYSTEM_PROMPTS)
+
 /** RNFirebase refuses SPM + static frameworks; resolve the Firebase SDK through CocoaPods instead. */
 const withFirebaseCocoaPods: ConfigPlugin = (config) =>
   withPodfile(config, (podfile) => {
@@ -75,16 +98,18 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
     infoPlist: {
       // Personal dev build talking ws:// to the Mac over Tailscale (WireGuard encrypts the link).
       NSAppTransportSecurity: { NSAllowsArbitraryLoads: true, NSAllowsLocalNetworking: true },
-      NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu Mac.',
+      NSLocalNetworkUsageDescription: SYSTEM_PROMPTS.en.NSLocalNetworkUsageDescription,
       ITSAppUsesNonExemptEncryption: false,
     },
   },
+  locales: SYSTEM_PROMPTS,
   web: { favicon: './assets/favicon.png' },
   plugins: [
     'expo-router',
     'expo-status-bar',
     'expo-secure-store',
     'expo-font',
+    ['expo-localization', { supportedLocales: { ios: IOS_LOCALIZATIONS } }],
     [
       'expo-splash-screen',
       {
@@ -97,7 +122,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
     [
       'expo-camera',
       {
-        cameraPermission: 'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no Mac.',
+        cameraPermission: SYSTEM_PROMPTS.en.NSCameraUsageDescription,
         microphonePermission: false,
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,

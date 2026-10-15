@@ -1,62 +1,62 @@
 # guided-installer Specification
 
 ## Purpose
-Instala e configura o Claude Remote no Mac com um comando e um assistente guiado.
+Installs and configures Claude Remote on the Mac with a single command and a guided wizard.
 
 ## Requirements
 
-### Requirement: Instalação por uma linha
-`install.sh` SHALL instalar ou atualizar o código em `~/.claude-remote/src`, compilar o daemon e abrir o assistente, falhando com mensagem clara fora do macOS, sem Node 24+ ou sem git. `tmux` e `ripgrep` ausentes MUST ser instalados via Homebrew quando disponível.
+### Requirement: One-line installation
+`install.sh` SHALL install or update the code in `~/.claude-remote/src`, build the daemon and open the wizard, failing with a clear message outside macOS, without Node 24+ or without git. Missing `tmux` and `ripgrep` MUST be installed via Homebrew when available.
 
-#### Scenario: Primeira instalação
-- **WHEN** o usuário roda `curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash`
-- **THEN** o código é baixado, compilado e o assistente começa
+#### Scenario: First installation
+- **WHEN** the user runs `curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash`
+- **THEN** the code is downloaded and built, and the wizard starts
 
-#### Scenario: Atualização
-- **WHEN** o script roda com o código já instalado e sem mudanças locais
-- **THEN** o código vai para o ref pedido e é recompilado
+#### Scenario: Update
+- **WHEN** the script runs with the code already installed and no local changes
+- **THEN** the code moves to the requested ref and is rebuilt
 
-#### Scenario: Sem terminal
-- **WHEN** não há `/dev/tty`
-- **THEN** a configuração roda sem perguntas, com os perfis detectados
+#### Scenario: No terminal
+- **WHEN** there is no `/dev/tty`
+- **THEN** the setup runs without questions, using the detected profiles
 
-### Requirement: Assistente de perfis
-`claude-remote setup` SHALL mostrar a logo, detectar os diretórios de configuração do Claude Code, deixar escolher os perfis e definir alias e nome de cada um, e só gravar após confirmação. O alias MUST ser válido, único e diferente de `claude` e `claude-remote`.
+### Requirement: Profile wizard
+`claude-remote setup` SHALL show the logo, detect the Claude Code configuration directories, let the user choose the profiles and set the alias and name of each, and only write after confirmation. The alias MUST be valid, unique and different from `claude` and `claude-remote`.
 
-#### Scenario: Duas contas
-- **WHEN** existem `~/.claude` e `~/.claude-work` e o usuário escolhe os aliases `pessoal` e `trabalho`
-- **THEN** o `config.json` passa a ter os dois perfis e os comandos `pessoal` e `trabalho` abrem o Claude Code de cada conta no tmux
+#### Scenario: Two accounts
+- **WHEN** `~/.claude` and `~/.claude-work` exist and the user chooses the aliases `personal` and `work`
+- **THEN** `config.json` now has both profiles and the `personal` and `work` commands open each account's Claude Code in tmux
 
-#### Scenario: Conta nova
-- **WHEN** o usuário escolhe "Criar uma conta nova" e informa a pasta (sugestão `~/.claude-trabalho`)
-- **THEN** o assistente cria a pasta, abre o Claude Code com `CLAUDE_CONFIG_DIR` apontando para ela para o login, confere o login ao voltar (`oauthAccount` ou `primaryApiKey` no `.claude.json`) e adiciona a conta à lista; sem login, oferece abrir de novo, adicionar mesmo assim ou descartar
+#### Scenario: New account
+- **WHEN** the user chooses "Create a new account" and enters the folder (suggested `~/.claude-trabalho`)
+- **THEN** the wizard creates the folder, opens Claude Code with `CLAUDE_CONFIG_DIR` pointing to it for login, checks the login when the user returns (`oauthAccount` or `primaryApiKey` in `.claude.json`) and adds the account to the list; without a login, it offers to open it again, add it anyway or discard it
 
-#### Scenario: Nenhuma conta encontrada
-- **WHEN** não existe nenhum diretório de configuração e o assistente é interativo
-- **THEN** ele oferece criar uma conta nova em vez de encerrar
+#### Scenario: No accounts found
+- **WHEN** no configuration directory exists and the wizard is interactive
+- **THEN** it offers to create a new account instead of exiting
 
-#### Scenario: Diretório de outra ferramenta
-- **WHEN** existe `~/.claude-mem` (plugin claude-mem) ou um `~/.claude-*` sem `settings.json`, `.claude.json`, `.credentials.json` nem `projects/`
-- **THEN** ele não é oferecido como conta
+#### Scenario: Another tool's directory
+- **WHEN** `~/.claude-mem` (claude-mem plugin) exists, or a `~/.claude-*` without `settings.json`, `.claude.json`, `.credentials.json` or `projects/`
+- **THEN** it is not offered as an account
 
-#### Scenario: Alias inválido
-- **WHEN** o usuário digita `claude` como alias
-- **THEN** o assistente recusa e pede outro
+#### Scenario: Invalid alias
+- **WHEN** the user types `claude` as the alias
+- **THEN** the wizard rejects it and asks for another
 
-#### Scenario: Perfil removido
-- **WHEN** um perfil configurado é desmarcado
-- **THEN** o launcher e os hooks dele são removidos
+#### Scenario: Profile removed
+- **WHEN** a configured profile is unselected
+- **THEN** its launcher and hooks are removed
 
-### Requirement: Redirect do instalador
-`https://maarkn.dev/claude-remote/install.sh` SHALL redirecionar temporariamente para o `install.sh` da branch `main` no GitHub.
+### Requirement: Installer redirect
+`https://maarkn.dev/claude-remote/install.sh` SHALL temporarily redirect to the `install.sh` on the `main` branch on GitHub.
 
 #### Scenario: curl
-- **WHEN** `curl -fsSL https://maarkn.dev/claude-remote/install.sh` é executado
-- **THEN** o conteúdo do script é baixado
+- **WHEN** `curl -fsSL https://maarkn.dev/claude-remote/install.sh` is run
+- **THEN** the script content is downloaded
 
-### Requirement: Tutorial no app
-A tela de pareamento SHALL oferecer um passo a passo para quem instalou o app antes de configurar o Mac: instalar o Tailscale no iPhone (link da App Store) e no Mac na mesma conta, instalar o Claude Remote no Mac com o comando de uma linha (que pode ser compartilhado, por exemplo via AirDrop) e parear pelo QR.
+### Requirement: Tutorial in the app
+The pairing screen SHALL offer a step-by-step guide for those who installed the app before setting up the Mac: install Tailscale on the iPhone (App Store link) and on the Mac with the same account, install Claude Remote on the Mac with the one-line command (which can be shared, for example via AirDrop), and pair via the QR code.
 
-#### Scenario: App instalado primeiro
-- **WHEN** o usuário abre o app sem pareamento e toca em "Primeira vez? Configure o Mac"
-- **THEN** vê os passos na ordem, com o comando de instalação pronto para compartilhar e um atalho de volta para o leitor de QR
+#### Scenario: App installed first
+- **WHEN** the user opens the app without pairing and taps "First time? Set up your Mac"
+- **THEN** they see the steps in order, with the install command ready to share and a shortcut back to the QR scanner

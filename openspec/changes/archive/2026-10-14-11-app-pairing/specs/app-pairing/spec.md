@@ -1,41 +1,41 @@
 ## Purpose
 
-Liga o app a um daemon específico de forma segura, lendo endereço e token por QR code ou entrada manual.
+Links the app to a specific daemon securely, reading the address and token from a QR code or manual entry.
 
 ## ADDED Requirements
 
-### Requirement: Pareamento por QR
-O app SHALL ler o QR exibido por `claude-remote pair`, extrair host, porta e token, testar a conexão e, se `auth.ok`, salvar as credenciais e abrir a lista de sessões.
+### Requirement: QR pairing
+The app SHALL read the QR shown by `claude-remote pair`, extract host, port and token, test the connection and, on `auth.ok`, save the credentials and open the session list.
 
-#### Scenario: QR válido
-- **WHEN** o usuário aponta a câmera para o QR do daemon
-- **THEN** o app conecta, salva as credenciais e mostra a lista de sessões
+#### Scenario: Valid QR
+- **WHEN** the user points the camera at the daemon's QR
+- **THEN** the app connects, saves the credentials and shows the session list
 
-#### Scenario: QR de outro formato
-- **WHEN** o QR não é uma URL `claude-remote://pair`
-- **THEN** o app mostra "QR inválido" e continua lendo
+#### Scenario: QR in another format
+- **WHEN** the QR is not a `claude-remote://pair` URL
+- **THEN** the app shows "Invalid QR" and keeps scanning
 
-#### Scenario: Token rejeitado
-- **WHEN** o daemon responde `unauthorized`
-- **THEN** nada é salvo e o app mostra o erro
+#### Scenario: Token rejected
+- **WHEN** the daemon responds `unauthorized`
+- **THEN** nothing is saved and the app shows the error
 
-### Requirement: Entrada manual
-O app SHALL permitir informar host, porta e token manualmente com o mesmo teste de conexão.
+### Requirement: Manual entry
+The app SHALL allow entering host, port and token manually, with the same connection test.
 
-#### Scenario: Sem câmera
-- **WHEN** o usuário nega a permissão de câmera
-- **THEN** o formulário manual é oferecido
+#### Scenario: No camera
+- **WHEN** the user denies camera permission
+- **THEN** the manual form is offered
 
-### Requirement: Armazenamento seguro
-O token MUST ser guardado apenas no SecureStore (Keychain do iOS).
+### Requirement: Secure storage
+The token MUST be stored only in SecureStore (the iOS Keychain).
 
-#### Scenario: Reabrir o app
-- **WHEN** o app é fechado e aberto
-- **THEN** conecta automaticamente com as credenciais salvas
+#### Scenario: Reopening the app
+- **WHEN** the app is closed and opened
+- **THEN** it connects automatically with the saved credentials
 
-### Requirement: Esquecer daemon
-A tela de configurações SHALL permitir apagar as credenciais e voltar ao pareamento.
+### Requirement: Forget daemon
+The settings screen SHALL allow erasing the credentials and returning to pairing.
 
-#### Scenario: Esquecer
-- **WHEN** o usuário confirma "Esquecer daemon"
-- **THEN** as credenciais são apagadas, a conexão fecha e a tela de pareamento aparece
+#### Scenario: Forget
+- **WHEN** the user confirms "Forget daemon"
+- **THEN** the credentials are erased, the connection closes and the pairing screen appears

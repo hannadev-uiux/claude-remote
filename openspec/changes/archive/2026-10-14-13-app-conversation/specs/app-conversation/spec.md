@@ -1,44 +1,44 @@
 ## Purpose
 
-Exibe a conversa de uma sessão em tempo real e permite enviar prompts e teclas de controle.
+Shows a session's conversation in real time and allows sending prompts and control keys.
 
 ## ADDED Requirements
 
-### Requirement: Renderização das entradas
-A tela SHALL exibir mensagens do usuário, texto do assistente em markdown, pensamento recolhido, tool calls recolhíveis com resumo de uma linha e resultados; erros de ferramenta MUST aparecer em vermelho.
+### Requirement: Entry rendering
+The screen SHALL show user messages, assistant text in markdown, collapsed thinking, collapsible tool calls with a one-line summary, and results; tool errors MUST appear in red.
 
 #### Scenario: Tool call
-- **WHEN** chega uma entrada `tool_use` de `Bash` com `command` "pnpm test"
-- **THEN** aparece uma linha recolhida "Bash(pnpm test)" que expande para mostrar o resultado
+- **WHEN** a `tool_use` entry for `Bash` arrives with `command` "pnpm test"
+- **THEN** a collapsed "Bash(pnpm test)" line appears that expands to show the result
 
-#### Scenario: Entrada desconhecida
-- **WHEN** chega uma entrada `unknown`
-- **THEN** aparece um bloco discreto com o JSON bruto recolhido
+#### Scenario: Unknown entry
+- **WHEN** an `unknown` entry arrives
+- **THEN** a subtle block appears with the raw JSON collapsed
 
 ### Requirement: Diffs
-Tool calls `Edit`, `MultiEdit` e `Write` SHALL exibir diff com linhas removidas em vermelho e adicionadas em verde.
+`Edit`, `MultiEdit` and `Write` tool calls SHALL show a diff with removed lines in red and added lines in green.
 
-#### Scenario: Edição de arquivo
-- **WHEN** o Claude edita um arquivo
-- **THEN** a tool call mostra o caminho e o diff
+#### Scenario: File edit
+- **WHEN** Claude edits a file
+- **THEN** the tool call shows the path and the diff
 
-### Requirement: Rolagem e histórico
-A tela SHALL acompanhar o fim da conversa enquanto o usuário estiver no fim e carregar páginas anteriores ao rolar para o topo.
+### Requirement: Scrolling and history
+The screen SHALL follow the end of the conversation while the user is at the end, and load earlier pages when scrolling to the top.
 
-#### Scenario: Lendo histórico
-- **WHEN** o usuário rolou para cima e chega nova entrada
-- **THEN** a posição não muda e aparece o botão "novas mensagens"
+#### Scenario: Reading history
+- **WHEN** the user has scrolled up and a new entry arrives
+- **THEN** the position does not change and the "new messages" button appears
 
-### Requirement: Envio de prompt
-O campo de prompt SHALL enviar `session.input` e limpar o campo após `ack`; em erro, MUST manter o texto e mostrar a mensagem. Em sessão somente leitura o campo MUST ficar desabilitado.
+### Requirement: Prompt sending
+The prompt field SHALL send `session.input` and clear the field after the `ack`; on error, it MUST keep the text and show the message. In a read-only session the field MUST be disabled.
 
-#### Scenario: Envio com sucesso
-- **WHEN** o usuário envia "continue"
-- **THEN** o campo é limpo e o prompt aparece na conversa quando gravado no transcript
+#### Scenario: Successful send
+- **WHEN** the user sends "continue"
+- **THEN** the field is cleared and the prompt appears in the conversation once written to the transcript
 
-### Requirement: Controles
-A tela SHALL oferecer Esc (interromper) e Ctrl+C (com confirmação), além de uma barra de teclas (setas, Enter, Tab, 1-3).
+### Requirement: Controls
+The screen SHALL offer Esc (interrupt) and Ctrl+C (with confirmation), plus a key bar (arrows, Enter, Tab, 1-3).
 
-#### Scenario: Interromper
-- **WHEN** o usuário toca em Esc
-- **THEN** o app envia `session.key` `Escape`
+#### Scenario: Interrupt
+- **WHEN** the user taps Esc
+- **THEN** the app sends `session.key` `Escape`

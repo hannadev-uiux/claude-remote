@@ -1,21 +1,21 @@
 ## Why
 
-App e daemon conversam por WebSocket. Se as mensagens não tiverem um contrato único e validado em runtime, qualquer divergência vira bug silencioso no celular.
+The app and the daemon talk over WebSocket. If the messages don't have a single contract validated at runtime, any divergence becomes a silent bug on the phone.
 
 ## What Changes
 
-- Pacote `@claude-remote/protocol` com schemas Zod de todas as mensagens cliente → daemon e daemon → cliente descritas no PRD (seção 10).
-- Envelope comum com `id` de requisição, correlação de respostas (`replyTo`) e erros tipados.
-- Tipos de domínio compartilhados: perfil, sessão, estado, modo de permissão, entrada de transcript normalizada, pedido de permissão.
-- Funções `parseClientMessage` / `parseServerMessage` que nunca lançam exceção.
+- `@claude-remote/protocol` package with Zod schemas for all client → daemon and daemon → client messages described in the PRD (section 10).
+- Common envelope with a request `id`, response correlation (`replyTo`) and typed errors.
+- Shared domain types: profile, session, state, permission mode, normalized transcript entry, permission request.
+- `parseClientMessage` / `parseServerMessage` functions that never throw.
 
 ## Capabilities
 
 ### New Capabilities
-- `protocol`: contrato das mensagens WebSocket entre app e daemon e regras de validação.
+- `protocol`: contract for the WebSocket messages between app and daemon, and validation rules.
 
 ### Modified Capabilities
 
 ## Impact
 
-Novo pacote `packages/protocol`, dependência `zod`. Consumido por `apps/daemon` e `apps/mobile`.
+New `packages/protocol` package, `zod` dependency. Consumed by `apps/daemon` and `apps/mobile`.

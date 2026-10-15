@@ -1,9 +1,9 @@
-## 1. Protocolo e daemon
+## 1. Protocol and daemon
 
-- [x] 1.1 Implementar `DeviceRegistry` e `PushService` (firebase-admin preguiçoso, supressão em primeiro plano, payload mínimo); verificar com testes usando enviador falso
-- [x] 1.2 Ligar `Stop`, `Notification` e `permission.request` ao `PushService`; verificar com teste de integração
+- [x] 1.1 Implement `DeviceRegistry` and `PushService` (lazy firebase-admin, foreground suppression, minimal payload); verify with tests using a fake sender
+- [x] 1.2 Wire `Stop`, `Notification` and `permission.request` to `PushService`; verify with an integration test
 
 ## 2. App
 
-- [x] 2.1 Configurar `@react-native-firebase` e `expo-notifications` no `app.config.ts`; verificar com `npx expo config --type introspect`
-- [x] 2.2 Implementar registro do token, `app.visibility`, deep link e ações Permitir/Negar; verificar com typecheck
+- [x] 2.1 Configure `@react-native-firebase` and `expo-notifications` in `app.config.ts`; verify with `npx expo config --type introspect`
+- [x] 2.2 Implement token registration, `app.visibility`, deep link and Allow/Deny actions; verify with typecheck

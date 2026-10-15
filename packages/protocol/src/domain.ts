@@ -80,7 +80,14 @@ export const TranscriptEntrySchema = z.discriminatedUnion('kind', [
     isError: z.boolean(),
     truncated: z.boolean(),
   }),
-  z.object({ ...entryBase, kind: z.literal('system'), subtype: z.string(), text: z.string() }),
+  z.object({
+    ...entryBase,
+    kind: z.literal('system'),
+    subtype: z.string(),
+    text: z.string(),
+    /** `turn_duration` only: lets the app write the text in its own language. */
+    durationMs: z.number().optional(),
+  }),
   z.object({ ...entryBase, kind: z.literal('unknown'), raw: z.string() }),
 ])
 export type TranscriptEntry = z.infer<typeof TranscriptEntrySchema>

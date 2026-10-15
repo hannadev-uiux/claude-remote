@@ -1,38 +1,38 @@
 # session-registry Specification
 
 ## Purpose
-Mantém a lista unificada de sessões do Claude Code de todos os perfis, com estado e possibilidade de controle.
+Maintains the unified list of Claude Code sessions across all profiles, with their state and whether they can be controlled.
 
 ## Requirements
 
-### Requirement: Listagem unificada
-O daemon SHALL responder `sessions.list` com todas as sessões ativas (vinculadas a painel tmux vivo) e as recentes (transcripts modificados nos últimos 7 dias) de todos os perfis, cada uma com `id`, `profileId`, `cwd`, `title`, `state`, `permissionMode`, `controllable`, `updatedAt`.
+### Requirement: Unified listing
+The daemon SHALL answer `sessions.list` with all active sessions (linked to a live tmux pane) and recent ones (transcripts modified in the last 7 days) from all profiles, each with `id`, `profileId`, `cwd`, `title`, `state`, `permissionMode`, `controllable`, `updatedAt`.
 
-#### Scenario: Dois perfis
-- **WHEN** existe uma sessão ativa em `claudin` e outra em `drclaude`
-- **THEN** o snapshot contém as duas, cada uma com seu `profileId`
+#### Scenario: Two profiles
+- **WHEN** there is an active session in `claudin` and another in `drclaude`
+- **THEN** the snapshot contains both, each with its own `profileId`
 
-#### Scenario: Sessão só em disco
-- **WHEN** um transcript recente não tem painel tmux vinculado
-- **THEN** a sessão aparece com `controllable: false` e estado `ended`
+#### Scenario: Disk-only session
+- **WHEN** a recent transcript has no linked tmux pane
+- **THEN** the session appears with `controllable: false` and state `ended`
 
-### Requirement: Estado por eventos
-O daemon SHALL atualizar o estado da sessão a partir dos hooks: `SessionStart` → `idle`; `UserPromptSubmit` → `running`; `Stop` → `idle`; `Notification`/`PermissionRequest` → `waiting`; `SessionEnd` → `ended`. Cada mudança MUST ser enviada aos clientes como `session.updated`.
+### Requirement: Event-driven state
+The daemon SHALL update the session state from the hooks: `SessionStart` → `idle`; `UserPromptSubmit` → `running`; `Stop` → `idle`; `Notification`/`PermissionRequest` → `waiting`; `SessionEnd` → `ended`. Each change MUST be sent to clients as `session.updated`.
 
-#### Scenario: Pedido de permissão
-- **WHEN** chega um `Notification` do tipo `permission_prompt`
-- **THEN** a sessão passa a `waiting` e os clientes recebem `session.updated`
+#### Scenario: Permission request
+- **WHEN** a `Notification` of type `permission_prompt` arrives
+- **THEN** the session becomes `waiting` and clients receive `session.updated`
 
-### Requirement: Painel morto
-O daemon SHALL verificar periodicamente (a cada 5 s) se os painéis vinculados existem e MUST marcar como `ended` e `controllable: false` as sessões cujo painel sumiu.
+### Requirement: Dead pane
+The daemon SHALL periodically check (every 5 s) whether the linked panes exist and MUST mark sessions whose pane is gone as `ended` and `controllable: false`.
 
-#### Scenario: Janela tmux fechada
-- **WHEN** o usuário fecha a janela da sessão no Mac
-- **THEN** em até 5 s a sessão aparece como encerrada no app
+#### Scenario: tmux window closed
+- **WHEN** the user closes the session's window on the Mac
+- **THEN** within 5 s the session appears as ended in the app
 
-### Requirement: Persistência do vínculo
-O vínculo sessão ↔ painel ↔ perfil SHALL ser persistido e restaurado no início do daemon, descartando painéis que não existem mais.
+### Requirement: Link persistence
+The session ↔ pane ↔ profile link SHALL be persisted and restored when the daemon starts, discarding panes that no longer exist.
 
-#### Scenario: Reinício do daemon
-- **WHEN** o daemon reinicia com uma sessão ainda aberta no tmux
-- **THEN** a sessão volta a aparecer como controlável
+#### Scenario: Daemon restart
+- **WHEN** the daemon restarts with a session still open in tmux
+- **THEN** the session appears as controllable again

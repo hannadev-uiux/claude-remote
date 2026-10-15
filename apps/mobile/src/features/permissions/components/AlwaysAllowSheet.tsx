@@ -1,5 +1,6 @@
 import type { PermissionRequestInfo, RuleScope } from '@claude-remote/protocol'
 import { useEffect, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Modal, StyleSheet, TextInput, View } from 'react-native'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
@@ -15,6 +16,7 @@ type Props = {
 
 /** Shows the exact rule and scope before writing an always-allow rule. */
 export function AlwaysAllowSheet({ request, cwd, profileName, onCancel, onConfirm }: Props) {
+  const { t } = useTranslation()
   const [rule, setRule] = useState('')
   const [scope, setScope] = useState<RuleScope>('project')
 
@@ -33,16 +35,15 @@ export function AlwaysAllowSheet({ request, cwd, profileName, onCancel, onConfir
     >
       <View style={styles.sheet}>
         <Text size="lg" weight="bold">
-          Permitir sempre
+          {t('permissions.alwaysSheet.title')}
         </Text>
         <Text color="textMuted" size="sm">
-          A regra abaixo será gravada em <Text color="accent">permissions.allow</Text>. Pedidos que casarem
-          com ela não vão mais perguntar.
+          <Trans i18nKey="permissions.alwaysSheet.intro" components={{ code: <Text color="accent" /> }} />
         </Text>
 
         <View style={styles.field}>
           <Text size="xs" color="textMuted">
-            regra
+            {t('permissions.alwaysSheet.rule')}
           </Text>
           <TextInput
             value={rule}
@@ -54,27 +55,27 @@ export function AlwaysAllowSheet({ request, cwd, profileName, onCancel, onConfir
         </View>
 
         <Text size="xs" color="textMuted">
-          escopo
+          {t('permissions.alwaysSheet.scope')}
         </Text>
         <View style={styles.scopes}>
           <ScopeOption
             selected={scope === 'project'}
-            title="Projeto"
+            title={t('permissions.alwaysSheet.project')}
             detail={`${shortPath(cwd)}/.claude/settings.local.json`}
             onPress={() => setScope('project')}
           />
           <ScopeOption
             selected={scope === 'profile'}
-            title={`Perfil ${profileName}`}
-            detail="settings.json do perfil — todas as sessões dele"
+            title={t('permissions.alwaysSheet.profile', { name: profileName })}
+            detail={t('permissions.alwaysSheet.profileDetail')}
             onPress={() => setScope('profile')}
           />
         </View>
 
         <View style={styles.actions}>
-          <Button label="Cancelar" flex onPress={onCancel} />
+          <Button label={t('common.cancel')} flex onPress={onCancel} />
           <Button
-            label="Gravar e permitir"
+            label={t('permissions.alwaysSheet.confirm')}
             variant="primary"
             flex
             disabled={!rule.trim()}

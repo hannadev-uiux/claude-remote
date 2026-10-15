@@ -1,3 +1,5 @@
+import type { TFunction } from '@/core/i18n/create'
+
 /** One-line installer of the Mac side (served by maarkn.dev, redirecting to the repo's install.sh). */
 export const INSTALL_URL = 'https://maarkn.dev/claude-remote/install.sh'
 export const INSTALL_COMMAND = `curl -fsSL ${INSTALL_URL} | bash`
@@ -11,6 +13,7 @@ export type GuideAction =
   | { kind: 'scan'; label: string }
 
 export type GuideStep = {
+  id: StepId
   title: string
   body: string
   /** Shown as a copyable code block. */
@@ -18,28 +21,33 @@ export type GuideStep = {
   actions: GuideAction[]
 }
 
+/** Steps in order; texts come from `setupGuide.steps.<id>` in the catalogs. */
+export const SETUP_STEPS = ['tailscaleIos', 'tailscaleMac', 'install', 'pair'] as const
+export type StepId = (typeof SETUP_STEPS)[number]
+
 /** First-run guide for people who installed the app before setting up the Mac. */
-export const SETUP_GUIDE: readonly GuideStep[] = [
-  {
-    title: 'Tailscale no iPhone',
-    body: 'O app fala com o seu Mac por uma rede privada do Tailscale, que funciona de qualquer lugar e é grátis para uso pessoal. Instale e entre com uma conta.',
-    actions: [{ kind: 'link', label: 'Abrir na App Store', url: TAILSCALE_IOS_URL }],
-  },
-  {
-    title: 'Tailscale no Mac',
-    body: 'Instale o Tailscale no Mac e entre com a mesma conta do iPhone. Os dois aparecem como dispositivos da mesma rede.',
-    code: 'brew install --cask tailscale',
-    actions: [{ kind: 'share', label: 'Enviar o link para o Mac', text: TAILSCALE_MAC_URL }],
-  },
-  {
-    title: 'Claude Remote no Mac',
-    body: 'No Terminal do Mac, rode o instalador. Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
-    code: INSTALL_COMMAND,
-    actions: [{ kind: 'share', label: 'Enviar o comando (AirDrop, Notas…)', text: INSTALL_COMMAND }],
-  },
-  {
-    title: 'Parear',
-    body: 'No fim, o instalador mostra um QR code (ou rode `claude-remote pair`). Escaneie com este app e pronto: abra o Claude Code no Mac pelo alias que você escolheu.',
-    actions: [{ kind: 'scan', label: 'Escanear o QR code' }],
-  },
-]
+export function buildSetupGuide(t: TFunction): GuideStep[] {
+  const text = (id: StepId) => ({
+    id,
+    title: t(`setupGuide.steps.${id}.title`),
+    body: t(`setupGuide.steps.${id}.body`),
+  })
+  const action = (id: StepId) => t(`setupGuide.steps.${id}.action`)
+  return [
+    {
+      ...text('tailscaleIos'),
+      actions: [{ kind: 'link', label: action('tailscaleIos'), url: TAILSCALE_IOS_URL }],
+    },
+    {
+      ...text('tailscaleMac'),
+      code: 'brew install --cask tailscale',
+      actions: [{ kind: 'share', label: action('tailscaleMac'), text: TAILSCALE_MAC_URL }],
+    },
+    {
+      ...text('install'),
+      code: INSTALL_COMMAND,
+      actions: [{ kind: 'share', label: action('install'), text: INSTALL_COMMAND }],
+    },
+    { ...text('pair'), actions: [{ kind: 'scan', label: action('pair') }] },
+  ]
+}

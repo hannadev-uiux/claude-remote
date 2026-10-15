@@ -1,6 +1,7 @@
 import type { SubagentInfo } from '@claude-remote/protocol'
 import { router } from 'expo-router'
 import { Bot } from 'lucide-react-native'
+import { useTranslation } from 'react-i18next'
 import { Pressable, ScrollView, StyleSheet } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
@@ -12,6 +13,7 @@ function open(sessionId: string, agentId: string) {
 
 /** Nested rows under a session in the list (max 3). */
 export function NestedSubagents({ sessionId, subagents }: { sessionId: string; subagents: SubagentInfo[] }) {
+  const { t } = useTranslation()
   if (subagents.length === 0) return null
   const sorted = sortSubagents(subagents)
   const running = sorted.filter((s) => s.state === 'running').length
@@ -20,13 +22,13 @@ export function NestedSubagents({ sessionId, subagents }: { sessionId: string; s
       {sorted.slice(0, 3).map((sub) => (
         <Pressable key={sub.agentId} onPress={() => open(sessionId, sub.agentId)} style={styles.nested}>
           <Text size="xs" color={sub.state === 'running' ? 'accent' : 'textDim'} numberOfLines={1}>
-            ⤷ {subagentLabel(sub)} {sub.state === 'running' ? '· rodando' : '· concluído'}
+            ⤷ {subagentLabel(sub)} {sub.state === 'running' ? t('subagents.running') : t('subagents.done')}
           </Text>
         </Pressable>
       ))}
       {sorted.length > 3 ? (
         <Text size="xs" color="textDim" style={styles.more}>
-          +{sorted.length - 3} subagentes ({running} rodando)
+          {t('subagents.more', { count: sorted.length - 3, running })}
         </Text>
       ) : null}
     </>

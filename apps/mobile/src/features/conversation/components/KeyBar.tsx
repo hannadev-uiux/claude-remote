@@ -1,14 +1,16 @@
 import type { Key } from '@claude-remote/protocol'
 import * as Haptics from 'expo-haptics'
+import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
 
-type KeySpec = { key: Key; label: string; confirm?: string }
+/** `confirm` asks before sending (texts in the catalogs). */
+export type KeySpec = { key: Key; label: string; confirm?: 'ctrlC' }
 
 export const DEFAULT_KEYS: KeySpec[] = [
   { key: 'Escape', label: 'esc' },
-  { key: 'C-c', label: '^C', confirm: 'Enviar Ctrl+C para a sessão?' },
+  { key: 'C-c', label: '^C', confirm: 'ctrlC' },
   { key: 'Up', label: '↑' },
   { key: 'Down', label: '↓' },
   { key: 'Left', label: '←' },
@@ -30,12 +32,13 @@ export function KeyBar({
   disabled?: boolean
   keys?: KeySpec[]
 }) {
+  const { t } = useTranslation()
   const press = (spec: KeySpec) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     if (!spec.confirm) return onKey(spec.key)
-    Alert.alert(spec.confirm, undefined, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Enviar', style: 'destructive', onPress: () => onKey(spec.key) },
+    Alert.alert(t('conversation.confirmCtrlC'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.send'), style: 'destructive', onPress: () => onKey(spec.key) },
     ])
   }
   return (

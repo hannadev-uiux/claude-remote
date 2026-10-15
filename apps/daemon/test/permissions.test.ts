@@ -6,7 +6,10 @@ import WebSocket from 'ws'
 import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
 import { FileTokenStore } from '../src/core/secrets.ts'
-import { buildHookOutput, DENY_MESSAGE, PermissionBroker } from '../src/features/permissions/broker.ts'
+import { buildHookOutput, PermissionBroker } from '../src/features/permissions/broker.ts'
+
+const DENY = 'Denied by Claude Remote'
+
 import { bashPrefixRule, parseRule, suggestRule } from '../src/features/permissions/rules.ts'
 import { RulesLog } from '../src/features/permissions/rules-log.ts'
 import { type RunningDaemon, startDaemon } from '../src/main.ts'
@@ -47,14 +50,14 @@ describe('rules', () => {
 
 describe('hook output', () => {
   test('allow', () => {
-    expect(buildHookOutput({ behavior: 'allow' })).toEqual({
+    expect(buildHookOutput({ behavior: 'allow' }, DENY)).toEqual({
       hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: { behavior: 'allow' } },
     })
   })
 
   test('allow always maps scope to destination', () => {
     expect(
-      buildHookOutput({ behavior: 'allow', always: { rule: 'Bash(pnpm test:*)', scope: 'project' } }),
+      buildHookOutput({ behavior: 'allow', always: { rule: 'Bash(pnpm test:*)', scope: 'project' } }, DENY),
     ).toEqual({
       hookSpecificOutput: {
         hookEventName: 'PermissionRequest',
@@ -71,17 +74,20 @@ describe('hook output', () => {
         },
       },
     })
-    const profile = buildHookOutput({ behavior: 'allow', always: { rule: 'Edit', scope: 'profile' } }) as {
+    const profile = buildHookOutput(
+      { behavior: 'allow', always: { rule: 'Edit', scope: 'profile' } },
+      DENY,
+    ) as {
       hookSpecificOutput: { decision: { updatedPermissions: { destination: string }[] } }
     }
     expect(profile.hookSpecificOutput.decision.updatedPermissions[0]?.destination).toBe('userSettings')
   })
 
   test('deny', () => {
-    expect(buildHookOutput({ behavior: 'deny' })).toEqual({
+    expect(buildHookOutput({ behavior: 'deny' }, DENY)).toEqual({
       hookSpecificOutput: {
         hookEventName: 'PermissionRequest',
-        decision: { behavior: 'deny', message: DENY_MESSAGE },
+        decision: { behavior: 'deny', message: DENY },
       },
     })
   })
@@ -97,6 +103,7 @@ describe('PermissionBroker', () => {
         timeoutMs,
         defaultScope: 'project',
         profiles: [{ id: 'claudin', name: 'P', configDir: '/cfg', color: '' }],
+        denyMessage: DENY,
         onRuleCreated: (r) => rules.push(r),
       },
     )

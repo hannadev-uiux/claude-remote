@@ -1,9 +1,9 @@
 ## 1. Daemon
 
-- [x] 1.1 Implementar `PaneStreamer` com polling, hash e contagem de assinantes; verificar com teste usando tmux falso
-- [x] 1.2 Registrar `pane.subscribe`/`pane.unsubscribe` e limpeza na desconexão; verificar com teste WS
+- [x] 1.1 Implement `PaneStreamer` with polling, hashing and subscriber counting; verify with a test using a fake tmux
+- [x] 1.2 Register `pane.subscribe`/`pane.unsubscribe` and cleanup on disconnection; verify with a WS test
 
 ## 2. App
 
-- [x] 2.1 Gerar HTML do xterm.js embarcado e componente `TerminalView` (WebView); verificar com typecheck e `expo export`
-- [x] 2.2 Criar aba Terminal na sessão com barra de teclas completa; verificar com typecheck
+- [x] 2.1 Generate the embedded xterm.js HTML and the `TerminalView` component (WebView); verify with typecheck and `expo export`
+- [x] 2.2 Create the Terminal tab in the session with the full key bar; verify with typecheck

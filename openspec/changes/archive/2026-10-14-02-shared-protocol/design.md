@@ -1,21 +1,21 @@
 ## Context
 
-Ver proposal.md. O PRD (seção 10) traz um esboço; aqui ele vira contrato.
+See proposal.md. The PRD (section 10) contains a sketch; here it becomes a contract.
 
 ## Goals / Non-Goals
 
-**Goals:** um único lugar com schemas e tipos inferidos (`z.infer`), usado pelos dois lados.
+**Goals:** a single place with schemas and inferred types (`z.infer`), used by both sides.
 
-**Non-Goals:** geração de código, versionamento com múltiplas versões ativas.
+**Non-Goals:** code generation, versioning with multiple active versions.
 
 ## Decisions
 
-- **Zod 4** com `z.discriminatedUnion("type", ...)`: inferência de tipos e validação em runtime. Alternativas: Valibot (menor bundle, ecossistema menor) e TypeBox.
-- **Objetos não estritos com strip**: tolera campos novos (requisito de tolerância).
-- **Entrada de transcript normalizada** (`TranscriptEntry`): `kind` em `user | assistant_text | thinking | tool_use | tool_result | system | unknown`, com `uuid`, `timestamp`, `isSidechain`, `agentId?` e payload específico. O formato bruto do `.jsonl` nunca chega ao app.
-- **Cursor**: número da linha no arquivo `.jsonl` (`cursor` crescente por sessão), suficiente para retomada.
-- Constante `PROTOCOL_VERSION = 1`.
+- **Zod 4** with `z.discriminatedUnion("type", ...)`: type inference and runtime validation. Alternatives: Valibot (smaller bundle, smaller ecosystem) and TypeBox.
+- **Non-strict objects with strip**: tolerates new fields (tolerance requirement).
+- **Normalized transcript entry** (`TranscriptEntry`): `kind` in `user | assistant_text | thinking | tool_use | tool_result | system | unknown`, with `uuid`, `timestamp`, `isSidechain`, `agentId?` and a kind-specific payload. The raw `.jsonl` format never reaches the app.
+- **Cursor**: the line number in the `.jsonl` file (`cursor` increasing per session), enough to resume.
+- Constant `PROTOCOL_VERSION = 1`.
 
 ## Risks / Trade-offs
 
-- [Schemas grandes num só arquivo] → dividir em `domain.ts`, `client.ts`, `server.ts`.
+- [Large schemas in a single file] → split into `domain.ts`, `client.ts`, `server.ts`.

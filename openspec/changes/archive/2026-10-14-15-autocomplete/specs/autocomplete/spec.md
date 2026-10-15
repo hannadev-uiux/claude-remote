@@ -1,45 +1,45 @@
 ## Purpose
 
-Oferece no app sugestões de arquivos (`@`) e de skills/comandos (`/`) equivalentes às da TUI do Claude Code.
+Offers in the app file (`@`) and skill/command (`/`) suggestions equivalent to those in the Claude Code TUI.
 
 ## ADDED Requirements
 
-### Requirement: Busca de arquivos
-`files.search { sessionId, query, limit }` SHALL retornar até `limit` (padrão 20) arquivos e pastas do `cwd` da sessão que casem com `query` por busca fuzzy, ignorando o que o `.gitignore` exclui.
+### Requirement: File search
+`files.search { sessionId, query, limit }` SHALL return up to `limit` (default 20) files and folders from the session's `cwd` that fuzzy-match `query`, ignoring whatever `.gitignore` excludes.
 
-#### Scenario: Busca parcial
-- **WHEN** o app busca "mainap" numa sessão com `src/main/app.ts`
-- **THEN** o resultado inclui `src/main/app.ts` com `kind: "file"`
+#### Scenario: Partial search
+- **WHEN** the app searches "mainap" in a session with `src/main/app.ts`
+- **THEN** the result includes `src/main/app.ts` with `kind: "file"`
 
-#### Scenario: Pastas
-- **WHEN** o app busca "src/comp"
-- **THEN** o resultado inclui `src/components/` com `kind: "dir"`
+#### Scenario: Folders
+- **WHEN** the app searches "src/comp"
+- **THEN** the result includes `src/components/` with `kind: "dir"`
 
-#### Scenario: node_modules ignorado
-- **WHEN** `node_modules` está no `.gitignore`
-- **THEN** nenhum caminho dentro dele aparece
+#### Scenario: node_modules ignored
+- **WHEN** `node_modules` is in `.gitignore`
+- **THEN** no path inside it appears
 
-### Requirement: Lista de comandos
-`commands.list { sessionId }` SHALL retornar comandos com `name`, `description` e `source` (`builtin`, `profile`, `project`, `plugin`), lidos do frontmatter de `skills/*/SKILL.md` e `commands/**/*.md` do perfil, do projeto (`.claude/`) e dos plugins instalados do perfil, mais a lista fixa de nativos.
+### Requirement: Command list
+`commands.list { sessionId }` SHALL return commands with `name`, `description` and `source` (`builtin`, `profile`, `project`, `plugin`), read from the frontmatter of `skills/*/SKILL.md` and `commands/**/*.md` in the profile, the project (`.claude/`) and the profile's installed plugins, plus the fixed list of built-ins.
 
-#### Scenario: Skill do projeto
-- **WHEN** o projeto tem `.claude/skills/deploy/SKILL.md` com `name: deploy`
-- **THEN** a lista contém `/deploy` com `source: "project"`
+#### Scenario: Project skill
+- **WHEN** the project has `.claude/skills/deploy/SKILL.md` with `name: deploy`
+- **THEN** the list contains `/deploy` with `source: "project"`
 
-#### Scenario: Cache invalidado
-- **WHEN** um novo `SKILL.md` é criado no perfil
-- **THEN** a próxima chamada já o inclui
+#### Scenario: Cache invalidated
+- **WHEN** a new `SKILL.md` is created in the profile
+- **THEN** the next call already includes it
 
-### Requirement: Sugestões no app
-Ao digitar `@` ou `/` (no início do prompt para `/`), o app SHALL mostrar sugestões acima do teclado, atualizando com debounce de 150 ms, e inserir `@caminho` ou `/nome ` ao tocar.
+### Requirement: Suggestions in the app
+When typing `@` or `/` (at the start of the prompt for `/`), the app SHALL show suggestions above the keyboard, updating with a 150 ms debounce, and insert `@path` or `/name ` on tap.
 
-#### Scenario: Escolher arquivo
-- **WHEN** o usuário digita "@app" e toca em `src/app.ts`
-- **THEN** o texto vira "@src/app.ts "
+#### Scenario: Choose file
+- **WHEN** the user types "@app" and taps `src/app.ts`
+- **THEN** the text becomes "@src/app.ts "
 
-### Requirement: Comandos interativos
-Ao enviar um comando nativo marcado como interativo (`/model`, `/config`, `/permissions`, `/agents`, `/mcp`, `/resume`, `/login`), o app SHALL enviá-lo e abrir o terminal bruto da sessão.
+### Requirement: Interactive commands
+When sending a built-in command marked as interactive (`/model`, `/config`, `/permissions`, `/agents`, `/mcp`, `/resume`, `/login`), the app SHALL send it and open the session's raw terminal.
 
 #### Scenario: /model
-- **WHEN** o usuário envia "/model"
-- **THEN** o comando é enviado e a aba de terminal bruto abre
+- **WHEN** the user sends "/model"
+- **THEN** the command is sent and the raw terminal tab opens

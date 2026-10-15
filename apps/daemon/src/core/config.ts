@@ -1,6 +1,14 @@
-import { type Profile, ProfileSchema, RuleScopeSchema } from '@claude-remote/protocol'
+import { readFileSync } from 'node:fs'
+import {
+  type Locale,
+  LocaleSchema,
+  type Profile,
+  ProfileSchema,
+  RuleScopeSchema,
+} from '@claude-remote/protocol'
 import { z } from 'zod'
 import { isDirectory, readJsonFile, writeJsonAtomic } from '../infra/fs.ts'
+import { messagesFor, systemLocale } from './i18n/index.ts'
 import type { Logger } from './logger.ts'
 import { expandHome, paths } from './paths.ts'
 
@@ -17,13 +25,42 @@ export const ConfigSchema = z.object({
   pasteEnterDelayMs: z.number().int().nonnegative().default(80),
   recentDays: z.number().int().positive().default(7),
   tmuxSession: z.string().min(1).default('claude-remote'),
+  /** Language of the CLI, setup and push texts; absent = the system language. */
+  language: LocaleSchema.optional(),
 })
 export type Config = z.infer<typeof ConfigSchema>
 
 /** Used only when no config exists; `claude-remote setup` picks the real profiles and aliases. */
-export const DEFAULT_PROFILES: Profile[] = [
-  { id: 'claudin', name: 'Pessoal', configDir: '~/.claude', color: '#D97757' },
-]
+export function defaultProfiles(locale: Locale = systemLocale()): Profile[] {
+  return [
+    {
+      id: 'claudin',
+      name: messagesFor(locale).profiles.defaultName,
+      configDir: '~/.claude',
+      color: '#D97757',
+    },
+  ]
+}
+
+/** Language of the CLI, setup and push: the configured one, else the system one. */
+export function effectiveLocale(config: Pick<Config, 'language'>, env = process.env): Locale {
+  return config.language ?? systemLocale(env)
+}
+
+/**
+ * Same as `effectiveLocale`, read synchronously and leniently from the config file (CLI startup:
+ * command descriptions are built before any async work). A missing or invalid file is ignored.
+ */
+export function configuredLocaleSync(path = paths.config(), env = process.env): Locale {
+  try {
+    const raw: unknown = JSON.parse(readFileSync(path, 'utf8'))
+    const language = raw && typeof raw === 'object' ? (raw as { language?: unknown }).language : undefined
+    const parsed = LocaleSchema.safeParse(language)
+    return parsed.success ? parsed.data : systemLocale(env)
+  } catch {
+    return systemLocale(env)
+  }
+}
 
 export class ConfigError extends Error {
   override name = 'ConfigError'
@@ -38,7 +75,7 @@ export async function loadConfig(logger: Logger, path = paths.config()): Promise
     throw new ConfigError(`invalid JSON in ${path}: ${(error as Error).message}`)
   }
   if (raw === undefined) {
-    raw = { profiles: DEFAULT_PROFILES }
+    raw = { profiles: defaultProfiles() }
     await writeJsonAtomic(path, raw)
     logger.info({ path }, 'created default config')
   }

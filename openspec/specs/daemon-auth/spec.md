@@ -1,46 +1,46 @@
 # daemon-auth Specification
 
 ## Purpose
-Garante que apenas o aparelho pareado controle as sessões, já que o daemon equivale a um shell remoto.
+Ensures that only the paired device controls the sessions, since the daemon is equivalent to a remote shell.
 
 ## Requirements
 
-### Requirement: Token obrigatório
-Toda conexão WebSocket SHALL enviar `auth` com o token como primeira mensagem em até 5 segundos; caso contrário o daemon MUST fechar a conexão. Mensagens antes da autenticação MUST ser rejeitadas.
+### Requirement: Mandatory token
+Every WebSocket connection SHALL send `auth` with the token as its first message within 5 seconds; otherwise the daemon MUST close the connection. Messages sent before authentication MUST be rejected.
 
-#### Scenario: Token correto
-- **WHEN** o cliente envia `auth` com o token válido
-- **THEN** o daemon responde `auth.ok` com a versão do protocolo e os perfis
+#### Scenario: Correct token
+- **WHEN** the client sends `auth` with the valid token
+- **THEN** the daemon responds with `auth.ok` with the protocol version and the profiles
 
-#### Scenario: Token inválido
-- **WHEN** o cliente envia `auth` com token errado
-- **THEN** o daemon responde `error` `unauthorized` e fecha a conexão
+#### Scenario: Invalid token
+- **WHEN** the client sends `auth` with a wrong token
+- **THEN** the daemon responds with `error` `unauthorized` and closes the connection
 
-#### Scenario: Sem autenticação
-- **WHEN** o cliente não envia `auth` em 5 segundos
-- **THEN** a conexão é fechada
+#### Scenario: No authentication
+- **WHEN** the client does not send `auth` within 5 seconds
+- **THEN** the connection is closed
 
-### Requirement: Interface de rede restrita
-O WebSocket SHALL escutar apenas no endereço Tailscale do Mac (faixa 100.64.0.0/10) ou, em modo de desenvolvimento explícito, em `127.0.0.1`. O endpoint de hooks MUST escutar apenas em `127.0.0.1` e exigir o segredo local.
+### Requirement: Restricted network interface
+The WebSocket SHALL listen only on the Mac's Tailscale address (range 100.64.0.0/10) or, in explicit development mode, on `127.0.0.1`. The hooks endpoint MUST listen only on `127.0.0.1` and require the local secret.
 
-#### Scenario: Tailscale ausente
-- **WHEN** o daemon inicia manualmente sem interface Tailscale e sem modo dev
-- **THEN** encerra com erro explicando que o Tailscale é necessário (como serviço, aguarda a interface)
+#### Scenario: Tailscale missing
+- **WHEN** the daemon is started manually without a Tailscale interface and without dev mode
+- **THEN** it exits with an error explaining that Tailscale is required (as a service, it waits for the interface)
 
-#### Scenario: Hook sem segredo
-- **WHEN** uma requisição chega ao endpoint de hooks sem o segredo
-- **THEN** responde 401 e não processa o evento
+#### Scenario: Hook without secret
+- **WHEN** a request reaches the hooks endpoint without the secret
+- **THEN** it responds 401 and does not process the event
 
-### Requirement: Pareamento e rotação
-O comando `pair` SHALL exibir um QR code com URL `claude-remote://pair?host=<ip>&port=<porta>&token=<token>`. O comando `rotate-token` MUST gerar novo token e derrubar conexões existentes.
+### Requirement: Pairing and rotation
+The `pair` command SHALL display a QR code with the URL `claude-remote://pair?host=<ip>&port=<port>&token=<token>`. The `rotate-token` command MUST generate a new token and drop existing connections.
 
-#### Scenario: Rotação
-- **WHEN** o usuário roda `rotate-token`
-- **THEN** conexões abertas são fechadas e o token antigo deixa de ser aceito
+#### Scenario: Rotation
+- **WHEN** the user runs `rotate-token`
+- **THEN** open connections are closed and the old token is no longer accepted
 
-### Requirement: Armazenamento do token
-O token SHALL ser guardado no Keychain do macOS e nunca gravado em texto puro em disco.
+### Requirement: Token storage
+The token SHALL be stored in the macOS Keychain and never written in plain text to disk.
 
-#### Scenario: Token persistido
-- **WHEN** o daemon reinicia
-- **THEN** o mesmo token continua válido
+#### Scenario: Persisted token
+- **WHEN** the daemon restarts
+- **THEN** the same token remains valid

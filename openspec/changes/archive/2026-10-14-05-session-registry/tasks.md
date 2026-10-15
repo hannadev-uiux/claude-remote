@@ -1,11 +1,11 @@
-## 1. Infra tmux
+## 1. tmux infra
 
-- [x] 1.1 Implementar `TmuxClient` (`listPanes`, `hasPane`, `capturePane`, `sendKeys`, `pasteText`, `newWindow`) sobre um executor injetável; verificar com testes dos argumentos gerados
+- [x] 1.1 Implement `TmuxClient` (`listPanes`, `hasPane`, `capturePane`, `sendKeys`, `pasteText`, `newWindow`) on top of an injectable executor; verify with tests of the generated arguments
 
-## 2. Registro
+## 2. Registry
 
-- [x] 2.1 Implementar `SessionStore` com upsert, eventos e persistência em `state.json`; verificar com testes de upsert e restauração
-- [x] 2.2 Implementar varredura de transcripts recentes com leitura da cauda (título, cwd, modo); verificar com fixtures `.jsonl`
-- [x] 2.3 Adicionar `UserPromptSubmit` aos hooks instalados; verificar com teste do merge
-- [x] 2.4 Ligar os hooks às transições de estado e o polling de painéis; verificar com testes de cada transição e de painel morto
-- [x] 2.5 Registrar handler `sessions.list` → `sessions.snapshot` e broadcast de `session.updated`; verificar com teste de integração WS
+- [x] 2.1 Implement `SessionStore` with upsert, events and persistence in `state.json`; verify with upsert and restore tests
+- [x] 2.2 Implement scanning of recent transcripts reading the tail (title, cwd, mode); verify with `.jsonl` fixtures
+- [x] 2.3 Add `UserPromptSubmit` to the installed hooks; verify with a merge test
+- [x] 2.4 Wire the hooks to the state transitions and the pane polling; verify with tests for each transition and for a dead pane
+- [x] 2.5 Register the `sessions.list` → `sessions.snapshot` handler and the `session.updated` broadcast; verify with a WS integration test

@@ -1,21 +1,21 @@
 ## Why
 
-Acompanhar e responder a sessão é o principal uso do app (A3, A4).
+Following and replying to the session is the app's main use (A3, A4).
 
 ## What Changes
 
-- Tela da sessão com mensagens do usuário e do Claude em markdown, blocos de pensamento recolhidos, tool calls recolhíveis com resumo (ex.: `Bash(pnpm test)`), resultados e diffs coloridos para `Edit`/`Write`.
-- Carregamento de histórico ao rolar para cima.
-- Campo de prompt com envio, botões Esc e Ctrl+C (com confirmação) e atalhos de teclas.
-- Cabeçalho com perfil, diretório e estado.
+- Session screen with user and Claude messages in markdown, collapsed thinking blocks, collapsible tool calls with a summary (e.g. `Bash(pnpm test)`), results and colored diffs for `Edit`/`Write`.
+- History loading when scrolling up.
+- Prompt field with send, Esc and Ctrl+C buttons (with confirmation) and key shortcuts.
+- Header with profile, directory and state.
 
 ## Capabilities
 
 ### New Capabilities
-- `app-conversation`: visualização da conversa e envio de entrada pelo app.
+- `app-conversation`: viewing the conversation and sending input from the app.
 
 ### Modified Capabilities
 
 ## Impact
 
-`src/features/conversation`; dependências `react-native-markdown-display` (fork mantido `@ronradtke/react-native-markdown-display`), `diff`.
+`src/features/conversation`; dependencies `react-native-markdown-display` (maintained fork `@ronradtke/react-native-markdown-display`), `diff`.

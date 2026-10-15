@@ -1,37 +1,37 @@
 ## Purpose
 
-Permite ler e alterar remotamente o modo de permissão de uma sessão ativa, sempre exibindo o modo confirmado.
+Allows remotely reading and changing the permission mode of an active session, always showing the confirmed mode.
 
 ## ADDED Requirements
 
-### Requirement: Leitura do modo
-O daemon SHALL identificar o modo atual (`default`, `acceptEdits`, `plan`, `auto`, `bypassPermissions`, `dontAsk`) pela linha de status do painel e manter o campo `permissionMode` da sessão atualizado.
+### Requirement: Mode reading
+The daemon SHALL identify the current mode (`default`, `acceptEdits`, `plan`, `auto`, `bypassPermissions`, `dontAsk`) from the pane's status line and keep the session's `permissionMode` field up to date.
 
-#### Scenario: Modo plano
-- **WHEN** a linha de status mostra "plan mode on"
-- **THEN** a sessão tem `permissionMode: "plan"`
+#### Scenario: Plan mode
+- **WHEN** the status line shows "plan mode on"
+- **THEN** the session has `permissionMode: "plan"`
 
-### Requirement: Troca confirmada
-`session.setMode` SHALL enviar Shift+Tab e reler o modo após cada tecla até alcançar o alvo; se o alvo não aparecer após um ciclo completo (máx. 6 teclas), MUST responder `error` `mode_unreachable` com o modo em que parou.
+### Requirement: Confirmed switch
+`session.setMode` SHALL send Shift+Tab and re-read the mode after each keypress until it reaches the target; if the target does not appear after a full cycle (max. 6 keypresses), it MUST respond with `error` `mode_unreachable` with the mode where it stopped.
 
-#### Scenario: Ir para aceitar edições
-- **WHEN** a sessão está em `default` e o app pede `acceptEdits`
-- **THEN** o daemon envia Shift+Tab, confirma "accept edits on" e responde `ack` com `permissionMode: "acceptEdits"`
+#### Scenario: Switch to accept edits
+- **WHEN** the session is in `default` and the app requests `acceptEdits`
+- **THEN** the daemon sends Shift+Tab, confirms "accept edits on" and responds with `ack` with `permissionMode: "acceptEdits"`
 
-#### Scenario: Modo indisponível
-- **WHEN** o app pede `auto` num perfil sem modo auto no ciclo
-- **THEN** recebe `error` `mode_unreachable` e o modo atual real
+#### Scenario: Unavailable mode
+- **WHEN** the app requests `auto` on a profile without auto mode in the cycle
+- **THEN** it receives `error` `mode_unreachable` and the actual current mode
 
-### Requirement: Bypass proibido
-O daemon MUST recusar `bypassPermissions` com `error` `mode_forbidden`, e MUST parar o ciclo se passar por ele, seguindo para o próximo.
+### Requirement: Bypass forbidden
+The daemon MUST reject `bypassPermissions` with `error` `mode_forbidden`, and MUST NOT stop the cycle on it if it passes through it, moving on to the next mode.
 
-#### Scenario: Pedido de bypass
-- **WHEN** o app pede `bypassPermissions`
-- **THEN** recebe `mode_forbidden` e nenhuma tecla é enviada
+#### Scenario: Bypass request
+- **WHEN** the app requests `bypassPermissions`
+- **THEN** it receives `mode_forbidden` and no key is sent
 
-### Requirement: Sessão ocupada
-A troca SHALL ser recusada com `session_busy` se houver pedido de permissão pendente na sessão.
+### Requirement: Busy session
+The switch SHALL be rejected with `session_busy` if there is a pending permission request in the session.
 
-#### Scenario: Diálogo aberto
-- **WHEN** existe um `permission.request` pendente
-- **THEN** `session.setMode` recebe `session_busy`
+#### Scenario: Dialog open
+- **WHEN** there is a pending `permission.request`
+- **THEN** `session.setMode` receives `session_busy`

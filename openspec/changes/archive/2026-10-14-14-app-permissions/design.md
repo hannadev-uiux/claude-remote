@@ -1,20 +1,20 @@
 ## Context
 
-Mensagens do change 08 e 09.
+Messages from changes 08 and 09.
 
 ## Goals / Non-Goals
 
-**Goals:** responder com um toque e sem ambiguidade.
+**Goals:** respond with a single tap and without ambiguity.
 
-**Non-Goals:** ações na notificação (change 19).
+**Non-Goals:** actions in the notification (change 19).
 
 ## Decisions
 
-- **Store de permissões** global (`Map<requestId, PermissionRequest>`) para que lista e sessão leiam o mesmo estado.
-- **`BottomSheet`** simples com `Modal` nativo (`presentationStyle="pageSheet"`) para a confirmação; evita dependência extra.
-- **`describePermission`** puro: extrai título/detalhe por ferramenta (reaproveita `summarizeTool`).
-- **Haptics**: `notificationAsync(Warning)` ao chegar pedido com a sessão aberta.
+- **Global permissions store** (`Map<requestId, PermissionRequest>`) so the list and the session read the same state.
+- **Simple `BottomSheet`** with a native `Modal` (`presentationStyle="pageSheet"`) for the confirmation; avoids an extra dependency.
+- **`describePermission`**, pure: extracts title/detail per tool (reuses `summarizeTool`).
+- **Haptics**: `notificationAsync(Warning)` when a request arrives while the session is open.
 
 ## Risks / Trade-offs
 
-- [Pedido expira enquanto o usuário decide] → contagem regressiva visível; resposta tardia recebe `already_resolved` e é exibida.
+- [Request expires while the user decides] → visible countdown; a late response gets `already_resolved`, which is shown.

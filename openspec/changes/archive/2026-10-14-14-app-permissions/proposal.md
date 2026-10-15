@@ -1,21 +1,21 @@
 ## Why
 
-Aprovar permissões e trocar o modo pelo celular destrava sessões sem voltar ao Mac (A5, A11).
+Approving permissions and switching the mode from the phone unblocks sessions without going back to the Mac (A5, A11).
 
 ## What Changes
 
-- Cartão de permissão fixo na tela da sessão (e indicador na lista) com ferramenta, comando/arquivo, contagem regressiva e botões Permitir, Permitir sempre, Negar.
-- Folha "Permitir sempre" mostrando a regra exata (editável) e o escopo (perfil/projeto) antes de confirmar.
-- Seletor de modo de permissão no cabeçalho da sessão mostrando o modo confirmado; confirmação explícita ao escolher `auto`.
-- Feedback háptico.
+- Permission card pinned on the session screen (and an indicator in the list) with tool, command/file, countdown and the Allow, Always allow, Deny buttons.
+- "Always allow" sheet showing the exact rule (editable) and the scope (profile/project) before confirming.
+- Permission mode selector in the session header showing the confirmed mode; explicit confirmation when choosing `auto`.
+- Haptic feedback.
 
 ## Capabilities
 
 ### New Capabilities
-- `app-permissions`: respostas a pedidos de permissão e troca de modo no app.
+- `app-permissions`: responding to permission requests and switching mode in the app.
 
 ### Modified Capabilities
 
 ## Impact
 
-`src/features/permissions`, `src/features/mode` no app.
+`src/features/permissions`, `src/features/mode` in the app.

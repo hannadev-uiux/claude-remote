@@ -132,7 +132,7 @@ export async function installAppBundle(exec: Executor, o: AppBundleOptions): Pro
     : false
   await writeFile(join(contents, 'Info.plist'), renderAppInfoPlist(hasIcon))
   const signed = await exec('codesign', ['--force', '--sign', '-', o.appDir])
-  if (signed.exitCode !== 0) throw new Error(`codesign falhou: ${signed.stderr.trim()}`)
+  if (signed.exitCode !== 0) throw new Error(`codesign failed: ${signed.stderr.trim()}`)
   return executable
 }
 
@@ -183,7 +183,7 @@ export async function installService(
     await sleep(500 * attempt)
     result = await exec('launchctl', ['bootstrap', domain(), path])
   }
-  if (result.exitCode !== 0) throw new Error(`launchctl bootstrap falhou: ${result.stderr.trim()}`)
+  if (result.exitCode !== 0) throw new Error(`launchctl bootstrap failed: ${result.stderr.trim()}`)
   return path
 }
 
@@ -195,8 +195,8 @@ export async function uninstallService(exec: Executor, home = homedir(), appDir?
 
 export async function serviceStatus(exec: Executor): Promise<{ loaded: boolean; detail: string }> {
   const result = await exec('launchctl', ['print', `${domain()}/${LAUNCHD_LABEL}`])
-  if (result.exitCode !== 0) return { loaded: false, detail: 'não carregado' }
-  const state = /state = (\w+)/.exec(result.stdout)?.[1] ?? 'desconhecido'
+  if (result.exitCode !== 0) return { loaded: false, detail: 'not loaded' }
+  const state = /state = (\w+)/.exec(result.stdout)?.[1] ?? 'unknown'
   const pid = /pid = (\d+)/.exec(result.stdout)?.[1]
   return { loaded: true, detail: pid ? `${state} (pid ${pid})` : state }
 }

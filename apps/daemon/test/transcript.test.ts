@@ -67,7 +67,8 @@ describe('parser', () => {
     })
     expect(parseTranscriptLine(lines[15]!, 15)[0]).toMatchObject({
       kind: 'system',
-      text: 'Turno concluído em 1m 15s',
+      text: 'Turn completed in 1m 15s',
+      durationMs: 75332,
     })
   })
 

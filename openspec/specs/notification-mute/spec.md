@@ -1,24 +1,24 @@
 # notification-mute Specification
 
 ## Purpose
-Permite silenciar notificações push de perfis ou sessões específicas.
+Allows muting push notifications from specific profiles or sessions.
 
 ## Requirements
 
-### Requirement: Silenciar
-`settings.mute` SHALL adicionar ou remover um perfil ou sessão da lista de silenciados, persistida no daemon; eventos de alvos silenciados MUST NOT gerar push. Pedidos de permissão de alvos silenciados continuam aparecendo no app.
+### Requirement: Mute
+`settings.mute` SHALL add or remove a profile or session from the mute list, persisted in the daemon; events from muted targets MUST NOT produce push. Permission requests from muted targets still appear in the app.
 
-#### Scenario: Perfil silenciado
-- **WHEN** o perfil `claudin` está silenciado e uma sessão dele termina
-- **THEN** nenhum push é enviado
+#### Scenario: Muted profile
+- **WHEN** the `claudin` profile is muted and one of its sessions finishes
+- **THEN** no push is sent
 
-#### Scenario: Reativar
-- **WHEN** o usuário reativa o perfil
-- **THEN** os próximos eventos voltam a gerar push
+#### Scenario: Unmute
+- **WHEN** the user unmutes the profile
+- **THEN** subsequent events produce push again
 
-### Requirement: Controles no app
-O app SHALL mostrar interruptores por perfil nas configurações e um botão de silenciar no cabeçalho da sessão, refletindo o estado vindo do daemon em `auth.ok`.
+### Requirement: Controls in the app
+The app SHALL show per-profile toggles in settings and a mute button in the session header, reflecting the state received from the daemon in `auth.ok`.
 
-#### Scenario: Silenciar sessão
-- **WHEN** o usuário toca no sino da sessão
-- **THEN** o app envia `settings.mute` e o ícone muda para silenciado
+#### Scenario: Mute a session
+- **WHEN** the user taps the session's bell
+- **THEN** the app sends `settings.mute` and the icon changes to muted
