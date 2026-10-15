@@ -8,10 +8,10 @@
 
 ## 3. Daemon and installer
 
-- [ ] 3.1 `core/i18n` (catalogs, `resolveLocale`, `createI18n`) with parity and resolution tests
-- [ ] 3.2 `language` in `ConfigSchema`; language as the first setup question, `--lang`, saved in `config.json`; verify with tests and a run in a temporary HOME
-- [ ] 3.3 CLI commands, doctor, errors and push texts through the catalogs; verify with tests
-- [ ] 3.4 `install.sh` messages in the three languages; verify with `bash -n` and `LANG=es_ES.UTF-8 ./install.sh --help`
+- [x] 3.1 `core/i18n` (catalogs, `resolveLocale`, `createI18n`) with parity and resolution tests
+- [x] 3.2 `language` in `ConfigSchema`; language as the first setup question, `--lang`, saved in `config.json`; verify with tests and a run in a temporary HOME
+- [x] 3.3 CLI commands, doctor, errors and push texts through the catalogs; verify with tests
+- [x] 3.4 `install.sh` messages in the three languages; verify with `bash -n` and `LANG=es_ES.UTF-8 ./install.sh --help`
 
 ## 4. App
 
