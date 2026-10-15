@@ -15,8 +15,10 @@ function keys(value: unknown, prefix = ''): string[] {
 describe('catalogs', () => {
   const reference = keys(resources['en-US'].translation).sort()
 
+  // `_many` is derived from `_other` at load time (withManyPlurals), so it is not a catalog key.
   test.each(LOCALES)('%s has the same keys as en-US', (locale) => {
-    expect(keys(resources[locale].translation).sort()).toEqual(reference)
+    const own = keys(resources[locale].translation).filter((k) => !k.endsWith('_many'))
+    expect(own.sort()).toEqual(reference)
   })
 
   test.each(LOCALES)('%s has complete plural groups (_one and _other)', (locale) => {
@@ -44,6 +46,13 @@ describe('createI18n', () => {
     expect(pt('permissions.queued', { count: 3 })).toBe('+3 pedidos na fila')
     expect(createI18n('es-ES').t('settings.forgetButton')).toBe('Olvidar daemon')
     expect(createI18n('en-US').t('subagents.more', { count: 2, running: 1 })).toBe('+2 subagents (1 running)')
+  })
+
+  test('uses the _other form for the many plural category (millions)', () => {
+    for (const locale of ['pt-BR', 'es-ES'] as const) {
+      const t = createI18n(locale).t
+      expect(t('conversation.moreLines', { count: 1_000_000 })).not.toMatch(/lines/)
+    }
   })
 
   test('does not escape interpolated values', () => {
