@@ -5,6 +5,10 @@ import { addListener, constants } from 'react-native-key-command'
 import { useBackHandler } from '@/core/platform/use-back-handler'
 import { PromptComposer } from '../conversation/components/PromptComposer'
 import type { usePrompt } from '../conversation/use-prompt'
+import { RecordingOverlay } from '../voice/components/RecordingOverlay'
+import { VoiceButton } from '../voice/components/VoiceButton'
+import { insertTranscriptAtCursor } from '../voice/insert-at-cursor'
+import { useVoiceRecording } from '../voice/use-voice-recording'
 import { SuggestionList } from './SuggestionList'
 import { applySuggestion, findTrigger, isInteractiveCommand, triggerKey } from './trigger'
 import { useCommands, useSuggestions } from './use-suggestions'
@@ -39,6 +43,10 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
     setTimeout(() => setSelection(undefined), 0)
     input.current?.focus()
   }
+
+  const voice = useVoiceRecording((transcript) =>
+    insert(insertTranscriptAtCursor(prompt.text, cursor, transcript)),
+  )
 
   const send = async () => {
     const text = prompt.text
@@ -81,7 +89,24 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
             onPickFile={(item) => insert(applySuggestion(prompt.text, trigger, { kind: 'file', item }))}
             onPickCommand={(item) => insert(applySuggestion(prompt.text, trigger, { kind: 'command', item }))}
           />
+        ) : voice.state !== 'idle' ? (
+          <RecordingOverlay
+            state={voice.state}
+            level={voice.level}
+            elapsedMs={voice.elapsedMs}
+            onCancel={voice.cancel}
+            onDone={voice.stop}
+            onRetryOnline={() => void voice.retryOnline()}
+          />
         ) : null
+      }
+      voiceButton={
+        <VoiceButton
+          state={voice.state}
+          disabled={disabled}
+          onStart={() => void voice.start()}
+          onStop={voice.stop}
+        />
       }
     />
   )

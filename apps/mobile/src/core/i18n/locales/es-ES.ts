@@ -184,6 +184,17 @@ const esES = {
       plugin: 'plugin',
     },
   },
+  voice: {
+    start: 'Grabar un mensaje de voz',
+    stop: 'Detener la grabación',
+    cancel: 'Cancelar',
+    done: 'Listo',
+    permissionDenied:
+      'La grabación no está disponible: se denegó el acceso al micrófono o al reconocimiento de voz.',
+    offlineUnavailable:
+      'El reconocimiento en el dispositivo no está disponible para este idioma. ¿Enviar la grabación por la red en su lugar?',
+    retryOnline: 'Enviar en línea',
+  },
   newSession: {
     profile: 'perfil',
     directory: 'directorio',
