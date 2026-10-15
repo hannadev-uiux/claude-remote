@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { RuleScopeSchema } from './domain.ts'
+import { DevicePlatformSchema, RuleScopeSchema } from './domain.ts'
 
 const id = z.string().min(1)
 const sessionId = z.string().min(1)
@@ -41,7 +41,13 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     decision: z.enum(['allow', 'deny']),
     always: z.object({ rule: z.string().min(1), scope: RuleScopeSchema }).optional(),
   }),
-  z.object({ type: z.literal('device.register'), id, fcmToken: z.string().min(1) }),
+  z.object({
+    type: z.literal('device.register'),
+    id,
+    fcmToken: z.string().min(1),
+    // Optional for apps paired before Android support (they are iOS).
+    platform: DevicePlatformSchema.optional(),
+  }),
   z.object({ type: z.literal('app.visibility'), id, foreground: z.boolean() }),
   z.object({
     type: z.literal('files.search'),

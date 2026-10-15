@@ -96,6 +96,10 @@ export type TranscriptEntryKind = TranscriptEntry['kind']
 export const RuleScopeSchema = z.enum(['profile', 'project'])
 export type RuleScope = z.infer<typeof RuleScopeSchema>
 
+/** Platform of a paired phone; picks the push payload block (APNs or Android). */
+export const DevicePlatformSchema = z.enum(['ios', 'android'])
+export type DevicePlatform = z.infer<typeof DevicePlatformSchema>
+
 export const PermissionRequestInfoSchema = z.object({
   requestId: z.string(),
   sessionId: z.string(),
