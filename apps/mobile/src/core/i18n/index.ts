@@ -7,7 +7,7 @@ import { deviceLocale } from './device'
 
 export type { TFunction } from './create'
 
-/** App-wide instance, following the iPhone language (per-app language included). */
+/** App-wide instance, following the phone language (per-app language included). */
 export const i18n = createI18n(deviceLocale(getLocales()), [initReactI18next])
 
 // The language can change while the app is in the background; pick it up on return.

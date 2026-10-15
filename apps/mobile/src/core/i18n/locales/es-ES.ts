@@ -47,9 +47,9 @@ const esES = {
     daysAgo: 'hace {{count}} d',
   },
   pairing: {
-    title: 'Vincular con el Mac',
-    intro: 'En el Mac, ejecuta <cmd>claude-remote pair</cmd> y apunta la cámara al código QR.',
-    guideTitle: '¿Primera vez? Configura el Mac',
+    title: 'Vincular con el ordenador',
+    intro: 'En el ordenador, ejecuta <cmd>claude-remote pair</cmd> y apunta la cámara al código QR.',
+    guideTitle: '¿Primera vez? Configura el ordenador',
     guideHint: 'Tailscale, instalación en una línea y vinculación, paso a paso.',
     tabQr: 'Código QR',
     tabManual: 'Manual',
@@ -64,34 +64,35 @@ const esES = {
     token: 'token',
     connect: 'Conectar',
     errors: {
-      timeout: 'Tiempo agotado. ¿El Mac está en Tailscale y el daemon en marcha?',
+      timeout: 'Tiempo agotado. ¿El ordenador está en Tailscale y el daemon en marcha?',
       unauthorized: 'El daemon ha rechazado el token.',
       failed: 'No se ha podido conectar con el daemon.',
     },
   },
   setupGuide: {
-    title: 'Configurar el Mac',
-    intro: 'Cuatro pasos, unos 5 minutos. Necesitarás el Mac en el que se ejecuta Claude Code.',
+    title: 'Configurar el ordenador',
+    intro:
+      'Cuatro pasos, unos 5 minutos. Necesitarás el ordenador en el que se ejecuta Claude Code (macOS, Linux o Windows con WSL).',
     help: 'Dudas o problemas: {{url}}',
     steps: {
-      tailscaleIos: {
-        title: 'Tailscale en el iPhone',
-        body: 'La app habla con tu Mac a través de una red privada de Tailscale, que funciona desde cualquier sitio y es gratis para uso personal. Instálala e inicia sesión con una cuenta.',
-        action: 'Abrir en el App Store',
+      tailscalePhone: {
+        title: 'Tailscale en este móvil',
+        body: 'La app habla con tu ordenador a través de una red privada de Tailscale, que funciona desde cualquier sitio y es gratis para uso personal. Instálala e inicia sesión con una cuenta.',
+        action: 'Abrir en {{store}}',
       },
-      tailscaleMac: {
-        title: 'Tailscale en el Mac',
-        body: 'Instala Tailscale en el Mac e inicia sesión con la misma cuenta que en el iPhone. Los dos aparecerán como dispositivos de la misma red.',
-        action: 'Enviar el enlace al Mac',
+      tailscaleComputer: {
+        title: 'Tailscale en el ordenador',
+        body: 'Instala Tailscale en el ordenador (en Windows, dentro de WSL o con la red reflejada) e inicia sesión con la misma cuenta que en este móvil. Los dos aparecerán como dispositivos de la misma red.',
+        action: 'Enviar el enlace al ordenador',
       },
       install: {
-        title: 'Claude Remote en el Mac',
-        body: 'En el Terminal del Mac, ejecuta el instalador. Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
-        action: 'Enviar el comando (AirDrop, Notas…)',
+        title: 'Claude Remote en el ordenador',
+        body: 'En un terminal del ordenador, ejecuta el instalador. Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
+        action: 'Enviar el comando al ordenador',
       },
       pair: {
         title: 'Vincular',
-        body: 'Al final, el instalador muestra un código QR (o ejecuta `claude-remote pair`). Escanéalo con esta app y listo: abre Claude Code en el Mac con el alias que hayas elegido.',
+        body: 'Al final, el instalador muestra un código QR (o ejecuta `claude-remote pair`). Escanéalo con esta app y listo: abre Claude Code en el ordenador con el alias que hayas elegido.',
         action: 'Escanear el código QR',
       },
     },
@@ -130,7 +131,7 @@ const esES = {
     queued_other: '+{{count}} solicitudes en cola',
     pending_one: '{{count}} permiso',
     pending_other: '{{count}} permisos',
-    alreadyResolved: 'Esta solicitud ya se ha resuelto (en el Mac o por tiempo agotado).',
+    alreadyResolved: 'Esta solicitud ya se ha resuelto (en el ordenador o por tiempo agotado).',
     detail: {
       command: 'comando',
       file: 'archivo',
@@ -193,19 +194,19 @@ const esES = {
   },
   resume: {
     title: 'Sesión de solo lectura',
-    hint: 'Reanúdala para continuar en el tmux del Mac.',
-    launched: 'Abriendo en el tmux del Mac. Si tarda, mira el terminal.',
+    hint: 'Reanúdala para continuar en el tmux del ordenador.',
+    launched: 'Abriendo en el tmux del ordenador. Si tarda, mira el terminal.',
     opening: 'Abriendo…',
     resume: 'Reanudar',
   },
   mode: {
     title: 'Modo de permisos',
-    hint: 'Se cambia con Mayús+Tab en el Mac; el modo mostrado es el confirmado en la línea de estado.',
+    hint: 'Se cambia con Mayús+Tab en el ordenador; el modo mostrado es el confirmado en la línea de estado.',
     switching: 'cambiando…',
     changeFailed: 'No se ha podido cambiar el modo',
     autoConfirmTitle: '¿Activar el modo auto?',
     autoConfirmBody:
-      'Claude decidirá por su cuenta qué acciones ejecutar, sin pedir aprobación, mientras nadie mira el Mac.',
+      'Claude decidirá por su cuenta qué acciones ejecutar, sin pedir aprobación, mientras nadie mira el ordenador.',
     autoConfirm: 'Activar auto',
     labels: {
       default: 'predeterminado',
@@ -235,7 +236,7 @@ const esES = {
   sessions: {
     all: 'todos',
     emptyTitle: 'No hay sesiones',
-    emptyBody: 'Inicia una sesión en el Mac con los launchers:',
+    emptyBody: 'Inicia una sesión en el ordenador con los launchers:',
     emptyHint: 'Las sesiones abiertas con `claude` a secas aparecen como solo lectura.',
     background: 'segundo plano {{count}}',
     states: {
@@ -257,7 +258,7 @@ const esES = {
     version: 'versión',
     protocol: 'protocolo',
     profiles: 'Perfiles',
-    noProfiles: 'No se ha encontrado ningún perfil en el Mac.',
+    noProfiles: 'No se ha encontrado ningún perfil en el ordenador.',
     forgetButton: 'Olvidar daemon',
     forgetTitle: '¿Olvidar el daemon?',
     forgetBody: 'El token se borrará de este dispositivo. Tendrás que volver a vincularlo.',
@@ -265,6 +266,10 @@ const esES = {
   },
   terminal: {
     space: 'espacio',
+  },
+  push: {
+    channelName: 'Sesiones',
+    channelDescription: 'Sesiones terminadas, sesiones que te esperan y permisos pendientes.',
   },
 } satisfies Messages
 

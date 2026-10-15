@@ -4,7 +4,7 @@ export type Credentials = { host: string; port: number; token: string }
 
 const KEY = 'claude-remote.credentials'
 
-/** Pairing credentials live only in the iOS Keychain (SecureStore). */
+/** Pairing credentials live only in SecureStore (iOS Keychain / Android Keystore). */
 export const credentialsStorage = {
   async load(): Promise<Credentials | null> {
     const raw = await SecureStore.getItemAsync(KEY)
