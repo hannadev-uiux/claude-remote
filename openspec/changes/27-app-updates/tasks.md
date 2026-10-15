@@ -22,3 +22,4 @@
 - [x] 4.3 Server: channels, `expo-manifest-filters`, development-only token (maarkN/maarkn.dev#7, #9)
 - [x] 4.4 CI workflow `ota-development.yml` (push to development, secrets `OTA_SIGNING_KEY` and `OTA_DEV_TOKEN`)
 - [ ] 4.5 End to end: a merge into development reaches a phone on the development channel, and switching back to production works
+  > Simulator (Release build, local maarkn.dev from main): production update running → switched to development (confirmation, download, restart) → development update running → back to production → the older production update was applied (manifest filters). The CI token was refused for production (403). Pending: the workflow in GitHub Actions with the real secrets, and a phone.

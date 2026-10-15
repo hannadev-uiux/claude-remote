@@ -135,5 +135,6 @@ export function AppUpdatesCard() {
 const styles = StyleSheet.create({
   gap: { gap: space.sm },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.md },
-  chips: { flexDirection: 'row', gap: space.sm },
+  // Wraps on narrow phones ("desenvolvimento" is long).
+  chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 1, gap: space.sm },
 })
