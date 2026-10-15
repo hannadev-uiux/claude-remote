@@ -1,11 +1,11 @@
 ## 1. Protocol
 
-- [ ] 1.1 `SessionSchema.checkout`, `checkout.inspect`/`checkout.info`, `session.start.worktree`, `checkoutPeers` helper; verify with tests
+- [x] 1.1 `SessionSchema.checkout`, `checkout.inspect`/`checkout.info`, `session.start.worktree`, `checkoutPeers` helper; verify with tests
 
 ## 2. Daemon
 
-- [ ] 2.1 `infra/git.ts` (`GitClient.checkout`) and the `checkout` feature (cache, store listener); verify with tests
-- [ ] 2.2 `checkout.inspect` and `session.start { worktree }` (`worktreeName`, `--worktree`); verify with tests and a run against a temporary repository
+- [x] 2.1 `infra/git.ts` (`GitClient.checkout`) and the `checkout` feature (cache, store listener); verify with tests
+- [x] 2.2 `checkout.inspect` and `session.start { worktree }` (`worktreeName`, `--worktree`); verify with tests and a run against a temporary repository
 
 ## 3. App
 

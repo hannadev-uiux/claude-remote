@@ -1,16 +1,28 @@
 import { paths } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
+import type { CheckoutResolver } from '../checkout/resolver.ts'
 import type { SessionService } from '../sessions/service.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { LifecycleService } from './service.ts'
 
-export function registerLifecycleFeature(ctx: DaemonContext, store: SessionStore, sessions: SessionService) {
-  const service = new LifecycleService(ctx.exec, store, ctx.profiles, paths.bin(), undefined, (pane) =>
-    ctx.tmux.hasPane(pane),
+export function registerLifecycleFeature(
+  ctx: DaemonContext,
+  store: SessionStore,
+  sessions: SessionService,
+  checkouts: CheckoutResolver,
+) {
+  const service = new LifecycleService(
+    ctx.exec,
+    store,
+    ctx.profiles,
+    paths.bin(),
+    undefined,
+    (pane) => ctx.tmux.hasPane(pane),
+    (dir) => checkouts.resolve(dir, { fresh: true }),
   )
   ctx.router.register('session.start', async (msg) => ({
     type: 'ack',
-    data: await service.start(msg.profileId, msg.cwd),
+    data: await service.start(msg.profileId, msg.cwd, { worktree: msg.worktree }),
   }))
   ctx.router.register('session.resume', async (msg) => ({
     type: 'ack',

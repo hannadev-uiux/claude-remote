@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import {
+  CheckoutPeerSchema,
+  CheckoutSchema,
   CommandItemSchema,
   ErrorCodeSchema,
   FileItemSchema,
@@ -75,6 +77,12 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('files.results'), replyTo, query: z.string(), items: z.array(FileItemSchema) }),
   z.object({ type: z.literal('commands.results'), replyTo, items: z.array(CommandItemSchema) }),
   z.object({ type: z.literal('projects.results'), replyTo, items: z.array(ProjectItemSchema) }),
+  z.object({
+    type: z.literal('checkout.info'),
+    replyTo,
+    checkout: CheckoutSchema.nullable(),
+    peers: z.array(CheckoutPeerSchema),
+  }),
   z.object({ type: z.literal('mute.updated'), muted: MuteStateSchema }),
 ])
 
