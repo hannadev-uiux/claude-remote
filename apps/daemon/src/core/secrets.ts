@@ -24,18 +24,16 @@ export class KeychainTokenStore implements TokenStore {
     return token.length > 0 ? token : null
   }
 
+  /**
+   * `security -i` reads the command from stdin, so the token never shows up in `ps`. Its exit code
+   * ignores failed commands, so the write is confirmed by reading the token back.
+   */
   async set(token: string): Promise<void> {
-    const result = await this.exec('security', [
-      'add-generic-password',
-      '-U',
-      '-s',
-      SERVICE,
-      '-a',
-      ACCOUNT,
-      '-w',
-      token,
-    ])
-    if (result.exitCode !== 0) throw new Error(`keychain write failed: ${result.stderr.trim()}`)
+    if (!/^[\w-]+$/.test(token)) throw new Error('keychain write failed: unexpected token format')
+    const command = `add-generic-password -U -s ${SERVICE} -a ${ACCOUNT} -w "${token}"\n`
+    const result = await this.exec('security', ['-i'], { input: command })
+    if (result.exitCode !== 0 || (await this.get()) !== token)
+      throw new Error(`keychain write failed: ${result.stderr.trim()}`)
   }
 }
 

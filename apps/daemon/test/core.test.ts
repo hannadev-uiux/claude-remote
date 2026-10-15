@@ -72,14 +72,28 @@ describe('config', () => {
 })
 
 describe('token stores', () => {
-  test('keychain store uses the security CLI', async () => {
-    const exec = fakeExecutor((call) =>
-      call.args[0] === 'find-generic-password' ? { exitCode: 44, stdout: '' } : undefined,
-    )
+  test('keychain store writes through security -i stdin, never in the arguments', async () => {
+    let stored: string | null = null
+    const exec = fakeExecutor((call) => {
+      if (call.args[0] === '-i') stored = /-w "([^"]+)"/.exec(call.options?.input ?? '')?.[1] ?? null
+      if (call.args[0] === 'find-generic-password')
+        return stored ? { stdout: `${stored}\n` } : { exitCode: 44, stdout: '' }
+      return undefined
+    })
     const token = await ensureToken(new KeychainTokenStore(exec))
     expect(token.length).toBeGreaterThan(30)
-    expect(exec.calls.map((c) => c.args[0])).toEqual(['find-generic-password', 'add-generic-password'])
-    expect(exec.calls[1]?.args).toContain(token)
+    expect(exec.calls.map((c) => c.args[0])).toEqual(['find-generic-password', '-i', 'find-generic-password'])
+    expect(exec.calls.flatMap((c) => c.args)).not.toContain(token)
+    expect(exec.calls[1]?.options?.input).toContain(
+      'add-generic-password -U -s claude-remote -a pairing-token',
+    )
+  })
+
+  test('keychain store fails when the token cannot be read back', async () => {
+    const exec = fakeExecutor((call) =>
+      call.args[0] === 'find-generic-password' ? { exitCode: 44 } : undefined,
+    )
+    await expect(new KeychainTokenStore(exec).set('abc')).rejects.toThrow(/keychain write failed/)
   })
 
   test('keeps an existing token', async () => {
