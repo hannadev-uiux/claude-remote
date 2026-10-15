@@ -1,6 +1,9 @@
 import { Bell, BellOff } from 'lucide-react-native'
+import { useTranslation } from 'react-i18next'
 import { Alert, StyleSheet, Switch, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
+import { errorMessage } from '@/core/connection/error-message'
+import type { TFunction } from '@/core/i18n/create'
 import { colors, space } from '@/core/theme'
 import { Card, IconButton, Text } from '@/ui'
 import { setMuted, useMuteStore } from './store'
@@ -10,20 +13,24 @@ function toggle(
   target: 'profile' | 'session',
   id: string,
   muted: boolean,
+  t: TFunction,
 ) {
   if (!client) return
-  setMuted(client, target, id, muted).catch((e: Error) => Alert.alert('Não foi possível alterar', e.message))
+  setMuted(client, target, id, muted).catch((e: unknown) =>
+    Alert.alert(t('mute.changeFailed'), errorMessage(e, t)),
+  )
 }
 
 /** Per-profile switches for the settings screen. */
 export function ProfileMuteCard() {
+  const { t } = useTranslation()
   const client = useDaemonClient()
   const profiles = useConnectionStore(selectProfiles)
   const mutedProfiles = useMuteStore((s) => s.profiles)
   return (
     <Card>
       <View style={styles.gap}>
-        <Text weight="bold">Notificações</Text>
+        <Text weight="bold">{t('mute.notifications')}</Text>
         {profiles.map((p) => {
           const muted = mutedProfiles.includes(p.id)
           return (
@@ -33,7 +40,7 @@ export function ProfileMuteCard() {
               </Text>
               <Switch
                 value={!muted}
-                onValueChange={(on) => toggle(client, 'profile', p.id, !on)}
+                onValueChange={(on) => toggle(client, 'profile', p.id, !on, t)}
                 trackColor={{ true: colors.accent, false: colors.borderStrong }}
               />
             </View>
@@ -46,14 +53,15 @@ export function ProfileMuteCard() {
 
 /** Bell toggle for the session header. */
 export function SessionMuteButton({ sessionId }: { sessionId: string }) {
+  const { t } = useTranslation()
   const client = useDaemonClient()
   const muted = useMuteStore((s) => s.sessions.includes(sessionId))
   return (
     <IconButton
       icon={muted ? BellOff : Bell}
-      label={muted ? 'Reativar notificações' : 'Silenciar notificações'}
+      label={muted ? t('mute.unmute') : t('mute.mute')}
       color={muted ? 'textDim' : 'textMuted'}
-      onPress={() => toggle(client, 'session', sessionId, !muted)}
+      onPress={() => toggle(client, 'session', sessionId, !muted, t)}
     />
   )
 }

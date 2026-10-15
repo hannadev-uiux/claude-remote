@@ -1,4 +1,5 @@
 import type { PermissionRequestInfo, RuleScope } from '@claude-remote/protocol'
+import type { TFunction } from '@/core/i18n/create'
 import { summarizeTool } from '../conversation/summarize-tool'
 
 export type PermissionDescription = { title: string; detail: string; detailLabel: string }
@@ -6,14 +7,17 @@ export type PermissionDescription = { title: string; detail: string; detailLabel
 /** Human-readable view of what the tool wants to do, with the full command or path. */
 export function describePermission(
   info: Pick<PermissionRequestInfo, 'tool' | 'input'>,
+  t: TFunction,
 ): PermissionDescription {
   const { tool, input } = info
-  const title = summarizeTool(tool, input)
-  if (typeof input.command === 'string') return { title, detail: input.command, detailLabel: 'comando' }
+  const title = summarizeTool(tool, input, t)
+  if (typeof input.command === 'string')
+    return { title, detail: input.command, detailLabel: t('permissions.detail.command') }
   const path = input.file_path ?? input.notebook_path ?? input.path
-  if (typeof path === 'string') return { title, detail: path, detailLabel: 'arquivo' }
-  if (typeof input.url === 'string') return { title, detail: input.url, detailLabel: 'url' }
-  return { title, detail: JSON.stringify(input, null, 2), detailLabel: 'entrada' }
+  if (typeof path === 'string') return { title, detail: path, detailLabel: t('permissions.detail.file') }
+  if (typeof input.url === 'string')
+    return { title, detail: input.url, detailLabel: t('permissions.detail.url') }
+  return { title, detail: JSON.stringify(input, null, 2), detailLabel: t('permissions.detail.input') }
 }
 
 export type RespondPayload = {

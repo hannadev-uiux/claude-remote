@@ -1,8 +1,10 @@
 import * as Notifications from 'expo-notifications'
 import { router } from 'expo-router'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AppState } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
+import type { TFunction } from '@/core/i18n/create'
 import { loadMessaging } from './firebase'
 import { ACTION_ALLOW, ACTION_DENY, extractPushData, PERMISSION_CATEGORY, type PushData } from './payload'
 import { respondInBackground } from './respond-in-background'
@@ -17,16 +19,16 @@ Notifications.setNotificationHandler({
   }),
 })
 
-async function registerCategory() {
+async function registerCategory(t: TFunction) {
   await Notifications.setNotificationCategoryAsync(PERMISSION_CATEGORY, [
     {
       identifier: ACTION_ALLOW,
-      buttonTitle: 'Permitir',
+      buttonTitle: t('permissions.allow'),
       options: { opensAppToForeground: false, isAuthenticationRequired: true },
     },
     {
       identifier: ACTION_DENY,
-      buttonTitle: 'Negar',
+      buttonTitle: t('permissions.deny'),
       options: { opensAppToForeground: false, isDestructive: true },
     },
   ])
@@ -51,9 +53,14 @@ async function handleResponse(response: Notifications.NotificationResponse) {
 /** Registers the FCM token with the daemon, reports foreground state and routes notification taps. */
 export function usePush() {
   const client = useConnectionStore((s) => s.client)
+  const { t } = useTranslation()
+
+  // Notification buttons follow the app language.
+  useEffect(() => {
+    void registerCategory(t)
+  }, [t])
 
   useEffect(() => {
-    void registerCategory()
     const sub = Notifications.addNotificationResponseReceivedListener((r) => void handleResponse(r))
     void Notifications.getLastNotificationResponseAsync().then((r) => {
       if (r) void handleResponse(r)

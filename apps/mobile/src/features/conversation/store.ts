@@ -9,7 +9,8 @@ export type StreamState = {
   lastCursor: number | null
   hasMore: boolean
   loadingOlder: boolean
-  error: string | null
+  /** Last subscription failure (rendered with `errorMessage`), null when fine. */
+  error: unknown
 }
 
 const EMPTY: StreamState = { entries: [], lastCursor: null, hasMore: false, loadingOlder: false, error: null }
@@ -71,7 +72,7 @@ export function subscribeTranscript(client: DaemonClient, sessionId: string, age
       if (reply.type !== 'transcript.page') return
       applyEntries(key, reply.entries, lastCursor === null ? { hasMore: reply.hasMore } : {})
     } catch (error) {
-      useTranscriptStore.getState().update(key, () => ({ error: (error as Error).message }))
+      useTranscriptStore.getState().update(key, () => ({ error: error ?? null }))
     }
   }
 

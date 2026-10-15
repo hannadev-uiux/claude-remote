@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { SquareTerminal } from 'lucide-react-native'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
 import { colors, space } from '@/core/theme'
@@ -17,6 +18,7 @@ import { SubagentStrip } from '@/features/subagents/SubagentList'
 import { headerActions, IconButton, Text } from '@/ui'
 
 export default function SessionRoute() {
+  const { t } = useTranslation()
   const { id } = useLocalSearchParams<{ id: string }>()
   const session = useSessionsStore((s) => s.sessions[id])
   const profile = useConnectionStore((s) => s.hello?.profiles.find((p) => p.id === session?.profileId))
@@ -33,7 +35,7 @@ export default function SessionRoute() {
                 <SessionMuteButton sessionId={id} />
                 <IconButton
                   icon={SquareTerminal}
-                  label="Terminal"
+                  label={t('nav.terminal')}
                   disabled={!controllable}
                   onPress={() => router.push({ pathname: '/session/[id]/terminal', params: { id } })}
                 />
@@ -42,7 +44,7 @@ export default function SessionRoute() {
           ),
           headerTitle: () => (
             <Text weight="bold" numberOfLines={1} style={styles.title}>
-              {session?.title ?? 'Sessão'}
+              {session?.title || t('common.session')}
             </Text>
           ),
         }}

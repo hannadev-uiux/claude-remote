@@ -1,4 +1,5 @@
 import { Redirect, Stack } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { useConnectionStore } from '@/core/connection'
 import { colors, fonts } from '@/core/theme'
 import { usePush } from '@/features/push/use-push'
@@ -6,6 +7,7 @@ import { useDaemonSync } from '@/features/sync/use-daemon-sync'
 
 /** Everything under (main) requires a paired daemon. */
 export default function MainLayout() {
+  const { t } = useTranslation()
   const credentials = useConnectionStore((s) => s.credentials)
   useDaemonSync()
   usePush()
@@ -22,11 +24,11 @@ export default function MainLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Claude Remote' }} />
-      <Stack.Screen name="settings" options={{ title: 'Configurações' }} />
-      <Stack.Screen name="new" options={{ title: 'Nova sessão', presentation: 'modal' }} />
+      <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
+      <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
       <Stack.Screen name="session/[id]/index" options={{ title: '' }} />
-      <Stack.Screen name="session/[id]/terminal" options={{ title: 'Terminal' }} />
-      <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: 'Subagente' }} />
+      <Stack.Screen name="session/[id]/terminal" options={{ title: t('nav.terminal') }} />
+      <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: t('nav.subagent') }} />
     </Stack>
   )
 }
