@@ -8,8 +8,9 @@ import { expandHome, paths } from '../../core/paths.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory, readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 import { BACKUP_SUFFIX } from '../hooks/installer.ts'
+import type { ServiceManager } from '../service/service-manager.ts'
 import { box, type Paint, renderLogo, renderWelcome } from './banner.ts'
-import { type InstallLine, type InstallOptions, installAll, removeProfiles } from './install.ts'
+import { displayPaths, type InstallLine, type InstallOptions, installAll, removeProfiles } from './install.ts'
 import {
   detectConfigDirs,
   mergeConfig,
@@ -29,7 +30,9 @@ export type WizardOptions = InstallOptions & {
   /** false = no questions (`--yes` or no terminal): detected profiles, service on, no pairing. */
   interactive: boolean
   service: boolean
-  installService: () => Promise<string>
+  serviceManager: ServiceManager
+  /** Installs and starts the service for this build; returns the path of the written definition. */
+  installService: (service: ServiceManager) => Promise<string>
   tailscaleAddress: () => string | null
   /** Prints the pairing QR code for this host. */
   pair: (host: string) => Promise<void>
@@ -144,7 +147,7 @@ async function askProfiles(o: Ctx, existing: readonly Profile[], dirs: string[])
       theme,
     })
   } else {
-    console.log(o.paint('muted', t.noneFound))
+    console.log(o.paint('muted', t.noneFound(o.m.machine[o.platform])))
   }
 
   for (;;) {
@@ -290,6 +293,43 @@ async function writeConfig(raw: unknown, profiles: readonly Profile[], language:
   await writeJsonAtomic(paths.config(), next)
 }
 
+const SERVICE_LABELS = { launchd: 'LaunchAgent', systemd: 'systemd' } as const
+
+/** Step 3: background service and, on systemd, lingering (only with the user's consent). */
+async function setupService(o: Ctx): Promise<void> {
+  const { paint } = o
+  const s = o.m.setup
+  const yesNo = yesNoTheme(paint, o.m)
+  const service = o.serviceManager
+  if (!o.service) {
+    console.log(paint('muted', `  ${s.noService}`))
+    return
+  }
+  if (!(await service.available())) {
+    console.log(paint('muted', s.serviceUnavailable))
+    return
+  }
+  const wants =
+    !o.interactive ||
+    (await confirm({ message: s.serviceQuestion(o.m.machine[o.platform]), default: true, theme: yesNo }))
+  if (!wants) {
+    console.log(paint('muted', `  ${s.noService}`))
+    return
+  }
+  const path = await o.installService(service)
+  printLines(paint, [{ status: 'done', text: `${SERVICE_LABELS[service.kind]} ${path}` }], o.home)
+  const linger = service.linger
+  if (!linger || (await linger.enabled())) return
+  // Lingering changes how the system treats the user's processes: never without asking.
+  const consent = o.interactive && (await confirm({ message: s.lingerQuestion, default: true, theme: yesNo }))
+  if (!consent) {
+    console.log(paint('muted', s.lingerSkipped))
+    return
+  }
+  if (await linger.enable()) printLines(paint, [{ status: 'done', text: s.lingerEnabled }])
+  else console.log(paint('danger', s.lingerFailed))
+}
+
 /** Guided setup: profiles and aliases, launchers/hooks, background service, Tailscale and pairing. */
 export async function runSetupWizard(options: WizardOptions): Promise<void> {
   const { paint } = options
@@ -303,7 +343,8 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   const s = m.setup
   const theme = themeFor(paint, m)
   const yesNo = yesNoTheme(paint, m)
-  console.log(`\n${renderWelcome(paint, o.version, s.welcome)}\n`)
+  const machine = m.machine[o.platform]
+  console.log(`\n${renderWelcome(paint, o.version, s.welcome, machine)}\n`)
 
   step(paint, 1, total, s.steps.accounts)
   const existing = currentProfiles(raw)
@@ -338,27 +379,15 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   printLines(paint, await installAll(config, resolved, o, m.install), o.home)
 
   step(paint, 3, total, s.steps.service)
-  const wantsService =
-    o.service &&
-    (!o.interactive ||
-      (await confirm({
-        message: s.serviceQuestion,
-        default: true,
-        theme: yesNo,
-      })))
-  if (wantsService) {
-    printLines(paint, [{ status: 'done', text: `LaunchAgent ${await o.installService()}` }])
-  } else {
-    console.log(paint('muted', `  ${s.noService}`))
-  }
+  await setupService(o)
 
   step(paint, 4, total, s.steps.tailscale)
   let host = o.tailscaleAddress()
   if (!host && o.interactive) {
-    console.log(paint('muted', s.tailscaleIntro))
+    console.log(paint('muted', s.tailscaleIntro(machine, s.tailscaleInstall[o.platform])))
     for (;;) {
       const next = await select({
-        message: s.tailscaleQuestion,
+        message: s.tailscaleQuestion(machine),
         choices: [
           { name: s.tailscaleRetry, value: 'retry' },
           { name: s.tailscaleSkip, value: 'skip' },
@@ -384,7 +413,7 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
       [
         `${paint('success', '✓')} ${paint('bold', s.done.installed)}`,
         '',
-        s.done.openTerminal(paint('bold', 'source ~/.zshrc')),
+        s.done.openTerminal(paint('bold', `source ${displayPaths(o.rcFiles.slice(0, 1), o.home)}`)),
         s.done.useAliases(aliases, paint('muted', 'claude')),
         host
           ? s.done.pairIfNeeded(paint('bold', 'claude-remote pair'))

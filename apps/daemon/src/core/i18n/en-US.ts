@@ -9,11 +9,13 @@ export const enUS = {
     help: 'display help for command',
     version: 'output the version number',
     buildMissing: 'Build not found: run `pnpm --filter @claude-remote/daemon build`.',
+    unsupportedPlatform: (platform: string, supported: string) =>
+      `Unsupported system (${platform}). Claude Remote runs on ${supported}.`,
     start: {
       description: 'start the daemon',
       dev: 'listen on 127.0.0.1 instead of Tailscale',
       host: 'WebSocket listen address',
-      waitTailscale: 'wait for the Tailscale interface instead of failing (used by launchd)',
+      waitTailscale: 'wait for the Tailscale interface instead of failing (used by the background service)',
     },
     pair: {
       description: 'show the pairing QR code (address + token)',
@@ -22,7 +24,7 @@ export const enUS = {
       tailscaleNotFound:
         'Tailscale not found (no 100.x interface). Install and connect Tailscale, or use --dev for 127.0.0.1.',
       simulatorHint:
-        'To test in the simulator on this Mac: `claude-remote start --dev` and `claude-remote pair --dev`.',
+        'To test locally (e.g. in the iOS simulator): `claude-remote start --dev` and `claude-remote pair --dev`.',
       scan: 'Scan it with the Claude Remote app. Do not share this code.',
     },
     setup: {
@@ -48,29 +50,48 @@ export const enUS = {
       dirMissing: 'directory does not exist',
       daemonRunning: 'daemon running',
       runStart: 'run `claude-remote start`',
-      token: 'token in the Keychain',
+      token: (store: string) => `token ${store}`,
+      tokenStores: {
+        keychain: 'in the macOS Keychain',
+        secretTool: 'in the Secret Service (secret-tool)',
+        file: (path: string) => `in the file ${path} (0600)`,
+      },
       runPair: 'run `claude-remote pair`',
+      service: (name: string, detail: string) => `background service ${name} (${detail})`,
+      serviceHint: 'optional: `claude-remote service install`',
+      linger: 'lingering (the service keeps running after logout)',
+      lingerHint: 'run `loginctl enable-linger $USER`',
     },
     install: {
-      description: 'install launchers, PATH in ~/.zshrc and hooks in the configured profiles (no questions)',
-      openTerminal: 'Open a new terminal (or `source ~/.zshrc`) and use the launchers instead of `claude`.',
+      description:
+        'install launchers, PATH in ~/.zshrc / ~/.bashrc and hooks in the configured profiles (no questions)',
+      openTerminal: (rc: string) =>
+        `Open a new terminal (or \`source ${rc}\`) and use the launchers instead of \`claude\`.`,
     },
     uninstall: {
-      description: 'remove launchers, the ~/.zshrc block and the installed hooks',
-      zshrcRemoved: 'block removed from ~/.zshrc',
+      description: 'remove launchers, the PATH block in ~/.zshrc / ~/.bashrc and the installed hooks',
+      shellRemoved: (files: string) => `PATH block removed from ${files}`,
       hooksRemoved: (path: string) => `hooks removed from ${path}`,
     },
     service: {
-      description: 'daemon as a macOS service (launchd)',
-      install: 'install and load the LaunchAgent (starts at login and restarts if it crashes)',
-      loaded: (path: string) => `LaunchAgent loaded: ${path}`,
+      description: 'daemon as a background service (launchd on macOS, systemd on Linux)',
+      install: 'install and start the background service (starts at login and restarts if it crashes)',
+      loaded: (path: string) => `service installed: ${path}`,
       app: (path: string) => `app: ${path}`,
       tailscaleWaiting: '⚠ Tailscale not found: the daemon waits for the 100.x interface',
       logs: (path: string) => `logs in ${path}`,
-      uninstall: 'unload and remove the LaunchAgent',
-      removed: 'LaunchAgent removed',
+      uninstall: 'stop and remove the background service',
+      removed: 'service removed',
       status: 'show whether the service is loaded',
       notLoaded: 'not loaded',
+      unavailable:
+        'systemd user services are not available here (`systemctl --user` failed). Run `claude-remote start` whenever you want to use it (e.g. in a tmux window).',
+      lingerHint:
+        'Lingering is off: the service stops when you log out. To keep it running and start it at boot: `loginctl enable-linger $USER`',
+      linger: (enabled: boolean): string =>
+        enabled
+          ? 'lingering on (keeps running after logout, starts at boot)'
+          : 'lingering off (stops at logout)',
     },
     rules: {
       description: '"always allow" rules created by the app',
@@ -84,7 +105,7 @@ export const enUS = {
   },
   install: {
     shortcut: (path: string) => `shortcut ${path}`,
-    zshrcPath: 'PATH in ~/.zshrc',
+    shellPath: (files: string) => `PATH in ${files}`,
     hooksIn: (path: string) => `hooks in ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} removed`,
     hooksRemovedFrom: (path: string) => `hooks removed from ${path}`,
@@ -102,7 +123,7 @@ export const enUS = {
     no: 'no',
     welcome: {
       title: 'Welcome to Claude Remote!',
-      intro1: "Let's get this Mac ready so you can follow and control",
+      intro1: (machine: string) => `Let's get this ${machine} ready so you can follow and control`,
       intro2: 'Claude Code from your iPhone. It takes about 2 minutes.',
       footer: (version: string) => `v${version} · ↑/↓ to choose · Enter to confirm · Ctrl+C to quit`,
     },
@@ -115,13 +136,29 @@ export const enUS = {
     noAccounts: 'No Claude Code account found. Run `claude` once to log in, then `claude-remote setup`.',
     confirmSave: 'Save and install?',
     nothingChanged: 'Nothing was changed.',
-    serviceQuestion: 'Start Claude Remote with the Mac (and restart it if it crashes)?',
+    serviceQuestion: (machine: string) =>
+      `Start Claude Remote with the ${machine} (and restart it if it crashes)?`,
     noService: 'No service: run `claude-remote start` whenever you want to use it.',
-    tailscaleIntro:
-      '  The Mac and the iPhone talk over a private Tailscale network (free), from anywhere.\n' +
-      '  1. On the Mac: install it from https://tailscale.com/download/mac (or `brew install --cask tailscale`) and sign in\n' +
+    serviceUnavailable:
+      '  systemd user services are not available here (`systemctl --user`).\n' +
+      '  Run `claude-remote start` whenever you want to use it (e.g. in a tmux window or from your init system).',
+    lingerQuestion:
+      'Keep Claude Remote running after you log out and start it at boot? (loginctl enable-linger)',
+    lingerEnabled: 'lingering enabled (loginctl enable-linger)',
+    lingerFailed:
+      "  Couldn't enable lingering. Run `sudo loginctl enable-linger $USER` to keep the daemon running after logout.",
+    lingerSkipped:
+      '  Without lingering the daemon stops when you log out. Enable it later with `loginctl enable-linger $USER`.',
+    tailscaleIntro: (machine: string, install: string) =>
+      `  The ${machine} and the iPhone talk over a private Tailscale network (free), from anywhere.\n` +
+      `  1. On the ${machine}: ${install}\n` +
       '  2. On the iPhone: install "Tailscale" from the App Store and sign in with the same account',
-    tailscaleQuestion: 'Is Tailscale connected on the Mac?',
+    tailscaleInstall: {
+      darwin:
+        'install it from https://tailscale.com/download/mac (or `brew install --cask tailscale`) and sign in',
+      linux: 'install it with `curl -fsSL https://tailscale.com/install.sh | sh` and run `sudo tailscale up`',
+    },
+    tailscaleQuestion: (machine: string) => `Is Tailscale connected on the ${machine}?`,
     tailscaleRetry: "I've connected it, check again",
     tailscaleSkip: "I'll do it later",
     tailscaleNotYet: '  Still no Tailscale interface (100.x) found.',
@@ -142,7 +179,7 @@ export const enUS = {
         '  Each Claude Code account lives in a configuration folder (CLAUDE_CONFIG_DIR).\n' +
         '  For each one you choose a command (alias) that opens it in tmux, ready for the phone.',
       which: 'Which accounts do you want to control from the iPhone?',
-      noneFound: "  No Claude Code account found on this Mac; let's create one.",
+      noneFound: (machine: string) => `  No Claude Code account found on this ${machine}; let's create one.`,
       more: 'Any other account?',
       howToAdd: 'How do you want to add the account?',
       noContinue: 'No, continue',
@@ -177,6 +214,8 @@ export const enUS = {
       giveUp: 'Give up on this account',
     },
   },
+  /** How texts name this machine (with the article in each text). */
+  machine: { darwin: 'Mac', linux: 'computer' },
   profiles: {
     defaultName: 'Personal',
     /** Suffix of a suggested `~/.claude-<name>` folder: 0 and 1 are words, the rest numbered. */

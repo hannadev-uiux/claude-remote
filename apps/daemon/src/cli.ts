@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { homedir, userInfo } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { LOCALES, type Locale, LocaleSchema } from '@claude-remote/protocol'
 import { Command, InvalidArgumentError } from 'commander'
@@ -12,36 +12,83 @@ import { paths } from './core/paths.ts'
 import {
   ensureHookSecret,
   ensureToken,
-  FileTokenStore,
   generateToken,
-  KeychainTokenStore,
+  type SelectedTokenStore,
+  selectTokenStore,
   type TokenStore,
+  type TokenStoreKind,
 } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import {
+  existingRcFiles,
   settingsPath,
   uninstallHooks,
   uninstallLaunchers,
-  uninstallZshrc,
+  uninstallShellPath,
 } from './features/hooks/installer.ts'
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
-import { LAUNCHD_LABEL, serviceStatus, uninstallService } from './features/service/launchd.ts'
+import { LaunchdService } from './features/service/launchd.ts'
+import type { ServiceManager } from './features/service/service-manager.ts'
+import { SystemdUserService } from './features/service/systemd.ts'
 import { colorEnabled, createPaint } from './features/setup/banner.ts'
-import { type InstallOptions, installAll, installServiceFromCli } from './features/setup/install.ts'
+import {
+  displayPaths,
+  type InstallOptions,
+  installAll,
+  installServiceFromCli,
+  userRcFiles,
+} from './features/setup/install.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
+import { PLATFORM_NAMES, type Platform, resolvePlatform, UnsupportedPlatformError } from './infra/platform.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
 
 /** Language of every text below: config `language`, else the system one (read at startup). */
 let m: Messages = messagesFor(configuredLocaleSync())
 
-function tokenStore(): TokenStore {
-  return process.env.CLAUDE_REMOTE_TOKEN_STORE === 'file'
-    ? new FileTokenStore()
-    : new KeychainTokenStore(execaExecutor)
+/** Fails before any work on systems without adapters (secrets, service, shell). */
+function currentPlatform(): Platform {
+  try {
+    return resolvePlatform()
+  } catch (error) {
+    if (!(error instanceof UnsupportedPlatformError)) throw error
+    console.error(`✗ ${m.cli.unsupportedPlatform(error.platform, Object.values(PLATFORM_NAMES).join(', '))}`)
+    process.exit(1)
+  }
+}
+const platform = currentPlatform()
+
+/** launchd on macOS, systemd user unit on Linux. */
+function serviceManager(): ServiceManager {
+  return platform === 'darwin'
+    ? new LaunchdService(execaExecutor, { home: homedir(), appDir: paths.app() })
+    : new SystemdUserService(execaExecutor, { home: homedir(), user: userInfo().username })
+}
+
+let selectedStore: Promise<SelectedTokenStore> | undefined
+
+/** Keychain (macOS), Secret Service or 0600 file (Linux); `CLAUDE_REMOTE_TOKEN_STORE` forces one. */
+function selectStore(): Promise<SelectedTokenStore> {
+  selectedStore ??= selectTokenStore({
+    platform,
+    exec: execaExecutor,
+    forced: process.env.CLAUDE_REMOTE_TOKEN_STORE,
+  })
+  return selectedStore
+}
+
+async function tokenStore(): Promise<TokenStore> {
+  return (await selectStore()).store
+}
+
+function tokenStoreLabel(kind: TokenStoreKind): string {
+  const names = m.cli.doctor.tokenStores
+  if (kind === 'keychain') return names.keychain
+  if (kind === 'secret-tool') return names.secretTool
+  return names.file(paths.tokenFile())
 }
 
 /** Absolute path of the bundled CLI (dist/cli.js), whether running from source or from dist. */
@@ -53,7 +100,13 @@ function printPairing(host: string, port: number, token: string): void {
 }
 
 function installOptions(): InstallOptions {
-  return { exec: execaExecutor, cliPath: builtCliPath(), nodePath: process.execPath }
+  return {
+    exec: execaExecutor,
+    cliPath: builtCliPath(),
+    nodePath: process.execPath,
+    platform,
+    rcFiles: userRcFiles(platform),
+  }
 }
 
 function builtCliPath(): string | null {
@@ -99,10 +152,12 @@ program
   .action(async (opts: { dev?: boolean; host?: string; waitTailscale?: boolean }) => {
     const logger = createLogger({ pretty: process.stdout.isTTY })
     try {
+      const { kind, store } = await selectStore()
+      logger.info({ platform, tokenStore: kind }, 'token store selected')
       const daemon = await startDaemon({
         logger,
         exec: execaExecutor,
-        tokenStore: tokenStore(),
+        tokenStore: store,
         dev: opts.dev,
         host: opts.host,
         waitForTailscale: opts.waitTailscale,
@@ -128,7 +183,7 @@ program
   .action(async (opts: { dev?: boolean; host?: string }) => {
     const logger = createLogger({ level: 'silent' })
     const config = await loadConfig(logger)
-    const token = await ensureToken(tokenStore())
+    const token = await ensureToken(await tokenStore())
     let host: string
     try {
       host = resolveWsHost(opts)
@@ -165,15 +220,16 @@ program
         onLocale: (locale) => {
           m = messagesFor(locale)
         },
-        installService: async () => {
+        serviceManager: serviceManager(),
+        installService: async (service) => {
           const cliPath = builtCliPath()
           if (!cliPath) throw new SetupAborted(m.cli.buildMissing)
-          return installServiceFromCli({ ...installOptions(), cliPath })
+          return installServiceFromCli({ ...installOptions(), cliPath, service })
         },
         tailscaleAddress: () => findTailscaleAddress(),
         pair: async (host) => {
           const config = await loadConfig(createLogger({ level: 'silent' }))
-          printPairing(host, config.wsPort, await ensureToken(tokenStore()))
+          printPairing(host, config.wsPort, await ensureToken(await tokenStore()))
         },
         runClaude: (configDir) => {
           // Like the launcher: ~/.claude is the default and must not be passed as CLAUDE_CONFIG_DIR.
@@ -200,7 +256,7 @@ program
   .command('rotate-token')
   .description(m.cli.rotateToken.description)
   .action(async () => {
-    await tokenStore().set(generateToken())
+    await (await tokenStore()).set(generateToken())
     const notified = await notifyDaemon('/admin/reload-token')
     console.log(notified ? m.cli.rotateToken.rotated : m.cli.rotateToken.rotatedOffline)
     console.log(m.cli.rotateToken.pairAgain)
@@ -214,7 +270,8 @@ program
     const logger = createLogger({ level: 'silent' })
     const check = (ok: boolean, label: string, hint = '') =>
       console.log(`${ok ? '✓' : '✗'} ${label}${!ok && hint ? ` — ${hint}` : ''}`)
-    for (const bin of ['tmux', 'git', 'rg', 'claude']) {
+    // zsh runs the launchers (not installed by default on most Linux distributions).
+    for (const bin of ['tmux', 'git', 'rg', 'zsh', 'claude']) {
       const result = await execaExecutor('which', [bin])
       check(result.exitCode === 0, bin, d.notOnPath)
     }
@@ -241,7 +298,20 @@ program
     } catch (error) {
       check(false, 'config', (error as Error).message)
     }
-    check((await tokenStore().get()) !== null, d.token, d.runPair)
+    const { kind, store } = await selectStore()
+    const token = await store.get().catch((error: Error) => {
+      check(false, d.token(tokenStoreLabel(kind)), error.message)
+      return undefined
+    })
+    if (token !== undefined) check(token !== null, d.token(tokenStoreLabel(kind)), d.runPair)
+    const manager = serviceManager()
+    const status = (await manager.available()) ? await manager.status() : null
+    check(
+      status?.loaded ?? false,
+      d.service(manager.name, status?.loaded ? status.detail : m.cli.service.notLoaded),
+      d.serviceHint,
+    )
+    if (status?.loaded && manager.linger) check(await manager.linger.enabled(), d.linger, d.lingerHint)
   })
 
 program
@@ -253,7 +323,7 @@ program
     const profiles = await resolveProfiles(config, createLogger({ level: 'warn' }))
     const lines = await installAll(config, profiles, installOptions(), m.install)
     for (const line of lines) console.log(`${line.status === 'done' ? '✓' : '·'} ${line.text}`)
-    console.log(`\n${m.cli.install.openTerminal}`)
+    console.log(`\n${m.cli.install.openTerminal(displayPaths(userRcFiles(platform).slice(0, 1)))}`)
   })
 
 program
@@ -264,7 +334,11 @@ program
     const config = await loadConfig(logger)
     const profiles = await resolveProfiles(config, logger)
     await uninstallLaunchers(config.profiles, paths.bin())
-    console.log(`${(await uninstallZshrc()) ? '✓' : '·'} ${m.cli.uninstall.zshrcRemoved}`)
+    const rcFiles = existingRcFiles(homedir(), existsSync)
+    const removed = await uninstallShellPath(rcFiles)
+    console.log(
+      `${removed.length > 0 ? '✓' : '·'} ${m.cli.uninstall.shellRemoved(displayPaths(removed.length > 0 ? removed : rcFiles))}`,
+    )
     for (const profile of profiles) {
       console.log(
         `${(await uninstallHooks(profile)) ? '✓' : '·'} ${m.cli.uninstall.hooksRemoved(settingsPath(profile))}`,
@@ -282,9 +356,15 @@ service
       console.error(m.cli.buildMissing)
       process.exit(1)
     }
-    const path = await installServiceFromCli({ ...installOptions(), cliPath })
+    const manager = serviceManager()
+    if (!(await manager.available())) {
+      console.error(`✗ ${m.cli.service.unavailable}`)
+      process.exit(1)
+    }
+    const path = await installServiceFromCli({ ...installOptions(), cliPath, service: manager })
     console.log(`✓ ${m.cli.service.loaded(path)}`)
-    console.log(`  ${m.cli.service.app(paths.app())}`)
+    if (manager.kind === 'launchd') console.log(`  ${m.cli.service.app(paths.app())}`)
+    if (manager.linger && !(await manager.linger.enabled())) console.log(`  ${m.cli.service.lingerHint}`)
     if (!findTailscaleAddress()) console.log(`  ${m.cli.service.tailscaleWaiting}`)
     console.log(`  ${m.cli.service.logs(paths.logs())}`)
   })
@@ -292,16 +372,21 @@ service
   .command('uninstall')
   .description(m.cli.service.uninstall)
   .action(async () => {
-    await uninstallService(execaExecutor, homedir(), paths.app())
+    await serviceManager().uninstall()
     console.log(`✓ ${m.cli.service.removed}`)
   })
 service
   .command('status')
   .description(m.cli.service.status)
   .action(async () => {
-    const status = await serviceStatus(execaExecutor)
+    const manager = serviceManager()
+    const status = await manager.status()
     const detail = status.loaded ? status.detail : m.cli.service.notLoaded
-    console.log(`${status.loaded ? '✓' : '✗'} ${LAUNCHD_LABEL}: ${detail}`)
+    console.log(`${status.loaded ? '✓' : '✗'} ${manager.name}: ${detail}`)
+    if (status.loaded && manager.linger) {
+      const lingering = await manager.linger.enabled()
+      console.log(`${lingering ? '✓' : '·'} ${m.cli.service.linger(lingering)}`)
+    }
   })
 
 const rules = program.command('rules').description(m.cli.rules.description)

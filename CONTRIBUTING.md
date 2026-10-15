@@ -10,7 +10,7 @@ Thanks for your interest! Bug reports, ideas, docs and code are all welcome.
 
 ## Setup
 
-Requirements: macOS, Node 24+, pnpm 12+, tmux, git, ripgrep, Xcode (for the app).
+Requirements: macOS or Linux, Node 24+, pnpm 12+, tmux, git, ripgrep, zsh; Xcode on a Mac for the app.
 
 ```bash
 pnpm install
