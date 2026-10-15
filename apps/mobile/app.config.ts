@@ -1,34 +1,70 @@
 import { existsSync } from 'node:fs'
 import type { ConfigContext, ExpoConfig } from 'expo/config'
-import { type ConfigPlugin, withAppDelegate, withInfoPlist, withPodfile } from 'expo/config-plugins'
+import {
+  type ConfigPlugin,
+  type ExportedConfig,
+  withAppDelegate,
+  withInfoPlist,
+  withPlugins,
+  withPodfile,
+} from 'expo/config-plugins'
 
 const BACKGROUND = '#0D0D0D'
-/** Push needs a Firebase iOS app; without the plist the build simply skips Firebase. */
-const GOOGLE_SERVICES = './GoogleService-Info.plist'
-const firebaseEnabled = existsSync(GOOGLE_SERVICES)
+const ORANGE = '#D97757'
+/** Same id on both stores. */
+const APP_ID = 'tech.doctorx.clauderemote'
+/** Android notification channel; the daemon sends `android.notification.channelId` with this id. */
+const NOTIFICATION_CHANNEL = 'claude-remote'
+/**
+ * Push needs a Firebase app per platform (both gitignored); without its file a platform simply
+ * builds without Firebase.
+ */
+const GOOGLE_SERVICES = { ios: './GoogleService-Info.plist', android: './google-services.json' } as const
+const firebase = {
+  ios: existsSync(GOOGLE_SERVICES.ios),
+  android: existsSync(GOOGLE_SERVICES.android),
+}
 
 /**
  * iOS system prompts per language (`<lang>.lproj/InfoPlist.strings`). The `infoPlist` values below
- * are the English base; the app texts themselves live in `src/core/i18n/locales`.
+ * are the English base; the app texts themselves live in `src/core/i18n/locales`. Android has no
+ * equivalent: its permission dialogs use system texts.
  */
 const SYSTEM_PROMPTS = {
   en: {
     NSCameraUsageDescription:
-      'The camera is used to read the pairing QR code shown by the daemon on your Mac.',
-    NSLocalNetworkUsageDescription: 'Claude Remote connects to the daemon on your Mac.',
+      'The camera is used to read the pairing QR code shown by the daemon on your computer.',
+    NSLocalNetworkUsageDescription: 'Claude Remote connects to the daemon on your computer.',
   },
   'pt-BR': {
-    NSCameraUsageDescription: 'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no Mac.',
-    NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu Mac.',
+    NSCameraUsageDescription:
+      'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no computador.',
+    NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu computador.',
   },
   es: {
     NSCameraUsageDescription:
-      'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el Mac.',
-    NSLocalNetworkUsageDescription: 'Claude Remote se conecta al daemon de tu Mac.',
+      'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el ordenador.',
+    NSLocalNetworkUsageDescription: 'Claude Remote se conecta al daemon de tu ordenador.',
   },
 }
-/** Localizations iOS shows the app in (matching the catalogs pt-BR, en-US and es-ES). */
-const IOS_LOCALIZATIONS = Object.keys(SYSTEM_PROMPTS)
+/** Languages the system offers for the app (matching the catalogs pt-BR, en-US and es-ES). */
+const APP_LOCALIZATIONS = Object.keys(SYSTEM_PROMPTS)
+
+/** Camera for the pairing QR, notifications (Android 13+), network for the daemon, haptics. */
+const ANDROID_PERMISSIONS = [
+  'android.permission.CAMERA',
+  'android.permission.POST_NOTIFICATIONS',
+  'android.permission.INTERNET',
+  'android.permission.VIBRATE',
+]
+/** Added by the template or by libraries but not needed (no audio, files, overlays or scheduled alarms). */
+const ANDROID_BLOCKED_PERMISSIONS = [
+  'android.permission.RECORD_AUDIO',
+  'android.permission.READ_EXTERNAL_STORAGE',
+  'android.permission.WRITE_EXTERNAL_STORAGE',
+  'android.permission.SYSTEM_ALERT_WINDOW',
+  'android.permission.RECEIVE_BOOT_COMPLETED',
+]
 
 /** RNFirebase refuses SPM + static frameworks; resolve the Firebase SDK through CocoaPods instead. */
 const withFirebaseCocoaPods: ConfigPlugin = (config) =>
@@ -76,9 +112,26 @@ const withSceneLifecycle: ConfigPlugin = (config) => {
   })
 }
 
+/**
+ * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
+ * drop the native mods of the platforms that have no file.
+ */
+const withFirebase: ConfigPlugin = (config) => {
+  const skipped = (['ios', 'android'] as const).filter((platform) => !firebase[platform])
+  const saved = skipped.map(
+    (platform) => [platform, { ...(config as ExportedConfig).mods?.[platform] }] as const,
+  )
+  const next: ExportedConfig = withPlugins(config, [
+    '@react-native-firebase/app',
+    '@react-native-firebase/messaging',
+  ])
+  for (const [platform, mods] of saved) next.mods = { ...next.mods, [platform]: mods }
+  return firebase.ios ? withFirebaseCocoaPods(next) : next
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const expo = withSceneLifecycle(appConfig(config))
-  return firebaseEnabled ? withFirebaseCocoaPods(expo) : expo
+  return firebase.ios || firebase.android ? withFirebase(expo) : expo
 }
 
 const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
@@ -92,15 +145,31 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   userInterfaceStyle: 'dark',
   backgroundColor: BACKGROUND,
   ios: {
-    bundleIdentifier: 'tech.doctorx.clauderemote',
-    ...(firebaseEnabled ? { googleServicesFile: GOOGLE_SERVICES } : {}),
+    bundleIdentifier: APP_ID,
+    ...(firebase.ios ? { googleServicesFile: GOOGLE_SERVICES.ios } : {}),
     supportsTablet: false,
     infoPlist: {
-      // Personal dev build talking ws:// to the Mac over Tailscale (WireGuard encrypts the link).
+      // Personal dev build talking ws:// to the computer over Tailscale (WireGuard encrypts the link).
       NSAppTransportSecurity: { NSAllowsArbitraryLoads: true, NSAllowsLocalNetworking: true },
       NSLocalNetworkUsageDescription: SYSTEM_PROMPTS.en.NSLocalNetworkUsageDescription,
       ITSAppUsesNonExemptEncryption: false,
     },
+  },
+  // Edge-to-edge is always on in this SDK; screens pad themselves with the safe area insets.
+  android: {
+    package: APP_ID,
+    ...(firebase.android ? { googleServicesFile: GOOGLE_SERVICES.android } : {}),
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
+      monochromeImage: './assets/adaptive-icon-monochrome.png',
+      backgroundColor: BACKGROUND,
+    },
+    // The composer stays above the keyboard by resizing the window (KeyboardAvoidingView is iOS only).
+    softwareKeyboardLayoutMode: 'resize',
+    // The pairing token lives in SecureStore, whose keys cannot be restored on another phone.
+    allowBackup: false,
+    permissions: ANDROID_PERMISSIONS,
+    blockedPermissions: ANDROID_BLOCKED_PERMISSIONS,
   },
   locales: SYSTEM_PROMPTS,
   web: { favicon: './assets/favicon.png' },
@@ -109,7 +178,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
     'expo-status-bar',
     'expo-secure-store',
     'expo-font',
-    ['expo-localization', { supportedLocales: { ios: IOS_LOCALIZATIONS } }],
+    ['expo-localization', { supportedLocales: { ios: APP_LOCALIZATIONS, android: APP_LOCALIZATIONS } }],
     [
       'expo-splash-screen',
       {
@@ -128,15 +197,24 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
         barcodeScannerEnabled: true,
       },
     ],
-    ['expo-notifications', { enableBackgroundRemoteNotifications: false }],
-    ...(firebaseEnabled
-      ? [
-          '@react-native-firebase/app',
-          '@react-native-firebase/messaging',
-          ['expo-build-properties', { ios: { useFrameworks: 'static' } }] as [string, unknown],
-        ]
-      : []),
+    [
+      'expo-notifications',
+      {
+        enableBackgroundRemoteNotifications: false,
+        icon: './assets/notification-icon.png',
+        color: ORANGE,
+        defaultChannel: NOTIFICATION_CHANNEL,
+      },
+    ],
+    [
+      'expo-build-properties',
+      {
+        // ws:// to the daemon over Tailscale (WireGuard encrypts the link); Android blocks cleartext by default.
+        android: { usesCleartextTraffic: true },
+        ...(firebase.ios ? { ios: { useFrameworks: 'static' } } : {}),
+      },
+    ],
   ],
-  extra: { firebaseEnabled },
+  extra: { firebase },
   experiments: { typedRoutes: true },
 })
