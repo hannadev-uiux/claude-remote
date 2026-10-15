@@ -281,6 +281,13 @@ const enUS = {
     update: 'update',
     builtIn: 'built in',
     channel: 'channel',
+    channels: { production: 'production', development: 'development' },
+    developmentTitle: 'Follow development updates?',
+    developmentBody:
+      'They are published on every merge into development: newer, but they may break. You can go back to production here at any time.',
+    developmentConfirm: 'Use development',
+    developmentStillRunning:
+      'There is no production update for this build yet: the development version keeps running until one is published.',
     check: 'Check for updates',
     upToDate: 'The app is up to date.',
     downloaded: 'Update downloaded: it applies the next time the app opens.',

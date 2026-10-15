@@ -9,6 +9,7 @@ describe('buildManifest', () => {
     id: '6f1d1c1e-6b8a-4d3c-9a57-2b4f6f8c1a10',
     createdAt: '2026-10-15T12:00:00.000Z',
     runtimeVersion: 'rt',
+    channel: 'development',
     server: 'https://maarkn.dev/',
     bundle: { data: bytes('bundle') },
     assets: [
@@ -29,6 +30,7 @@ describe('buildManifest', () => {
     })
     expect(parsed.assets[0]).toMatchObject({ contentType: 'image/png', fileExtension: '.png' })
     expect(parsed.extra.expoClient.name).toBe('Claude Remote')
+    expect(parsed.metadata).toEqual({ channel: 'development' })
   })
 
   test('uploads each file once', () => {

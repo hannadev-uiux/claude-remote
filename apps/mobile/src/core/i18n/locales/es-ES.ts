@@ -279,6 +279,13 @@ const esES = {
     update: 'actualización',
     builtIn: 'integrada',
     channel: 'canal',
+    channels: { production: 'producción', development: 'desarrollo' },
+    developmentTitle: '¿Recibir actualizaciones de desarrollo?',
+    developmentBody:
+      'Se publican con cada merge en development: más nuevas, pero pueden fallar. Puedes volver a producción aquí cuando quieras.',
+    developmentConfirm: 'Usar desarrollo',
+    developmentStillRunning:
+      'Todavía no hay actualización de producción para este build: la versión de desarrollo sigue funcionando hasta que se publique una.',
     check: 'Buscar actualizaciones',
     upToDate: 'La app está actualizada.',
     downloaded: 'Actualización descargada: se aplica la próxima vez que se abra la app.',

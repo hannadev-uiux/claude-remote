@@ -56,6 +56,8 @@ export function buildManifest(o: {
   id: string
   createdAt: string
   runtimeVersion: string
+  /** Signed into `metadata.channel`; the server's manifest filters use it when the app switches. */
+  channel: string
   server: string
   bundle: { data: Uint8Array }
   assets: Array<{ data: Uint8Array; ext: string }>
@@ -80,7 +82,7 @@ export function buildManifest(o: {
     runtimeVersion: o.runtimeVersion,
     launchAsset: entry(o.bundle.data, 'application/javascript'),
     assets: o.assets.map((a) => entry(a.data, contentTypeFor(a.ext), a.ext)),
-    metadata: {},
+    metadata: { channel: o.channel },
     // Constants.expoConfig of the running update comes from here.
     extra: { expoClient: o.expoClient },
   }

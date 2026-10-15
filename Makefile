@@ -3,6 +3,7 @@
 # Variables:
 #   DEVICE=<name|udid>   phone or simulator for the app targets (default: Expo asks)
 #   PLATFORM=ios|android publish-ota for a single platform (default: both)
+#   CHANNEL=<name>       publish-ota channel (default: production; CI publishes development)
 #   OTA_KEY=<path>       private key that signs OTA updates
 #   CLAUDE_REMOTE_UPDATES_TOKEN must be in the environment for publish-ota (never stored here).
 
@@ -16,6 +17,7 @@ OTA_KEY ?= $(HOME)/.claude-remote-keys/private-key.pem
 
 device_flag = $(if $(DEVICE),--device "$(DEVICE)",--device)
 platform_flag = $(if $(PLATFORM),--platform $(PLATFORM))
+CHANNEL ?= production
 
 .PHONY: help install check lint-fix openspec \
 	daemon-dev daemon-build \
@@ -74,11 +76,11 @@ install-android: ## Release build on a connected Android phone (fresh android/)
 
 ## OTA updates
 
-publish-ota: ## Publish the app JavaScript over the air (PLATFORM=ios|android)
+publish-ota: ## Publish the app JavaScript over the air (CHANNEL=production, PLATFORM=ios|android)
 	@test -n "$$CLAUDE_REMOTE_UPDATES_TOKEN" || { echo "✗ set CLAUDE_REMOTE_UPDATES_TOKEN (the server's publish token)"; exit 1; }
 	@test -f "$(OTA_KEY)" || { echo "✗ signing key not found: $(OTA_KEY) (OTA_KEY=...)"; exit 1; }
-	CLAUDE_REMOTE_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish $(platform_flag)
+	CLAUDE_REMOTE_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag)
 
 publish-ota-dry: ## Export and sign without uploading (checks the key and the config)
 	@test -f "$(OTA_KEY)" || { echo "✗ signing key not found: $(OTA_KEY) (OTA_KEY=...)"; exit 1; }
-	CLAUDE_REMOTE_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish $(platform_flag) --dry-run
+	CLAUDE_REMOTE_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag) --dry-run
