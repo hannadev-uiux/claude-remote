@@ -47,9 +47,9 @@ const ptBR = {
     daysAgo: 'há {{count}} d',
   },
   pairing: {
-    title: 'Parear com o Mac',
-    intro: 'No Mac, rode <cmd>claude-remote pair</cmd> e aponte a câmera para o QR code.',
-    guideTitle: 'Primeira vez? Configure o Mac',
+    title: 'Parear com o computador',
+    intro: 'No computador, rode <cmd>claude-remote pair</cmd> e aponte a câmera para o QR code.',
+    guideTitle: 'Primeira vez? Configure o computador',
     guideHint: 'Tailscale, instalação em uma linha e pareamento, passo a passo.',
     tabQr: 'QR code',
     tabManual: 'Manual',
@@ -64,34 +64,35 @@ const ptBR = {
     token: 'token',
     connect: 'Conectar',
     errors: {
-      timeout: 'Tempo esgotado. O Mac está no Tailscale e o daemon rodando?',
+      timeout: 'Tempo esgotado. O computador está no Tailscale e o daemon rodando?',
       unauthorized: 'Token recusado pelo daemon.',
       failed: 'Não foi possível conectar ao daemon.',
     },
   },
   setupGuide: {
-    title: 'Configurar o Mac',
-    intro: 'Quatro passos, uns 5 minutos. Você vai precisar do Mac em que o Claude Code roda.',
+    title: 'Configurar o computador',
+    intro:
+      'Quatro passos, uns 5 minutos. Você vai precisar do computador em que o Claude Code roda (macOS, Linux ou Windows com WSL).',
     help: 'Dúvidas ou problemas: {{url}}',
     steps: {
-      tailscaleIos: {
-        title: 'Tailscale no iPhone',
-        body: 'O app fala com o seu Mac por uma rede privada do Tailscale, que funciona de qualquer lugar e é grátis para uso pessoal. Instale e entre com uma conta.',
-        action: 'Abrir na App Store',
+      tailscalePhone: {
+        title: 'Tailscale neste celular',
+        body: 'O app fala com o seu computador por uma rede privada do Tailscale, que funciona de qualquer lugar e é grátis para uso pessoal. Instale e entre com uma conta.',
+        action: 'Abrir na {{store}}',
       },
-      tailscaleMac: {
-        title: 'Tailscale no Mac',
-        body: 'Instale o Tailscale no Mac e entre com a mesma conta do iPhone. Os dois aparecem como dispositivos da mesma rede.',
-        action: 'Enviar o link para o Mac',
+      tailscaleComputer: {
+        title: 'Tailscale no computador',
+        body: 'Instale o Tailscale no computador (no Windows, dentro do WSL ou com a rede espelhada) e entre com a mesma conta deste celular. Os dois aparecem como dispositivos da mesma rede.',
+        action: 'Enviar o link para o computador',
       },
       install: {
-        title: 'Claude Remote no Mac',
-        body: 'No Terminal do Mac, rode o instalador. Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
-        action: 'Enviar o comando (AirDrop, Notas…)',
+        title: 'Claude Remote no computador',
+        body: 'Num terminal do computador, rode o instalador. Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
+        action: 'Enviar o comando para o computador',
       },
       pair: {
         title: 'Parear',
-        body: 'No fim, o instalador mostra um QR code (ou rode `claude-remote pair`). Escaneie com este app e pronto: abra o Claude Code no Mac pelo alias que você escolheu.',
+        body: 'No fim, o instalador mostra um QR code (ou rode `claude-remote pair`). Escaneie com este app e pronto: abra o Claude Code no computador pelo alias que você escolheu.',
         action: 'Escanear o QR code',
       },
     },
@@ -130,7 +131,7 @@ const ptBR = {
     queued_other: '+{{count}} pedidos na fila',
     pending_one: '{{count}} permissão',
     pending_other: '{{count}} permissões',
-    alreadyResolved: 'Este pedido já foi resolvido (no Mac ou por tempo esgotado).',
+    alreadyResolved: 'Este pedido já foi resolvido (no computador ou por tempo esgotado).',
     detail: {
       command: 'comando',
       file: 'arquivo',
@@ -193,19 +194,19 @@ const ptBR = {
   },
   resume: {
     title: 'Sessão somente leitura',
-    hint: 'Retome para continuar no tmux do Mac.',
-    launched: 'Abrindo no tmux do Mac. Se demorar, veja o terminal.',
+    hint: 'Retome para continuar no tmux do computador.',
+    launched: 'Abrindo no tmux do computador. Se demorar, veja o terminal.',
     opening: 'Abrindo…',
     resume: 'Retomar',
   },
   mode: {
     title: 'Modo de permissão',
-    hint: 'Troca via Shift+Tab no Mac; o modo mostrado é o confirmado na linha de status.',
+    hint: 'Troca via Shift+Tab no computador; o modo mostrado é o confirmado na linha de status.',
     switching: 'trocando…',
     changeFailed: 'Não foi possível trocar o modo',
     autoConfirmTitle: 'Ativar modo auto?',
     autoConfirmBody:
-      'O Claude vai decidir sozinho quais ações executar, sem pedir aprovação, enquanto ninguém olha o Mac.',
+      'O Claude vai decidir sozinho quais ações executar, sem pedir aprovação, enquanto ninguém olha o computador.',
     autoConfirm: 'Ativar auto',
     labels: {
       default: 'padrão',
@@ -235,7 +236,7 @@ const ptBR = {
   sessions: {
     all: 'todos',
     emptyTitle: 'Nenhuma sessão',
-    emptyBody: 'Inicie uma sessão no Mac usando os launchers:',
+    emptyBody: 'Inicie uma sessão no computador usando os launchers:',
     emptyHint: 'Sessões abertas com o `claude` puro aparecem como somente leitura.',
     background: 'background {{count}}',
     states: {
@@ -257,7 +258,7 @@ const ptBR = {
     version: 'versão',
     protocol: 'protocolo',
     profiles: 'Perfis',
-    noProfiles: 'Nenhum perfil encontrado no Mac.',
+    noProfiles: 'Nenhum perfil encontrado no computador.',
     forgetButton: 'Esquecer daemon',
     forgetTitle: 'Esquecer daemon?',
     forgetBody: 'O token será apagado deste aparelho. Você precisará parear de novo.',
@@ -265,6 +266,10 @@ const ptBR = {
   },
   terminal: {
     space: 'espaço',
+  },
+  push: {
+    channelName: 'Sessões',
+    channelDescription: 'Sessões concluídas, sessões esperando por você e permissões pendentes.',
   },
 } satisfies Messages
 

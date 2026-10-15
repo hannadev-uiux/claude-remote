@@ -493,7 +493,7 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   if (host) {
     const source = o.wsl?.tailscale(wslMode)?.source
     console.log(`  ${paint('success', '✓')} Tailscale ${host}${source ? ` (${m.wsl.source[source]})` : ''}`)
-    console.log(paint('muted', s.iphoneHint))
+    console.log(paint('muted', s.phoneHint))
     if (o.interactive && (await confirm({ message: s.showQr, default: true, theme: yesNo }))) {
       await o.pair(host)
     }

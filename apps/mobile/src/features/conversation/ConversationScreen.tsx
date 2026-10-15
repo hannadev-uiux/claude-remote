@@ -2,9 +2,10 @@ import type { Key } from '@claude-remote/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, KeyboardAvoidingView, Pressable, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
+import { keyboardBehavior } from '@/core/platform/platform'
 import { colors, radius, space } from '@/core/theme'
 import { ConnectionBanner, Screen, Text } from '@/ui'
 import { useSessionsStore } from '../sessions/store'
@@ -74,7 +75,11 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
     <Screen>
       <ConnectionBanner />
       {header}
-      <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={90} style={styles.flex}>
+      <KeyboardAvoidingView
+        behavior={keyboardBehavior(Platform.OS)}
+        keyboardVerticalOffset={90}
+        style={styles.flex}
+      >
         <View style={styles.flex}>
           <FlashList
             ref={listRef}

@@ -3,7 +3,16 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { ChevronRight, Keyboard, QrCode, Rocket } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native'
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native'
+import { keyboardBehavior } from '@/core/platform/platform'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { Button, Card, Screen, Text } from '@/ui'
 import { parseCredentials, parsePairingUrl } from './parse-pairing-url'
@@ -45,7 +54,7 @@ export function PairScreen() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+      <KeyboardAvoidingView behavior={keyboardBehavior(Platform.OS)} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text size="xl" weight="bold">
             <Text size="xl" weight="bold" color="accent">

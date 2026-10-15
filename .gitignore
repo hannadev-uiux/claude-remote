@@ -11,6 +11,7 @@ apps/mobile/android/
 *.tsbuildinfo
 # secrets
 GoogleService-Info.plist
+google-services.json
 firebase-service-account*.json
 .install.log
 

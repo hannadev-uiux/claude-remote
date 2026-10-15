@@ -2,7 +2,7 @@ import { router } from 'expo-router'
 import { ExternalLink, QrCode, Share2 } from 'lucide-react-native'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Linking, ScrollView, Share, StyleSheet, View } from 'react-native'
+import { Linking, Platform, ScrollView, Share, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Button, Card, Screen, Text } from '@/ui'
 import { buildSetupGuide, type GuideAction, REPO_URL } from './setup-guide'
@@ -19,10 +19,10 @@ function actionIcon(action: GuideAction, color: string) {
   return <QrCode size={16} color={color} />
 }
 
-/** Step-by-step for people who installed the app before setting up Tailscale and the Mac. */
+/** Step-by-step for people who installed the app before setting up Tailscale and the computer. */
 export function SetupGuideScreen() {
   const { t } = useTranslation()
-  const guide = useMemo(() => buildSetupGuide(t), [t])
+  const guide = useMemo(() => buildSetupGuide(t, Platform.OS), [t])
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>

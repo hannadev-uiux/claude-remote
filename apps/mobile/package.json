@@ -52,6 +52,8 @@
   "scripts": {
     "start": "expo start --dev-client",
     "ios": "expo run:ios",
+    "android": "expo run:android",
+    "build:android": "expo run:android --variant release",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "icons": "tsx scripts/icons.mts",

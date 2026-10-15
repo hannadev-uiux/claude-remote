@@ -25,6 +25,7 @@ const clientSamples: ClientMessage[] = [
     always: { rule: 'Bash(pnpm test:*)', scope: 'project' },
   },
   { type: 'device.register', id: '1', fcmToken: 'tok' },
+  { type: 'device.register', id: '1', fcmToken: 'tok', platform: 'android' },
   { type: 'app.visibility', id: '1', foreground: true },
   { type: 'files.search', id: '1', sessionId: 's', query: 'src', limit: 20 },
   { type: 'commands.list', id: '1', sessionId: 's' },
@@ -146,6 +147,12 @@ describe('client messages', () => {
 
   test('accepts any key string (the daemon enforces the allow list)', () => {
     expect(parseClientMessage({ type: 'session.key', id: '1', sessionId: 's', key: 'C-z' }).ok).toBe(true)
+  })
+
+  test('rejects an unknown device platform', () => {
+    expect(parseClientMessage({ type: 'device.register', id: '1', fcmToken: 't', platform: 'web' }).ok).toBe(
+      false,
+    )
   })
 
   test('applies defaults', () => {

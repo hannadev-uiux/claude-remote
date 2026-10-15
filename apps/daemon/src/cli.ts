@@ -28,6 +28,7 @@ import {
 } from './features/hooks/installer.ts'
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
+import { DeviceRegistry, describeDevices } from './features/push/devices.ts'
 import { LaunchdService } from './features/service/launchd.ts'
 import type { ServiceManager } from './features/service/service-manager.ts'
 import { SystemdUserService } from './features/service/systemd.ts'
@@ -201,7 +202,7 @@ program
     } catch {
       // resolveWsHost only fails when there is no Tailscale interface.
       console.error(`✗ ${m.cli.pair.tailscaleNotFound}`)
-      console.error(`  ${m.cli.pair.simulatorHint}`)
+      console.error(`  ${m.cli.pair.simulatorHint(config.wsPort)}`)
       process.exit(1)
     }
     printPairing(host, config.wsPort, token)
@@ -337,6 +338,11 @@ program
       d.serviceHint,
     )
     if (status?.loaded && manager.linger) check(await manager.linger.enabled(), d.linger, d.lingerHint)
+    const devices = new DeviceRegistry(paths.devices())
+    await devices.load()
+    const platforms = describeDevices(devices.devices())
+    // Informational: push is optional (it needs the Firebase service account and app permission).
+    console.log(`· ${platforms ? d.devices(platforms) : `${d.noDevices} (${d.noDevicesHint})`}`)
   })
 
 program

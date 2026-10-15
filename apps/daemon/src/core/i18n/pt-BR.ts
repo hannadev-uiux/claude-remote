@@ -21,12 +21,13 @@ export const ptBR = {
       host: 'endereço a anunciar no QR',
       tailscaleNotFound:
         'Tailscale não encontrado (nenhuma interface 100.x). Instale e conecte o Tailscale, ou use --dev para 127.0.0.1.',
-      simulatorHint:
-        'Para testar localmente (por exemplo, no simulador do iOS): `claude-remote start --dev` e `claude-remote pair --dev`.',
+      simulatorHint: (port: number) =>
+        'Para testar localmente (por exemplo, no simulador do iOS): `claude-remote start --dev` e `claude-remote pair --dev`' +
+        ` (emulador Android: também \`adb reverse tcp:${port} tcp:${port}\`).`,
       scan: 'Escaneie com o app Claude Remote. Não compartilhe este código.',
     },
     setup: {
-      description: 'assistente: escolhe contas e aliases, instala hooks, serviço e pareia o iPhone',
+      description: 'assistente: escolhe contas e aliases, instala hooks, serviço e pareia o celular',
       yes: 'sem perguntas: mantém o config ou usa as contas encontradas',
       noService: 'não instala o serviço em segundo plano',
       lang: (codes: string) => `idioma (${codes}); pula a pergunta`,
@@ -59,6 +60,9 @@ export const ptBR = {
       serviceHint: 'opcional: `claude-remote service install`',
       linger: 'lingering (o serviço continua rodando após o logout)',
       lingerHint: 'rode `loginctl enable-linger $USER`',
+      devices: (platforms: string) => `celulares registrados para push: ${platforms}`,
+      noDevices: 'nenhum celular registrado para push',
+      noDevicesHint: 'abra o app e permita as notificações',
     },
     install: {
       description:
@@ -122,14 +126,14 @@ export const ptBR = {
     welcome: {
       title: 'Boas-vindas ao Claude Remote!',
       intro1: (machine: string) => `Vamos preparar este ${machine} para você acompanhar e controlar`,
-      intro2: 'o Claude Code pelo iPhone. Leva uns 2 minutos.',
+      intro2: 'o Claude Code pelo celular. Leva uns 2 minutos.',
       footer: (version: string) => `v${version} · ↑/↓ para escolher · Enter para confirmar · Ctrl+C sai`,
     },
     steps: {
       accounts: 'Contas do Claude Code',
       installing: 'Instalando launchers, PATH e hooks',
       service: 'Serviço em segundo plano',
-      tailscale: 'Tailscale e iPhone',
+      tailscale: 'Tailscale e celular',
     },
     noAccounts:
       'Nenhuma conta do Claude Code encontrada. Rode `claude` uma vez para fazer login e depois `claude-remote setup`.',
@@ -149,9 +153,9 @@ export const ptBR = {
     lingerSkipped:
       '  Sem lingering o daemon para quando você sai da sessão. Ative depois com `loginctl enable-linger $USER`.',
     tailscaleIntro: (machine: string, install: string) =>
-      `  O ${machine} e o iPhone conversam por uma rede privada do Tailscale (grátis), de qualquer lugar.\n` +
+      `  O ${machine} e o celular conversam por uma rede privada do Tailscale (grátis), de qualquer lugar.\n` +
       `  1. No ${machine}: ${install}\n` +
-      '  2. No iPhone: instale "Tailscale" na App Store e entre com a mesma conta',
+      '  2. No celular: instale "Tailscale" (App Store ou Google Play) e entre com a mesma conta',
     tailscaleInstall: {
       darwin: 'instale em https://tailscale.com/download/mac (ou `brew install --cask tailscale`) e entre',
       linux: 'instale com `curl -fsSL https://tailscale.com/install.sh | sh` e rode `sudo tailscale up`',
@@ -160,7 +164,7 @@ export const ptBR = {
     tailscaleRetry: 'Já conectei, verificar de novo',
     tailscaleSkip: 'Fazer isso depois',
     tailscaleNotYet: '  Ainda não encontrei a interface do Tailscale (100.x).',
-    iphoneHint: '  No iPhone: instale o app Claude Remote e o Tailscale (mesma conta) e toque em "QR code".',
+    phoneHint: '  No celular: instale o app Claude Remote e o Tailscale (mesma conta) e toque em "QR code".',
     showQr: 'Mostrar o QR code de pareamento agora?',
     done: {
       installed: 'Claude Remote instalado.',
@@ -175,7 +179,7 @@ export const ptBR = {
       explain:
         '  Cada conta do Claude Code fica num diretório de configuração (CLAUDE_CONFIG_DIR).\n' +
         '  Para cada uma você escolhe um comando (alias) que a abre no tmux, pronta para o celular.',
-      which: 'Quais contas você quer controlar pelo iPhone?',
+      which: 'Quais contas você quer controlar pelo celular?',
       noneFound: (machine: string) =>
         `  Não encontrei nenhuma conta do Claude Code neste ${machine}; vamos criar uma.`,
       more: 'Mais alguma conta?',
@@ -259,10 +263,10 @@ export const ptBR = {
     logonTaskSkipped:
       '  Sem a tarefa de logon, o WSL e o daemon iniciam quando você abre a distribuição. Crie depois com `claude-remote setup`.',
     tailscaleIntro:
-      '  O computador e o iPhone conversam por uma rede privada do Tailscale (gratuita). Dentro do WSL há dois jeitos:\n' +
+      '  O computador e o celular conversam por uma rede privada do Tailscale (gratuita). Dentro do WSL há dois jeitos:\n' +
       '  A. Tailscale dentro do WSL (qualquer Windows): `curl -fsSL https://tailscale.com/install.sh | sh` e `sudo tailscale up`\n' +
       '  B. Tailscale no Windows + rede espelhada do WSL (Windows 11 22H2+): networkingMode=mirrored no .wslconfig\n' +
-      '  No iPhone: instale o "Tailscale" da App Store e entre com a mesma conta',
+      '  No celular: instale o "Tailscale" (App Store ou Google Play) e entre com a mesma conta',
     tailscaleMirrored: 'O Tailscale roda no Windows: ativar a rede espelhada (.wslconfig)',
     mirroredEnabled: (path: string) => `networkingMode=mirrored em ${path}`,
     mirroredAlready: (path: string) => `networkingMode=mirrored já estava em ${path}`,

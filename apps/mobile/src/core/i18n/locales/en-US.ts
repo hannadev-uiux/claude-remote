@@ -49,9 +49,9 @@ const enUS = {
     daysAgo: '{{count}} d ago',
   },
   pairing: {
-    title: 'Pair with your Mac',
-    intro: 'On your Mac, run <cmd>claude-remote pair</cmd> and point the camera at the QR code.',
-    guideTitle: 'First time? Set up your Mac',
+    title: 'Pair with your computer',
+    intro: 'On your computer, run <cmd>claude-remote pair</cmd> and point the camera at the QR code.',
+    guideTitle: 'First time? Set up your computer',
     guideHint: 'Tailscale, a one-line install and pairing, step by step.',
     tabQr: 'QR code',
     tabManual: 'Manual',
@@ -66,34 +66,35 @@ const enUS = {
     token: 'token',
     connect: 'Connect',
     errors: {
-      timeout: 'Timed out. Is the Mac on Tailscale and the daemon running?',
+      timeout: 'Timed out. Is the computer on Tailscale and the daemon running?',
       unauthorized: 'Token rejected by the daemon.',
       failed: 'Could not connect to the daemon.',
     },
   },
   setupGuide: {
-    title: 'Set up your Mac',
-    intro: "Four steps, about 5 minutes. You'll need the Mac where Claude Code runs.",
+    title: 'Set up your computer',
+    intro:
+      "Four steps, about 5 minutes. You'll need the computer where Claude Code runs (macOS, Linux or Windows with WSL).",
     help: 'Questions or problems: {{url}}',
     steps: {
-      tailscaleIos: {
-        title: 'Tailscale on the iPhone',
-        body: 'The app talks to your Mac over a private Tailscale network, which works from anywhere and is free for personal use. Install it and sign in.',
-        action: 'Open in the App Store',
+      tailscalePhone: {
+        title: 'Tailscale on this phone',
+        body: 'The app talks to your computer over a private Tailscale network, which works from anywhere and is free for personal use. Install it and sign in.',
+        action: 'Open in {{store}}',
       },
-      tailscaleMac: {
-        title: 'Tailscale on the Mac',
-        body: 'Install Tailscale on the Mac and sign in with the same account as on the iPhone. Both show up as devices on the same network.',
-        action: 'Send the link to the Mac',
+      tailscaleComputer: {
+        title: 'Tailscale on the computer',
+        body: 'Install Tailscale on the computer (on Windows, inside WSL or with mirrored networking) and sign in with the same account as on this phone. Both show up as devices on the same network.',
+        action: 'Send the link to the computer',
       },
       install: {
-        title: 'Claude Remote on the Mac',
-        body: 'In the Mac Terminal, run the installer. It checks the prerequisites, asks which Claude Code accounts you want to control (or creates a new one, with login) and the command (alias) for each.',
-        action: 'Send the command (AirDrop, Notes…)',
+        title: 'Claude Remote on the computer',
+        body: 'In a terminal on the computer, run the installer. It checks the prerequisites, asks which Claude Code accounts you want to control (or creates a new one, with login) and the command (alias) for each.',
+        action: 'Send the command to the computer',
       },
       pair: {
         title: 'Pair',
-        body: 'At the end, the installer shows a QR code (or run `claude-remote pair`). Scan it with this app and you are done: open Claude Code on the Mac with the alias you chose.',
+        body: 'At the end, the installer shows a QR code (or run `claude-remote pair`). Scan it with this app and you are done: open Claude Code on the computer with the alias you chose.',
         action: 'Scan the QR code',
       },
     },
@@ -132,7 +133,7 @@ const enUS = {
     queued_other: '+{{count}} requests in the queue',
     pending_one: '{{count}} permission',
     pending_other: '{{count}} permissions',
-    alreadyResolved: 'This request was already resolved (on the Mac or it timed out).',
+    alreadyResolved: 'This request was already resolved (on the computer or it timed out).',
     detail: {
       command: 'command',
       file: 'file',
@@ -195,19 +196,19 @@ const enUS = {
   },
   resume: {
     title: 'Read-only session',
-    hint: "Resume it to continue in the Mac's tmux.",
-    launched: "Opening in the Mac's tmux. If it takes a while, check the terminal.",
+    hint: "Resume it to continue in the computer's tmux.",
+    launched: "Opening in the computer's tmux. If it takes a while, check the terminal.",
     opening: 'Opening…',
     resume: 'Resume',
   },
   mode: {
     title: 'Permission mode',
-    hint: 'Switches with Shift+Tab on the Mac; the mode shown is the one confirmed in the status line.',
+    hint: 'Switches with Shift+Tab on the computer; the mode shown is the one confirmed in the status line.',
     switching: 'switching…',
     changeFailed: "Couldn't change the mode",
     autoConfirmTitle: 'Turn on auto mode?',
     autoConfirmBody:
-      'Claude will decide on its own which actions to run, without asking for approval, while nobody is watching the Mac.',
+      'Claude will decide on its own which actions to run, without asking for approval, while nobody is watching the computer.',
     autoConfirm: 'Turn on auto',
     labels: {
       default: 'default',
@@ -237,7 +238,7 @@ const enUS = {
   sessions: {
     all: 'all',
     emptyTitle: 'No sessions',
-    emptyBody: 'Start a session on the Mac with the launchers:',
+    emptyBody: 'Start a session on the computer with the launchers:',
     emptyHint: 'Sessions opened with plain `claude` show up as read-only.',
     background: 'background {{count}}',
     states: {
@@ -259,7 +260,7 @@ const enUS = {
     version: 'version',
     protocol: 'protocol',
     profiles: 'Profiles',
-    noProfiles: 'No profiles found on the Mac.',
+    noProfiles: 'No profiles found on the computer.',
     forgetButton: 'Forget daemon',
     forgetTitle: 'Forget daemon?',
     forgetBody: "The token will be deleted from this device. You'll need to pair again.",
@@ -267,6 +268,10 @@ const enUS = {
   },
   terminal: {
     space: 'space',
+  },
+  push: {
+    channelName: 'Sessions',
+    channelDescription: 'Finished sessions, sessions waiting for you and pending permissions.',
   },
 }
 
