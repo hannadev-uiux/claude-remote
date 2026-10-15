@@ -20,5 +20,5 @@
 
 ## 5. OpenSpec in English
 
-- [ ] 5.1 Rewrite `openspec/specs/*` in English
-- [ ] 5.2 Rewrite every archived change in English
+- [x] 5.1 Rewrite `openspec/specs/*` in English
+- [x] 5.2 Rewrite every archived change in English

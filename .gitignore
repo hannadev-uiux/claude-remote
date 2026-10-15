@@ -13,3 +13,6 @@ apps/mobile/android/
 GoogleService-Info.plist
 firebase-service-account*.json
 .install.log
+
+# Claude Code agent worktrees
+.claude/worktrees/
