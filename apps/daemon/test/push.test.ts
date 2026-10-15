@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, test } from 'vitest'
+import { messagesFor } from '../src/core/i18n/index.ts'
 import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
 import { DeviceRegistry, MAX_DEVICES } from '../src/features/push/devices.ts'
@@ -20,8 +21,16 @@ function fakeSender(invalid: string[] = []) {
   return { sender, sent }
 }
 
+const en = messagesFor('en-US').push
+
 async function setup(
-  opts: { foreground?: boolean; muted?: boolean; invalid?: string[]; tokens?: string[] } = {},
+  opts: {
+    foreground?: boolean
+    muted?: boolean
+    invalid?: string[]
+    tokens?: string[]
+    locale?: Parameters<typeof messagesFor>[0]
+  } = {},
 ) {
   const devices = new DeviceRegistry(paths.devices())
   await devices.load()
@@ -31,6 +40,7 @@ async function setup(
     profiles: [{ id: 'drclaude', name: 'DoctorX', configDir: '', color: '' }],
     hasForegroundClient: () => opts.foreground ?? false,
     isMuted: () => opts.muted ?? false,
+    messages: messagesFor(opts.locale ?? 'en-US').push,
   })
   return { service, sent, devices }
 }
@@ -59,7 +69,7 @@ describe('PushService', () => {
     expect(sent[0]).toEqual({
       tokens: ['tok-1'],
       message: {
-        title: 'Sessão concluída',
+        title: 'Session finished',
         body: 'DoctorX',
         data: { sessionId: 's', profileId: 'drclaude', event: 'Stop' },
       },
@@ -82,7 +92,7 @@ describe('PushService', () => {
     })
     await service.notify(message)
     expect(sent[0]?.message).toMatchObject({
-      title: 'Permissão pendente',
+      title: 'Permission pending',
       category: PERMISSION_CATEGORY,
       data: { requestId: 'r1' },
     })
@@ -101,8 +111,25 @@ describe('PushService', () => {
         hookEvent('Notification', { session_id: 's', notification_type: 'idle_prompt' }),
       ),
     ).toMatchObject({
-      title: 'Sessão aguardando você',
+      title: 'Session waiting for you',
     })
+  })
+
+  test('titles follow the configured language and carry only the profile', async () => {
+    for (const [locale, title] of [
+      ['pt-BR', 'Sessão concluída'],
+      ['es-ES', 'Sesión terminada'],
+    ] as const) {
+      const { service } = await setup({ locale })
+      const hook = hookEvent(
+        'Stop',
+        { session_id: 's', last_assistant_message: 'segredo' },
+        { profileId: 'drclaude' },
+      )
+      const message = service.messageForHook(hook)
+      expect(message).toMatchObject({ title, body: 'DoctorX' })
+      expect(JSON.stringify(message)).not.toContain('segredo')
+    }
   })
 
   test('suppressed in the foreground, when muted, or without a sender', async () => {
@@ -114,6 +141,7 @@ describe('PushService', () => {
       profiles: [],
       hasForegroundClient: () => false,
       isMuted: () => false,
+      messages: en,
     })
     expect(await disabled.notify(msg)).toBe(false)
   })
@@ -132,7 +160,7 @@ describe('integration: hook → push', () => {
     const { SECRET_HEADER } = await import('../src/transport/hooks-server.ts')
     const { fakeExecutor, writeTestConfig } = await import('./helpers.ts')
     const root = paths.devices().replace(/\/\.claude-remote\/devices\.json$/, '')
-    await writeTestConfig(root)
+    await writeTestConfig(root, ['claudin'], { language: 'en-US' })
     await new DeviceRegistry(paths.devices()).register('phone')
     const { sender, sent } = fakeSender()
     const daemon = await startDaemon({
@@ -153,7 +181,7 @@ describe('integration: hook → push', () => {
       })
       const start = Date.now()
       while (sent.length === 0 && Date.now() - start < 2000) await new Promise((r) => setTimeout(r, 20))
-      expect(sent[0]).toMatchObject({ tokens: ['phone'], message: { title: 'Sessão concluída' } })
+      expect(sent[0]).toMatchObject({ tokens: ['phone'], message: { title: en.sessionDone } })
     } finally {
       await daemon.stop()
     }

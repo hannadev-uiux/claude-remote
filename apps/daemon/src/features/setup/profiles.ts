@@ -2,7 +2,8 @@ import { existsSync, statSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
-import type { Profile } from '@claude-remote/protocol'
+import type { Locale, Profile } from '@claude-remote/protocol'
+import type { Messages } from '../../core/i18n/index.ts'
 import { expandHome } from '../../core/paths.ts'
 import { isDirectory } from '../../infra/fs.ts'
 
@@ -52,27 +53,40 @@ function capitalize(value: string): string {
 }
 
 /** Keeps what is already configured for the dir; otherwise suggests alias, name and color. */
-export function suggestProfile(configDir: string, existing: readonly Profile[], index: number): Profile {
+export function suggestProfile(
+  configDir: string,
+  existing: readonly Profile[],
+  index: number,
+  m: Messages['profiles'],
+): Profile {
   const current = existing.find((p) => sameDir(p.configDir, configDir))
   if (current) return { ...current, configDir }
   const suffix = /\.claude-([\w.-]+)$/.exec(configDir)?.[1]
   const id = suffix ? `claude-${suffix.toLowerCase().replace(/[^a-z0-9_-]/g, '-')}` : 'claudin'
-  const name = suffix ? capitalize(suffix.replace(/[-_.]+/g, ' ')) : 'Pessoal'
+  const name = suffix ? capitalize(suffix.replace(/[-_.]+/g, ' ')) : m.defaultName
   return { id, name, configDir, color: PROFILE_COLORS[index % PROFILE_COLORS.length] ?? '#D97757' }
 }
 
 /** `true` when valid, otherwise the message to show (inquirer's `validate` contract). */
-export function validateAlias(alias: string, taken: readonly string[]): true | string {
-  if (!ALIAS.test(alias)) return 'Use letras minúsculas, números, - ou _, começando com uma letra (até 32).'
-  if (RESERVED_ALIASES.has(alias)) return `"${alias}" é reservado: o launcher chama o próprio \`${alias}\`.`
-  if (taken.includes(alias)) return `"${alias}" já é usado por outro perfil.`
+export function validateAlias(
+  alias: string,
+  taken: readonly string[],
+  m: Messages['profiles'],
+): true | string {
+  if (!ALIAS.test(alias)) return m.aliasFormat
+  if (RESERVED_ALIASES.has(alias)) return m.aliasReserved(alias)
+  if (taken.includes(alias)) return m.aliasTaken(alias)
   return true
 }
 
-/** Replaces `profiles` in the raw config, keeping every other key the user set. */
-export function mergeConfig(raw: unknown, profiles: readonly Profile[]): Record<string, unknown> {
+/** Replaces `profiles` (and `language`, when given) in the raw config, keeping every other key. */
+export function mergeConfig(
+  raw: unknown,
+  profiles: readonly Profile[],
+  language?: Locale,
+): Record<string, unknown> {
   const base = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {}
-  return { ...base, profiles }
+  return { ...base, profiles, ...(language ? { language } : {}) }
 }
 
 /** What must be cleaned up when `next` replaces `previous`. */
@@ -87,31 +101,43 @@ export function profilesToRemove(
 }
 
 /** `~/.claude` (Claude Code's default) when free, otherwise the first free `~/.claude-<name>`. */
-export function suggestNewConfigDir(taken: readonly string[], home = homedir()): string {
+export function suggestNewConfigDir(
+  taken: readonly string[],
+  m: Messages['profiles'],
+  home = homedir(),
+): string {
   if (!taken.some((t) => sameDir(t, '~/.claude')) && !existsSync(join(home, '.claude'))) return '~/.claude'
-  const names = ['trabalho', 'pessoal', ...Array.from({ length: 98 }, (_, i) => `conta-${i + 2}`)]
+  const names = Array.from({ length: 100 }, (_, i) => m.newDirName(i))
   const free = names
     .map((name) => `~/.claude-${name}`)
     .find((dir) => !taken.some((t) => sameDir(t, dir)) && !existsSync(join(home, basename(dir))))
-  return free ?? '~/.claude-nova'
+  return free ?? `~/.claude-${m.newDirFallback}`
 }
 
 /** Folder for a new account: absolute or `~/`, not in use by another account or another tool. */
-export function validateNewConfigDir(value: string, taken: readonly string[]): true | string {
+export function validateNewConfigDir(
+  value: string,
+  taken: readonly string[],
+  m: Messages['profiles'],
+): true | string {
   const dir = value.trim()
-  if (!dir.startsWith('~/') && !dir.startsWith('/')) return 'Use um caminho absoluto ou começando com ~/.'
+  if (!dir.startsWith('~/') && !dir.startsWith('/')) return m.dirAbsolute
   const path = expandHome(dir).replace(/\/+$/, '')
-  if (NOT_PROFILES.has(basename(path))) return `${dir} é de outra ferramenta; escolha outro nome.`
-  if (taken.some((t) => sameDir(t, path))) return 'Essa pasta já está na lista de contas.'
-  if (existsSync(path) && !statSync(path).isDirectory()) return 'Já existe um arquivo com esse nome.'
+  if (NOT_PROFILES.has(basename(path))) return m.dirOtherTool(dir)
+  if (taken.some((t) => sameDir(t, path))) return m.dirInList
+  if (existsSync(path) && !statSync(path).isDirectory()) return m.dirIsFile
   return true
 }
 
 /**
  * Who is logged in to a config dir, from its `.claude.json` (`~/.claude.json` for `~/.claude`):
- * the account email, "chave de API", or null when Claude Code was never logged in there.
+ * the account email, the "API key" label, or null when Claude Code was never logged in there.
  */
-export async function readLogin(configDir: string, home = homedir()): Promise<string | null> {
+export async function readLogin(
+  configDir: string,
+  m: Messages['profiles'],
+  home = homedir(),
+): Promise<string | null> {
   const dir = expandHome(configDir).replace(/\/+$/, '')
   const file = dir === join(home, '.claude') ? join(home, '.claude.json') : join(dir, '.claude.json')
   try {
@@ -120,9 +146,9 @@ export async function readLogin(configDir: string, home = homedir()): Promise<st
     const { oauthAccount, primaryApiKey } = data as { oauthAccount?: unknown; primaryApiKey?: unknown }
     if (oauthAccount && typeof oauthAccount === 'object') {
       const email = (oauthAccount as { emailAddress?: unknown }).emailAddress
-      return typeof email === 'string' && email ? email : 'conta Claude'
+      return typeof email === 'string' && email ? email : m.claudeAccount
     }
-    return typeof primaryApiKey === 'string' && primaryApiKey ? 'chave de API' : null
+    return typeof primaryApiKey === 'string' && primaryApiKey ? m.apiKey : null
   } catch {
     return null
   }
