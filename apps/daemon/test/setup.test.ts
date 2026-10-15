@@ -17,11 +17,15 @@ const home = useTempHome()
 const profile = (id: string, configDir: string): Profile => ({ id, name: id, configDir, color: '#fff' })
 
 describe('setup profiles', () => {
-  test('detects ~/.claude and ~/.claude-* dirs, default first, ignoring files and our own dir', async () => {
+  test('detects ~/.claude and used ~/.claude-* dirs, default first, ignoring other tools', async () => {
     const dir = home.dir()
     for (const name of ['.claude-work', '.claude', '.claude-remote', '.claude-b', '.claudex', 'claude'])
       await mkdir(join(dir, name))
     await writeFile(join(dir, '.claude.json'), '{}')
+    await writeFile(join(dir, '.claude-work', 'settings.json'), '{}')
+    await mkdir(join(dir, '.claude-b', 'projects'))
+    await mkdir(join(dir, '.claude-mem', 'projects'), { recursive: true })
+    await mkdir(join(dir, '.claude-empty'))
     expect(await detectConfigDirs(dir)).toEqual(['~/.claude', '~/.claude-b', '~/.claude-work'])
     expect(await detectConfigDirs(join(dir, 'missing'))).toEqual([])
   })

@@ -27,6 +27,10 @@ Instala e configura o Claude Remote no Mac com um comando e um assistente guiado
 - **WHEN** existem `~/.claude` e `~/.claude-work` e o usuário escolhe os aliases `pessoal` e `trabalho`
 - **THEN** o `config.json` passa a ter os dois perfis e os comandos `pessoal` e `trabalho` abrem o Claude Code de cada conta no tmux
 
+#### Scenario: Diretório de outra ferramenta
+- **WHEN** existe `~/.claude-mem` (plugin claude-mem) ou um `~/.claude-*` sem `settings.json`, `.claude.json`, `.credentials.json` nem `projects/`
+- **THEN** ele não é oferecido como conta
+
 #### Scenario: Alias inválido
 - **WHEN** o usuário digita `claude` como alias
 - **THEN** o assistente recusa e pede outro

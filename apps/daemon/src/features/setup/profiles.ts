@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -5,9 +6,12 @@ import type { Profile } from '@claude-remote/protocol'
 import { expandHome } from '../../core/paths.ts'
 import { isDirectory } from '../../infra/fs.ts'
 
-/** `~/.claude` and `~/.claude-<name>`; `~/.claude-remote` is ours, not a Claude Code profile. */
+/** `~/.claude` and `~/.claude-<name>`. */
 const CONFIG_DIR = /^\.claude(-[\w.-]+)?$/
-const NOT_PROFILES = new Set(['.claude-remote'])
+/** Same naming, but data of other tools: ours and the claude-mem plugin. */
+const NOT_PROFILES = new Set(['.claude-remote', '.claude-mem'])
+/** Any of these marks a dir Claude Code has already used as CLAUDE_CONFIG_DIR. */
+const PROFILE_MARKERS = ['.claude.json', 'settings.json', '.credentials.json', 'projects']
 const ALIAS = /^[a-z][a-z0-9_-]{0,31}$/
 /** The launcher runs `claude` and its directory comes first on PATH; these would call themselves. */
 const RESERVED_ALIASES = new Set(['claude', 'claude-remote', 'tmux'])
@@ -18,13 +22,21 @@ export function tildify(path: string, home = homedir()): string {
   return path.startsWith(`${home}/`) ? `~/${path.slice(home.length + 1)}` : path
 }
 
-/** Claude Code config dirs in the home, `~/.claude` first, as `~/...` paths. */
+function looksLikeConfigDir(path: string): boolean {
+  return PROFILE_MARKERS.some((marker) => existsSync(join(path, marker)))
+}
+
+/**
+ * Claude Code config dirs in the home, `~/.claude` first, as `~/...` paths. `~/.claude-*` dirs
+ * only count when Claude Code has written to them, so other tools' `~/.claude-x` data is skipped.
+ */
 export async function detectConfigDirs(home = homedir()): Promise<string[]> {
   const entries = await readdir(home).catch(() => [] as string[])
   const found: string[] = []
   for (const name of entries) {
     if (!CONFIG_DIR.test(name) || NOT_PROFILES.has(name)) continue
-    if (await isDirectory(join(home, name))) found.push(name)
+    const path = join(home, name)
+    if ((await isDirectory(path)) && (name === '.claude' || looksLikeConfigDir(path))) found.push(name)
   }
   return found
     .sort((a, b) => (a === '.claude' ? -1 : b === '.claude' ? 1 : a.localeCompare(b)))
