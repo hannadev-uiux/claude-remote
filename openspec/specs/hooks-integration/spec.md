@@ -6,11 +6,15 @@ Conecta as sessões do Claude Code ao daemon por meio de hooks HTTP instalados e
 ## Requirements
 
 ### Requirement: Instalação idempotente dos hooks
-O instalador SHALL mesclar no `settings.json` de cada perfil hooks HTTP para `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `Notification` e `PermissionRequest` apontando para o daemon local, preservando todas as outras chaves e hooks do arquivo. Rodar o instalador duas vezes MUST produzir o mesmo arquivo.
+O instalador SHALL mesclar no `settings.json` de cada perfil hooks HTTP para `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `Notification` e `PermissionRequest` apontando para o daemon local, preservando todas as outras chaves e hooks do arquivo. Como o Claude Code só executa hooks `command` no `SessionStart`, esse evento SHALL usar um hook `command` que envia o mesmo JSON ao daemon com `curl`, sem escrever nada no stdout (que iria para o contexto do Claude) e sem falhar a sessão. Rodar o instalador duas vezes MUST produzir o mesmo arquivo.
 
 #### Scenario: settings.json com hooks do usuário
 - **WHEN** o perfil já tem um hook `Stop` próprio
 - **THEN** o hook do usuário continua lá e o hook do daemon é adicionado ao lado
+
+#### Scenario: SessionStart via comando
+- **WHEN** uma sessão inicia ou é retomada dentro do tmux
+- **THEN** o daemon recebe o `SessionStart` com o pane e o perfil, e o Claude não recebe nenhum texto extra no contexto
 
 #### Scenario: Reinstalação
 - **WHEN** o instalador roda pela segunda vez

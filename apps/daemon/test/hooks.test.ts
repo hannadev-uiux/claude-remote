@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Profile } from '@claude-remote/protocol'
@@ -22,7 +22,12 @@ import {
 } from '../src/features/hooks/launcher.ts'
 import type { HookEvent } from '../src/features/hooks/payloads.ts'
 import { HookReceiver, resolveProfileId } from '../src/features/hooks/receiver.ts'
-import { mergeOurHooks, removeOurHooks } from '../src/features/hooks/settings-hooks.ts'
+import {
+  buildHookEntry,
+  isOurHook,
+  mergeOurHooks,
+  removeOurHooks,
+} from '../src/features/hooks/settings-hooks.ts'
 import { createHooksServer } from '../src/transport/hooks-server.ts'
 import { useTempHome } from './helpers.ts'
 
@@ -179,6 +184,32 @@ describe('hook receiver', () => {
     expect(res.json()).toEqual({})
     expect(events[0]).toMatchObject({ event: 'SessionStart', paneId: '%12', profileId: 'claudin' })
     expect(events[0]?.payload.source).toBe('startup')
+  })
+
+  test('the SessionStart command hook posts stdin with pane and profile and prints nothing', async () => {
+    const { app, events } = await setup()
+    await app.listen({ host: '127.0.0.1', port: 0 })
+    try {
+      const address = app.server.address()
+      const port = typeof address === 'object' && address ? address.port : 0
+      const entry = buildHookEntry('SessionStart', { port, secret: 'sec', permissionTimeoutSec: 300 })
+      expect(entry.type).toBe('command')
+      expect(isOurHook(entry)).toBe(true)
+      const stdout = await new Promise<string>((resolve, reject) => {
+        const child = execFile(
+          'sh',
+          ['-c', String(entry.command)],
+          { env: { PATH: process.env.PATH, TMUX_PANE: '%7', CLAUDE_REMOTE_PROFILE: 'claudin' } },
+          (error, out) => (error ? reject(error) : resolve(out)),
+        )
+        child.stdin?.end(JSON.stringify({ session_id: 'abc', cwd: '/w', source: 'resume' }))
+      })
+      expect(stdout).toBe('')
+      expect(events[0]).toMatchObject({ event: 'SessionStart', paneId: '%7', profileId: 'claudin' })
+      expect(events[0]?.payload.source).toBe('resume')
+    } finally {
+      await app.close()
+    }
   })
 
   test('treats empty or unexpanded env headers as missing', async () => {
