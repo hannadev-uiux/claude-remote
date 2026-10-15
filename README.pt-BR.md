@@ -65,7 +65,7 @@ O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude
 
 No iPhone, instale o app e o Tailscale (mesma conta do computador). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o computador.
 
-Requisitos: macOS ou Linux (de preferência com systemd) com Node 24+ (o instalador cuida de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê); Claude Code; Tailscale no computador e no iPhone.
+Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo) com Node 24+ (o instalador cuida de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê); Claude Code; Tailscale no computador e no iPhone.
 
 ### Linux
 
@@ -74,6 +74,22 @@ Requisitos: macOS ou Linux (de preferência com systemd) com Node 24+ (o instala
 - **Sem systemd** (containers, alguns WSL): o assistente avisa; rode `claude-remote start` você mesmo, por exemplo numa janela do tmux.
 - **Token**: fica no Secret Service (GNOME Keyring, KWallet…) via `secret-tool` quando disponível; senão em `~/.claude-remote/token` (modo `0600`), caso dos servidores sem interface gráfica. `claude-remote doctor` mostra qual; `CLAUDE_REMOTE_TOKEN_STORE=secret-tool|file` força um deles.
 - **Shell**: o `PATH` vai para `~/.bashrc` e/ou `~/.zshrc`; os launchers rodam com `zsh`.
+
+### Windows (WSL2)
+
+O Claude Remote controla o Claude Code pelo tmux, então no Windows ele roda dentro do **WSL2** (Linux no Windows). No PowerShell:
+
+```powershell
+irm https://maarkn.dev/claude-remote/install.ps1 | iex
+```
+
+O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se faltar (o Windows pede permissão de administrador; reinicie se ele pedir e rode o mesmo comando de novo), ajuda a criar o usuário do Linux e roda o instalador do Linux dentro da distribuição. Opções: `& ([scriptblock]::Create((irm https://maarkn.dev/claude-remote/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+
+- **Node e Claude Code** precisam estar instalados **dentro do WSL** (não só no Windows); o instalador avisa o que falta.
+- **systemd**: o serviço é uma unit de usuário do systemd, e o WSL só inicia o systemd com `[boot] systemd=true` em `/etc/wsl.conf`. O assistente mostra o comando `sudo` exato, só roda se você concordar (com backup) e pede para rodar `wsl --shutdown` no PowerShell.
+- **Iniciar no logon**: o WSL só fica de pé enquanto algo o usa. O assistente pode criar uma Tarefa Agendada do Windows, "Claude Remote", que inicia a distribuição no logon (`wsl.exe -d <distro> --exec /bin/true`); `claude-remote service uninstall` a remove. Se o WSL ainda parar por ociosidade, aumente `vmIdleTimeout` em `[wsl2]` no `%UserProfile%\.wslconfig`.
+- **Tailscale**: o WSL2 usa NAT por padrão, então um Tailscale no Windows não aparece dentro do WSL. Rode o Tailscale **dentro do WSL** (`curl -fsSL https://tailscale.com/install.sh | sh` e `sudo tailscale up`; funciona em qualquer Windows) ou mantenha-o no Windows e ative a **rede espelhada** (Windows 11 22H2+): o assistente pode adicionar `networkingMode=mirrored` em `[wsl2]` no `%UserProfile%\.wslconfig` (com backup); depois rode `wsl --shutdown`.
+- `claude-remote doctor` mostra a distribuição, o modo de rede, o systemd e a tarefa de logon.
 
 ## Licença
 
