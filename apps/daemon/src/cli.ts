@@ -12,10 +12,11 @@ import { paths } from './core/paths.ts'
 import {
   ensureHookSecret,
   ensureToken,
-  FileTokenStore,
   generateToken,
-  KeychainTokenStore,
+  type SelectedTokenStore,
+  selectTokenStore,
   type TokenStore,
+  type TokenStoreKind,
 } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import {
@@ -60,10 +61,27 @@ function serviceManager(): ServiceManager {
     : new SystemdUserService(execaExecutor, { home: homedir(), user: userInfo().username })
 }
 
-function tokenStore(): TokenStore {
-  return process.env.CLAUDE_REMOTE_TOKEN_STORE === 'file'
-    ? new FileTokenStore()
-    : new KeychainTokenStore(execaExecutor)
+let selectedStore: Promise<SelectedTokenStore> | undefined
+
+/** Keychain (macOS), Secret Service or 0600 file (Linux); `CLAUDE_REMOTE_TOKEN_STORE` forces one. */
+function selectStore(): Promise<SelectedTokenStore> {
+  selectedStore ??= selectTokenStore({
+    platform,
+    exec: execaExecutor,
+    forced: process.env.CLAUDE_REMOTE_TOKEN_STORE,
+  })
+  return selectedStore
+}
+
+async function tokenStore(): Promise<TokenStore> {
+  return (await selectStore()).store
+}
+
+function tokenStoreLabel(kind: TokenStoreKind): string {
+  const names = m.cli.doctor.tokenStores
+  if (kind === 'keychain') return names.keychain
+  if (kind === 'secret-tool') return names.secretTool
+  return names.file(paths.tokenFile())
 }
 
 /** Absolute path of the bundled CLI (dist/cli.js), whether running from source or from dist. */
@@ -121,10 +139,12 @@ program
   .action(async (opts: { dev?: boolean; host?: string; waitTailscale?: boolean }) => {
     const logger = createLogger({ pretty: process.stdout.isTTY })
     try {
+      const { kind, store } = await selectStore()
+      logger.info({ platform, tokenStore: kind }, 'token store selected')
       const daemon = await startDaemon({
         logger,
         exec: execaExecutor,
-        tokenStore: tokenStore(),
+        tokenStore: store,
         dev: opts.dev,
         host: opts.host,
         waitForTailscale: opts.waitTailscale,
@@ -150,7 +170,7 @@ program
   .action(async (opts: { dev?: boolean; host?: string }) => {
     const logger = createLogger({ level: 'silent' })
     const config = await loadConfig(logger)
-    const token = await ensureToken(tokenStore())
+    const token = await ensureToken(await tokenStore())
     let host: string
     try {
       host = resolveWsHost(opts)
@@ -196,7 +216,7 @@ program
         tailscaleAddress: () => findTailscaleAddress(),
         pair: async (host) => {
           const config = await loadConfig(createLogger({ level: 'silent' }))
-          printPairing(host, config.wsPort, await ensureToken(tokenStore()))
+          printPairing(host, config.wsPort, await ensureToken(await tokenStore()))
         },
         runClaude: (configDir) => {
           // Like the launcher: ~/.claude is the default and must not be passed as CLAUDE_CONFIG_DIR.
@@ -223,7 +243,7 @@ program
   .command('rotate-token')
   .description(m.cli.rotateToken.description)
   .action(async () => {
-    await tokenStore().set(generateToken())
+    await (await tokenStore()).set(generateToken())
     const notified = await notifyDaemon('/admin/reload-token')
     console.log(notified ? m.cli.rotateToken.rotated : m.cli.rotateToken.rotatedOffline)
     console.log(m.cli.rotateToken.pairAgain)
@@ -264,7 +284,12 @@ program
     } catch (error) {
       check(false, 'config', (error as Error).message)
     }
-    check((await tokenStore().get()) !== null, d.token, d.runPair)
+    const { kind, store } = await selectStore()
+    const token = await store.get().catch((error: Error) => {
+      check(false, d.token(tokenStoreLabel(kind)), error.message)
+      return undefined
+    })
+    if (token !== undefined) check(token !== null, d.token(tokenStoreLabel(kind)), d.runPair)
   })
 
 program

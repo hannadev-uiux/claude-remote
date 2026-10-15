@@ -48,7 +48,12 @@ export const esES = {
       dirMissing: 'el directorio no existe',
       daemonRunning: 'daemon en ejecución',
       runStart: 'ejecuta `claude-remote start`',
-      token: 'token en el Llavero',
+      token: (store: string) => `token ${store}`,
+      tokenStores: {
+        keychain: 'en el Llavero de macOS',
+        secretTool: 'en el Secret Service (secret-tool)',
+        file: (path: string) => `en el archivo ${path} (0600)`,
+      },
       runPair: 'ejecuta `claude-remote pair`',
     },
     install: {

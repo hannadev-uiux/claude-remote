@@ -48,7 +48,12 @@ export const ptBR = {
       dirMissing: 'diretório não existe',
       daemonRunning: 'daemon rodando',
       runStart: 'rode `claude-remote start`',
-      token: 'token no Keychain',
+      token: (store: string) => `token ${store}`,
+      tokenStores: {
+        keychain: 'no Keychain do macOS',
+        secretTool: 'no Secret Service (secret-tool)',
+        file: (path: string) => `no arquivo ${path} (0600)`,
+      },
       runPair: 'rode `claude-remote pair`',
     },
     install: {

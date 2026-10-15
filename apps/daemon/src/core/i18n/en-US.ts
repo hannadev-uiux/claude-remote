@@ -50,7 +50,12 @@ export const enUS = {
       dirMissing: 'directory does not exist',
       daemonRunning: 'daemon running',
       runStart: 'run `claude-remote start`',
-      token: 'token in the Keychain',
+      token: (store: string) => `token ${store}`,
+      tokenStores: {
+        keychain: 'in the macOS Keychain',
+        secretTool: 'in the Secret Service (secret-tool)',
+        file: (path: string) => `in the file ${path} (0600)`,
+      },
       runPair: 'run `claude-remote pair`',
     },
     install: {
