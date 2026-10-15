@@ -1,11 +1,11 @@
 ## 1. Daemon
 
-- [x] 1.1 Implementar índice de arquivos (git/rg) com pastas, cache e busca fuzzy; verificar com teste em repositório git temporário
-- [x] 1.2 Implementar leitura de skills/comandos (perfil, projeto, plugins), lista nativa e cache invalidado por mtime; verificar com teste em diretórios temporários
-- [x] 1.3 Registrar `files.search` e `commands.list`; verificar com teste WS
+- [x] 1.1 Implement the file index (git/rg) with folders, cache and fuzzy search; verify with a test in a temporary git repository
+- [x] 1.2 Implement reading skills/commands (profile, project, plugins), the built-in list and a cache invalidated by mtime; verify with a test in temporary directories
+- [x] 1.3 Register `files.search` and `commands.list`; verify with a WS test
 
 ## 2. App
 
-- [x] 2.1 Implementar detecção do token `@`/`/` sob o cursor e inserção da sugestão; verificar com testes unitários
-- [x] 2.2 Criar `SuggestionList` integrada ao `PromptComposer` com TanStack Query e debounce; verificar com typecheck
-- [x] 2.3 Abrir terminal bruto ao enviar comandos interativos; verificar com teste da regra
+- [x] 2.1 Implement detection of the `@`/`/` token under the cursor and insertion of the suggestion; verify with unit tests
+- [x] 2.2 Create `SuggestionList` integrated with `PromptComposer` using TanStack Query and debounce; verify with typecheck
+- [x] 2.3 Open the raw terminal when sending interactive commands; verify with a test of the rule

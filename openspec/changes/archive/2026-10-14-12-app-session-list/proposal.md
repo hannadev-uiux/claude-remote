@@ -1,21 +1,21 @@
 ## Why
 
-O usuário precisa ver de relance o que está rodando nos dois perfis e entrar na sessão certa (A2).
+The user needs to see at a glance what is running in both profiles and get into the right session (A2).
 
 ## What Changes
 
-- Tela inicial com sessões agrupadas por perfil (cabeçalho com a cor do perfil), estado (rodando, aguardando, ociosa, encerrada), título, diretório e tempo relativo.
-- Sessões aguardando permissão destacadas no topo de cada grupo.
-- Filtro de perfil e "puxar para atualizar".
-- Atualização em tempo real via `session.updated`.
+- Home screen with sessions grouped by profile (header in the profile's color), state (running, waiting, idle, ended), title, directory and relative time.
+- Sessions waiting for permission highlighted at the top of each group.
+- Profile filter and pull to refresh.
+- Real-time updates via `session.updated`.
 
 ## Capabilities
 
 ### New Capabilities
-- `app-session-list`: listagem das sessões no app.
+- `app-session-list`: listing sessions in the app.
 
 ### Modified Capabilities
 
 ## Impact
 
-`src/features/sessions` no app.
+`src/features/sessions` in the app.
