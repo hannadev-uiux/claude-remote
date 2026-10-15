@@ -253,7 +253,7 @@ Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Development
 
-`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `CLAUDE_REMOTE_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
+`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `CLAUDE_REMOTE_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
 
 ```bash
 pnpm check                                             # typecheck + tests + Biome across the monorepo

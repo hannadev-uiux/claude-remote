@@ -69,12 +69,19 @@ prebuild: ## Regenerate ios/ and android/ from app.config.ts (after native chang
 ios-devices: ## iPhones Xcode knows and whether they can be built to
 	@cd $(MOBILE) && npx tsx scripts/ios-devices.mts
 
-install-ios: ## Release build on a connected iPhone, no Metro needed (fresh ios/, DEVICE=...)
-	@# Picks a reachable iPhone first (or explains why DEVICE is not), instead of failing after the
-	@# prebuild with xcodebuild error 70; Expo then gets its UDID and does not ask.
+install-ios: ## Release build on a connected iPhone/iPad, no Metro needed (fresh ios/, DEVICE=...)
+	@# Picks a reachable device first (or explains why DEVICE is not), instead of failing after the
+	@# prebuild. Builds with xcodebuild itself: once APPLE_TEAM_ID pins the team, `expo run:ios` no
+	@# longer passes the provisioning flags, so newly registered devices would never be added.
 	@cd $(MOBILE) && udid=$$(npx tsx scripts/ios-devices.mts --udid $(if $(DEVICE),"$(DEVICE)")) && \
 		npx expo prebuild --platform ios --clean && \
-		npx expo run:ios --device "$$udid" --configuration Release
+		echo "▸ xcodebuild (Release) for $$udid" && \
+		xcodebuild -quiet -workspace ios/ClaudeRemote.xcworkspace -scheme ClaudeRemote \
+			-configuration Release -destination "id=$$udid" -derivedDataPath ios/build \
+			-allowProvisioningUpdates -allowProvisioningDeviceRegistration build && \
+		xcrun devicectl device install app --device "$$udid" \
+			ios/build/Build/Products/Release-iphoneos/ClaudeRemote.app && \
+		xcrun devicectl device process launch --device "$$udid" tech.doctorx.clauderemote
 
 install-android: ## Release build on a connected Android phone (fresh android/)
 	cd $(MOBILE) && npx expo prebuild --platform android --clean && \
