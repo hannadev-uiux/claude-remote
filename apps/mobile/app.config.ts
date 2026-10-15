@@ -222,7 +222,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Claude Remote',
   slug: 'claude-remote',
-  version: '0.4.0',
+  version: '0.5.0',
   scheme: 'claude-remote',
   orientation: 'portrait',
   icon: './assets/icon.png',
