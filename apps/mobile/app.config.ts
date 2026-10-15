@@ -37,16 +37,25 @@ const SYSTEM_PROMPTS = {
     NSCameraUsageDescription:
       'The camera is used to read the pairing QR code shown by the daemon on your computer.',
     NSLocalNetworkUsageDescription: 'Claude Remote connects to the daemon on your computer.',
+    NSMicrophoneUsageDescription: 'The microphone is used to record voice messages for the prompt.',
+    NSSpeechRecognitionUsageDescription:
+      'Speech recognition turns your voice messages into text, on this device.',
   },
   'pt-BR': {
     NSCameraUsageDescription:
       'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no computador.',
     NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu computador.',
+    NSMicrophoneUsageDescription: 'O microfone é usado para gravar mensagens de voz do prompt.',
+    NSSpeechRecognitionUsageDescription:
+      'O reconhecimento de voz transforma suas mensagens de voz em texto, neste aparelho.',
   },
   es: {
     NSCameraUsageDescription:
       'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el ordenador.',
     NSLocalNetworkUsageDescription: 'Claude Remote se conecta al daemon de tu ordenador.',
+    NSMicrophoneUsageDescription: 'El micrófono se usa para grabar mensajes de voz del mensaje.',
+    NSSpeechRecognitionUsageDescription:
+      'El reconocimiento de voz convierte tus mensajes de voz en texto, en este dispositivo.',
   },
 }
 /** Languages the system offers for the app (matching the catalogs pt-BR, en-US and es-ES). */
@@ -75,7 +84,6 @@ const ANDROID_PERMISSIONS = [
 ]
 /** Added by the template or by libraries but not needed (no audio, files, overlays or scheduled alarms). */
 const ANDROID_BLOCKED_PERMISSIONS = [
-  'android.permission.RECORD_AUDIO',
   'android.permission.READ_EXTERNAL_STORAGE',
   'android.permission.WRITE_EXTERNAL_STORAGE',
   'android.permission.SYSTEM_ALERT_WINDOW',
@@ -288,9 +296,18 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
       'expo-camera',
       {
         cameraPermission: SYSTEM_PROMPTS.en.NSCameraUsageDescription,
-        microphonePermission: false,
+        // Same text passed to expo-speech-recognition below: whichever plugin runs last must not
+        // matter, since `false` here would otherwise delete the key the other plugin just set.
+        microphonePermission: SYSTEM_PROMPTS.en.NSMicrophoneUsageDescription,
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,
+      },
+    ],
+    [
+      'expo-speech-recognition',
+      {
+        microphonePermission: SYSTEM_PROMPTS.en.NSMicrophoneUsageDescription,
+        speechRecognitionPermission: SYSTEM_PROMPTS.en.NSSpeechRecognitionUsageDescription,
       },
     ],
     [

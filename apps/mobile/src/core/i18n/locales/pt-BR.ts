@@ -184,6 +184,16 @@ const ptBR = {
       plugin: 'plugin',
     },
   },
+  voice: {
+    start: 'Gravar uma mensagem de voz',
+    stop: 'Parar a gravação',
+    cancel: 'Cancelar',
+    done: 'Concluir',
+    permissionDenied: 'Gravação indisponível: o acesso ao microfone ou ao reconhecimento de voz foi negado.',
+    offlineUnavailable:
+      'O reconhecimento no aparelho não está disponível para este idioma. Enviar a gravação pela rede em vez disso?',
+    retryOnline: 'Enviar online',
+  },
   newSession: {
     profile: 'perfil',
     directory: 'diretório',

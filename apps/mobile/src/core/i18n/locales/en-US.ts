@@ -186,6 +186,16 @@ const enUS = {
       plugin: 'plugin',
     },
   },
+  voice: {
+    start: 'Record a voice message',
+    stop: 'Stop recording',
+    cancel: 'Cancel',
+    done: 'Done',
+    permissionDenied: "Recording isn't available: microphone or speech recognition access was denied.",
+    offlineUnavailable:
+      'On-device recognition is not available for this language. Send the recording over the network instead?',
+    retryOnline: 'Send online',
+  },
   newSession: {
     profile: 'profile',
     directory: 'directory',
