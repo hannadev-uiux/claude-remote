@@ -2,22 +2,48 @@ import { SECRET_HEADER } from '../../transport/hooks-server.ts'
 import { HOOK_EVENTS, type HookEventName } from './payloads.ts'
 import { PANE_HEADER, PROFILE_HEADER } from './receiver.ts'
 
-type HookEntry = { type: string; url?: string; [key: string]: unknown }
+type HookEntry = { type: string; url?: string; command?: string; [key: string]: unknown }
 type HookGroup = { matcher?: string; hooks: HookEntry[]; [key: string]: unknown }
 type Settings = Record<string, unknown> & { hooks?: Record<string, HookGroup[]> }
 
 const OUR_URL = /^http:\/\/127\.0\.0\.1:\d+\/hooks\//
+const OUR_COMMAND = /^curl .* 'http:\/\/127\.0\.0\.1:\d+\/hooks\/\w+'/
+
+/** Events where Claude Code runs only command hooks, so we post to the daemon with curl. */
+const COMMAND_ONLY_EVENTS: ReadonlySet<HookEventName> = new Set(['SessionStart'])
 
 export function isOurHook(entry: HookEntry): boolean {
-  return entry.type === 'http' && typeof entry.url === 'string' && OUR_URL.test(entry.url)
+  if (entry.type === 'http') return typeof entry.url === 'string' && OUR_URL.test(entry.url)
+  return entry.type === 'command' && typeof entry.command === 'string' && OUR_COMMAND.test(entry.command)
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", `'\\''`)}'`
 }
 
 export type HookInstallOptions = { port: number; secret: string; permissionTimeoutSec: number }
 
 export function buildHookEntry(event: HookEventName, options: HookInstallOptions): HookEntry {
+  const url = `http://127.0.0.1:${options.port}/hooks/${event}`
+  if (COMMAND_ONLY_EVENTS.has(event)) {
+    // Same request as the http hook: stdin JSON as body. Output is discarded because a
+    // SessionStart hook's stdout is added to Claude's context; failures never block the session.
+    const headers = [
+      `${SECRET_HEADER}: ${options.secret}`,
+      `${PANE_HEADER}: $TMUX_PANE`,
+      `${PROFILE_HEADER}: $CLAUDE_REMOTE_PROFILE`,
+    ]
+      .map((h) => `-H "${h}"`)
+      .join(' ')
+    return {
+      type: 'command',
+      command: `curl -s -m 5 -o /dev/null -X POST -H 'content-type: application/json' ${headers} --data-binary @- ${shellQuote(url)} >/dev/null 2>&1 || true`,
+      timeout: 10,
+    }
+  }
   return {
     type: 'http',
-    url: `http://127.0.0.1:${options.port}/hooks/${event}`,
+    url,
     timeout: event === 'PermissionRequest' ? options.permissionTimeoutSec : 5,
     headers: {
       [SECRET_HEADER]: options.secret,
