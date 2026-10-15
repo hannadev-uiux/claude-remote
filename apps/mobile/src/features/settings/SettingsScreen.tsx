@@ -1,5 +1,6 @@
 import Constants from 'expo-constants'
 import { router } from 'expo-router'
+import { useTranslation } from 'react-i18next'
 import { Alert, ScrollView, StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
 import { credentialsStorage } from '@/core/storage/credentials'
@@ -20,16 +21,17 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export function SettingsScreen({ children }: { children?: React.ReactNode }) {
+  const { t } = useTranslation()
   const credentials = useConnectionStore((s) => s.credentials)
   const hello = useConnectionStore((s) => s.hello)
   const status = useConnectionStore((s) => s.status)
   const setCredentials = useConnectionStore((s) => s.setCredentials)
 
   const forget = () => {
-    Alert.alert('Esquecer daemon?', 'O token será apagado deste aparelho. Você precisará parear de novo.', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(t('settings.forgetTitle'), t('settings.forgetBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Esquecer',
+        text: t('settings.forget'),
         style: 'destructive',
         onPress: async () => {
           await credentialsStorage.clear()
@@ -46,22 +48,25 @@ export function SettingsScreen({ children }: { children?: React.ReactNode }) {
         <Card>
           <View style={styles.gap}>
             <View style={styles.title}>
-              <Text weight="bold">Daemon</Text>
+              <Text weight="bold">{t('settings.daemon')}</Text>
               <Badge
-                label={status === 'open' ? 'conectado' : status}
+                label={t(`connection.status.${status}`)}
                 tone={status === 'open' ? 'success' : 'warning'}
                 dot
               />
             </View>
-            <Row label="host" value={credentials ? `${credentials.host}:${credentials.port}` : '—'} />
-            <Row label="versão" value={hello?.daemonVersion ?? '—'} />
-            <Row label="protocolo" value={hello ? String(hello.protocolVersion) : '—'} />
+            <Row
+              label={t('settings.host')}
+              value={credentials ? `${credentials.host}:${credentials.port}` : '—'}
+            />
+            <Row label={t('settings.version')} value={hello?.daemonVersion ?? '—'} />
+            <Row label={t('settings.protocol')} value={hello ? String(hello.protocolVersion) : '—'} />
           </View>
         </Card>
 
         <Card>
           <View style={styles.gap}>
-            <Text weight="bold">Perfis</Text>
+            <Text weight="bold">{t('settings.profiles')}</Text>
             {(hello?.profiles ?? []).map((p) => (
               <View key={p.id} style={styles.title}>
                 <Text size="sm" style={{ color: p.color }}>
@@ -74,7 +79,7 @@ export function SettingsScreen({ children }: { children?: React.ReactNode }) {
             ))}
             {hello && hello.profiles.length === 0 ? (
               <Text size="sm" color="textMuted">
-                Nenhum perfil encontrado no Mac.
+                {t('settings.noProfiles')}
               </Text>
             ) : null}
           </View>
@@ -82,7 +87,7 @@ export function SettingsScreen({ children }: { children?: React.ReactNode }) {
 
         {children}
 
-        <Button label="Esquecer daemon" variant="danger" onPress={forget} />
+        <Button label={t('settings.forgetButton')} variant="danger" onPress={forget} />
         <Text size="xs" color="textDim" style={styles.center}>
           Claude Remote {Constants.expoConfig?.version ?? ''}
         </Text>

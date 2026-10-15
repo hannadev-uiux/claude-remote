@@ -1,5 +1,5 @@
-import { execFileSync } from 'node:child_process'
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { execFile, execFileSync } from 'node:child_process'
+import { lstat, mkdir, readFile, stat, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Profile } from '@claude-remote/protocol'
 import { describe, expect, test } from 'vitest'
@@ -8,16 +8,28 @@ import type { DaemonEvents } from '../src/core/events.ts'
 import { silentLogger } from '../src/core/logger.ts'
 import {
   BACKUP_SUFFIX,
+  existingRcFiles,
   installHooks,
   installLaunchers,
-  installZshrc,
+  installShellPath,
+  shellRcFiles,
   uninstallHooks,
-  uninstallZshrc,
+  uninstallShellPath,
 } from '../src/features/hooks/installer.ts'
-import { removeZshrcBlock, renderLauncher, upsertZshrcBlock } from '../src/features/hooks/launcher.ts'
+import {
+  isDefaultConfigDir,
+  removePathBlock,
+  renderLauncher,
+  upsertPathBlock,
+} from '../src/features/hooks/launcher.ts'
 import type { HookEvent } from '../src/features/hooks/payloads.ts'
 import { HookReceiver, resolveProfileId } from '../src/features/hooks/receiver.ts'
-import { mergeOurHooks, removeOurHooks } from '../src/features/hooks/settings-hooks.ts'
+import {
+  buildHookEntry,
+  isOurHook,
+  mergeOurHooks,
+  removeOurHooks,
+} from '../src/features/hooks/settings-hooks.ts'
 import { createHooksServer } from '../src/transport/hooks-server.ts'
 import { useTempHome } from './helpers.ts'
 
@@ -95,23 +107,81 @@ describe('installer files', () => {
     expect((await stat(path!)).mode & 0o111).not.toBe(0)
     execFileSync('zsh', ['-n', path!])
     const content = await readFile(path!, 'utf8')
+    expect(content.startsWith('#!/usr/bin/env zsh\n')).toBe(true)
     expect(content).toContain(`export CLAUDE_CONFIG_DIR='${p.configDir}'`)
     expect(content).toContain('; select-window')
   })
 
-  test('zshrc block is idempotent and removable', async () => {
+  test('PATH block is idempotent, backed up and removable', async () => {
     const zshrc = join(home.dir(), '.zshrc')
-    await writeFile(zshrc, 'alias ll="ls -la"\n')
-    expect(await installZshrc('/x/bin', zshrc)).toBe(true)
-    expect(await installZshrc('/x/bin', zshrc)).toBe(false)
+    await writeFile(zshrc, 'alias ll="ls -la"\n', { mode: 0o640 })
+    expect(await installShellPath('/x/bin', [zshrc])).toEqual([zshrc])
+    expect(await installShellPath('/x/bin', [zshrc])).toEqual([])
     expect(await readFile(zshrc, 'utf8')).toContain("export PATH='/x/bin'")
-    await uninstallZshrc(zshrc)
+    expect(await readFile(`${zshrc}${BACKUP_SUFFIX}`, 'utf8')).toBe('alias ll="ls -la"\n')
+    expect((await stat(zshrc)).mode & 0o777).toBe(0o640)
+    expect(await uninstallShellPath([zshrc])).toEqual([zshrc])
     expect(await readFile(zshrc, 'utf8')).toBe('alias ll="ls -la"\n')
+    expect(await uninstallShellPath([zshrc])).toEqual([])
   })
 
-  test('zshrc helpers handle empty files', () => {
-    const added = upsertZshrcBlock('', '/b')
-    expect(removeZshrcBlock(added)).toBe('')
+  test('PATH block goes to every rc file and creates a missing one without a backup', async () => {
+    const zshrc = join(home.dir(), '.zshrc')
+    const bashrc = join(home.dir(), '.bashrc')
+    await writeFile(zshrc, '# zsh\n')
+    expect(await installShellPath('/x/bin', [bashrc, zshrc])).toEqual([bashrc, zshrc])
+    expect(await readFile(bashrc, 'utf8')).toBe(
+      '# >>> claude-remote >>>\nexport PATH=\'/x/bin\':"$PATH"\n# <<< claude-remote <<<\n',
+    )
+    await expect(stat(`${bashrc}${BACKUP_SUFFIX}`)).rejects.toThrow()
+    execFileSync('bash', ['-n', bashrc])
+    const out = execFileSync('bash', ['-c', `source '${bashrc}' && echo "$PATH"`]).toString()
+    expect(out.startsWith('/x/bin:')).toBe(true)
+  })
+
+  test('PATH block follows a symlinked rc file (dotfile managers)', async () => {
+    const real = join(home.dir(), 'dotfiles-zshrc')
+    const link = join(home.dir(), '.zshrc')
+    await writeFile(real, '# mine\n')
+    await symlink(real, link)
+    await installShellPath('/x/bin', [link])
+    expect((await lstat(link)).isSymbolicLink()).toBe(true)
+    expect(await readFile(real, 'utf8')).toContain("export PATH='/x/bin'")
+  })
+
+  test('PATH helpers handle empty files', () => {
+    const added = upsertPathBlock('', '/b')
+    expect(removePathBlock(added)).toBe('')
+  })
+
+  test('rc files: the one of $SHELL first, then the other ones that exist', () => {
+    const h = '/home/me'
+    const present =
+      (...names: string[]) =>
+      (p: string) =>
+        names.some((n) => p === join(h, n))
+    // Bash user without ~/.zshrc: only ~/.bashrc
+    expect(shellRcFiles({ home: h, shell: '/bin/bash', exists: present(), fallback: '.zshrc' })).toEqual([
+      join(h, '.bashrc'),
+    ])
+    expect(
+      shellRcFiles({
+        home: h,
+        shell: '/usr/bin/zsh',
+        exists: present('.bashrc', '.zshrc'),
+        fallback: '.zshrc',
+      }),
+    ).toEqual([join(h, '.zshrc'), join(h, '.bashrc')])
+    expect(shellRcFiles({ home: h, shell: '/bin/zsh', exists: present(), fallback: '.bashrc' })).toEqual([
+      join(h, '.zshrc'),
+    ])
+    expect(
+      shellRcFiles({ home: h, shell: '/usr/bin/fish', exists: present('.bashrc'), fallback: '.zshrc' }),
+    ).toEqual([join(h, '.bashrc')])
+    expect(shellRcFiles({ home: h, shell: undefined, exists: present(), fallback: '.bashrc' })).toEqual([
+      join(h, '.bashrc'),
+    ])
+    expect(existingRcFiles(h, present('.bashrc'))).toEqual([join(h, '.bashrc')])
   })
 })
 
@@ -122,6 +192,16 @@ describe('launcher script quoting', () => {
       { tmuxSession: 's', tmuxBin: 'tmux' },
     )
     expect(script).toContain(`'/tmp/it'\\''s'`)
+  })
+
+  test('the default ~/.claude profile runs with CLAUDE_CONFIG_DIR unset', () => {
+    const tmux = { tmuxSession: 's', tmuxBin: 'tmux', home: '/Users/u' }
+    const script = renderLauncher({ id: 'p', name: 'P', configDir: '/Users/u/.claude/', color: '' }, tmux)
+    execFileSync('zsh', ['-n', '-c', script])
+    expect(script).toContain('unset CLAUDE_CONFIG_DIR')
+    expect(script).toContain('cmd=(env -u CLAUDE_CONFIG_DIR "$CLAUDE_BIN" "$@")')
+    expect(script).not.toContain('-e "CLAUDE_CONFIG_DIR')
+    expect(isDefaultConfigDir('/Users/u/.claude-work', '/Users/u')).toBe(false)
   })
 })
 
@@ -164,6 +244,32 @@ describe('hook receiver', () => {
     expect(res.json()).toEqual({})
     expect(events[0]).toMatchObject({ event: 'SessionStart', paneId: '%12', profileId: 'claudin' })
     expect(events[0]?.payload.source).toBe('startup')
+  })
+
+  test('the SessionStart command hook posts stdin with pane and profile and prints nothing', async () => {
+    const { app, events } = await setup()
+    await app.listen({ host: '127.0.0.1', port: 0 })
+    try {
+      const address = app.server.address()
+      const port = typeof address === 'object' && address ? address.port : 0
+      const entry = buildHookEntry('SessionStart', { port, secret: 'sec', permissionTimeoutSec: 300 })
+      expect(entry.type).toBe('command')
+      expect(isOurHook(entry)).toBe(true)
+      const stdout = await new Promise<string>((resolve, reject) => {
+        const child = execFile(
+          'sh',
+          ['-c', String(entry.command)],
+          { env: { PATH: process.env.PATH, TMUX_PANE: '%7', CLAUDE_REMOTE_PROFILE: 'claudin' } },
+          (error, out) => (error ? reject(error) : resolve(out)),
+        )
+        child.stdin?.end(JSON.stringify({ session_id: 'abc', cwd: '/w', source: 'resume' }))
+      })
+      expect(stdout).toBe('')
+      expect(events[0]).toMatchObject({ event: 'SessionStart', paneId: '%7', profileId: 'claudin' })
+      expect(events[0]?.payload.source).toBe('resume')
+    } finally {
+      await app.close()
+    }
   })
 
   test('treats empty or unexpanded env headers as missing', async () => {

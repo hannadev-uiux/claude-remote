@@ -1,5 +1,6 @@
 import { ArrowUp } from 'lucide-react-native'
 import { forwardRef, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, type TextInputProps, View } from 'react-native'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
@@ -18,6 +19,7 @@ type Props = {
 }
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
+  const { t } = useTranslation()
   const canSend = !props.disabled && !props.sending && props.value.trim().length > 0
   return (
     <View style={styles.wrap}>
@@ -39,16 +41,14 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           selection={props.selection}
           editable={!props.disabled}
           multiline
-          placeholder={
-            props.disabled ? 'sessão somente leitura' : 'mensagem para o Claude… (@ arquivos, / comandos)'
-          }
+          placeholder={props.disabled ? t('conversation.placeholderReadOnly') : t('conversation.placeholder')}
           placeholderTextColor={colors.textDim}
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.input}
         />
         <Pressable
-          accessibilityLabel="Enviar"
+          accessibilityLabel={t('common.send')}
           disabled={!canSend}
           onPress={props.onSend}
           style={[styles.send, { backgroundColor: canSend ? colors.accent : colors.surfaceRaised }]}

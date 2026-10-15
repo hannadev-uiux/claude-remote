@@ -5,7 +5,9 @@ import type { SessionStore } from '../sessions/store.ts'
 import { LifecycleService } from './service.ts'
 
 export function registerLifecycleFeature(ctx: DaemonContext, store: SessionStore, sessions: SessionService) {
-  const service = new LifecycleService(ctx.exec, store, ctx.profiles, paths.bin())
+  const service = new LifecycleService(ctx.exec, store, ctx.profiles, paths.bin(), undefined, (pane) =>
+    ctx.tmux.hasPane(pane),
+  )
   ctx.router.register('session.start', async (msg) => ({
     type: 'ack',
     data: await service.start(msg.profileId, msg.cwd),

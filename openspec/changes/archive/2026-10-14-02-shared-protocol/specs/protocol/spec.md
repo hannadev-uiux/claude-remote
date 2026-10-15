@@ -1,41 +1,41 @@
 ## Purpose
 
-Define o contrato das mensagens trocadas por WebSocket entre o app móvel e o daemon, com validação em runtime nos dois lados.
+Defines the contract for the messages exchanged over WebSocket between the mobile app and the daemon, with runtime validation on both sides.
 
 ## ADDED Requirements
 
-### Requirement: Envelope de mensagens
-Toda mensagem SHALL ser um objeto JSON com campo `type` discriminante. Mensagens do cliente que esperam resposta MUST carregar `id`; respostas do daemon MUST carregar `replyTo` com esse `id`.
+### Requirement: Message envelope
+Every message SHALL be a JSON object with a discriminating `type` field. Client messages that expect a response MUST carry an `id`; daemon responses MUST carry `replyTo` with that `id`.
 
-#### Scenario: Resposta correlacionada
-- **WHEN** o cliente envia `sessions.list` com `id` "abc"
-- **THEN** o daemon responde `sessions.snapshot` com `replyTo` "abc"
+#### Scenario: Correlated response
+- **WHEN** the client sends `sessions.list` with `id` "abc"
+- **THEN** the daemon responds with `sessions.snapshot` with `replyTo` "abc"
 
-#### Scenario: Erro tipado
-- **WHEN** uma requisição falha
-- **THEN** o daemon responde `error` com `replyTo`, `code` e `message`
+#### Scenario: Typed error
+- **WHEN** a request fails
+- **THEN** the daemon responds with `error` carrying `replyTo`, `code` and `message`
 
-### Requirement: Validação tolerante
-O parser SHALL rejeitar mensagens malformadas retornando um resultado de erro, sem lançar exceção, e SHALL ignorar campos desconhecidos.
+### Requirement: Tolerant validation
+The parser SHALL reject malformed messages by returning an error result, without throwing, and SHALL ignore unknown fields.
 
-#### Scenario: Mensagem inválida
-- **WHEN** chega `{"type":"session.input"}` sem `sessionId`
-- **THEN** o parser retorna erro de validação e o processo continua
+#### Scenario: Invalid message
+- **WHEN** `{"type":"session.input"}` arrives without `sessionId`
+- **THEN** the parser returns a validation error and the process keeps running
 
-#### Scenario: Campo extra
-- **WHEN** chega uma mensagem válida com um campo a mais
-- **THEN** a mensagem é aceita e o campo extra é descartado
+#### Scenario: Extra field
+- **WHEN** a valid message arrives with one extra field
+- **THEN** the message is accepted and the extra field is discarded
 
-### Requirement: Catálogo de mensagens
-O protocolo SHALL definir as mensagens de cliente `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input`, `session.key`, `session.setMode`, `permission.respond`, `device.register`, `files.search`, `commands.list`, `projects.list`, `session.start`, `session.resume`, `pane.subscribe`, `pane.unsubscribe`, `settings.mute`, `app.visibility` e `ping`; e as mensagens de servidor `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `ack`, `error` e `pong`.
+### Requirement: Message catalog
+The protocol SHALL define the client messages `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input`, `session.key`, `session.setMode`, `permission.respond`, `device.register`, `files.search`, `commands.list`, `projects.list`, `session.start`, `session.resume`, `pane.subscribe`, `pane.unsubscribe`, `settings.mute`, `app.visibility` and `ping`; and the server messages `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `ack`, `error` and `pong`.
 
-#### Scenario: Tipo desconhecido
-- **WHEN** chega uma mensagem com `type` fora do catálogo
-- **THEN** o parser retorna erro `unknown_type`
+#### Scenario: Unknown type
+- **WHEN** a message arrives with a `type` outside the catalog
+- **THEN** the parser returns an `unknown_type` error
 
-### Requirement: Versão do protocolo
-O handshake `auth` SHALL incluir `protocolVersion`; o daemon MUST recusar versões de major diferente com erro `protocol_mismatch`.
+### Requirement: Protocol version
+The `auth` handshake SHALL include `protocolVersion`; the daemon MUST reject versions with a different major with a `protocol_mismatch` error.
 
-#### Scenario: Versão incompatível
-- **WHEN** o app envia `protocolVersion` 2 e o daemon fala a 1
-- **THEN** o daemon responde `error` `protocol_mismatch` e fecha a conexão
+#### Scenario: Incompatible version
+- **WHEN** the app sends `protocolVersion` 2 and the daemon speaks version 1
+- **THEN** the daemon responds with `error` `protocol_mismatch` and closes the connection

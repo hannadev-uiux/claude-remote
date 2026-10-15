@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useConnectionStore } from '@/core/connection'
 import { type Credentials, credentialsStorage } from '@/core/storage/credentials'
 import { testConnection } from './test-connection'
@@ -7,6 +8,7 @@ import { testConnection } from './test-connection'
 /** Tests credentials, saves them on success and enters the app. */
 export function usePairing() {
   const setCredentials = useConnectionStore((s) => s.setCredentials)
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,7 +18,8 @@ export function usePairing() {
       setError(null)
       const result = await testConnection(credentials)
       if (!result.ok) {
-        setError(result.error)
+        const message = t(`pairing.errors.${result.error}`)
+        setError(result.detail ? `${message} (${result.detail})` : message)
         setBusy(false)
         return false
       }
@@ -26,7 +29,7 @@ export function usePairing() {
       router.replace('/')
       return true
     },
-    [setCredentials],
+    [setCredentials, t],
   )
 
   return { pair, busy, error, setError }

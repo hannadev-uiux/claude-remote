@@ -1,24 +1,24 @@
 ## Why
 
-Todas as funções do Claude Remote dependem de um processo no Mac que conheça os perfis, aceite só clientes autorizados e exponha o WebSocket e o endpoint de hooks. É a base do M0/M1 (requisitos D1 e D6).
+Every Claude Remote function depends on a process on the Mac that knows the profiles, accepts only authorized clients and exposes the WebSocket and the hooks endpoint. It is the foundation of M0/M1 (requirements D1 and D6).
 
 ## What Changes
 
-- Daemon Node/TypeScript em `apps/daemon` com composição explícita de módulos.
-- Arquivo de configuração `~/.claude-remote/config.json` com perfis (nome, `CLAUDE_CONFIG_DIR`, cor), portas e escopo padrão do "permitir sempre".
-- Token de pareamento guardado no Keychain do macOS; comandos `pair` (mostra QR com endereço + token) e `rotate-token`.
-- Servidor WebSocket ligado apenas ao IP Tailscale (ou `127.0.0.1` em modo dev) com handshake `auth`.
-- Servidor HTTP de hooks ligado apenas a `127.0.0.1`, protegido por segredo local.
-- CLI `claude-remote` (`start`, `pair`, `rotate-token`, `doctor`).
+- Node/TypeScript daemon in `apps/daemon` with explicit module composition.
+- Configuration file `~/.claude-remote/config.json` with profiles (name, `CLAUDE_CONFIG_DIR`, color), ports and the default scope of "always allow".
+- Pairing token stored in the macOS Keychain; `pair` (shows a QR with address + token) and `rotate-token` commands.
+- WebSocket server bound only to the Tailscale IP (or `127.0.0.1` in dev mode) with an `auth` handshake.
+- Hooks HTTP server bound only to `127.0.0.1`, protected by a local secret.
+- `claude-remote` CLI (`start`, `pair`, `rotate-token`, `doctor`).
 
 ## Capabilities
 
 ### New Capabilities
-- `daemon-config`: perfis configuráveis e configuração do daemon.
-- `daemon-auth`: autenticação por token, restrição de interface de rede e pareamento.
+- `daemon-config`: configurable profiles and daemon configuration.
+- `daemon-auth`: token authentication, network interface restriction and pairing.
 
 ### Modified Capabilities
 
 ## Impact
 
-Novo app `apps/daemon`. Dependências: `ws`, `fastify`, `zod`, `pino`, `commander`, `qrcode-terminal`, `execa`.
+New `apps/daemon` app. Dependencies: `ws`, `fastify`, `zod`, `pino`, `commander`, `qrcode-terminal`, `execa`.

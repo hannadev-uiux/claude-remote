@@ -1,19 +1,19 @@
 ## Context
 
-Rótulos da linha de status (Claude Code 2.1): "manual mode on" ou nenhum rótulo (default), "accept edits on", "plan mode on", "auto mode on", "bypass permissions on", "don't ask on". O ciclo varia por versão e configuração.
+Status line labels (Claude Code 2.1): "manual mode on" or no label (default), "accept edits on", "plan mode on", "auto mode on", "bypass permissions on", "don't ask on". The cycle varies by version and configuration.
 
 ## Goals / Non-Goals
 
-**Goals:** nunca assumir a ordem do ciclo.
+**Goals:** never assume the order of the cycle.
 
-**Non-Goals:** `dontAsk` (não está no ciclo).
+**Non-Goals:** `dontAsk` (it is not in the cycle).
 
 ## Decisions
 
-- **Detector puro** `detectMode(paneText)`: procura os rótulos nas últimas 6 linhas do painel; ausência de rótulo → `default`.
-- **Laço de troca**: `send-keys BTab`, espera 150 ms, `capture-pane -p`, detecta; repete até alvo ou 6 tentativas. Se cair em `bypassPermissions`, envia mais um BTab imediatamente.
-- **Mutex por sessão** compartilhado com a fila de entrada (change 07) para não intercalar com prompts.
+- **Pure detector** `detectMode(paneText)`: looks for the labels in the last 6 lines of the pane; no label → `default`.
+- **Switch loop**: `send-keys BTab`, wait 150 ms, `capture-pane -p`, detect; repeat until the target or 6 attempts. If it lands on `bypassPermissions`, it sends one more BTab immediately.
+- **Per-session mutex** shared with the input queue (change 07) so it does not interleave with prompts.
 
 ## Risks / Trade-offs
 
-- [Rótulos mudam de texto] → tabela de rótulos num único arquivo com testes.
+- [Label text changes] → label table in a single file with tests.

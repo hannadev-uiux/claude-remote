@@ -10,10 +10,13 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionProvider, useConnectionStore } from '@/core/connection'
+import '@/core/i18n'
 import { colors, fonts } from '@/core/theme'
+import { useBackgroundUpdates } from '@/core/updates'
 
 void SplashScreen.preventAutoHideAsync()
 
@@ -28,8 +31,10 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   })
+  const { t } = useTranslation()
   const credentialsLoaded = useConnectionStore((s) => s.credentialsLoaded)
   const ready = fontsLoaded && credentialsLoaded
+  useBackgroundUpdates()
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync()
@@ -53,7 +58,11 @@ export default function RootLayout() {
                 }}
               >
                 <Stack.Screen name="(main)" options={{ headerShown: false }} />
-                <Stack.Screen name="pair" options={{ title: 'Parear', presentation: 'modal' }} />
+                <Stack.Screen name="pair" options={{ title: t('nav.pair'), presentation: 'modal' }} />
+                <Stack.Screen
+                  name="setup-guide"
+                  options={{ title: t('nav.setupGuide'), presentation: 'modal' }}
+                />
               </Stack>
             ) : null}
           </ConnectionProvider>

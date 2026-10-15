@@ -1,34 +1,34 @@
 # app-session-list Specification
 
 ## Purpose
-Mostra no app todas as sessões dos perfis configurados, com estado em tempo real, e leva à tela da sessão.
+Shows in the app all sessions of the configured profiles, with real-time state, and leads to the session screen.
 
 ## Requirements
 
-### Requirement: Agrupamento por perfil
-A lista SHALL agrupar sessões por perfil, cada grupo com nome e cor do perfil, ordenadas por: aguardando primeiro, depois rodando, ociosa e encerrada, e por `updatedAt` decrescente dentro de cada estado.
+### Requirement: Grouping by profile
+The list SHALL group sessions by profile, each group with the profile's name and color, sorted as follows: waiting first, then running, idle and ended, and by descending `updatedAt` within each state.
 
-#### Scenario: Sessão aguardando
-- **WHEN** uma sessão do perfil `drclaude` está aguardando permissão
-- **THEN** ela aparece no topo do grupo `drclaude` com selo "aguardando"
+#### Scenario: Waiting session
+- **WHEN** a session of the `drclaude` profile is waiting for permission
+- **THEN** it appears at the top of the `drclaude` group with a "waiting" badge
 
-### Requirement: Atualização em tempo real
-A lista SHALL refletir `session.updated` e `session.removed` sem recarregar a tela.
+### Requirement: Real-time updates
+The list SHALL reflect `session.updated` and `session.removed` without reloading the screen.
 
-#### Scenario: Sessão termina
-- **WHEN** uma sessão passa de `running` para `idle`
-- **THEN** o selo muda na lista sem ação do usuário
+#### Scenario: Session finishes
+- **WHEN** a session goes from `running` to `idle`
+- **THEN** the badge changes in the list without user action
 
-### Requirement: Somente leitura
-Sessões com `controllable: false` SHALL exibir selo "somente leitura".
+### Requirement: Read-only
+Sessions with `controllable: false` SHALL show a "read-only" badge.
 
-#### Scenario: Sessão fora do tmux
-- **WHEN** a sessão não tem painel
-- **THEN** aparece com selo "somente leitura"
+#### Scenario: Session outside tmux
+- **WHEN** the session has no pane
+- **THEN** it appears with a "read-only" badge
 
-### Requirement: Estado vazio
-Sem sessões, a tela SHALL mostrar instrução para iniciar com `claudin` ou `drclaude`.
+### Requirement: Empty state
+With no sessions, the screen SHALL show instructions to start one with `claudin` or `drclaude`.
 
-#### Scenario: Nenhuma sessão
-- **WHEN** o snapshot vem vazio
-- **THEN** a tela mostra a instrução de uso dos launchers
+#### Scenario: No sessions
+- **WHEN** the snapshot is empty
+- **THEN** the screen shows the launcher usage instructions

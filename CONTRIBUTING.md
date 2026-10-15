@@ -10,21 +10,30 @@ Thanks for your interest! Bug reports, ideas, docs and code are all welcome.
 
 ## Setup
 
-Requirements: macOS, Node 24+, pnpm 12+, tmux, git, ripgrep, Xcode (for the app).
+Requirements: macOS or Linux, Node 24+, pnpm 12+, tmux, git, ripgrep, zsh; Xcode on a Mac (iOS) or the Android SDK with JDK 17 (Android) for the app.
 
 ```bash
 pnpm install
 pnpm check                                            # typecheck + tests + Biome — must be green
 pnpm --filter @claude-remote/daemon dev start --dev   # daemon from source on 127.0.0.1
-pnpm --filter @claude-remote/mobile ios               # app on the simulator
+pnpm --filter @claude-remote/mobile ios               # app on the iOS simulator
+pnpm --filter @claude-remote/mobile android           # app on an Android emulator
 ```
 
 Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — please read it before changing code.
 
 ## Workflow
 
-1. **Specs first (OpenSpec).** Features and behavior changes start as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change in `openspec/changes/`, with a proposal, spec deltas and tasks. Validate with `openspec validate <change> --strict`. When merged, the change is archived into `openspec/specs/`. Small fixes and docs don't need a change.
-2. **Branch** from `main`: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
+1. **Specs first (OpenSpec).** Features and behavior changes start as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change in `openspec/changes/`, with a proposal, spec deltas and tasks. Validate with `openspec validate <change> --strict`. When merged, the change is archived into `openspec/specs/`. Small fixes and docs don't need a change. OpenSpec artifacts are always written in English (en-US).
+2. **Branch** from `development`: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
+
+   | Branch | Purpose |
+   |---|---|
+   | `development` | Integration branch. Every PR targets it. |
+   | `main` | Stable releases only, merged from `development` and tagged (`vX.Y.Z`). The one-line installer installs from `main`. |
+
+   Urgent fixes to a release may branch from `main` as `hotfix/<topic>` and are merged back into `development` too.
+   When a release only changes app JavaScript, it can also go out over the air: publish to the `preview` channel first, then `production` (see *App updates over the air* in the README). Releases that add native modules need a new build.
 3. **Code** following the conventions:
    - Strict TypeScript, no `any` — `unknown` + Zod at the edges.
    - New WebSocket message? Schema in `packages/protocol` → handler in the daemon → usage in the app.
@@ -32,7 +41,7 @@ Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — pl
    - Only `features/transcript/parser.ts` knows the Claude Code `.jsonl` format; TUI labels live in one tested table.
    - Writes to user files are read → merge → backup → atomic write, and idempotent.
    - Native app dependencies are added with `npx expo install`.
-   - UI text is Brazilian Portuguese (translations welcome); code and identifiers are English.
+   - UI text always goes through i18n with typed catalogs in `pt-BR`, `en-US` and `es-ES` (same keys in all three, checked by tests); code and identifiers are English.
 4. **Test.** `pnpm check` must pass. Add tests for new logic; describe manual checks (simulator, real tmux session) in the PR.
 5. **Commit** with [Conventional Commits](https://www.conventionalcommits.org/) in English:
 
@@ -43,7 +52,7 @@ Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — pl
    ```
 
    Types: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `chore`. Scopes: `daemon`, `mobile`, `protocol`, `openspec`.
-6. **Open a PR** using the template. Keep it focused; screenshots or a short video for UI changes are much appreciated.
+6. **Open a PR against `development`** using the template. Keep it focused; screenshots or a short video for UI changes are much appreciated.
 
 ## Reporting bugs
 

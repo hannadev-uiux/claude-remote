@@ -1,8 +1,11 @@
 import type { Key } from '@claude-remote/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, KeyboardAvoidingView, Pressable, StyleSheet, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useDaemonClient } from '@/core/connection'
+import { errorMessage } from '@/core/connection/error-message'
+import { keyboardBehavior } from '@/core/platform/platform'
 import { colors, radius, space } from '@/core/theme'
 import { ConnectionBanner, Screen, Text } from '@/ui'
 import { useSessionsStore } from '../sessions/store'
@@ -23,7 +26,7 @@ function renderItem({ item }: { item: TimelineItem }) {
     case 'tool':
       return <ToolCallCard use={item.use} result={item.result} />
     case 'system':
-      return <SystemLine text={item.text} subtype={item.subtype} />
+      return <SystemLine text={item.text} subtype={item.subtype} durationMs={item.durationMs} />
     case 'unknown':
       return <UnknownEntry raw={item.raw} />
   }
@@ -42,6 +45,7 @@ type Props = {
 }
 
 export function ConversationScreen({ sessionId, agentId, composer, footer, header, onKey }: Props) {
+  const { t } = useTranslation()
   const client = useDaemonClient()
   const key = streamKey(sessionId, agentId)
   const stream = useTranscriptStore(selectStream(key))
@@ -71,7 +75,11 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
     <Screen>
       <ConnectionBanner />
       {header}
-      <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={90} style={styles.flex}>
+      <KeyboardAvoidingView
+        behavior={keyboardBehavior(Platform.OS)}
+        keyboardVerticalOffset={90}
+        style={styles.flex}
+      >
         <View style={styles.flex}>
           <FlashList
             ref={listRef}
@@ -105,7 +113,7 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
             }
             ListEmptyComponent={
               <Text color="textMuted" style={styles.empty}>
-                {stream.error ?? 'carregando conversa…'}
+                {stream.error != null ? errorMessage(stream.error, t) : t('conversation.loading')}
               </Text>
             }
             contentContainerStyle={styles.content}
@@ -113,7 +121,7 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
           {unseen ? (
             <Pressable onPress={jumpToEnd} style={styles.unseen}>
               <Text size="xs" weight="bold" color="background">
-                ↓ novas mensagens
+                {t('conversation.newMessages')}
               </Text>
             </Pressable>
           ) : null}

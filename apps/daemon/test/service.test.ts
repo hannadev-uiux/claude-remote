@@ -13,11 +13,20 @@ import {
   installAppBundle,
   installService,
   LAUNCHD_LABEL,
+  LaunchdService,
   renderAppInfoPlist,
   renderAppLauncher,
   renderPlist,
   serviceStatus,
 } from '../src/features/service/launchd.ts'
+import type { ServiceManager } from '../src/features/service/service-manager.ts'
+import {
+  parseShow,
+  renderSystemdUnit,
+  SYSTEMD_UNIT,
+  SystemdUserService,
+  unitPath,
+} from '../src/features/service/systemd.ts'
 import { TAILSCALE_NOT_FOUND, waitForWsHost } from '../src/main.ts'
 import { fakeExecutor, useTempHome } from './helpers.ts'
 
@@ -29,52 +38,85 @@ const options = {
   home: '/Users/me',
 }
 
+const onMac = process.platform === 'darwin'
+
 describe('launchd', () => {
-  test('renders a valid plist that runs the app bundle with KeepAlive and the captured PATH', async () => {
-    const xml = renderPlist(options)
-    expect(xml).toContain(`<string>${LAUNCHD_LABEL}</string>`)
-    expect(xml).toContain(
-      '<string>/Users/me/.claude-remote/Claude Remote.app/Contents/MacOS/claude-remote</string>',
-    )
-    expect(xml).toContain('<key>AssociatedBundleIdentifiers</key>')
-    expect(xml).toContain('<key>KeepAlive</key>\n  <true/>')
-    expect(xml).toContain('<string>/opt/homebrew/bin:/usr/bin:/bin</string>')
-    const file = join(home.dir(), 'x.plist')
-    await writeFile(file, xml)
-    expect(execFileSync('plutil', ['-lint', file]).toString()).toContain('OK')
-  })
+  test.skipIf(!onMac)(
+    'renders a valid plist that runs the app bundle with KeepAlive and the captured PATH',
+    async () => {
+      const xml = renderPlist(options)
+      expect(xml).toContain(`<string>${LAUNCHD_LABEL}</string>`)
+      expect(xml).toContain(
+        '<string>/Users/me/.claude-remote/Claude Remote.app/Contents/MacOS/claude-remote</string>',
+      )
+      expect(xml).toContain('<key>AssociatedBundleIdentifiers</key>')
+      expect(xml).toContain('<key>KeepAlive</key>\n  <true/>')
+      expect(xml).toContain('<string>/opt/homebrew/bin:/usr/bin:/bin</string>')
+      const file = join(home.dir(), 'x.plist')
+      await writeFile(file, xml)
+      expect(execFileSync('plutil', ['-lint', file]).toString()).toContain('OK')
+    },
+  )
 
   test('install writes the plist with a deduplicated PATH and bootstraps it', async () => {
-    const exec = fakeExecutor()
+    const exec = fakeExecutor((c) => (c.args[0] === 'print' ? { exitCode: 113 } : undefined))
     const path = await installService(
       exec,
       { ...options, path: '/a:/b:/a::/c:/b', logsDir: join(home.dir(), 'logs') },
       home.dir(),
+      async () => {},
     )
     expect(path).toBe(join(home.dir(), 'Library', 'LaunchAgents', `${LAUNCHD_LABEL}.plist`))
-    expect(exec.calls.map((c) => c.args[0])).toEqual(['bootout', 'bootstrap'])
-    expect(exec.calls[1]?.args[2]).toBe(path)
+    expect(exec.calls.map((c) => c.args[0])).toEqual(['bootout', 'print', 'bootstrap'])
+    expect(exec.calls[2]?.args[2]).toBe(path)
     expect(readFileSync(path, 'utf8')).toContain('<string>/a:/b:/c</string>')
+  })
+
+  test('install waits for the old job to unload and retries a failed bootstrap', async () => {
+    let prints = 0
+    let bootstraps = 0
+    const exec = fakeExecutor((c) => {
+      if (c.args[0] === 'print') return { exitCode: ++prints < 3 ? 0 : 113 }
+      if (c.args[0] === 'bootstrap' && ++bootstraps < 2)
+        return { exitCode: 5, stderr: 'Bootstrap failed: 5: Input/output error' }
+      return undefined
+    })
+    const waits: number[] = []
+    await installService(exec, { ...options, logsDir: join(home.dir(), 'logs') }, home.dir(), async (ms) => {
+      waits.push(ms)
+    })
+    expect(exec.calls.map((c) => c.args[0])).toEqual([
+      'bootout',
+      'print',
+      'print',
+      'print',
+      'bootstrap',
+      'bootstrap',
+    ])
+    expect(waits).toEqual([100, 100, 500])
   })
 
   test('dedupePath keeps the first occurrence of each entry', () => {
     expect(dedupePath('/x:/y:/x:/z')).toBe('/x:/y:/z')
   })
 
-  test('app bundle is named Claude Remote and execs the daemon waiting for Tailscale', async () => {
-    const info = renderAppInfoPlist(true)
-    expect(info).toContain(`<string>${APP_NAME}</string>`)
-    expect(info).toContain(`<string>${LAUNCHD_LABEL}</string>`)
-    expect(info).toContain('<key>CFBundleIconFile</key>')
-    expect(renderAppInfoPlist(false)).not.toContain('CFBundleIconFile')
-    const file = join(home.dir(), 'Info.plist')
-    await writeFile(file, info)
-    expect(execFileSync('plutil', ['-lint', file]).toString()).toContain('OK')
+  test.skipIf(!onMac)(
+    'app bundle is named Claude Remote and execs the daemon waiting for Tailscale',
+    async () => {
+      const info = renderAppInfoPlist(true)
+      expect(info).toContain(`<string>${APP_NAME}</string>`)
+      expect(info).toContain(`<string>${LAUNCHD_LABEL}</string>`)
+      expect(info).toContain('<key>CFBundleIconFile</key>')
+      expect(renderAppInfoPlist(false)).not.toContain('CFBundleIconFile')
+      const file = join(home.dir(), 'Info.plist')
+      await writeFile(file, info)
+      expect(execFileSync('plutil', ['-lint', file]).toString()).toContain('OK')
 
-    expect(renderAppLauncher("/opt/it's/node", '/repo/cli.js')).toBe(
-      "#!/bin/sh\nexec '/opt/it'\\''s/node' '/repo/cli.js' start --wait-tailscale\n",
-    )
-  })
+      expect(renderAppLauncher("/opt/it's/node", '/repo/cli.js')).toBe(
+        "#!/bin/sh\nexec '/opt/it'\\''s/node' '/repo/cli.js' start --wait-tailscale\n",
+      )
+    },
+  )
 
   test('installAppBundle writes an executable launcher and signs the bundle', async () => {
     const exec = fakeExecutor()
@@ -92,8 +134,156 @@ describe('launchd', () => {
     expect(await serviceStatus(exec)).toEqual({ loaded: true, detail: 'running (pid 4242)' })
     expect(await serviceStatus(fakeExecutor(() => ({ exitCode: 113 })))).toEqual({
       loaded: false,
-      detail: 'não carregado',
+      detail: 'not loaded',
     })
+  })
+})
+
+describe('LaunchdService', () => {
+  test('builds the app bundle and loads the LaunchAgent, keeping the bootstrap retry', async () => {
+    let bootstraps = 0
+    const exec = fakeExecutor((c) => {
+      if (c.args[0] === 'print') return { exitCode: 113 }
+      if (c.args[0] === 'bootstrap' && ++bootstraps < 2) return { exitCode: 5 }
+      return undefined
+    })
+    const appDir = join(home.dir(), 'Claude Remote.app')
+    const service = new LaunchdService(exec, { home: home.dir(), appDir, sleep: async () => {} })
+    expect(await service.available()).toBe(true)
+    const path = await service.install({
+      nodePath: '/n',
+      cliPath: '/c',
+      logsDir: join(home.dir(), 'logs'),
+      path: '/a:/a:/b',
+    })
+    expect(path).toBe(join(home.dir(), 'Library', 'LaunchAgents', `${LAUNCHD_LABEL}.plist`))
+    expect(exec.calls.map((c) => `${c.file} ${c.args[0]}`)).toEqual([
+      'codesign --force',
+      'launchctl bootout',
+      'launchctl print',
+      'launchctl bootstrap',
+      'launchctl bootstrap',
+    ])
+    const plist = readFileSync(path, 'utf8')
+    expect(plist).toContain(`<string>${appExecutablePath(appDir)}</string>`)
+    expect(plist).toContain('<string>/a:/b</string>')
+    expect((service as ServiceManager).linger).toBeUndefined()
+  })
+})
+
+describe('systemd user service', () => {
+  const unit = {
+    nodePath: '/usr/bin/node',
+    cliPath: '/home/me/.claude-remote/src/apps/daemon/dist/cli.js',
+    logsDir: '/home/me/.claude-remote/logs',
+    path: '/home/me/.local/bin:/usr/bin:/home/me/.local/bin:/bin',
+    home: '/home/me',
+  }
+
+  test('renders a unit that restarts the daemon with the captured PATH and appends logs', () => {
+    const text = renderSystemdUnit(unit)
+    expect(text).toContain(
+      'ExecStart="/usr/bin/node" "/home/me/.claude-remote/src/apps/daemon/dist/cli.js" start --wait-tailscale',
+    )
+    expect(text).toContain('Environment="PATH=/home/me/.local/bin:/usr/bin:/bin"')
+    expect(text).toContain('Environment="HOME=/home/me"')
+    expect(text).toContain('Restart=always')
+    expect(text).toContain('StandardOutput=append:/home/me/.claude-remote/logs/daemon.log')
+    expect(text).toContain('StandardError=append:/home/me/.claude-remote/logs/daemon.err.log')
+    expect(text).toContain('[Install]\nWantedBy=default.target')
+  })
+
+  test('escapes quotes, specifiers and variables', () => {
+    const text = renderSystemdUnit({ ...unit, nodePath: '/opt/50%/n"o$de', path: '/a%b' })
+    expect(text).toContain('ExecStart="/opt/50%%/n\\"o$$de"')
+    expect(text).toContain('Environment="PATH=/a%%b"')
+  })
+
+  test('install writes the unit, reloads, enables and restarts it', async () => {
+    const exec = fakeExecutor()
+    const service = new SystemdUserService(exec, { home: home.dir(), user: 'me' })
+    const path = await service.install({ ...unit, logsDir: join(home.dir(), 'logs') })
+    expect(path).toBe(unitPath(home.dir()))
+    expect(path).toBe(join(home.dir(), '.config', 'systemd', 'user', 'claude-remote.service'))
+    expect(readFileSync(path, 'utf8')).toContain('Restart=always')
+    expect(statSync(join(home.dir(), 'logs')).isDirectory()).toBe(true)
+    expect(exec.calls.map((c) => [c.file, ...c.args].join(' '))).toEqual([
+      'systemctl --user daemon-reload',
+      `systemctl --user enable --now ${SYSTEMD_UNIT}`,
+      `systemctl --user restart ${SYSTEMD_UNIT}`,
+    ])
+  })
+
+  test('install fails with the systemctl error', async () => {
+    const exec = fakeExecutor((c) =>
+      c.args[1] === 'enable' ? { exitCode: 1, stderr: 'no bus\n' } : undefined,
+    )
+    const service = new SystemdUserService(exec, { home: home.dir(), user: 'me' })
+    await expect(service.install({ ...unit, logsDir: join(home.dir(), 'logs') })).rejects.toThrow(
+      'systemctl --user enable failed: no bus',
+    )
+  })
+
+  test('uninstall stops, disables and removes the unit', async () => {
+    const exec = fakeExecutor()
+    const service = new SystemdUserService(exec, { home: home.dir(), user: 'me' })
+    await service.install({ ...unit, logsDir: join(home.dir(), 'logs') })
+    exec.calls.length = 0
+    await service.uninstall()
+    expect(exec.calls.map((c) => c.args.slice(1).join(' '))).toEqual([
+      `stop ${SYSTEMD_UNIT}`,
+      `disable ${SYSTEMD_UNIT}`,
+      'daemon-reload',
+    ])
+    expect(() => statSync(unitPath(home.dir()))).toThrow()
+  })
+
+  test('available asks the user manager', async () => {
+    const ok = fakeExecutor()
+    expect(await new SystemdUserService(ok, { home: '/h', user: 'me' }).available()).toBe(true)
+    expect(ok.calls[0]?.args).toEqual(['--user', 'is-active', 'default.target'])
+    const noBus = fakeExecutor(() => ({ exitCode: 1, stderr: 'Failed to connect to bus' }))
+    expect(await new SystemdUserService(noBus, { home: '/h', user: 'me' }).available()).toBe(false)
+  })
+
+  test('status parses systemctl show', async () => {
+    const running = fakeExecutor(() => ({
+      stdout: 'LoadState=loaded\nActiveState=active\nSubState=running\nMainPID=4242\n',
+    }))
+    const service = new SystemdUserService(running, { home: '/h', user: 'me' })
+    expect(await service.status()).toEqual({ loaded: true, detail: 'running (pid 4242)' })
+    expect(running.calls[0]?.args).toEqual([
+      '--user',
+      'show',
+      SYSTEMD_UNIT,
+      '--property=LoadState,ActiveState,SubState,MainPID',
+    ])
+    const dead = fakeExecutor(() => ({
+      stdout: 'LoadState=loaded\nActiveState=inactive\nSubState=dead\nMainPID=0\n',
+    }))
+    expect(await new SystemdUserService(dead, { home: '/h', user: 'me' }).status()).toEqual({
+      loaded: true,
+      detail: 'dead',
+    })
+    const missing = fakeExecutor(() => ({ stdout: 'LoadState=not-found\nActiveState=inactive\n' }))
+    expect(await new SystemdUserService(missing, { home: '/h', user: 'me' }).status()).toEqual({
+      loaded: false,
+      detail: 'not loaded',
+    })
+    expect(parseShow('A=1\nB=x=y\n\n')).toEqual({ A: '1', B: 'x=y' })
+  })
+
+  test('lingering is read and enabled through loginctl', async () => {
+    const exec = fakeExecutor((c) => (c.args[0] === 'show-user' ? { stdout: 'no\n' } : undefined))
+    const { linger } = new SystemdUserService(exec, { home: '/h', user: 'me' })
+    expect(await linger.enabled()).toBe(false)
+    expect(await linger.enable()).toBe(true)
+    expect(exec.calls.map((c) => [c.file, ...c.args].join(' '))).toEqual([
+      'loginctl show-user me --property=Linger --value',
+      'loginctl enable-linger me',
+    ])
+    const on = fakeExecutor(() => ({ stdout: 'yes\n' }))
+    expect(await new SystemdUserService(on, { home: '/h', user: 'me' }).linger.enabled()).toBe(true)
   })
 })
 

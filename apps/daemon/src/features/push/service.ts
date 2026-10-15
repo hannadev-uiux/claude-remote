@@ -1,4 +1,5 @@
 import type { PermissionRequestInfo, Profile } from '@claude-remote/protocol'
+import type { Messages } from '../../core/i18n/index.ts'
 import type { Logger } from '../../core/logger.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import type { DeviceRegistry } from './devices.ts'
@@ -11,6 +12,8 @@ export type PushServiceOptions = {
   /** True when some app is connected and in the foreground: it shows the event itself. */
   hasForegroundClient: () => boolean
   isMuted: (profileId: string | null, sessionId: string) => boolean
+  /** Texts in the configured language. Only titles: the body is the profile name. */
+  messages: Messages['push']
 }
 
 /** Decides which events become a push and builds content-free payloads. */
@@ -30,20 +33,24 @@ export class PushService {
     const sessionId = hook.payload.session_id
     const base = { sessionId, profileId: hook.profileId ?? '', event: hook.event }
     if (hook.event === 'Stop') {
-      return { title: 'Sessão concluída', body: this.profileName(hook.profileId), data: base }
+      return { title: this.options.messages.sessionDone, body: this.profileName(hook.profileId), data: base }
     }
     if (hook.event === 'Notification') {
       const type = hook.payload.notification_type
       // permission prompts are announced by the PermissionRequest flow (with actions).
       if (type === 'permission_prompt' || type === 'auth_success') return null
-      return { title: 'Sessão aguardando você', body: this.profileName(hook.profileId), data: base }
+      return {
+        title: this.options.messages.sessionWaiting,
+        body: this.profileName(hook.profileId),
+        data: base,
+      }
     }
     return null
   }
 
   messageForPermission(info: PermissionRequestInfo): PushMessage {
     return {
-      title: 'Permissão pendente',
+      title: this.options.messages.permissionPending,
       body: this.profileName(info.profileId),
       data: {
         sessionId: info.sessionId,

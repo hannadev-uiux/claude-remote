@@ -1,52 +1,128 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
-import { writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import { Command } from 'commander'
+import { homedir, userInfo } from 'node:os'
+import { fileURLToPath } from 'node:url'
+import { LOCALES, type Locale, LocaleSchema } from '@claude-remote/protocol'
+import { Command, InvalidArgumentError, Option } from 'commander'
 import qrcode from 'qrcode-terminal'
-import { loadConfig, resolveProfiles } from './core/config.ts'
+import { configuredLocaleSync, loadConfig, resolveProfiles } from './core/config.ts'
+import { type Messages, messagesFor } from './core/i18n/index.ts'
 import { createLogger } from './core/logger.ts'
 import { paths } from './core/paths.ts'
 import {
   ensureHookSecret,
   ensureToken,
-  FileTokenStore,
   generateToken,
-  KeychainTokenStore,
+  type SelectedTokenStore,
+  selectTokenStore,
   type TokenStore,
+  type TokenStoreKind,
 } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import {
-  installHooks,
-  installLaunchers,
-  installZshrc,
+  existingRcFiles,
   settingsPath,
   uninstallHooks,
   uninstallLaunchers,
-  uninstallZshrc,
+  uninstallShellPath,
 } from './features/hooks/installer.ts'
+import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
+import { DeviceRegistry, describeDevices } from './features/push/devices.ts'
+import { LaunchdService } from './features/service/launchd.ts'
+import type { ServiceManager } from './features/service/service-manager.ts'
+import { SystemdUserService } from './features/service/systemd.ts'
+import { colorEnabled, createPaint } from './features/setup/banner.ts'
 import {
-  installAppBundle,
-  installService,
-  LAUNCHD_LABEL,
-  serviceStatus,
-  uninstallService,
-} from './features/service/launchd.ts'
-import { execaExecutor } from './infra/exec.ts'
+  displayPaths,
+  type InstallOptions,
+  installAll,
+  installServiceFromCli,
+  userRcFiles,
+} from './features/setup/install.ts'
+import { tildify } from './features/setup/profiles.ts'
+import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
+import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
+import { WslHost } from './features/wsl/host.ts'
+import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
+import {
+  currentWsl,
+  PLATFORM_NAMES,
+  type Platform,
+  resolvePlatform,
+  UnsupportedPlatformError,
+} from './infra/platform.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
 
-function tokenStore(): TokenStore {
-  return process.env.CLAUDE_REMOTE_TOKEN_STORE === 'file'
-    ? new FileTokenStore()
-    : new KeychainTokenStore(execaExecutor)
+/** Language of every text below: config `language`, else the system one (read at startup). */
+let m: Messages = messagesFor(configuredLocaleSync())
+
+/** Fails before any work on systems without adapters (secrets, service, shell). */
+function currentPlatform(): Platform {
+  try {
+    return resolvePlatform()
+  } catch (error) {
+    if (!(error instanceof UnsupportedPlatformError)) throw error
+    console.error(`✗ ${m.cli.unsupportedPlatform(error.platform, Object.values(PLATFORM_NAMES).join(', '))}`)
+    if (error.platform === 'win32') console.error(`  ${m.wsl.windowsHint}`)
+    process.exit(1)
+  }
+}
+const platform = currentPlatform()
+/** Linux inside WSL2: extra steps for systemd, networking and the Windows logon task. */
+const wsl = currentWsl(platform)
+const wslHost = wsl ? new WslHost(execaExecutor, { wsl }) : undefined
+
+/** launchd on macOS, systemd user unit on Linux. */
+function serviceManager(): ServiceManager {
+  return platform === 'darwin'
+    ? new LaunchdService(execaExecutor, { home: homedir(), appDir: paths.app() })
+    : new SystemdUserService(execaExecutor, { home: homedir(), user: userInfo().username })
+}
+
+let selectedStore: Promise<SelectedTokenStore> | undefined
+
+/** Keychain (macOS), Secret Service or 0600 file (Linux); `CLAUDE_REMOTE_TOKEN_STORE` forces one. */
+function selectStore(): Promise<SelectedTokenStore> {
+  selectedStore ??= selectTokenStore({
+    platform,
+    exec: execaExecutor,
+    forced: process.env.CLAUDE_REMOTE_TOKEN_STORE,
+  })
+  return selectedStore
+}
+
+async function tokenStore(): Promise<TokenStore> {
+  return (await selectStore()).store
+}
+
+function tokenStoreLabel(kind: TokenStoreKind): string {
+  const names = m.cli.doctor.tokenStores
+  if (kind === 'keychain') return names.keychain
+  if (kind === 'secret-tool') return names.secretTool
+  return names.file(paths.tokenFile())
 }
 
 /** Absolute path of the bundled CLI (dist/cli.js), whether running from source or from dist. */
+function printPairing(host: string, port: number, token: string): void {
+  const url = pairingUrl(host, port, token)
+  qrcode.generate(url, { small: true })
+  console.log(`\n${url}\n`)
+  console.log(m.cli.pair.scan)
+}
+
+function installOptions(): InstallOptions {
+  return {
+    exec: execaExecutor,
+    cliPath: builtCliPath(),
+    nodePath: process.execPath,
+    platform,
+    rcFiles: userRcFiles(platform),
+  }
+}
+
 function builtCliPath(): string | null {
   const path = fileURLToPath(
     new URL(import.meta.url.endsWith('.ts') ? '../dist/cli.js' : './cli.js', import.meta.url),
@@ -76,22 +152,26 @@ async function notifyDaemon(path: string): Promise<boolean> {
 
 const program = new Command()
   .name('claude-remote')
-  .description('Daemon do Claude Remote: controla sessões do Claude Code no tmux pelo celular')
-  .version(DAEMON_VERSION)
+  .description(m.cli.description)
+  .version(DAEMON_VERSION, '-V, --version', m.cli.version)
+  .helpOption('-h, --help', m.cli.help)
+  .helpCommand('help [command]', m.cli.help)
 
 program
   .command('start')
-  .description('inicia o daemon')
-  .option('--dev', 'escuta em 127.0.0.1 em vez do Tailscale')
-  .option('--host <host>', 'endereço de escuta do WebSocket')
-  .option('--wait-tailscale', 'aguarda a interface do Tailscale em vez de falhar (usado pelo launchd)')
+  .description(m.cli.start.description)
+  .option('--dev', m.cli.start.dev)
+  .option('--host <host>', m.cli.start.host)
+  .option('--wait-tailscale', m.cli.start.waitTailscale)
   .action(async (opts: { dev?: boolean; host?: string; waitTailscale?: boolean }) => {
     const logger = createLogger({ pretty: process.stdout.isTTY })
     try {
+      const { kind, store } = await selectStore()
+      logger.info({ platform, tokenStore: kind }, 'token store selected')
       const daemon = await startDaemon({
         logger,
         exec: execaExecutor,
-        tokenStore: tokenStore(),
+        tokenStore: store,
         dev: opts.dev,
         host: opts.host,
         waitForTailscale: opts.waitTailscale,
@@ -111,52 +191,120 @@ program
 
 program
   .command('pair')
-  .description('mostra o QR code de pareamento (endereço + token)')
-  .option('--dev', 'usa 127.0.0.1')
-  .option('--host <host>', 'endereço a anunciar no QR')
+  .description(m.cli.pair.description)
+  .option('--dev', m.cli.pair.dev)
+  .option('--host <host>', m.cli.pair.host)
   .action(async (opts: { dev?: boolean; host?: string }) => {
     const logger = createLogger({ level: 'silent' })
     const config = await loadConfig(logger)
-    const token = await ensureToken(tokenStore())
+    const token = await ensureToken(await tokenStore())
     let host: string
     try {
       host = resolveWsHost(opts)
-    } catch (error) {
-      console.error(`✗ ${(error as Error).message}`)
-      console.error(
-        '  Para testar no simulador deste Mac: `claude-remote start --dev` e `claude-remote pair --dev`.',
-      )
+    } catch {
+      // resolveWsHost only fails when there is no Tailscale interface.
+      console.error(`✗ ${m.cli.pair.tailscaleNotFound}`)
+      console.error(`  ${m.cli.pair.simulatorHint(config.wsPort)}`)
       process.exit(1)
     }
-    const url = pairingUrl(host, config.wsPort, token)
-    qrcode.generate(url, { small: true })
-    console.log(`\n${url}\n`)
-    console.log('Escaneie com o app Claude Remote. Não compartilhe este código.')
+    printPairing(host, config.wsPort, token)
+  })
+
+program
+  .command('setup')
+  .description(m.cli.setup.description)
+  .option('-y, --yes', m.cli.setup.yes)
+  .option('--no-service', m.cli.setup.noService)
+  .option('--lang <code>', m.cli.setup.lang(LOCALES.join(', ')), (value: string) => {
+    const parsed = LocaleSchema.safeParse(value)
+    if (!parsed.success) throw new InvalidArgumentError(m.cli.setup.invalidLang(value, LOCALES.join(', ')))
+    return parsed.data
+  })
+  .action(async (opts: { yes?: boolean; service: boolean; lang?: Locale }) => {
+    const interactive = !opts.yes && Boolean(process.stdin.isTTY)
+    try {
+      await runSetupWizard({
+        ...installOptions(),
+        paint: createPaint(colorEnabled()),
+        version: DAEMON_VERSION,
+        columns: process.stdout.columns ?? 80,
+        interactive,
+        service: opts.service,
+        lang: opts.lang,
+        onLocale: (locale) => {
+          m = messagesFor(locale)
+        },
+        serviceManager: serviceManager(),
+        wsl: wslHost,
+        installService: async (service) => {
+          const cliPath = builtCliPath()
+          if (!cliPath) throw new SetupAborted(m.cli.buildMissing)
+          return installServiceFromCli({ ...installOptions(), cliPath, service })
+        },
+        tailscaleAddress: () => findTailscaleAddress(),
+        pair: async (host) => {
+          const config = await loadConfig(createLogger({ level: 'silent' }))
+          printPairing(host, config.wsPort, await ensureToken(await tokenStore()))
+        },
+        runClaude: (configDir) => {
+          // Like the launcher: ~/.claude is the default and must not be passed as CLAUDE_CONFIG_DIR.
+          const { CLAUDE_CONFIG_DIR: _, ...env } = process.env
+          if (!isDefaultConfigDir(configDir)) env.CLAUDE_CONFIG_DIR = configDir
+          return runInteractive('claude', [], { cwd: homedir(), env })
+        },
+      })
+    } catch (error) {
+      // Ctrl+C inside a prompt
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        console.log(`\n${m.cli.setup.interrupted}`)
+        process.exit(130)
+      }
+      if (error instanceof SetupAborted) {
+        console.log(`\n${error.message}`)
+        process.exit(1)
+      }
+      throw error
+    }
   })
 
 program
   .command('rotate-token')
-  .description('gera um novo token e derruba as conexões existentes')
+  .description(m.cli.rotateToken.description)
   .action(async () => {
-    await tokenStore().set(generateToken())
+    await (await tokenStore()).set(generateToken())
     const notified = await notifyDaemon('/admin/reload-token')
-    console.log(notified ? 'Token trocado; conexões encerradas.' : 'Token trocado (daemon não está rodando).')
-    console.log('Rode `claude-remote pair` para parear de novo.')
+    console.log(notified ? m.cli.rotateToken.rotated : m.cli.rotateToken.rotatedOffline)
+    console.log(m.cli.rotateToken.pairAgain)
   })
 
 program
   .command('doctor')
-  .description('verifica dependências e configuração')
+  .description(m.cli.doctor.description)
   .action(async () => {
+    const d = m.cli.doctor
     const logger = createLogger({ level: 'silent' })
     const check = (ok: boolean, label: string, hint = '') =>
       console.log(`${ok ? '✓' : '✗'} ${label}${!ok && hint ? ` — ${hint}` : ''}`)
-    for (const bin of ['tmux', 'git', 'rg', 'claude']) {
+    // zsh runs the launchers (not installed by default on most Linux distributions).
+    for (const bin of ['tmux', 'git', 'rg', 'zsh', 'claude']) {
       const result = await execaExecutor('which', [bin])
-      check(result.exitCode === 0, bin, 'não encontrado no PATH')
+      check(result.exitCode === 0, bin, d.notOnPath)
     }
     const ip = findTailscaleAddress()
-    check(ip !== null, `Tailscale ${ip ?? ''}`.trim(), 'interface 100.x não encontrada')
+    if (wslHost) {
+      const w = m.wsl
+      check(true, w.detected(wslHost.distro ?? w.unknownDistro))
+      const mode = await wslHost.networkingMode()
+      console.log(`· ${w.networking(mode ?? w.networkingUnknown)}`)
+      const source = wslHost.tailscale(mode)
+      const label = source ? `Tailscale ${source.address} (${w.source[source.source]})` : 'Tailscale'
+      check(source !== null, label, w.tailscaleHint)
+      const systemd = wslHost.systemdRunning()
+      check(systemd, w.systemd, (await wslHost.systemdConfigured()) ? w.systemdPendingHint : w.systemdHint)
+      check(await wslHost.logonTask.exists(), w.logonTask, w.logonTaskHint)
+    } else {
+      check(ip !== null, `Tailscale ${ip ?? ''}`.trim(), d.tailscaleMissing)
+    }
     try {
       const config = await loadConfig(logger)
       check(true, `config ${paths.config()}`)
@@ -165,139 +313,229 @@ program
           '-d',
           profile.configDir.replace(/^~/, process.env.HOME ?? '~'),
         ])
-        check(result.exitCode === 0, `perfil ${profile.id} (${profile.configDir})`, 'diretório não existe')
+        check(result.exitCode === 0, d.profile(profile.id, profile.configDir), d.dirMissing)
       }
       try {
         const response = await fetch(`http://127.0.0.1:${config.hookPort}/health`, {
           headers: { [SECRET_HEADER]: await ensureHookSecret() },
         })
-        check(response.ok, 'daemon rodando')
+        check(response.ok, d.daemonRunning)
       } catch {
-        check(false, 'daemon rodando', 'rode `claude-remote start`')
+        check(false, d.daemonRunning, d.runStart)
       }
     } catch (error) {
       check(false, 'config', (error as Error).message)
     }
-    check((await tokenStore().get()) !== null, 'token no Keychain', 'rode `claude-remote pair`')
+    const { kind, store } = await selectStore()
+    const token = await store.get().catch((error: Error) => {
+      check(false, d.token(tokenStoreLabel(kind)), error.message)
+      return undefined
+    })
+    if (token !== undefined) check(token !== null, d.token(tokenStoreLabel(kind)), d.runPair)
+    const manager = serviceManager()
+    const status = (await manager.available()) ? await manager.status() : null
+    check(
+      status?.loaded ?? false,
+      d.service(manager.name, status?.loaded ? status.detail : m.cli.service.notLoaded),
+      d.serviceHint,
+    )
+    if (status?.loaded && manager.linger) check(await manager.linger.enabled(), d.linger, d.lingerHint)
+    const devices = new DeviceRegistry(paths.devices())
+    await devices.load()
+    const platforms = describeDevices(devices.devices())
+    // Informational: push is optional (it needs the Firebase service account and app permission).
+    console.log(`· ${platforms ? d.devices(platforms) : `${d.noDevices} (${d.noDevicesHint})`}`)
   })
 
 program
   .command('install')
-  .description('instala launchers (claudin, drclaude...), PATH no ~/.zshrc e hooks nos perfis')
+  .description(m.cli.install.description)
   .action(async () => {
     const logger = createLogger({ level: 'silent' })
     const config = await loadConfig(logger)
     const profiles = await resolveProfiles(config, createLogger({ level: 'warn' }))
-    const secret = await ensureHookSecret()
-    const which = await execaExecutor('which', ['tmux'])
-    const tmuxBin = which.exitCode === 0 ? which.stdout.trim() : 'tmux'
-    const launchers = await installLaunchers(profiles, {
-      binDir: paths.bin(),
-      tmuxSession: config.tmuxSession,
-      tmuxBin,
-    })
-    for (const path of launchers) console.log(`✓ launcher ${path}`)
-    const built = builtCliPath()
-    if (built) {
-      const shim = join(paths.bin(), 'claude-remote')
-      await writeFile(shim, `#!/bin/sh\nexec "${process.execPath}" "${built}" "$@"\n`, { mode: 0o755 })
-      console.log(`✓ atalho ${shim}`)
-    }
-    console.log(`${(await installZshrc(paths.bin())) ? '✓' : '·'} PATH no ~/.zshrc`)
-    for (const profile of profiles) {
-      const changed = await installHooks(profile, {
-        port: config.hookPort,
-        secret,
-        permissionTimeoutSec: config.hookPermissionTimeoutSec,
-      })
-      console.log(`${changed ? '✓' : '·'} hooks em ${settingsPath(profile)}`)
-    }
-    console.log('\nAbra um novo terminal (ou `source ~/.zshrc`) e use os launchers no lugar do `claude`.')
+    const lines = await installAll(config, profiles, installOptions(), m.install)
+    for (const line of lines) console.log(`${line.status === 'done' ? '✓' : '·'} ${line.text}`)
+    console.log(`\n${m.cli.install.openTerminal(displayPaths(userRcFiles(platform).slice(0, 1)))}`)
   })
 
 program
   .command('uninstall')
-  .description('remove launchers, bloco do ~/.zshrc e hooks instalados')
+  .description(m.cli.uninstall.description)
   .action(async () => {
     const logger = createLogger({ level: 'silent' })
     const config = await loadConfig(logger)
     const profiles = await resolveProfiles(config, logger)
     await uninstallLaunchers(config.profiles, paths.bin())
-    console.log(`${(await uninstallZshrc()) ? '✓' : '·'} bloco removido do ~/.zshrc`)
+    const rcFiles = existingRcFiles(homedir(), existsSync)
+    const removed = await uninstallShellPath(rcFiles)
+    console.log(
+      `${removed.length > 0 ? '✓' : '·'} ${m.cli.uninstall.shellRemoved(displayPaths(removed.length > 0 ? removed : rcFiles))}`,
+    )
     for (const profile of profiles) {
       console.log(
-        `${(await uninstallHooks(profile)) ? '✓' : '·'} hooks removidos de ${settingsPath(profile)}`,
+        `${(await uninstallHooks(profile)) ? '✓' : '·'} ${m.cli.uninstall.hooksRemoved(settingsPath(profile))}`,
       )
     }
   })
 
-const service = program.command('service').description('daemon como serviço do macOS (launchd)')
+const service = program.command('service').description(m.cli.service.description)
 service
   .command('install')
-  .description('instala e carrega o LaunchAgent (inicia com o login e reinicia se cair)')
+  .description(m.cli.service.install)
   .action(async () => {
     const cliPath = builtCliPath()
     if (!cliPath) {
-      console.error('Build não encontrado. Rode `pnpm --filter @claude-remote/daemon build`.')
+      console.error(m.cli.buildMissing)
       process.exit(1)
     }
-    const iconPng = fileURLToPath(new URL('../../mobile/assets/icon.png', pathToFileURL(cliPath)))
-    const executable = await installAppBundle(execaExecutor, {
-      appDir: paths.app(),
-      nodePath: process.execPath,
-      cliPath,
-      iconPng: existsSync(iconPng) ? iconPng : undefined,
-    })
-    const path = await installService(execaExecutor, {
-      executable,
-      logsDir: paths.logs(),
-      path: process.env.PATH ?? '/usr/bin:/bin',
-      home: homedir(),
-    })
-    console.log(`✓ LaunchAgent carregado: ${path}`)
-    console.log(`  app: ${paths.app()}`)
-    if (!findTailscaleAddress())
-      console.log('  ⚠ Tailscale não encontrado: o daemon fica aguardando a interface 100.x')
-    console.log(`  logs em ${paths.logs()}`)
+    const manager = serviceManager()
+    if (wslHost && !wslHost.systemdRunning()) {
+      console.error(`✗ ${m.wsl.serviceNoSystemd}`)
+      process.exit(1)
+    }
+    if (!(await manager.available())) {
+      console.error(`✗ ${m.cli.service.unavailable}`)
+      process.exit(1)
+    }
+    const path = await installServiceFromCli({ ...installOptions(), cliPath, service: manager })
+    console.log(`✓ ${m.cli.service.loaded(path)}`)
+    if (manager.kind === 'launchd') console.log(`  ${m.cli.service.app(paths.app())}`)
+    if (manager.linger && !(await manager.linger.enabled())) console.log(`  ${m.cli.service.lingerHint}`)
+    if (wslHost && !(await wslHost.logonTask.exists())) {
+      console.log(`  ${m.wsl.logonTaskMissing}: ${wslHost.logonTask.command}`)
+    }
+    if (!findTailscaleAddress()) console.log(`  ${m.cli.service.tailscaleWaiting}`)
+    console.log(`  ${m.cli.service.logs(paths.logs())}`)
   })
 service
   .command('uninstall')
-  .description('descarrega e remove o LaunchAgent')
+  .description(m.cli.service.uninstall)
   .action(async () => {
-    await uninstallService(execaExecutor, homedir(), paths.app())
-    console.log('✓ LaunchAgent removido')
+    await serviceManager().uninstall()
+    console.log(`✓ ${m.cli.service.removed}`)
+    if (wslHost && (await wslHost.logonTask.remove())) console.log(`✓ ${m.wsl.logonTaskRemoved}`)
   })
 service
   .command('status')
-  .description('mostra se o serviço está carregado')
+  .description(m.cli.service.status)
   .action(async () => {
-    const status = await serviceStatus(execaExecutor)
-    console.log(`${status.loaded ? '✓' : '✗'} ${LAUNCHD_LABEL}: ${status.detail}`)
+    const manager = serviceManager()
+    const status = await manager.status()
+    const detail = status.loaded ? status.detail : m.cli.service.notLoaded
+    console.log(`${status.loaded ? '✓' : '✗'} ${manager.name}: ${detail}`)
+    if (status.loaded && manager.linger) {
+      const lingering = await manager.linger.enabled()
+      console.log(`${lingering ? '✓' : '·'} ${m.cli.service.linger(lingering)}`)
+    }
+    if (wslHost) {
+      const task = await wslHost.logonTask.exists()
+      console.log(`${task ? '✓' : '·'} ${task ? m.wsl.logonTask : m.wsl.logonTaskMissing}`)
+    }
   })
 
-const rules = program.command('rules').description('regras de "permitir sempre" criadas pelo app')
+program
+  .command('update')
+  .description(m.cli.update.description)
+  .option('--ref <ref>', m.cli.update.ref, process.env.CLAUDE_REMOTE_REF || 'main')
+  .option('--force', m.cli.update.force)
+  // Second half, run by `install.sh --update` with the freshly built CLI.
+  .addOption(new Option('--finish').hideHelp())
+  .addOption(new Option('--from <version>').hideHelp())
+  .action(async (options: { ref: string; force?: boolean; finish?: boolean; from?: string }) => {
+    if (options.finish) {
+      await finishUpdate(options.from)
+      return
+    }
+    const u = m.cli.update
+    const source = updateSource(builtCliPath(), installerSourceDir())
+    if (!source.ok) {
+      console.error(
+        `✗ ${source.reason === 'not-built' ? m.cli.buildMissing : u.notInstaller(tildify(source.root))}`,
+      )
+      process.exit(1)
+    }
+    console.log(`▸ ${u.checking(options.ref)}`)
+    const updater = new SourceUpdater(execaExecutor, source.root)
+    const result = await updater.fetch(options.ref)
+    if (result.status === 'dirty' || result.status === 'failed') {
+      console.error(
+        `✗ ${result.status === 'dirty' ? u.dirty(tildify(source.root)) : u.fetchFailed(result.error)}`,
+      )
+      process.exit(1)
+    }
+    if (result.status === 'current' && !options.force) {
+      console.log(`✓ ${u.upToDate(DAEMON_VERSION, result.commit.slice(0, 7))}`)
+      return
+    }
+    if (result.status === 'available') {
+      console.log(`  ${u.available(result.version ?? '?', result.commit.slice(0, 7))}`)
+      if (!(await updater.checkout())) {
+        console.error(`✗ ${u.checkoutFailed}`)
+        process.exit(1)
+      }
+    }
+    // The new install.sh checks the tools, builds and calls `update --finish` with the new CLI.
+    const code = await runInteractive(
+      'bash',
+      [`${source.root}/install.sh`, '--update', '--ref', options.ref],
+      {
+        env: {
+          ...process.env,
+          CLAUDE_REMOTE_SRC: source.root,
+          CLAUDE_REMOTE_LANG: configuredLocaleSync(),
+          CLAUDE_REMOTE_UPDATE_FROM: DAEMON_VERSION,
+        },
+      },
+    )
+    if (code !== 0) {
+      console.error(`✗ ${u.failed}`)
+      process.exit(code)
+    }
+  })
+
+/** Refreshes what the new version installs (idempotent) and restarts the service when it is loaded. */
+async function finishUpdate(from: string | undefined): Promise<void> {
+  const u = m.cli.update
+  const logger = createLogger({ level: 'silent' })
+  const config = await loadConfig(logger)
+  const profiles = await resolveProfiles(config, logger)
+  const lines = await installAll(config, profiles, installOptions(), m.install)
+  for (const line of lines) if (line.status === 'done') console.log(`✓ ${line.text}`)
+  const manager = serviceManager()
+  const cliPath = builtCliPath()
+  if (cliPath && (await manager.status()).loaded) {
+    await installServiceFromCli({ ...installOptions(), cliPath, service: manager })
+    console.log(`✓ ${u.serviceRestarted}`)
+  } else {
+    console.log(`· ${u.serviceNotInstalled}`)
+  }
+  console.log(
+    `\n✓ ${from && from !== DAEMON_VERSION ? u.updated(from, DAEMON_VERSION) : u.rebuilt(DAEMON_VERSION)}`,
+  )
+}
+
+const rules = program.command('rules').description(m.cli.rules.description)
 rules
   .command('list')
-  .description('lista as regras criadas pelo app')
+  .description(m.cli.rules.list)
   .action(async () => {
     const entries = await new RulesLog(paths.rulesLog()).list()
-    if (entries.length === 0) console.log('Nenhuma regra criada pelo app.')
+    if (entries.length === 0) console.log(m.cli.rules.empty)
     for (const e of entries)
       console.log(`${e.id}  ${e.createdAt}  ${e.scope.padEnd(7)}  ${e.rule}  →  ${e.file}`)
   })
 rules
   .command('undo <id>')
-  .description('remove a regra do arquivo em que foi gravada')
+  .description(m.cli.rules.undo)
   .action(async (id: string) => {
     const result = await new RulesLog(paths.rulesLog()).undo(id)
     if (!result) {
-      console.error(`Regra ${id} não encontrada.`)
+      console.error(m.cli.rules.notFound(id))
       process.exit(1)
     }
     console.log(
-      result.removed
-        ? `Regra ${result.entry.rule} removida de ${result.entry.file}.`
-        : 'A regra já não estava no arquivo.',
+      result.removed ? m.cli.rules.removed(result.entry.rule, result.entry.file) : m.cli.rules.alreadyGone,
     )
   })
 

@@ -1,14 +1,14 @@
-## 1. Projeto
+## 1. Project
 
-- [x] 1.1 Criar app Expo com Expo Router, TypeScript estrito, `expo-dev-client` e config do monorepo no Metro; verificar com `pnpm --filter mobile typecheck` e `npx expo export --platform ios`
-- [x] 1.2 Criar tokens de tema, fontes JetBrains Mono e componentes base de UI (`Screen`, `Text`, `Button`, `Badge`, `Card`, `IconButton`); verificar com typecheck
+- [x] 1.1 Create the Expo app with Expo Router, strict TypeScript, `expo-dev-client` and the monorepo config in Metro; verify with `pnpm --filter mobile typecheck` and `npx expo export --platform ios`
+- [x] 1.2 Create theme tokens, JetBrains Mono fonts and base UI components (`Screen`, `Text`, `Button`, `Badge`, `Card`, `IconButton`); verify with typecheck
 
-## 2. Ícone
+## 2. Icon
 
-- [x] 2.1 Desenhar `icon.svg` e script `pnpm icons` que gera `icon.png`, `splash.png` e `adaptive-icon.png`; verificar visualmente o PNG gerado
+- [x] 2.1 Draw `icon.svg` and a `pnpm icons` script that generates `icon.png`, `splash.png` and `adaptive-icon.png`; verify the generated PNG visually
 
-## 3. Conexão
+## 3. Connection
 
-- [x] 3.1 Implementar `DaemonClient` com handshake, requests com timeout, backoff e eventos; verificar com testes Vitest usando WebSocket falso
-- [x] 3.2 Implementar store de conexão (Zustand), provider React e banner de status; verificar com typecheck e teste do store
-- [x] 3.3 Configurar layout raiz com redirecionamento para pareamento sem credenciais; verificar com `expo export`
+- [x] 3.1 Implement `DaemonClient` with handshake, requests with timeout, backoff and events; verify with Vitest tests using a fake WebSocket
+- [x] 3.2 Implement the connection store (Zustand), React provider and status banner; verify with typecheck and a store test
+- [x] 3.3 Set up the root layout with a redirect to pairing when there are no credentials; verify with `expo export`

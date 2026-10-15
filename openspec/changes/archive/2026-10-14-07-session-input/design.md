@@ -1,20 +1,20 @@
 ## Context
 
-O Claude Code entende bracketed paste; `tmux paste-buffer -p` emite as sequências de bracketed paste quando a aplicação as habilitou.
+Claude Code understands bracketed paste; `tmux paste-buffer -p` emits the bracketed paste sequences when the application has enabled them.
 
 ## Goals / Non-Goals
 
-**Goals:** latência < 300 ms do toque ao painel.
+**Goals:** latency < 300 ms from tap to pane.
 
-**Non-Goals:** detectar se a TUI está num diálogo (o app mostra o terminal bruto para isso, change 16).
+**Non-Goals:** detecting whether the TUI is in a dialog (the app shows the raw terminal for that, change 16).
 
 ## Decisions
 
-- **Buffer nomeado por sessão** (`-b cr-<sessionId>`) via `load-buffer -` lendo de stdin (evita escapar o texto na linha de comando), `paste-buffer -p -d -b ... -t <pane>`, pequena espera (80 ms) e `send-keys Enter`. A espera dá tempo da TUI processar o fim do paste antes do Enter.
-- **Fila por sessão** (promessa encadeada) para que entradas consecutivas não se intercalem.
-- **Lista permitida de teclas** no módulo (`ALLOWED_KEYS`).
-- **Fallback** (risco do PRD): opção de configuração `inputStrategy: "paste" | "type"`; no modo `type` usa `send-keys -l` + `Escape` antes do Enter.
+- **Named buffer per session** (`-b cr-<sessionId>`) via `load-buffer -` reading from stdin (avoids escaping the text on the command line), `paste-buffer -p -d -b ... -t <pane>`, a short wait (80 ms) and `send-keys Enter`. The wait gives the TUI time to process the end of the paste before the Enter.
+- **Per-session queue** (chained promise) so consecutive inputs do not interleave.
+- **Key allowlist** in the module (`ALLOWED_KEYS`).
+- **Fallback** (PRD risk): configuration option `inputStrategy: "paste" | "type"`; `type` mode uses `send-keys -l` + `Escape` before the Enter.
 
 ## Risks / Trade-offs
 
-- [Enter chega antes do fim do paste] → espera configurável (`pasteEnterDelayMs`).
+- [Enter arrives before the paste ends] → configurable wait (`pasteEnterDelayMs`).

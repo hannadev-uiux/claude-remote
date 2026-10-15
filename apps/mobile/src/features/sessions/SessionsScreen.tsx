@@ -1,9 +1,10 @@
 import { FlashList } from '@shopify/flash-list'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { colors, space } from '@/core/theme'
-import { Button, ConnectionBanner, EmptyState, Screen, Text } from '@/ui'
+import { Button, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
 import { NestedSubagents } from '../subagents/SubagentList'
 import { ProfileHeader } from './components/ProfileHeader'
 import { SessionRow } from './components/SessionRow'
@@ -11,6 +12,7 @@ import { flattenSections, groupSessions, type SessionListItem } from './grouping
 import { refreshSessions, useSessionsStore } from './store'
 
 export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: Record<string, number> }) {
+  const { t } = useTranslation()
   const client = useDaemonClient()
   const profiles = useConnectionStore(selectProfiles)
   const sessions = useSessionsStore((s) => s.sessions)
@@ -30,6 +32,7 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
   return (
     <Screen>
       <ConnectionBanner />
+      <DaemonUpdateBanner />
       {profiles.length > 1 ? (
         <ScrollView
           horizontal
@@ -38,7 +41,7 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
           contentContainerStyle={styles.filters}
         >
           <Button
-            label="todos"
+            label={t('sessions.all')}
             compact
             variant={filter === null ? 'primary' : 'secondary'}
             onPress={() => setFilter(null)}
@@ -76,14 +79,17 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
         }
         ListEmptyComponent={
           loaded ? (
-            <EmptyState title="Nenhuma sessão">
-              <Text color="textMuted">Inicie uma sessão no Mac usando os launchers:</Text>
+            <EmptyState title={t('sessions.emptyTitle')}>
+              <Text color="textMuted">{t('sessions.emptyBody')}</Text>
               <View style={styles.code}>
-                <Text color="accent">$ claudin</Text>
-                <Text color="accent">$ drclaude</Text>
+                {(profiles.length > 0 ? profiles.map((p) => p.id) : ['claudin']).map((alias) => (
+                  <Text key={alias} color="accent">
+                    $ {alias}
+                  </Text>
+                ))}
               </View>
               <Text size="sm" color="textDim">
-                Sessões abertas com o `claude` puro aparecem como somente leitura.
+                {t('sessions.emptyHint')}
               </Text>
             </EmptyState>
           ) : null

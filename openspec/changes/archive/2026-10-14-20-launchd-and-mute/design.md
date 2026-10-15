@@ -1,6 +1,6 @@
 ## Decisions
 
-- **Plist gerado** com `ProgramArguments` = `[process.execPath, <daemon dist>/cli.js, "start"]`, `EnvironmentVariables.PATH` incluindo `/opt/homebrew/bin` (tmux, rg, git). Carga com `launchctl bootstrap gui/$UID` e `bootout` na remoção.
-- **Build do daemon** com `tsup` para `dist/` (o serviço não depende de `tsx`).
-- **Mute** em `~/.claude-remote/mute.json`, enviado em `auth.ok` (`muted: { profiles, sessions }`), checado pelo `PushService`.
-- **tmux reiniciado**: o polling de painéis (change 05) já cobre; erro "no server running" tratado como lista vazia.
+- **Generated plist** with `ProgramArguments` = `[process.execPath, <daemon dist>/cli.js, "start"]`, `EnvironmentVariables.PATH` including `/opt/homebrew/bin` (tmux, rg, git). Loaded with `launchctl bootstrap gui/$UID` and `bootout` on removal.
+- **Daemon build** with `tsup` into `dist/` (the service does not depend on `tsx`).
+- **Mute** in `~/.claude-remote/mute.json`, sent in `auth.ok` (`muted: { profiles, sessions }`), checked by `PushService`.
+- **tmux restarted**: pane polling (change 05) already covers it; the "no server running" error is treated as an empty list.

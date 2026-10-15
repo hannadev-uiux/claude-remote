@@ -1,48 +1,48 @@
 ## Purpose
 
-Permite aprovar ou negar pelo celular os pedidos de permissão das sessões, inclusive criando regras de "permitir sempre".
+Allows approving or denying the sessions' permission requests from the phone, including creating "always allow" rules.
 
 ## ADDED Requirements
 
-### Requirement: Intermediação do pedido
-Ao receber `PermissionRequest`, o daemon SHALL criar um pedido com `requestId`, enviar `permission.request { requestId, sessionId, tool, input, suggestedRule, expiresAt }` aos clientes e manter a requisição do hook aberta até a resposta ou o tempo limite.
+### Requirement: Request brokering
+On receiving `PermissionRequest`, the daemon SHALL create a request with a `requestId`, send `permission.request { requestId, sessionId, tool, input, suggestedRule, expiresAt }` to the clients and keep the hook request open until the response or the timeout.
 
-#### Scenario: Aprovação
-- **WHEN** o app responde `permission.respond` com `allow`
-- **THEN** o hook recebe `{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}` e a ferramenta executa
+#### Scenario: Approval
+- **WHEN** the app replies `permission.respond` with `allow`
+- **THEN** the hook receives `{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}` and the tool runs
 
-#### Scenario: Negação
-- **WHEN** o app responde `deny`
-- **THEN** o hook recebe `behavior: "deny"` com mensagem "Negado pelo Claude Remote"
+#### Scenario: Denial
+- **WHEN** the app replies `deny`
+- **THEN** the hook receives `behavior: "deny"` with the message "Denied by Claude Remote"
 
-### Requirement: Tempo limite sem decisão
-Se nenhuma resposta chegar antes do limite configurado (menor que o timeout do hook), o daemon SHALL responder ao hook sem decisão, e o pedido MUST ser marcado como expirado para os clientes.
+### Requirement: Timeout without decision
+If no response arrives before the configured limit (lower than the hook timeout), the daemon SHALL answer the hook without a decision, and the request MUST be marked as expired for the clients.
 
-#### Scenario: Celular não responde
-- **WHEN** o tempo limite expira
-- **THEN** o diálogo de permissão aparece normalmente na TUI do Mac e o app recebe `permission.resolved` com `expired`
+#### Scenario: Phone does not respond
+- **WHEN** the timeout expires
+- **THEN** the permission dialog appears normally in the Mac's TUI and the app receives `permission.resolved` with `expired`
 
-### Requirement: Resposta única
-Apenas a primeira resposta para um `requestId` SHALL valer; as seguintes MUST receber `error` `already_resolved`.
+### Requirement: Single response
+Only the first response for a `requestId` SHALL count; subsequent ones MUST receive `error` `already_resolved`.
 
-#### Scenario: Duas respostas
-- **WHEN** o app responde duas vezes o mesmo pedido
-- **THEN** a segunda recebe `already_resolved`
+#### Scenario: Two responses
+- **WHEN** the app answers the same request twice
+- **THEN** the second one receives `already_resolved`
 
-### Requirement: Permitir sempre
-Com `always { rule, scope }`, o daemon SHALL aprovar o pedido e persistir a regra em `permissions.allow`: escopo `profile` no `settings.json` do perfil; escopo `project` no `.claude/settings.local.json` do `cwd` da sessão. O restante do arquivo MUST ser preservado e a regra registrada no log do daemon.
+### Requirement: Always allow
+With `always { rule, scope }`, the daemon SHALL approve the request and persist the rule in `permissions.allow`: scope `profile` in the profile's `settings.json`; scope `project` in the `.claude/settings.local.json` of the session's `cwd`. The rest of the file MUST be preserved and the rule recorded in the daemon's log.
 
-#### Scenario: Regra de projeto
-- **WHEN** o app aprova com `always { rule: "Bash(pnpm test:*)", scope: "project" }`
-- **THEN** `.claude/settings.local.json` do projeto passa a conter a regra e o próximo `pnpm test` não pede permissão
+#### Scenario: Project rule
+- **WHEN** the app approves with `always { rule: "Bash(pnpm test:*)", scope: "project" }`
+- **THEN** the project's `.claude/settings.local.json` now contains the rule and the next `pnpm test` does not ask for permission
 
-#### Scenario: Desfazer
-- **WHEN** o usuário roda `claude-remote rules undo <id>`
-- **THEN** a regra é removida do arquivo em que foi gravada
+#### Scenario: Undo
+- **WHEN** the user runs `claude-remote rules undo <id>`
+- **THEN** the rule is removed from the file it was written to
 
-### Requirement: Pedido encerrado pela TUI
-Se a sessão continuar sem a resposta do app (respondida no Mac), o pedido SHALL ser marcado como resolvido para os clientes.
+### Requirement: Request closed by the TUI
+If the session continues without the app's response (answered on the Mac), the request SHALL be marked as resolved for the clients.
 
-#### Scenario: Aprovado no Mac
-- **WHEN** a requisição do hook é cancelada pelo Claude Code
-- **THEN** os clientes recebem `permission.resolved` com `cancelled`
+#### Scenario: Approved on the Mac
+- **WHEN** the hook request is cancelled by Claude Code
+- **THEN** the clients receive `permission.resolved` with `cancelled`

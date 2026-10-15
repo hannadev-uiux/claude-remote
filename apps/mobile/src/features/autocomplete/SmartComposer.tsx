@@ -1,10 +1,11 @@
 import { router } from 'expo-router'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TextInput } from 'react-native'
+import { useBackHandler } from '@/core/platform/use-back-handler'
 import { PromptComposer } from '../conversation/components/PromptComposer'
 import type { usePrompt } from '../conversation/use-prompt'
 import { SuggestionList } from './SuggestionList'
-import { applySuggestion, findTrigger, isInteractiveCommand } from './trigger'
+import { applySuggestion, findTrigger, isInteractiveCommand, triggerKey } from './trigger'
 import { useCommands, useSuggestions } from './use-suggestions'
 
 type Props = { sessionId: string; prompt: ReturnType<typeof usePrompt>; disabled: boolean }
@@ -14,10 +15,18 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
   const input = useRef<TextInput>(null)
   const [cursor, setCursor] = useState(0)
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>()
-  const trigger = useMemo(
+  // Token whose suggestions were closed with the back button.
+  const [dismissed, setDismissed] = useState<string | null>(null)
+  const found = useMemo(
     () => (disabled ? null : findTrigger(prompt.text, cursor)),
     [prompt.text, cursor, disabled],
   )
+  const trigger = found && triggerKey(found) !== dismissed ? found : null
+  // Leaving the token forgets the dismissal, so typing `@` there again shows suggestions.
+  useEffect(() => {
+    if (!found) setDismissed(null)
+  }, [found])
+  useBackHandler(trigger !== null, () => setDismissed(triggerKey(trigger)))
   const suggestions = useSuggestions(sessionId, trigger)
   const commands = useCommands(sessionId)
 

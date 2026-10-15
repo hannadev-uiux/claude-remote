@@ -1,3 +1,5 @@
+import { effectiveLocale } from '../../core/config.ts'
+import { messagesFor } from '../../core/i18n/index.ts'
 import { paths } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import { PermissionBroker } from './broker.ts'
@@ -9,6 +11,7 @@ export function registerPermissionsFeature(ctx: DaemonContext) {
     timeoutMs: ctx.config.permissionTimeoutSec * 1000,
     defaultScope: ctx.config.defaultRuleScope,
     profiles: ctx.profiles,
+    denyMessage: messagesFor(effectiveLocale(ctx.config)).claudeCode.denied,
     onRequested: (info) => ctx.bus.emit('permission.requested', info),
     onResolved: (info, outcome) => ctx.bus.emit('permission.resolved', { info, outcome }),
     onRuleCreated: (rule) => {

@@ -19,9 +19,10 @@ export type BrokerOptions = {
   onRuleCreated?: (rule: { rule: string; scope: RuleScope; file: string; sessionId: string }) => void
   onResolved?: (info: PermissionRequestInfo, outcome: PermissionOutcome) => void
   onRequested?: (info: PermissionRequestInfo) => void
+  /** Shown by Claude Code when the phone denies, in the configured language. */
+  denyMessage: string
 }
 
-export const DENY_MESSAGE = 'Negado pelo Claude Remote'
 const SCOPE_DESTINATION: Record<RuleScope, 'userSettings' | 'localSettings'> = {
   profile: 'userSettings',
   project: 'localSettings',
@@ -31,12 +32,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function buildHookOutput(decision: Decision): Record<string, unknown> {
+export function buildHookOutput(decision: Decision, denyMessage: string): Record<string, unknown> {
   if (decision.behavior === 'deny') {
     return {
       hookSpecificOutput: {
         hookEventName: 'PermissionRequest',
-        decision: { behavior: 'deny', message: DENY_MESSAGE },
+        decision: { behavior: 'deny', message: denyMessage },
       },
     }
   }
@@ -139,7 +140,7 @@ export class PermissionBroker {
           sessionId: info.sessionId,
         })
     }
-    return buildHookOutput(decision)
+    return buildHookOutput(decision, this.options.denyMessage)
   }
 
   respond(requestId: string, decision: Decision): void {

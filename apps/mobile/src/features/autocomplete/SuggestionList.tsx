@@ -1,16 +1,11 @@
 import type { CommandItem, FileItem } from '@claude-remote/protocol'
 import { File, Folder, Terminal } from 'lucide-react-native'
+import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { colors, space } from '@/core/theme'
 import { Text } from '@/ui'
+import { commandDescription } from './describe-command'
 import type { Suggestions } from './use-suggestions'
-
-const SOURCE_LABEL: Record<CommandItem['source'], string> = {
-  builtin: 'nativo',
-  profile: 'perfil',
-  project: 'projeto',
-  plugin: 'plugin',
-}
 
 type Props = {
   suggestions: Suggestions
@@ -19,6 +14,7 @@ type Props = {
 }
 
 export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props) {
+  const { t } = useTranslation()
   if (!suggestions) return null
   const empty = suggestions.items.length === 0
   return (
@@ -26,7 +22,7 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
       {suggestions.loading && empty ? <ActivityIndicator color={colors.accent} style={styles.pad} /> : null}
       {!suggestions.loading && empty ? (
         <Text size="xs" color="textDim" style={styles.pad}>
-          nenhuma sugestão
+          {t('autocomplete.empty')}
         </Text>
       ) : null}
       <ScrollView keyboardShouldPersistTaps="always" style={styles.list}>
@@ -58,14 +54,14 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
                   <Text size="sm" weight="medium">
                     /{item.name}
                   </Text>
-                  {item.description ? (
+                  {commandDescription(item, t) ? (
                     <Text size="xs" color="textMuted" numberOfLines={1}>
-                      {item.description}
+                      {commandDescription(item, t)}
                     </Text>
                   ) : null}
                 </View>
                 <Text size="xs" color="textDim">
-                  {SOURCE_LABEL[item.source]}
+                  {t(`autocomplete.source.${item.source}`)}
                 </Text>
               </Pressable>
             ))}

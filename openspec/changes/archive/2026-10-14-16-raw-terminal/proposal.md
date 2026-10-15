@@ -1,19 +1,19 @@
 ## Why
 
-Menus e diálogos da TUI não aparecem no transcript; sem ver o painel, o usuário fica cego quando algo inesperado acontece (D10, A8).
+TUI menus and dialogs do not show up in the transcript; without seeing the pane, the user is blind when something unexpected happens (D10, A8).
 
 ## What Changes
 
-- Daemon: `pane.subscribe { sessionId }` envia `pane.frame` com o conteúdo do painel (com cores ANSI) sempre que muda, em até 4 quadros por segundo.
-- App: aba "Terminal" na sessão com xterm.js numa WebView, mostrando o painel e com barra de teclas.
+- Daemon: `pane.subscribe { sessionId }` sends `pane.frame` with the pane content (with ANSI colors) whenever it changes, at most 4 frames per second.
+- App: "Terminal" tab in the session with xterm.js in a WebView, showing the pane, plus a key bar.
 
 ## Capabilities
 
 ### New Capabilities
-- `raw-terminal`: espelho do painel tmux no app.
+- `raw-terminal`: mirror of the tmux pane in the app.
 
 ### Modified Capabilities
 
 ## Impact
 
-Módulo `features/pane` no daemon; `src/features/terminal` no app; dependência `react-native-webview`, xterm.js embarcado como HTML.
+`features/pane` module in the daemon; `src/features/terminal` in the app; `react-native-webview` dependency, xterm.js embedded as HTML.

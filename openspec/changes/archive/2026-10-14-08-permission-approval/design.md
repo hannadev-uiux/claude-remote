@@ -1,20 +1,20 @@
 ## Context
 
-O `PermissionRequest` aceita `decision.updatedPermissions` com `addRules` e `destination` (`userSettings`, `localSettings` etc.), e traz `permission_suggestions`.
+`PermissionRequest` accepts `decision.updatedPermissions` with `addRules` and `destination` (`userSettings`, `localSettings` etc.), and carries `permission_suggestions`.
 
 ## Goals / Non-Goals
 
-**Goals:** nenhuma decisão tomada sem o usuário; regras exatamente as mostradas.
+**Goals:** no decision made without the user; rules exactly as shown.
 
-**Non-Goals:** editar `updatedInput`.
+**Non-Goals:** editing `updatedInput`.
 
 ## Decisions
 
-- **Gravação via `updatedPermissions`**: `scope: profile` → `destination: "userSettings"` (o Claude Code grava no `settings.json` do `CLAUDE_CONFIG_DIR` da sessão); `scope: project` → `"localSettings"`. Assim o próprio CLI aplica a regra na sessão atual e persiste preservando o arquivo. O daemon registra no `rules-log.jsonl` (id, regra, escopo, arquivo, data). `rules undo` remove a regra editando o arquivo (leitura, filtro, escrita atômica).
-- **Regra sugerida**: usa a primeira sugestão `addRules` do payload; sem sugestão, gera `Tool(prefixo:*)` para Bash (primeira palavra + subcomando) ou `Tool` para as demais.
-- **Escopo padrão**: `project` (mais restrito), configurável em `config.json` (questão em aberto do PRD resolvida pelo lado seguro).
-- **Pending map** `requestId → { resolve, timer }`; tempo limite padrão 280 s com hook a 300 s. Cancelamento detectado por `request.raw.on('close')`.
+- **Writing via `updatedPermissions`**: `scope: profile` → `destination: "userSettings"` (Claude Code writes to the `settings.json` of the session's `CLAUDE_CONFIG_DIR`); `scope: project` → `"localSettings"`. This way the CLI itself applies the rule to the current session and persists it while preserving the file. The daemon records it in `rules-log.jsonl` (id, rule, scope, file, date). `rules undo` removes the rule by editing the file (read, filter, atomic write).
+- **Suggested rule**: uses the first `addRules` suggestion from the payload; without a suggestion, generates `Tool(prefix:*)` for Bash (first word + subcommand) or `Tool` for the others.
+- **Default scope**: `project` (the most restrictive), configurable in `config.json` (open question from the PRD resolved on the safe side).
+- **Pending map** `requestId → { resolve, timer }`; default timeout 280 s with the hook at 300 s. Cancellation detected via `request.raw.on('close')`.
 
 ## Risks / Trade-offs
 
-- [Regra ampla demais] → o app mostra a regra exata e o escopo antes de confirmar (change 14).
+- [Rule too broad] → the app shows the exact rule and scope before confirming (change 14).

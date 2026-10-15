@@ -1,19 +1,19 @@
-## 1. Núcleo
+## 1. Core
 
-- [x] 1.1 Criar estrutura `src/{core,infra,features,transport}` e `main.ts`; verificar com `pnpm --filter daemon typecheck`
-- [x] 1.2 Implementar logger pino e event bus tipado; verificar com teste unitário do bus
-- [x] 1.3 Implementar carga/criação de `config.json` com Zod e perfis padrão, ignorando `configDir` inexistente; verificar com testes de primeira execução, inválido e diretório ausente
+- [x] 1.1 Create the `src/{core,infra,features,transport}` structure and `main.ts`; verify with `pnpm --filter daemon typecheck`
+- [x] 1.2 Implement the pino logger and the typed event bus; verify with a unit test of the bus
+- [x] 1.3 Implement loading/creating `config.json` with Zod and default profiles, ignoring a nonexistent `configDir`; verify with tests for first run, invalid file and missing directory
 
-## 2. Segurança
+## 2. Security
 
-- [x] 2.1 Implementar armazenamento de token no Keychain (`security`) e geração de token; verificar com teste usando executor falso
-- [x] 2.2 Implementar descoberta do IP Tailscale e modo `--dev`; verificar com teste de filtro de interfaces
+- [x] 2.1 Implement token storage in the Keychain (`security`) and token generation; verify with a test using a fake executor
+- [x] 2.2 Implement Tailscale IP discovery and `--dev` mode; verify with an interface-filter test
 
-## 3. Transporte
+## 3. Transport
 
-- [x] 3.1 Implementar `ws-server` com handshake `auth` (timeout 5 s, checagem de versão, timingSafeEqual) e router de mensagens; verificar com teste de integração usando cliente `ws`
-- [x] 3.2 Implementar `hooks-server` Fastify em 127.0.0.1 com segredo; verificar com teste `inject` retornando 401 sem segredo
+- [x] 3.1 Implement `ws-server` with the `auth` handshake (5 s timeout, version check, timingSafeEqual) and the message router; verify with an integration test using a `ws` client
+- [x] 3.2 Implement the Fastify `hooks-server` on 127.0.0.1 with the secret; verify with an `inject` test returning 401 without the secret
 
 ## 4. CLI
 
-- [x] 4.1 Implementar CLI `claude-remote` (`start`, `pair`, `rotate-token`, `doctor`) com commander e QR no terminal; verificar rodando `pnpm --filter daemon dev -- pair --dev`
+- [x] 4.1 Implement the `claude-remote` CLI (`start`, `pair`, `rotate-token`, `doctor`) with commander and a QR in the terminal; verify by running `pnpm --filter daemon dev -- pair --dev`

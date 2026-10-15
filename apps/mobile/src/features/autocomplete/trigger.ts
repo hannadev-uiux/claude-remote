@@ -39,6 +39,14 @@ export function isInteractiveCommand(text: string, commands: readonly CommandIte
   return commands.some((c) => c.name === match[1] && c.interactive)
 }
 
+/**
+ * Identity of a trigger token (its kind and where it starts). Dismissing the suggestions (Android
+ * back) hides them for this token only; a new `@` or `/` brings them back.
+ */
+export function triggerKey(trigger: Trigger | null): string | null {
+  return trigger ? `${trigger.kind}:${trigger.start}` : null
+}
+
 /** Local filtering for commands (the list is small and fetched once per session). */
 export function filterCommands(commands: readonly CommandItem[], query: string, limit = 20): CommandItem[] {
   const q = query.toLowerCase()

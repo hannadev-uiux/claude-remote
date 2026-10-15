@@ -17,6 +17,8 @@ export const paths = {
   state: () => join(claudeRemoteHome(), 'state.json'),
   hookSecret: () => join(claudeRemoteHome(), 'hook-secret'),
   tokenFile: () => join(claudeRemoteHome(), 'token'),
+  /** Token store picked on Linux (`secret-tool` or `file`), kept so every run uses the same one. */
+  tokenStoreChoice: () => join(claudeRemoteHome(), 'token-store'),
   rulesLog: () => join(claudeRemoteHome(), 'rules-log.jsonl'),
   devices: () => join(claudeRemoteHome(), 'devices.json'),
   mute: () => join(claudeRemoteHome(), 'mute.json'),

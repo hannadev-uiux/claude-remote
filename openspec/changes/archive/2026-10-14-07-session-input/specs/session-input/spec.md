@@ -1,41 +1,41 @@
 ## Purpose
 
-Permite enviar prompts e teclas especiais para uma sessão do Claude Code em execução no tmux, como se tivessem sido digitados no Mac.
+Allows sending prompts and special keys to a Claude Code session running in tmux, as if they had been typed on the Mac.
 
 ## ADDED Requirements
 
-### Requirement: Envio de prompt por colagem
-O daemon SHALL colar o texto completo no painel da sessão usando bracketed paste e, em seguida, enviar Enter. Texto com várias linhas, `@` e `/` MUST chegar inalterado.
+### Requirement: Prompt delivery by paste
+The daemon SHALL paste the full text into the session's pane using bracketed paste and then send Enter. Multi-line text, `@` and `/` MUST arrive unchanged.
 
-#### Scenario: Prompt com várias linhas
-- **WHEN** o app envia "linha 1\nlinha 2"
-- **THEN** a TUI recebe as duas linhas num único prompt e o envia
+#### Scenario: Multi-line prompt
+- **WHEN** the app sends "line 1\nline 2"
+- **THEN** the TUI receives both lines in a single prompt and submits it
 
-#### Scenario: Prompt com menção
-- **WHEN** o app envia "revise @src/main.ts"
-- **THEN** o texto é colado sem abrir o menu de autocomplete antes do Enter
+#### Scenario: Prompt with a mention
+- **WHEN** the app sends "review @src/main.ts"
+- **THEN** the text is pasted without opening the autocomplete menu before the Enter
 
-### Requirement: Teclas especiais
-O daemon SHALL aceitar apenas teclas de uma lista permitida e enviá-las com `send-keys`. Teclas fora da lista MUST ser recusadas com `invalid_key`.
+### Requirement: Special keys
+The daemon SHALL accept only keys from an allowlist and send them with `send-keys`. Keys outside the list MUST be rejected with `invalid_key`.
 
-#### Scenario: Interromper
-- **WHEN** o app envia `session.key` com `Escape`
-- **THEN** o painel recebe Esc
+#### Scenario: Interrupt
+- **WHEN** the app sends `session.key` with `Escape`
+- **THEN** the pane receives Esc
 
-#### Scenario: Tecla não permitida
-- **WHEN** o app envia a tecla `C-z`
-- **THEN** o daemon responde `error` `invalid_key`
+#### Scenario: Disallowed key
+- **WHEN** the app sends the key `C-z`
+- **THEN** the daemon responds with `error` `invalid_key`
 
-### Requirement: Sessão não controlável
-Entrada para sessão sem painel vivo MUST ser recusada com `not_controllable`.
+### Requirement: Non-controllable session
+Input to a session without a live pane MUST be rejected with `not_controllable`.
 
-#### Scenario: Sessão encerrada
-- **WHEN** o app envia texto para uma sessão `ended`
-- **THEN** recebe `error` `not_controllable`
+#### Scenario: Ended session
+- **WHEN** the app sends text to an `ended` session
+- **THEN** it receives `error` `not_controllable`
 
-### Requirement: Limite de tamanho
-Prompts acima de 100 KB MUST ser recusados com `too_large`.
+### Requirement: Size limit
+Prompts above 100 KB MUST be rejected with `too_large`.
 
-#### Scenario: Texto enorme
-- **WHEN** o app envia 200 KB de texto
-- **THEN** recebe `error` `too_large`
+#### Scenario: Huge text
+- **WHEN** the app sends 200 KB of text
+- **THEN** it receives `error` `too_large`

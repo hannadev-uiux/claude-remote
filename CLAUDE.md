@@ -1,6 +1,6 @@
 # Claude Remote
 
-App iOS pessoal (React Native + Expo) que acompanha e controla, pelo celular, sessões do Claude Code rodando no tmux do Mac, por meio de um daemon local. PRD em `.docs/claude-remote-app.md`.
+App pessoal iOS/Android (React Native + Expo) que acompanha e controla, pelo celular, sessões do Claude Code rodando no tmux do computador (macOS, Linux ou WSL), por meio de um daemon local. PRD em `.docs/claude-remote-app.md`.
 
 ## Estrutura
 
@@ -8,7 +8,7 @@ App iOS pessoal (React Native + Expo) que acompanha e controla, pelo celular, se
 apps/daemon        Daemon Node/TS (WebSocket p/ app, HTTP p/ hooks, tmux, transcripts, push)
 apps/mobile        App Expo (Expo Router, Zustand, TanStack Query)
 packages/protocol  Schemas Zod + tipos do protocolo WebSocket (fonte única da verdade)
-openspec/          Changes numerados 01..20 (proposal, specs, design, tasks)
+openspec/          Changes numerados (proposal, specs, design, tasks), sempre em en-US
 ```
 
 ### Daemon (`apps/daemon/src`)
@@ -45,7 +45,9 @@ cd apps/mobile && npx expo export --platform ios      # valida o bundle sem simu
 - O formato do `.jsonl` do Claude Code é interno: só `features/transcript/parser.ts` o conhece.
 - Rótulos da TUI (modo de permissão etc.) ficam em uma tabela única com testes.
 - Escrita em arquivos do usuário (`settings.json`, `.zshrc`) é sempre: ler → mesclar → backup → escrita atômica, e idempotente.
-- Formatação/lint: Biome. Textos de UI em pt-BR; código e identificadores em inglês.
+- Formatação/lint: Biome. Código e identificadores em inglês.
+- Textos de UI sempre por i18n, em pt-BR, en-US e es-ES (catálogos tipados, mesmas chaves nos três; testes de paridade). Nunca texto fixo na UI, no CLI ou no push.
+- OpenSpec sempre em inglês (en-US), inclusive os changes arquivados (`openspec/config.yaml`).
 - App: dependências nativas sempre com `npx expo install` (ver `apps/mobile/AGENTS.md`); só código sem `react-native` é testado com Vitest (`*.test.ts`).
 - pnpm com instalação isolada (padrão): cada pacote declara as próprias dependências. Scripts de build de dependências são liberados/negados em `allowBuilds` no `pnpm-workspace.yaml`.
 - Arquivos gerados: `*.generated.ts` (xterm) e `assets/*.png` (ícone) — regenere com os scripts, não edite à mão.

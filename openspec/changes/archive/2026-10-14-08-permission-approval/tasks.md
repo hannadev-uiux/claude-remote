@@ -1,10 +1,10 @@
-## 1. Núcleo
+## 1. Core
 
-- [x] 1.1 Implementar `PermissionBroker` (pending map, timeout, resposta única, cancelamento); verificar com testes de allow, deny, timeout, duplicata e cancelamento
-- [x] 1.2 Implementar geração da regra sugerida; verificar com testes para Bash, Edit e MCP
-- [x] 1.3 Implementar montagem da saída do hook com `updatedPermissions`; verificar com teste do JSON exato
+- [x] 1.1 Implement `PermissionBroker` (pending map, timeout, single response, cancellation); verify with tests for allow, deny, timeout, duplicate and cancellation
+- [x] 1.2 Implement generation of the suggested rule; verify with tests for Bash, Edit and MCP
+- [x] 1.3 Implement building the hook output with `updatedPermissions`; verify with a test of the exact JSON
 
-## 2. Integração
+## 2. Integration
 
-- [x] 2.1 Ligar a rota `PermissionRequest` ao broker e os handlers `permission.respond`; verificar com teste de integração hook HTTP + WS
-- [x] 2.2 Implementar `rules-log.jsonl` e `claude-remote rules list|undo`; verificar com teste em diretório temporário
+- [x] 2.1 Wire the `PermissionRequest` route to the broker and the `permission.respond` handlers; verify with an HTTP hook + WS integration test
+- [x] 2.2 Implement `rules-log.jsonl` and `claude-remote rules list|undo`; verify with a test in a temporary directory

@@ -1,26 +1,26 @@
 ## Purpose
 
-Permite iniciar novas sessões e retomar sessões encerradas a partir do app, sempre dentro do tmux.
+Allows starting new sessions and resuming ended sessions from the app, always inside tmux.
 
 ## ADDED Requirements
 
-### Requirement: Nova sessão
-`session.start` SHALL abrir uma janela tmux na sessão `claude-remote` executando o launcher do perfil no `cwd` informado e responder `ack` com o painel criado. Diretório inexistente MUST gerar `error` `invalid_cwd`.
+### Requirement: New session
+`session.start` SHALL open a tmux window in the `claude-remote` session running the profile's launcher in the given `cwd` and reply with an `ack` containing the created pane. A nonexistent directory MUST produce `error` `invalid_cwd`.
 
-#### Scenario: Iniciar no projeto
-- **WHEN** o app pede nova sessão em `drclaude` no diretório `~/workspaces/api`
-- **THEN** uma janela é criada e a sessão aparece na lista após o `SessionStart`
+#### Scenario: Start in a project
+- **WHEN** the app requests a new session on `drclaude` in the `~/workspaces/api` directory
+- **THEN** a window is created and the session appears in the list after `SessionStart`
 
-### Requirement: Retomar sessão
-`session.resume` SHALL abrir uma janela com `claude --resume <sessionId>` no `cwd` original da sessão com o perfil correto.
+### Requirement: Resume session
+`session.resume` SHALL open a window with `claude --resume <sessionId>` in the session's original `cwd` with the correct profile.
 
-#### Scenario: Retomar encerrada
-- **WHEN** o app toca "Retomar" numa sessão encerrada
-- **THEN** a sessão volta a ficar controlável com o mesmo histórico
+#### Scenario: Resume an ended session
+- **WHEN** the app taps "Resume" on an ended session
+- **THEN** the session becomes controllable again with the same history
 
-### Requirement: Diretórios recentes
-`projects.list { profileId }` SHALL retornar os `cwd` das sessões do perfil ordenados pelo uso mais recente, até 30.
+### Requirement: Recent directories
+`projects.list { profileId }` SHALL return the `cwd` values of the profile's sessions ordered by most recent use, up to 30.
 
-#### Scenario: Escolher diretório
-- **WHEN** o usuário abre "Nova sessão"
-- **THEN** vê os diretórios recentes do perfil escolhido
+#### Scenario: Choose a directory
+- **WHEN** the user opens "New session"
+- **THEN** they see the recent directories of the chosen profile

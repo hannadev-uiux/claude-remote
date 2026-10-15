@@ -2,6 +2,7 @@ import type { Session } from '@claude-remote/protocol'
 import { router } from 'expo-router'
 import { ChevronRight } from 'lucide-react-native'
 import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
@@ -11,6 +12,7 @@ import { StateBadge } from './StateBadge'
 type Props = { session: Session; pendingPermissions?: number }
 
 export const SessionRow = memo(function SessionRow({ session, pendingPermissions = 0 }: Props) {
+  const { t } = useTranslation()
   const waiting = pendingPermissions > 0 || session.state === 'waiting'
   return (
     <Pressable
@@ -19,20 +21,22 @@ export const SessionRow = memo(function SessionRow({ session, pendingPermissions
     >
       <View style={styles.main}>
         <Text weight="medium" numberOfLines={1}>
-          {session.title || 'Sessão'}
+          {session.title || t('common.session')}
         </Text>
         <Text size="xs" color="textMuted" numberOfLines={1}>
           {shortPath(session.cwd)}
         </Text>
         <View style={styles.badges}>
           <StateBadge state={session.state} />
-          {pendingPermissions > 0 ? <Badge label={`${pendingPermissions} permissão`} tone="warning" /> : null}
-          {!session.controllable ? <Badge label="somente leitura" /> : null}
+          {pendingPermissions > 0 ? (
+            <Badge label={t('permissions.pending', { count: pendingPermissions })} tone="warning" />
+          ) : null}
+          {!session.controllable ? <Badge label={t('common.readOnly')} /> : null}
           {session.backgroundTasks > 0 ? (
-            <Badge label={`background ${session.backgroundTasks}`} tone="info" />
+            <Badge label={t('sessions.background', { count: session.backgroundTasks })} tone="info" />
           ) : null}
           <Text size="xs" color="textDim">
-            {relativeTime(session.updatedAt)}
+            {relativeTime(session.updatedAt, t)}
           </Text>
         </View>
       </View>

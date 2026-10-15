@@ -2,13 +2,16 @@ import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { Folder } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } from '@/core/connection'
+import { errorMessage } from '@/core/connection/error-message'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { Button, Card, Screen, Text } from '@/ui'
 
 export function NewSessionScreen() {
+  const { t } = useTranslation()
   const client = useDaemonClient()
   const connected = useIsConnected()
   const profiles = useConnectionStore(selectProfiles)
@@ -38,7 +41,7 @@ export function NewSessionScreen() {
       await client.request({ type: 'session.start', profileId, cwd: cwd.trim() })
       router.back()
     } catch (e) {
-      setError((e as Error).message)
+      setError(errorMessage(e, t))
     } finally {
       setBusy(false)
     }
@@ -48,7 +51,7 @@ export function NewSessionScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text size="xs" color="textMuted">
-          perfil
+          {t('newSession.profile')}
         </Text>
         <View style={styles.row}>
           {profiles.map((p) => (
@@ -63,19 +66,19 @@ export function NewSessionScreen() {
         </View>
 
         <Text size="xs" color="textMuted">
-          diretório
+          {t('newSession.directory')}
         </Text>
         <TextInput
           value={cwd}
           onChangeText={setCwd}
-          placeholder="~/workspaces/projeto"
+          placeholder={t('newSession.placeholder')}
           placeholderTextColor={colors.textDim}
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.input}
         />
         <Button
-          label="Iniciar sessão"
+          label={t('newSession.start')}
           variant="primary"
           loading={busy}
           disabled={!cwd.trim() || !profileId}
@@ -90,7 +93,7 @@ export function NewSessionScreen() {
         ) : null}
 
         <Text size="xs" color="textMuted" style={styles.section}>
-          recentes
+          {t('newSession.recent')}
         </Text>
         {(projects.data ?? []).map((p) => (
           <Pressable
@@ -107,13 +110,13 @@ export function NewSessionScreen() {
               {shortPath(p.cwd)}
             </Text>
             <Text size="xs" color="textDim">
-              {relativeTime(p.lastUsedAt)}
+              {relativeTime(p.lastUsedAt, t)}
             </Text>
           </Pressable>
         ))}
         {projects.data?.length === 0 ? (
           <Text size="sm" color="textDim">
-            Nenhum diretório recente neste perfil.
+            {t('newSession.noRecent')}
           </Text>
         ) : null}
       </ScrollView>

@@ -1,3 +1,5 @@
+import type { TFunction } from '@/core/i18n/create'
+
 type Input = Record<string, unknown>
 
 function str(value: unknown): string | undefined {
@@ -14,7 +16,7 @@ function short(text: string, max = 60): string {
 }
 
 /** One-line label for a tool call, in the style of the Claude Code TUI: `Bash(pnpm test)`. */
-export function summarizeTool(name: string, input: Input): string {
+export function summarizeTool(name: string, input: Input, t: TFunction): string {
   const arg = (() => {
     switch (name) {
       case 'Bash':
@@ -28,10 +30,10 @@ export function summarizeTool(name: string, input: Input): string {
         return path ? basename(path) : undefined
       }
       case 'Grep':
-        return (
-          str(input.pattern) &&
-          `"${input.pattern}"${str(input.path) ? ` em ${basename(String(input.path))}` : ''}`
-        )
+        if (!str(input.pattern)) return undefined
+        return str(input.path)
+          ? t('tools.grepIn', { pattern: `"${input.pattern}"`, path: basename(String(input.path)) })
+          : `"${input.pattern}"`
       case 'Glob':
         return str(input.pattern)
       case 'Task':
@@ -42,7 +44,7 @@ export function summarizeTool(name: string, input: Input): string {
       case 'WebSearch':
         return str(input.query)
       case 'TodoWrite':
-        return Array.isArray(input.todos) ? `${input.todos.length} itens` : undefined
+        return Array.isArray(input.todos) ? t('tools.todoItems', { count: input.todos.length }) : undefined
       case 'Skill':
         return str(input.skill) ?? str(input.command)
       default: {

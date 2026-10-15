@@ -1,20 +1,20 @@
 ## Context
 
-Transcripts ficam em `<configDir>/projects/<cwd-sanitizado>/<sessionId>.jsonl`; entradas `custom-title`/`agent-name` dão o título, e `permission-mode` o modo.
+Transcripts live in `<configDir>/projects/<sanitized-cwd>/<sessionId>.jsonl`; `custom-title`/`agent-name` entries provide the title, and `permission-mode` the mode.
 
 ## Goals / Non-Goals
 
-**Goals:** lista barata de montar (sem ler transcripts inteiros).
+**Goals:** a list that is cheap to build (without reading whole transcripts).
 
-**Non-Goals:** subagentes e background (change 18).
+**Non-Goals:** subagents and background tasks (change 18).
 
 ## Decisions
 
-- **`TmuxClient`** em `infra/tmux` encapsula `execa('tmux', ...)`: `listPanes`, `capturePane`, `sendKeys`, `pasteText`, `newWindow`. Único lugar que conhece a CLI do tmux; testável com executor falso.
-- **Varredura de recentes**: `fs.readdir` em `projects/*` filtrando por `mtime`; o título é obtido lendo só os últimos 64 KB do arquivo (busca da última entrada `custom-title`, `last-prompt` ou primeira mensagem do usuário) e o `cwd` pelas entradas com campo `cwd`.
-- **Repositório em memória** (`SessionStore`) com `Map<id, Session>`, emitindo `session.updated` no bus em cada `upsert`. Persistência com debounce de 500 ms.
-- **Polling de painéis** a 5 s com `tmux list-panes -a -F '#{pane_id}'` (chamada barata).
+- **`TmuxClient`** in `infra/tmux` wraps `execa('tmux', ...)`: `listPanes`, `capturePane`, `sendKeys`, `pasteText`, `newWindow`. The only place that knows the tmux CLI; testable with a fake executor.
+- **Scanning recent sessions**: `fs.readdir` over `projects/*` filtering by `mtime`; the title is obtained by reading only the last 64 KB of the file (looking for the last `custom-title` or `last-prompt` entry, or the first user message) and the `cwd` from entries that have a `cwd` field.
+- **In-memory repository** (`SessionStore`) with a `Map<id, Session>`, emitting `session.updated` on the bus on each `upsert`. Persistence debounced by 500 ms.
+- **Pane polling** every 5 s with `tmux list-panes -a -F '#{pane_id}'` (a cheap call).
 
 ## Risks / Trade-offs
 
-- [Muitos transcripts antigos] → limite de 7 dias e no máximo 50 recentes por perfil.
+- [Many old transcripts] → 7-day limit and at most 50 recent sessions per profile.

@@ -1,0 +1,323 @@
+import type { Messages } from './en-US.ts'
+
+export const esES = {
+  cli: {
+    description: 'Daemon de Claude Remote: controla las sesiones de Claude Code en tmux desde el móvil',
+    help: 'muestra la ayuda del comando',
+    version: 'muestra la versión',
+    buildMissing: 'No se encontró el build: ejecuta `pnpm --filter @claude-remote/daemon build`.',
+    unsupportedPlatform: (platform: string, supported: string) =>
+      `Sistema no compatible (${platform}). Claude Remote funciona en ${supported}.`,
+    start: {
+      description: 'inicia el daemon',
+      dev: 'escucha en 127.0.0.1 en lugar de Tailscale',
+      host: 'dirección de escucha del WebSocket',
+      waitTailscale:
+        'espera a la interfaz de Tailscale en lugar de fallar (lo usa el servicio en segundo plano)',
+    },
+    pair: {
+      description: 'muestra el código QR de emparejamiento (dirección + token)',
+      dev: 'usa 127.0.0.1',
+      host: 'dirección que se anuncia en el QR',
+      tailscaleNotFound:
+        'No se encontró Tailscale (ninguna interfaz 100.x). Instala y conecta Tailscale, o usa --dev para 127.0.0.1.',
+      simulatorHint: (port: number) =>
+        'Para probar en local (por ejemplo, en el simulador de iOS): `claude-remote start --dev` y `claude-remote pair --dev`' +
+        ` (emulador de Android: también \`adb reverse tcp:${port} tcp:${port}\`).`,
+      scan: 'Escanéalo con la app Claude Remote. No compartas este código.',
+    },
+    setup: {
+      description: 'asistente: elige cuentas y alias, instala los hooks y el servicio, y empareja el móvil',
+      yes: 'sin preguntas: mantiene la configuración o usa las cuentas encontradas',
+      noService: 'no instala el servicio en segundo plano',
+      lang: (codes: string) => `idioma (${codes}); omite la pregunta`,
+      invalidLang: (value: string, codes: string) => `Idioma desconocido "${value}". Usa uno de: ${codes}.`,
+      interrupted:
+        'Instalación interrumpida. Lo que ya se mostró con ✓ quedó hecho; ejecuta `claude-remote setup` de nuevo cuando quieras.',
+    },
+    rotateToken: {
+      description: 'genera un token nuevo y cierra las conexiones existentes',
+      rotated: 'Token cambiado; conexiones cerradas.',
+      rotatedOffline: 'Token cambiado (el daemon no está en ejecución).',
+      pairAgain: 'Ejecuta `claude-remote pair` para volver a emparejar.',
+    },
+    doctor: {
+      description: 'comprueba las dependencias y la configuración',
+      notOnPath: 'no se encuentra en el PATH',
+      tailscaleMissing: 'no se encontró la interfaz 100.x',
+      profile: (id: string, configDir: string) => `perfil ${id} (${configDir})`,
+      dirMissing: 'el directorio no existe',
+      daemonRunning: 'daemon en ejecución',
+      runStart: 'ejecuta `claude-remote start`',
+      token: (store: string) => `token ${store}`,
+      tokenStores: {
+        keychain: 'en el Llavero de macOS',
+        secretTool: 'en el Secret Service (secret-tool)',
+        file: (path: string) => `en el archivo ${path} (0600)`,
+      },
+      runPair: 'ejecuta `claude-remote pair`',
+      service: (name: string, detail: string) => `servicio en segundo plano ${name} (${detail})`,
+      serviceHint: 'opcional: `claude-remote service install`',
+      linger: 'lingering (el servicio sigue en marcha tras cerrar sesión)',
+      lingerHint: 'ejecuta `loginctl enable-linger $USER`',
+      devices: (platforms: string) => `móviles registrados para push: ${platforms}`,
+      noDevices: 'ningún móvil registrado para push',
+      noDevicesHint: 'abre la app y permite las notificaciones',
+    },
+    install: {
+      description:
+        'instala los launchers, el PATH en ~/.zshrc / ~/.bashrc y los hooks de los perfiles configurados (sin preguntas)',
+      openTerminal: (rc: string) =>
+        `Abre un terminal nuevo (o \`source ${rc}\`) y usa los launchers en lugar de \`claude\`.`,
+    },
+    uninstall: {
+      description: 'elimina los launchers, el bloque del PATH en ~/.zshrc / ~/.bashrc y los hooks instalados',
+      shellRemoved: (files: string) => `bloque del PATH eliminado de ${files}`,
+      hooksRemoved: (path: string) => `hooks eliminados de ${path}`,
+    },
+    service: {
+      description: 'daemon como servicio en segundo plano (launchd en macOS, systemd en Linux)',
+      install:
+        'instala e inicia el servicio en segundo plano (arranca al iniciar sesión y se reinicia si falla)',
+      loaded: (path: string) => `servicio instalado: ${path}`,
+      app: (path: string) => `app: ${path}`,
+      tailscaleWaiting: '⚠ No se encontró Tailscale: el daemon espera a la interfaz 100.x',
+      logs: (path: string) => `logs en ${path}`,
+      uninstall: 'detiene y elimina el servicio en segundo plano',
+      removed: 'servicio eliminado',
+      status: 'muestra si el servicio está cargado',
+      notLoaded: 'no cargado',
+      unavailable:
+        'Los servicios de usuario de systemd no están disponibles aquí (`systemctl --user` ha fallado). Ejecuta `claude-remote start` cuando quieras usarlo (por ejemplo, en una ventana de tmux).',
+      lingerHint:
+        'Lingering desactivado: el servicio se detiene al cerrar la sesión. Para mantenerlo activo y arrancarlo al iniciar el sistema: `loginctl enable-linger $USER`',
+      linger: (enabled: boolean) =>
+        enabled
+          ? 'lingering activado (sigue en marcha tras cerrar sesión, arranca al iniciar el sistema)'
+          : 'lingering desactivado (se detiene al cerrar sesión)',
+    },
+    update: {
+      description:
+        'actualiza a la última versión: compila, actualiza los hooks y reinicia el servicio (sin preguntas)',
+      ref: 'rama o tag que se instala',
+      force: 'vuelve a compilar aunque ya esté actualizado',
+      checking: (ref: string) => `Buscando una versión nueva en ${ref}`,
+      notInstaller: (dir: string) =>
+        `Esta no es la copia del instalador (${dir}). En un clon de desarrollo usa \`git pull\` y \`pnpm --filter @claude-remote/daemon build\`.`,
+      dirty: (dir: string) => `${dir} tiene cambios locales. Haz commit o descártalos y vuelve a ejecutarlo.`,
+      fetchFailed: (error: string) => `No pude descargar la versión nueva: ${error}`,
+      checkoutFailed: 'No pude cambiar a la versión nueva.',
+      upToDate: (version: string, commit: string) => `Ya está actualizado (${version}, ${commit}).`,
+      available: (version: string, commit: string) => `Versión nueva: ${version} (${commit})`,
+      failed:
+        'La actualización falló (ver arriba). La versión anterior sigue funcionando hasta el próximo reinicio.',
+      serviceRestarted: 'servicio en segundo plano reiniciado',
+      serviceNotInstalled:
+        'servicio en segundo plano no instalado (opcional: `claude-remote service install`)',
+      updated: (from: string, to: string) => `Claude Remote actualizado: ${from} → ${to}`,
+      rebuilt: (version: string) => `Claude Remote ${version} compilado de nuevo`,
+    },
+    rules: {
+      description: 'reglas de "permitir siempre" creadas por la app',
+      list: 'lista las reglas creadas por la app',
+      empty: 'No hay reglas creadas por la app.',
+      undo: 'elimina la regla del archivo en el que se guardó',
+      notFound: (id: string) => `No se encontró la regla ${id}.`,
+      removed: (rule: string, file: string) => `Regla ${rule} eliminada de ${file}.`,
+      alreadyGone: 'La regla ya no estaba en el archivo.',
+    },
+  },
+  install: {
+    shortcut: (path: string) => `atajo ${path}`,
+    shellPath: (files: string) => `PATH en ${files}`,
+    hooksIn: (path: string) => `hooks en ${path}`,
+    launcherRemoved: (id: string) => `launcher ${id} eliminado`,
+    hooksRemovedFrom: (path: string) => `hooks eliminados de ${path}`,
+  },
+  setup: {
+    languageQuestion: 'Idioma',
+    keys: {
+      navigate: 'navegar',
+      select: 'elegir',
+      submit: 'confirmar',
+      all: 'todas',
+      invert: 'invertir',
+    },
+    yes: 'sí',
+    no: 'no',
+    welcome: {
+      title: '¡Te damos la bienvenida a Claude Remote!',
+      intro1: (machine: string) => `Vamos a preparar este ${machine} para que sigas y controles`,
+      intro2: 'Claude Code desde el móvil. Tarda unos 2 minutos.',
+      footer: (version: string) => `v${version} · ↑/↓ para elegir · Enter para confirmar · Ctrl+C sale`,
+    },
+    steps: {
+      accounts: 'Cuentas de Claude Code',
+      installing: 'Instalando launchers, PATH y hooks',
+      service: 'Servicio en segundo plano',
+      tailscale: 'Tailscale y móvil',
+    },
+    noAccounts:
+      'No se encontró ninguna cuenta de Claude Code. Ejecuta `claude` una vez para iniciar sesión y después `claude-remote setup`.',
+    confirmSave: '¿Guardar e instalar?',
+    nothingChanged: 'No se ha cambiado nada.',
+    serviceQuestion: (machine: string) =>
+      `¿Iniciar Claude Remote junto con el ${machine} (y reiniciarlo si falla)?`,
+    noService: 'Sin servicio: ejecuta `claude-remote start` cuando quieras usarlo.',
+    serviceUnavailable:
+      '  Los servicios de usuario de systemd no están disponibles aquí (`systemctl --user`).\n' +
+      '  Ejecuta `claude-remote start` cuando quieras usarlo (por ejemplo, en una ventana de tmux o desde tu sistema de init).',
+    lingerQuestion:
+      '¿Mantener Claude Remote en marcha tras cerrar sesión y arrancarlo al iniciar el sistema? (loginctl enable-linger)',
+    lingerEnabled: 'lingering activado (loginctl enable-linger)',
+    lingerFailed:
+      '  No se pudo activar el lingering. Ejecuta `sudo loginctl enable-linger $USER` para mantener el daemon en marcha tras cerrar sesión.',
+    lingerSkipped:
+      '  Sin lingering el daemon se detiene al cerrar sesión. Actívalo más tarde con `loginctl enable-linger $USER`.',
+    tailscaleIntro: (machine: string, install: string) =>
+      `  El ${machine} y el móvil se comunican por una red privada de Tailscale (gratis), desde cualquier lugar.\n` +
+      `  1. En el ${machine}: ${install}\n` +
+      '  2. En el móvil: instala "Tailscale" (App Store o Google Play) e inicia sesión con la misma cuenta',
+    tailscaleInstall: {
+      darwin:
+        'instálalo desde https://tailscale.com/download/mac (o `brew install --cask tailscale`) e inicia sesión',
+      linux: 'instálalo con `curl -fsSL https://tailscale.com/install.sh | sh` y ejecuta `sudo tailscale up`',
+    },
+    tailscaleQuestion: (machine: string) => `¿Tailscale está conectado en el ${machine}?`,
+    tailscaleRetry: 'Ya lo he conectado, comprobar de nuevo',
+    tailscaleSkip: 'Hacerlo más tarde',
+    tailscaleNotYet: '  Todavía no encuentro la interfaz de Tailscale (100.x).',
+    phoneHint: '  En el móvil: instala la app Claude Remote y Tailscale (misma cuenta) y toca "QR code".',
+    showQr: '¿Mostrar ahora el código QR de emparejamiento?',
+    done: {
+      installed: 'Claude Remote instalado.',
+      openTerminal: (command: string) => `1. Abre un terminal nuevo (o ${command})`,
+      useAliases: (aliases: string, claude: string) =>
+        `2. Usa ${aliases} en lugar de ${claude}, con los mismos argumentos`,
+      pairIfNeeded: (command: string) => `3. Empareja con ${command} si aún no lo has hecho`,
+      connectAndPair: (command: string) => `3. Conecta Tailscale y ejecuta ${command}`,
+      footer: 'claude-remote doctor lo revisa todo · claude-remote setup cambia cuentas',
+    },
+    accounts: {
+      explain:
+        '  Cada cuenta de Claude Code vive en una carpeta de configuración (CLAUDE_CONFIG_DIR).\n' +
+        '  Para cada una eliges un comando (alias) que la abre en tmux, lista para el móvil.',
+      which: '¿Qué cuentas quieres controlar desde el móvil?',
+      noneFound: (machine: string) =>
+        `  No he encontrado ninguna cuenta de Claude Code en este ${machine}; vamos a crear una.`,
+      more: '¿Alguna cuenta más?',
+      howToAdd: '¿Cómo quieres añadir la cuenta?',
+      noContinue: 'No, continuar',
+      create: 'Crear una cuenta nueva',
+      createDescription:
+        'Crea la carpeta y abre Claude Code en ella para que inicies sesión (p. ej., la cuenta del trabajo)',
+      existing: 'Añadir una carpeta que ya existe',
+      existingDescription: 'Una carpeta usada antes con CLAUDE_CONFIG_DIR=<carpeta> claude',
+      folderPath: 'Ruta de la carpeta (p. ej., ~/.claude-trabajo):',
+      folderNotFound:
+        'No se encontró la carpeta. Para una cuenta que todavía no existe, elige "Crear una cuenta nueva".',
+      alias: 'Comando (alias) para abrir esta cuenta:',
+      aliasClash: (alias: string, path: string) =>
+        `\`${alias}\` ya existe en ${path}. El launcher tendrá prioridad en el PATH. ¿Usarlo de todos modos?`,
+      name: 'Nombre que se muestra en la app:',
+      nameRequired: 'Ponle un nombre para reconocer la cuenta en la app.',
+    },
+    newAccount: {
+      folder: 'Carpeta de la nueva cuenta:',
+      alreadyLoggedIn: (dir: string, login: string) => `${dir} ya tiene la sesión iniciada (${login})`,
+      instructions: (dir: string) =>
+        `\n  Voy a abrir Claude Code usando ${dir}. Una vez dentro:\n` +
+        '  1. Sigue la configuración inicial e inicia sesión con la cuenta que usará esta carpeta (si no te lo pide, escribe /login)\n' +
+        '  2. Después de iniciar sesión, escribe /exit para volver aquí\n',
+      pressEnter: 'Pulsa Enter para abrir Claude Code',
+      loggedIn: (dir: string, login: string) => `Sesión iniciada en ${dir} (${login})`,
+      claudeMissing: '\n  No he podido abrir `claude`. Instala Claude Code: https://claude.com/claude-code',
+      noLogin: '\n  No he encontrado ninguna sesión iniciada en esa carpeta.',
+      whatNow: '¿Y ahora?',
+      retry: 'Abrir Claude Code de nuevo',
+      addAnyway: 'Añadirla de todos modos (inicio sesión después con el alias)',
+      giveUp: 'Renunciar a esta cuenta',
+    },
+  },
+  wsl: {
+    windowsHint:
+      'En Windows, Claude Remote funciona dentro de WSL2. En PowerShell: `irm https://maarkn.dev/claude-remote/install.ps1 | iex`',
+    detected: (distro: string) => `WSL2 (distribución ${distro})`,
+    unknownDistro: 'desconocida',
+    systemd: 'systemd en ejecución en WSL',
+    systemdHint: 'ejecuta `claude-remote setup` para activarlo ([boot] systemd=true en /etc/wsl.conf)',
+    systemdPendingHint:
+      'ya activado en /etc/wsl.conf: ejecuta `wsl --shutdown` en PowerShell de Windows y vuelve a abrir la distribución',
+    networking: (mode: string) => `red de WSL: ${mode}`,
+    networkingUnknown: 'desconocida (no se encontró %UserProfile%\\.wslconfig)',
+    tailscaleHint:
+      'ejecuta Tailscale dentro de WSL o usa la red reflejada con Tailscale en Windows (`claude-remote setup` explica ambas)',
+    source: {
+      wsl: 'dentro de WSL',
+      mirrored: 'Windows, red reflejada',
+      unknown: 'WSL',
+    },
+    logonTask: 'tarea de inicio de sesión de Windows "Claude Remote" (inicia WSL al iniciar sesión)',
+    logonTaskHint: 'opcional: `claude-remote setup` la crea',
+    logonTaskMissing:
+      'sin tarea de inicio de sesión en Windows: WSL (y el daemon) solo arrancan cuando abres la distribución',
+    logonTaskRemoved: 'tarea de inicio de sesión de Windows "Claude Remote" eliminada',
+    serviceNoSystemd:
+      'systemd no se está ejecutando en esta distribución de WSL, así que no hay servicio en segundo plano. Ejecuta `claude-remote setup` para activarlo ([boot] systemd=true en /etc/wsl.conf) y luego `wsl --shutdown` en PowerShell de Windows.',
+    restart:
+      '  Para que surta efecto, ejecuta `wsl --shutdown` en PowerShell de Windows, vuelve a abrir la distribución y ejecuta `claude-remote setup`.',
+    systemdIntro:
+      '  Dentro de WSL el servicio en segundo plano necesita systemd, que está desactivado en esta distribución.\n' +
+      '  Se activa con [boot] systemd=true en /etc/wsl.conf (un archivo de root, con copia de seguridad antes) con:',
+    systemdCommand: (command: string) => `    ${command}`,
+    systemdQuestion: '¿Activar systemd en WSL ahora? (sudo puede pedirte la contraseña de Linux)',
+    systemdEnabled: 'systemd activado en /etc/wsl.conf',
+    systemdFailed: (error: string) =>
+      `  No se pudo modificar /etc/wsl.conf (${error}). Añade estas líneas con \`sudo nano /etc/wsl.conf\`:\n    [boot]\n    systemd=true`,
+    systemdSkipped:
+      '  Sin systemd no hay servicio en segundo plano: ejecuta `claude-remote start` cuando quieras usarlo.',
+    systemdPending:
+      '  systemd ya está activado en /etc/wsl.conf, pero WSL no se ha reiniciado desde entonces.',
+    logonTaskQuestion:
+      '¿Iniciar WSL al iniciar sesión en Windows, para que el daemon funcione sin abrir una terminal? (Tarea programada "Claude Remote")',
+    logonTaskCreated: 'tarea de inicio de sesión de Windows "Claude Remote"',
+    logonTaskFailed: (error: string, command: string) =>
+      `  No se pudo crear la tarea (${error}). En PowerShell (como administrador si se deniega el acceso):\n    ${command}`,
+    logonTaskSkipped:
+      '  Sin la tarea de inicio de sesión, WSL y el daemon arrancan cuando abres la distribución. Créala más tarde con `claude-remote setup`.',
+    tailscaleIntro:
+      '  El ordenador y el móvil se comunican por una red privada de Tailscale (gratuita). Dentro de WSL hay dos formas:\n' +
+      '  A. Tailscale dentro de WSL (cualquier Windows): `curl -fsSL https://tailscale.com/install.sh | sh` y `sudo tailscale up`\n' +
+      '  B. Tailscale en Windows + red reflejada de WSL (Windows 11 22H2+): networkingMode=mirrored en .wslconfig\n' +
+      '  En el móvil: instala "Tailscale" (App Store o Google Play) e inicia sesión con la misma cuenta',
+    tailscaleMirrored: 'Tailscale funciona en Windows: activar la red reflejada (.wslconfig)',
+    mirroredEnabled: (path: string) => `networkingMode=mirrored en ${path}`,
+    mirroredAlready: (path: string) => `networkingMode=mirrored ya estaba en ${path}`,
+    mirroredNoConfig:
+      '  No se encontró %UserProfile%\\.wslconfig (¿la interoperabilidad con Windows está desactivada?). Añade [wsl2] networkingMode=mirrored a mano.',
+  },
+  machine: { darwin: 'Mac', linux: 'ordenador' },
+  profiles: {
+    defaultName: 'Personal',
+    newDirName: (index: number) => (index === 0 ? 'trabajo' : index === 1 ? 'personal' : `cuenta-${index}`),
+    newDirFallback: 'nueva',
+    claudeAccount: 'cuenta de Claude',
+    apiKey: 'clave de API',
+    aliasFormat: 'Usa minúsculas, números, - o _, empezando por una letra (hasta 32).',
+    aliasReserved: (alias: string) => `"${alias}" está reservado: el launcher llama al propio \`${alias}\`.`,
+    aliasTaken: (alias: string) => `"${alias}" ya lo usa otro perfil.`,
+    dirAbsolute: 'Usa una ruta absoluta o que empiece por ~/.',
+    dirOtherTool: (dir: string) => `${dir} es de otra herramienta; elige otro nombre.`,
+    dirInList: 'Esa carpeta ya está en la lista de cuentas.',
+    dirIsFile: 'Ya existe un archivo con ese nombre.',
+  },
+  /** Sent back to Claude Code (shown in its TUI). */
+  claudeCode: {
+    denied: 'Denegado por Claude Remote',
+  },
+  push: {
+    sessionDone: 'Sesión terminada',
+    sessionWaiting: 'Sesión esperándote',
+    permissionPending: 'Permiso pendiente',
+  },
+} satisfies Messages

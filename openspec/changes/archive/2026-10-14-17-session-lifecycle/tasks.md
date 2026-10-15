@@ -1,7 +1,7 @@
 ## 1. Daemon
 
-- [x] 1.1 Implementar `session.start`, `session.resume` e `projects.list` com validação de `cwd`; verificar com testes usando tmux falso
+- [x] 1.1 Implement `session.start`, `session.resume` and `projects.list` with `cwd` validation; verify with tests using a fake tmux
 
 ## 2. App
 
-- [x] 2.1 Criar tela "Nova sessão" (perfil, diretórios recentes, entrada manual) e ação "Retomar"; verificar com typecheck e `expo export`
+- [x] 2.1 Create the "New session" screen (profile, recent directories, manual entry) and the "Resume" action; verify with typecheck and `expo export`
