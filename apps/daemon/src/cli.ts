@@ -270,7 +270,8 @@ program
     const logger = createLogger({ level: 'silent' })
     const check = (ok: boolean, label: string, hint = '') =>
       console.log(`${ok ? '✓' : '✗'} ${label}${!ok && hint ? ` — ${hint}` : ''}`)
-    for (const bin of ['tmux', 'git', 'rg', 'claude']) {
+    // zsh runs the launchers (not installed by default on most Linux distributions).
+    for (const bin of ['tmux', 'git', 'rg', 'zsh', 'claude']) {
       const result = await execaExecutor('which', [bin])
       check(result.exitCode === 0, bin, d.notOnPath)
     }
@@ -303,6 +304,14 @@ program
       return undefined
     })
     if (token !== undefined) check(token !== null, d.token(tokenStoreLabel(kind)), d.runPair)
+    const manager = serviceManager()
+    const status = (await manager.available()) ? await manager.status() : null
+    check(
+      status?.loaded ?? false,
+      d.service(manager.name, status?.loaded ? status.detail : m.cli.service.notLoaded),
+      d.serviceHint,
+    )
+    if (status?.loaded && manager.linger) check(await manager.linger.enabled(), d.linger, d.lingerHint)
   })
 
 program

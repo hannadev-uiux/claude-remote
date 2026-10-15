@@ -40,8 +40,11 @@ describe('catalogs', () => {
   })
 
   test.each(LOCALES)('%s welcome box fits the banner', (locale) => {
-    const lines = renderWelcome(createPaint(false), '10.20.30', messagesFor(locale).setup.welcome).split('\n')
-    for (const line of lines) expect([...stripVTControlCharacters(line)].length).toBe(BANNER_WIDTH)
+    const m = messagesFor(locale)
+    for (const machine of Object.values(m.machine)) {
+      const lines = renderWelcome(createPaint(false), '10.20.30', m.setup.welcome, machine).split('\n')
+      for (const line of lines) expect([...stripVTControlCharacters(line)].length).toBe(BANNER_WIDTH)
+    }
     const done = messagesFor(locale).setup.done
     const fixed = [
       done.footer,
@@ -50,6 +53,28 @@ describe('catalogs', () => {
       done.connectAndPair('claude-remote pair'),
     ]
     for (const text of fixed) expect([...text].length).toBeLessThanOrEqual(BANNER_WIDTH - 4)
+  })
+
+  test.each(LOCALES)('%s names the machine per platform, with no "Mac" on Linux', (locale) => {
+    const m = messagesFor(locale)
+    expect(m.machine.darwin).toBe('Mac')
+    const linux = [
+      m.setup.welcome.intro1(m.machine.linux),
+      m.setup.serviceQuestion(m.machine.linux),
+      m.setup.tailscaleIntro(m.machine.linux, m.setup.tailscaleInstall.linux),
+      m.setup.tailscaleQuestion(m.machine.linux),
+      m.setup.accounts.noneFound(m.machine.linux),
+    ]
+    for (const text of linux) {
+      expect(text).toContain(m.machine.linux)
+      expect(text).not.toMatch(/\bMac\b|brew|download\/mac/)
+    }
+    expect(m.setup.tailscaleIntro(m.machine.darwin, m.setup.tailscaleInstall.darwin)).toContain(
+      'download/mac',
+    )
+    const unsupported = m.cli.unsupportedPlatform('win32', 'macOS, Linux')
+    expect(unsupported).toContain('win32')
+    expect(unsupported).toContain('macOS, Linux')
   })
 
   test('createI18n returns the catalog of the locale', () => {

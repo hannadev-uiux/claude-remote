@@ -126,12 +126,17 @@ export function renderLogo(paint: Paint, columns = 80): string {
 }
 
 /** Welcome box like Claude Code's, in the chosen language. */
-export function renderWelcome(paint: Paint, version: string, m: Messages['setup']['welcome']): string {
+export function renderWelcome(
+  paint: Paint,
+  version: string,
+  m: Messages['setup']['welcome'],
+  machine: string,
+): string {
   return box(
     [
       `${paint('accent', '✻')} ${paint('bold', m.title)}`,
       '',
-      paint('muted', m.intro1),
+      paint('muted', m.intro1(machine)),
       paint('muted', m.intro2),
       '',
       paint('dim', m.footer(version)),

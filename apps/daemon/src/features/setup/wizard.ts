@@ -147,7 +147,7 @@ async function askProfiles(o: Ctx, existing: readonly Profile[], dirs: string[])
       theme,
     })
   } else {
-    console.log(o.paint('muted', t.noneFound))
+    console.log(o.paint('muted', t.noneFound(o.m.machine[o.platform])))
   }
 
   for (;;) {
@@ -309,7 +309,9 @@ async function setupService(o: Ctx): Promise<void> {
     console.log(paint('muted', s.serviceUnavailable))
     return
   }
-  const wants = !o.interactive || (await confirm({ message: s.serviceQuestion, default: true, theme: yesNo }))
+  const wants =
+    !o.interactive ||
+    (await confirm({ message: s.serviceQuestion(o.m.machine[o.platform]), default: true, theme: yesNo }))
   if (!wants) {
     console.log(paint('muted', `  ${s.noService}`))
     return
@@ -341,7 +343,8 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   const s = m.setup
   const theme = themeFor(paint, m)
   const yesNo = yesNoTheme(paint, m)
-  console.log(`\n${renderWelcome(paint, o.version, s.welcome)}\n`)
+  const machine = m.machine[o.platform]
+  console.log(`\n${renderWelcome(paint, o.version, s.welcome, machine)}\n`)
 
   step(paint, 1, total, s.steps.accounts)
   const existing = currentProfiles(raw)
@@ -381,10 +384,10 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   step(paint, 4, total, s.steps.tailscale)
   let host = o.tailscaleAddress()
   if (!host && o.interactive) {
-    console.log(paint('muted', s.tailscaleIntro))
+    console.log(paint('muted', s.tailscaleIntro(machine, s.tailscaleInstall[o.platform])))
     for (;;) {
       const next = await select({
-        message: s.tailscaleQuestion,
+        message: s.tailscaleQuestion(machine),
         choices: [
           { name: s.tailscaleRetry, value: 'retry' },
           { name: s.tailscaleSkip, value: 'skip' },

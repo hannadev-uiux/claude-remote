@@ -22,7 +22,7 @@ export const ptBR = {
       tailscaleNotFound:
         'Tailscale não encontrado (nenhuma interface 100.x). Instale e conecte o Tailscale, ou use --dev para 127.0.0.1.',
       simulatorHint:
-        'Para testar no simulador deste Mac: `claude-remote start --dev` e `claude-remote pair --dev`.',
+        'Para testar localmente (por exemplo, no simulador do iOS): `claude-remote start --dev` e `claude-remote pair --dev`.',
       scan: 'Escaneie com o app Claude Remote. Não compartilhe este código.',
     },
     setup: {
@@ -55,6 +55,10 @@ export const ptBR = {
         file: (path: string) => `no arquivo ${path} (0600)`,
       },
       runPair: 'rode `claude-remote pair`',
+      service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
+      serviceHint: 'opcional: `claude-remote service install`',
+      linger: 'lingering (o serviço continua rodando após o logout)',
+      lingerHint: 'rode `loginctl enable-linger $USER`',
     },
     install: {
       description:
@@ -117,7 +121,7 @@ export const ptBR = {
     no: 'não',
     welcome: {
       title: 'Boas-vindas ao Claude Remote!',
-      intro1: 'Vamos preparar este Mac para você acompanhar e controlar',
+      intro1: (machine: string) => `Vamos preparar este ${machine} para você acompanhar e controlar`,
       intro2: 'o Claude Code pelo iPhone. Leva uns 2 minutos.',
       footer: (version: string) => `v${version} · ↑/↓ para escolher · Enter para confirmar · Ctrl+C sai`,
     },
@@ -131,7 +135,8 @@ export const ptBR = {
       'Nenhuma conta do Claude Code encontrada. Rode `claude` uma vez para fazer login e depois `claude-remote setup`.',
     confirmSave: 'Gravar e instalar?',
     nothingChanged: 'Nada foi alterado.',
-    serviceQuestion: 'Iniciar o Claude Remote junto com o Mac (e reiniciar se cair)?',
+    serviceQuestion: (machine: string) =>
+      `Iniciar o Claude Remote junto com o ${machine} (e reiniciar se cair)?`,
     noService: 'Sem serviço: rode `claude-remote start` quando quiser usar.',
     serviceUnavailable:
       '  Serviços de usuário do systemd não estão disponíveis aqui (`systemctl --user`).\n' +
@@ -143,11 +148,15 @@ export const ptBR = {
       '  Não consegui ativar o lingering. Rode `sudo loginctl enable-linger $USER` para manter o daemon rodando após o logout.',
     lingerSkipped:
       '  Sem lingering o daemon para quando você sai da sessão. Ative depois com `loginctl enable-linger $USER`.',
-    tailscaleIntro:
-      '  O Mac e o iPhone conversam por uma rede privada do Tailscale (grátis), de qualquer lugar.\n' +
-      '  1. No Mac: instale em https://tailscale.com/download/mac (ou `brew install --cask tailscale`) e entre\n' +
+    tailscaleIntro: (machine: string, install: string) =>
+      `  O ${machine} e o iPhone conversam por uma rede privada do Tailscale (grátis), de qualquer lugar.\n` +
+      `  1. No ${machine}: ${install}\n` +
       '  2. No iPhone: instale "Tailscale" na App Store e entre com a mesma conta',
-    tailscaleQuestion: 'Tailscale conectado no Mac?',
+    tailscaleInstall: {
+      darwin: 'instale em https://tailscale.com/download/mac (ou `brew install --cask tailscale`) e entre',
+      linux: 'instale com `curl -fsSL https://tailscale.com/install.sh | sh` e rode `sudo tailscale up`',
+    },
+    tailscaleQuestion: (machine: string) => `Tailscale conectado no ${machine}?`,
     tailscaleRetry: 'Já conectei, verificar de novo',
     tailscaleSkip: 'Fazer isso depois',
     tailscaleNotYet: '  Ainda não encontrei a interface do Tailscale (100.x).',
@@ -167,7 +176,8 @@ export const ptBR = {
         '  Cada conta do Claude Code fica num diretório de configuração (CLAUDE_CONFIG_DIR).\n' +
         '  Para cada uma você escolhe um comando (alias) que a abre no tmux, pronta para o celular.',
       which: 'Quais contas você quer controlar pelo iPhone?',
-      noneFound: '  Não encontrei nenhuma conta do Claude Code neste Mac; vamos criar uma.',
+      noneFound: (machine: string) =>
+        `  Não encontrei nenhuma conta do Claude Code neste ${machine}; vamos criar uma.`,
       more: 'Mais alguma conta?',
       howToAdd: 'Como adicionar a conta?',
       noContinue: 'Não, continuar',
@@ -203,6 +213,7 @@ export const ptBR = {
       giveUp: 'Desistir desta conta',
     },
   },
+  machine: { darwin: 'Mac', linux: 'computador' },
   profiles: {
     defaultName: 'Pessoal',
     newDirName: (index: number) => (index === 0 ? 'trabalho' : index === 1 ? 'pessoal' : `conta-${index}`),

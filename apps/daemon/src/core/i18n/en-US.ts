@@ -24,7 +24,7 @@ export const enUS = {
       tailscaleNotFound:
         'Tailscale not found (no 100.x interface). Install and connect Tailscale, or use --dev for 127.0.0.1.',
       simulatorHint:
-        'To test in the simulator on this Mac: `claude-remote start --dev` and `claude-remote pair --dev`.',
+        'To test locally (e.g. in the iOS simulator): `claude-remote start --dev` and `claude-remote pair --dev`.',
       scan: 'Scan it with the Claude Remote app. Do not share this code.',
     },
     setup: {
@@ -57,6 +57,10 @@ export const enUS = {
         file: (path: string) => `in the file ${path} (0600)`,
       },
       runPair: 'run `claude-remote pair`',
+      service: (name: string, detail: string) => `background service ${name} (${detail})`,
+      serviceHint: 'optional: `claude-remote service install`',
+      linger: 'lingering (the service keeps running after logout)',
+      lingerHint: 'run `loginctl enable-linger $USER`',
     },
     install: {
       description:
@@ -119,7 +123,7 @@ export const enUS = {
     no: 'no',
     welcome: {
       title: 'Welcome to Claude Remote!',
-      intro1: "Let's get this Mac ready so you can follow and control",
+      intro1: (machine: string) => `Let's get this ${machine} ready so you can follow and control`,
       intro2: 'Claude Code from your iPhone. It takes about 2 minutes.',
       footer: (version: string) => `v${version} · ↑/↓ to choose · Enter to confirm · Ctrl+C to quit`,
     },
@@ -132,7 +136,8 @@ export const enUS = {
     noAccounts: 'No Claude Code account found. Run `claude` once to log in, then `claude-remote setup`.',
     confirmSave: 'Save and install?',
     nothingChanged: 'Nothing was changed.',
-    serviceQuestion: 'Start Claude Remote with the Mac (and restart it if it crashes)?',
+    serviceQuestion: (machine: string) =>
+      `Start Claude Remote with the ${machine} (and restart it if it crashes)?`,
     noService: 'No service: run `claude-remote start` whenever you want to use it.',
     serviceUnavailable:
       '  systemd user services are not available here (`systemctl --user`).\n' +
@@ -144,11 +149,16 @@ export const enUS = {
       "  Couldn't enable lingering. Run `sudo loginctl enable-linger $USER` to keep the daemon running after logout.",
     lingerSkipped:
       '  Without lingering the daemon stops when you log out. Enable it later with `loginctl enable-linger $USER`.',
-    tailscaleIntro:
-      '  The Mac and the iPhone talk over a private Tailscale network (free), from anywhere.\n' +
-      '  1. On the Mac: install it from https://tailscale.com/download/mac (or `brew install --cask tailscale`) and sign in\n' +
+    tailscaleIntro: (machine: string, install: string) =>
+      `  The ${machine} and the iPhone talk over a private Tailscale network (free), from anywhere.\n` +
+      `  1. On the ${machine}: ${install}\n` +
       '  2. On the iPhone: install "Tailscale" from the App Store and sign in with the same account',
-    tailscaleQuestion: 'Is Tailscale connected on the Mac?',
+    tailscaleInstall: {
+      darwin:
+        'install it from https://tailscale.com/download/mac (or `brew install --cask tailscale`) and sign in',
+      linux: 'install it with `curl -fsSL https://tailscale.com/install.sh | sh` and run `sudo tailscale up`',
+    },
+    tailscaleQuestion: (machine: string) => `Is Tailscale connected on the ${machine}?`,
     tailscaleRetry: "I've connected it, check again",
     tailscaleSkip: "I'll do it later",
     tailscaleNotYet: '  Still no Tailscale interface (100.x) found.',
@@ -169,7 +179,7 @@ export const enUS = {
         '  Each Claude Code account lives in a configuration folder (CLAUDE_CONFIG_DIR).\n' +
         '  For each one you choose a command (alias) that opens it in tmux, ready for the phone.',
       which: 'Which accounts do you want to control from the iPhone?',
-      noneFound: "  No Claude Code account found on this Mac; let's create one.",
+      noneFound: (machine: string) => `  No Claude Code account found on this ${machine}; let's create one.`,
       more: 'Any other account?',
       howToAdd: 'How do you want to add the account?',
       noContinue: 'No, continue',
@@ -204,6 +214,8 @@ export const enUS = {
       giveUp: 'Give up on this account',
     },
   },
+  /** How texts name this machine (with the article in each text). */
+  machine: { darwin: 'Mac', linux: 'computer' },
   profiles: {
     defaultName: 'Personal',
     /** Suffix of a suggested `~/.claude-<name>` folder: 0 and 1 are words, the rest numbered. */
