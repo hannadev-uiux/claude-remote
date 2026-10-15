@@ -54,6 +54,10 @@ export default function RootLayout() {
               >
                 <Stack.Screen name="(main)" options={{ headerShown: false }} />
                 <Stack.Screen name="pair" options={{ title: 'Parear', presentation: 'modal' }} />
+                <Stack.Screen
+                  name="setup-guide"
+                  options={{ title: 'Primeira configuração', presentation: 'modal' }}
+                />
               </Stack>
             ) : null}
           </ConnectionProvider>

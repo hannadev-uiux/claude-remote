@@ -79,8 +79,11 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
             <EmptyState title="Nenhuma sessão">
               <Text color="textMuted">Inicie uma sessão no Mac usando os launchers:</Text>
               <View style={styles.code}>
-                <Text color="accent">$ claudin</Text>
-                <Text color="accent">$ drclaude</Text>
+                {(profiles.length > 0 ? profiles.map((p) => p.id) : ['claudin']).map((alias) => (
+                  <Text key={alias} color="accent">
+                    $ {alias}
+                  </Text>
+                ))}
               </View>
               <Text size="sm" color="textDim">
                 Sessões abertas com o `claude` puro aparecem como somente leitura.

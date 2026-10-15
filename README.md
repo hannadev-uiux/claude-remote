@@ -67,12 +67,12 @@ Claude Remote solves this with tools you already trust: sessions run inside **tm
                                                              │ hooks
                                           ┌──────────────────┴──────────────────┐
                                           │ tmux session "claude-remote"        │
-                                          │  ├─ claudin  → CLAUDE_CONFIG_DIR=…  │
-                                          │  └─ drclaude → CLAUDE_CONFIG_DIR=…  │
+                                          │  ├─ pessoal  → ~/.claude            │
+                                          │  └─ trabalho → CLAUDE_CONFIG_DIR=…  │
                                           └─────────────────────────────────────┘
 ```
 
-1. You start Claude Code with a tiny launcher (`claudin`, `drclaude`, … one per profile) that runs it inside a tmux window.
+1. You start Claude Code with a tiny launcher (one per account, named by you, e.g. `pessoal`, `trabalho`) that runs it inside a tmux window.
 2. Claude Code's HTTP hooks tell the daemon when a session starts, stops, needs permission or gets a prompt.
 3. The daemon tails the session transcript, reads the tmux pane, and serves everything to the app over an authenticated WebSocket bound **only** to the Tailscale interface.
 4. Prompts and keys go back through tmux; permission answers go back through the pending hook request.
@@ -102,35 +102,44 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## Getting started
 
-### 1. Mac: daemon
+### 1. Mac: one-line install
+
+```bash
+curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
+```
+
+The installer checks macOS, Node and git, installs `tmux`/`ripgrep` with Homebrew if needed, puts the source in `~/.claude-remote/src`, builds the daemon and opens a guided setup (`claude-remote setup`) that:
+
+- finds your Claude Code accounts (`~/.claude`, `~/.claude-*`) and lets you pick which ones to control;
+- asks the **alias** of each one: the command that opens that account inside tmux (e.g. `pessoal`, `trabalho`);
+- installs the launchers, the `PATH` entry and the hooks (with backups), and the background service;
+- helps with Tailscale and shows the pairing QR code.
+
+Run it again to update. `claude-remote setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
+
+<details>
+<summary>Manual install (from a clone)</summary>
 
 ```bash
 git clone https://github.com/maarkN/claude-remote.git
 cd claude-remote
 pnpm install
 pnpm --filter @claude-remote/daemon build
-
-# launchers, `claude-remote` shortcut, PATH in ~/.zshrc and hooks in every profile (with backups)
-node apps/daemon/dist/cli.js install
-source ~/.zshrc
-
-claude-remote doctor          # checks tmux, Tailscale, profiles, token…
-claude-remote service install # LaunchAgent "Claude Remote": starts at login, restarts on crash, waits for Tailscale
-claude-remote pair            # prints the pairing QR code
+node apps/daemon/dist/cli.js setup
 ```
 
-Profiles and ports live in `~/.claude-remote/config.json`, created on first run:
+</details>
+
+Profiles and ports live in `~/.claude-remote/config.json`:
 
 ```json
 {
   "profiles": [
-    { "id": "claudin", "name": "Personal", "configDir": "~/.claude", "color": "#D97757" },
-    { "id": "drclaude", "name": "Work", "configDir": "~/.claude-doctorx", "color": "#61AFEF" }
+    { "id": "pessoal", "name": "Personal", "configDir": "~/.claude", "color": "#D97757" },
+    { "id": "trabalho", "name": "Work", "configDir": "~/.claude-work", "color": "#61AFEF" }
   ]
 }
 ```
-
-Each profile `id` becomes a launcher with the same name. Re-run `claude-remote install` after editing profiles.
 
 ### 2. iPhone: app
 
@@ -139,15 +148,15 @@ cd apps/mobile
 pnpm ios     # expo run:ios — development build on the simulator or a connected iPhone
 ```
 
-Open the app, scan the QR code from `claude-remote pair`, and you are in.
+Open the app, scan the QR code from `claude-remote pair`, and you are in. Installed the app first? The pairing screen has a step-by-step guide for setting up the Mac.
 
 > **Trying it on the simulator without Tailscale?** Run `claude-remote start --dev` (binds to `127.0.0.1`) and `claude-remote pair --dev`.
 
 ### 3. Use it
 
 ```bash
-claudin              # same arguments as `claude`
-drclaude --resume    # another profile
+pessoal              # your alias; same arguments as `claude`
+trabalho --resume    # another account
 ```
 
 Both appear in the app, fully controllable. "Always allow" rules created from the phone: `claude-remote rules list` / `claude-remote rules undo <id>`.

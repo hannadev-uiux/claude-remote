@@ -26,10 +26,10 @@ describe('EventBus', () => {
 describe('config', () => {
   test('creates default profiles on first run', async () => {
     const config = await loadConfig(silentLogger)
-    expect(config.profiles.map((p) => p.id)).toEqual(['claudin', 'drclaude'])
+    expect(config.profiles.map((p) => p.id)).toEqual(['claudin'])
     expect(config.wsPort).toBe(7337)
     const written = JSON.parse(await readFile(paths.config(), 'utf8'))
-    expect(written.profiles).toHaveLength(2)
+    expect(written.profiles).toHaveLength(1)
   })
 
   test('fails with the invalid field', async () => {
