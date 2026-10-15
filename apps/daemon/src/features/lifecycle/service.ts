@@ -19,8 +19,8 @@ export async function validateCwd(raw: string, home = homedir()): Promise<string
 
 /** Starts and resumes sessions by running the profile launcher without attaching a terminal. */
 export class LifecycleService {
-  /** Panes launched by \`resume\` that may not have reported SessionStart yet, by session id. */
-  private readonly resuming = new Map<string, string>()
+  /** Launches by \`resume\` that may not have reported SessionStart yet, by session id. */
+  private readonly resuming = new Map<string, Promise<string>>()
 
   constructor(
     private readonly exec: Executor,
@@ -62,13 +62,26 @@ export class LifecycleService {
     const session = this.store.get(sessionId)
     if (!session) throw new DaemonError('not_found', `sessão ${sessionId} não encontrada`)
     if (session.controllable) throw new DaemonError('bad_request', 'a sessão já está aberta no tmux')
-    // A repeated tap while Claude is still booting must not open another window.
+    // A repeated tap while Claude is still booting (or while the launcher is still running)
+    // must not open another window; the promise is stored before any await.
     const pending = this.resuming.get(sessionId)
-    if (pending && (await this.hasPane(pending))) return { paneId: pending }
-    const cwd = await validateCwd(session.cwd, this.home)
-    const paneId = await this.launch(profile, cwd, ['--resume', sessionId])
-    this.resuming.set(sessionId, paneId)
-    return { paneId }
+    if (pending) {
+      const paneId = await pending.catch(() => null)
+      if (paneId && this.resuming.get(sessionId) === pending && (await this.hasPane(paneId))) {
+        return { paneId }
+      }
+      if (this.resuming.get(sessionId) !== pending) return this.resume(profileId, sessionId)
+    }
+    const launch = validateCwd(session.cwd, this.home).then((cwd) =>
+      this.launch(profile, cwd, ['--resume', sessionId]),
+    )
+    this.resuming.set(sessionId, launch)
+    try {
+      return { paneId: await launch }
+    } catch (error) {
+      if (this.resuming.get(sessionId) === launch) this.resuming.delete(sessionId)
+      throw error
+    }
   }
 
   /** Recent working directories of a profile, most recent first. */

@@ -97,6 +97,22 @@ describe('LifecycleService', () => {
     expect(exec.calls).toHaveLength(2)
   })
 
+  test('concurrent resumes launch a single window', async () => {
+    const { exec, store, project } = await setup()
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      async (pane) => pane === '%9',
+    )
+    store.upsert('old', {}, () => record('old', { cwd: project }))
+    const results = await Promise.all([service.resume('claudin', 'old'), service.resume('claudin', 'old')])
+    expect(results).toEqual([{ paneId: '%9' }, { paneId: '%9' }])
+    expect(exec.calls).toHaveLength(1)
+  })
+
   test('lists recent directories per profile', async () => {
     const { store, service } = await setup()
     store.upsert('a', {}, () => record('a', { cwd: '/w/a', updatedAt: '2026-10-14T10:00:00Z' }))
