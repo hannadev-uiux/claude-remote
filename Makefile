@@ -21,7 +21,7 @@ CHANNEL ?= production
 
 .PHONY: help install check lint-fix openspec \
 	daemon-dev daemon-build \
-	start ios-dev android-dev prebuild install-ios install-android \
+	start ios-dev android-dev prebuild ios-devices install-ios install-android \
 	publish-ota publish-ota-dry
 
 help: ## List the targets
@@ -66,9 +66,15 @@ android-dev: ## Development build on the emulator or a connected Android phone (
 prebuild: ## Regenerate ios/ and android/ from app.config.ts (after native changes)
 	cd $(MOBILE) && npx expo prebuild --clean
 
-install-ios: ## Release build on a connected iPhone, no Metro needed (fresh ios/)
-	cd $(MOBILE) && npx expo prebuild --platform ios --clean && \
-		npx expo run:ios $(device_flag) --configuration Release
+ios-devices: ## iPhones Xcode knows and whether they can be built to
+	@cd $(MOBILE) && npx tsx scripts/ios-devices.mts
+
+install-ios: ## Release build on a connected iPhone, no Metro needed (fresh ios/, DEVICE=...)
+	@# Picks a reachable iPhone first (or explains why DEVICE is not), instead of failing after the
+	@# prebuild with xcodebuild error 70; Expo then gets its UDID and does not ask.
+	@cd $(MOBILE) && udid=$$(npx tsx scripts/ios-devices.mts --udid $(if $(DEVICE),"$(DEVICE)")) && \
+		npx expo prebuild --platform ios --clean && \
+		npx expo run:ios --device "$$udid" --configuration Release
 
 install-android: ## Release build on a connected Android phone (fresh android/)
 	cd $(MOBILE) && npx expo prebuild --platform android --clean && \
