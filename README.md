@@ -203,12 +203,22 @@ On Android 13+ the app asks for the notification permission; notifications use t
 
 ### App updates over the air (optional)
 
-Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, build with one of:
+Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, the app uses a self-hosted [Expo Updates](https://docs.expo.dev/technical-specs/expo-updates-1/) server — the one at `maarkn.dev` (no EAS account or fees), or any other implementation of the protocol.
 
-- `EAS_PROJECT_ID=<id>` — [EAS Update](https://docs.expo.dev/eas-update/introduction/) (`https://u.expo.dev/<id>`), or
-- `CLAUDE_REMOTE_UPDATES_URL=<url>` — any server that implements the Expo Updates protocol; it requires a code-signing certificate.
+1. **Signing key, once.** `cd apps/mobile && npx expo-updates codesigning:generate --key-output-directory ~/.claude-remote-keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Claude Remote"`. Commit `certs/certificate.pem`; keep the private key out of the repo (and backed up: losing it means a new build for every phone).
+2. **Build** with the server URL, e.g. in `apps/mobile/.env.local` (git-ignored, read by the build and the publisher):
+   ```dotenv
+   CLAUDE_REMOTE_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest
+   ```
+   A custom URL without `certs/certificate.pem` is refused. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
+3. **Publish** a JavaScript change:
+   ```bash
+   CLAUDE_REMOTE_UPDATES_TOKEN=… CLAUDE_REMOTE_UPDATES_KEY=~/.claude-remote-keys/private-key.pem \
+     pnpm --filter @claude-remote/mobile ota:publish          # --platform ios|android, --dry-run
+   ```
+   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `CLAUDE_REMOTE_UPDATES_TOKEN`.
 
-With `apps/mobile/certs/updates-certificate.pem` (from `npx expo-updates codesigning:generate`, private key kept outside the repo) updates are verified before they run; on EAS this needs a paid plan. Publish with `pnpm --filter @claude-remote/mobile update:publish --channel preview` (add `--private-key-path` when signing). The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
+The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 
 ### Uninstall
 

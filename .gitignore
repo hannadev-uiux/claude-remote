@@ -17,3 +17,9 @@ firebase-service-account*.json
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# OTA signing: only the certificate is committed, never a private key.
+apps/mobile/certs/*key*.pem
+
+# Local env (build-time settings such as CLAUDE_REMOTE_UPDATES_URL)
+.env*.local

@@ -55,7 +55,7 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "build:android": "expo run:android --variant release",
-    "update:publish": "npx eas-cli@latest update",
+    "ota:publish": "tsx scripts/publish-update.mts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "icons": "tsx scripts/icons.mts",

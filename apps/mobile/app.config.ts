@@ -58,7 +58,7 @@ const APP_LOCALIZATIONS = Object.keys(SYSTEM_PROMPTS)
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID || undefined
 const CUSTOM_UPDATES_URL = process.env.CLAUDE_REMOTE_UPDATES_URL || undefined
 const UPDATES_URL = CUSTOM_UPDATES_URL ?? (EAS_PROJECT_ID && `https://u.expo.dev/${EAS_PROJECT_ID}`)
-const UPDATES_CERTIFICATE = './certs/updates-certificate.pem'
+const UPDATES_CERTIFICATE = './certs/certificate.pem'
 const signedUpdates = existsSync(UPDATES_CERTIFICATE)
 if (CUSTOM_UPDATES_URL && !signedUpdates) {
   throw new Error(`CLAUDE_REMOTE_UPDATES_URL needs a code-signing certificate at ${UPDATES_CERTIFICATE}`)
