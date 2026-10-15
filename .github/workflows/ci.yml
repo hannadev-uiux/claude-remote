@@ -12,7 +12,7 @@ concurrency:
 jobs:
   check:
     name: Typecheck, test & lint
-    # The daemon targets macOS (launchd, plutil, Keychain), so tests run there too.
+    # Whole monorepo on macOS (launchd, plutil, Keychain, the iOS app).
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
@@ -24,3 +24,19 @@ jobs:
       - run: brew install ripgrep tmux
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+
+  linux:
+    name: Daemon on Linux
+    # The daemon also runs on Linux (systemd, secret-tool); macOS-only tests are skipped here.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq tmux ripgrep zsh
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run typecheck test --filter '@claude-remote/daemon...'
+      - run: bash -n install.sh
