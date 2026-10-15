@@ -1,22 +1,22 @@
 ## Why
 
-Sem push, o usuário só descobre que a sessão parou ou pediu permissão se estiver com o app aberto — e o `/rc` notifica todos os aparelhos da conta (D7, A7).
+Without push, the user only finds out that a session stopped or asked for permission if the app is open — and `/rc` notifies every device on the account (D7, A7).
 
 ## What Changes
 
-- App: registro do token FCM (`@react-native-firebase/messaging`) e envio por `device.register`.
-- Daemon: envio de push via `firebase-admin` em `Stop`, `Notification` e pedido de permissão, só para tokens registrados.
-- Payload mínimo: título genérico, perfil e id da sessão (sem conteúdo da sessão).
-- Deep link para a sessão ao tocar; ações "Permitir" e "Negar" na notificação de permissão.
-- Sem push quando o app está em primeiro plano conectado.
+- App: FCM token registration (`@react-native-firebase/messaging`) and delivery via `device.register`.
+- Daemon: push delivery via `firebase-admin` on `Stop`, `Notification` and permission requests, only to registered tokens.
+- Minimal payload: generic title, profile and session id (no session content).
+- Deep link to the session on tap; "Allow" and "Deny" actions on the permission notification.
+- No push when the app is connected and in the foreground.
 
 ## Capabilities
 
 ### New Capabilities
-- `push-notifications`: notificações push direcionadas ao aparelho pareado.
+- `push-notifications`: push notifications targeted at the paired device.
 
 ### Modified Capabilities
 
 ## Impact
 
-`features/push` no daemon (dependência `firebase-admin`, service account local); app com `@react-native-firebase/app` e `messaging`, `expo-notifications` para categorias de ação. Requer conta Apple Developer paga e projeto Firebase.
+`features/push` in the daemon (`firebase-admin` dependency, local service account); app with `@react-native-firebase/app` and `messaging`, `expo-notifications` for action categories. Requires a paid Apple Developer account and a Firebase project.

@@ -1,21 +1,21 @@
 ## Context
 
-Depende do `DaemonClient` (change 10) e do formato de URL do `pair` (change 03).
+Depends on `DaemonClient` (change 10) and on the `pair` URL format (change 03).
 
 ## Goals / Non-Goals
 
-**Goals:** parear em menos de 10 segundos.
+**Goals:** pair in under 10 seconds.
 
-**Non-Goals:** múltiplos daemons.
+**Non-Goals:** multiple daemons.
 
 ## Decisions
 
-- **`parsePairingUrl`** puro (testado) com `URL` e validação Zod.
-- **`CameraView`** do `expo-camera` com `barcodeScannerSettings: { barcodeTypes: ["qr"] }`; trava após a primeira leitura válida para não disparar várias conexões.
-- **Teste de conexão** com instância temporária de `DaemonClient` sem reconexão.
-- **Store de credenciais** em `src/core/storage/credentials.ts` (SecureStore, chave única com JSON).
-- `ws://` (não TLS): tráfego cifrado pelo WireGuard do Tailscale; `NSAppTransportSecurity` liberado para `NSAllowsLocalNetworking` e exceções de IP.
+- **`parsePairingUrl`**, pure (tested), using `URL` and Zod validation.
+- **`CameraView`** from `expo-camera` with `barcodeScannerSettings: { barcodeTypes: ["qr"] }`; locks after the first valid scan so it doesn't trigger several connections.
+- **Connection test** with a temporary `DaemonClient` instance without reconnection.
+- **Credentials store** in `src/core/storage/credentials.ts` (SecureStore, a single key holding JSON).
+- `ws://` (not TLS): traffic is encrypted by Tailscale's WireGuard; `NSAppTransportSecurity` relaxed for `NSAllowsLocalNetworking` and IP exceptions.
 
 ## Risks / Trade-offs
 
-- [ATS bloqueia ws:// em IP 100.x] → `NSAllowsArbitraryLoads` restrito ao dev build pessoal (app não vai para loja).
+- [ATS blocks ws:// on a 100.x IP] → `NSAllowsArbitraryLoads` restricted to the personal dev build (the app is not going to the store).

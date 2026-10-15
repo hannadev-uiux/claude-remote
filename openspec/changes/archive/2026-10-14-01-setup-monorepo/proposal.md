@@ -1,22 +1,22 @@
 ## Why
 
-O Claude Remote tem três partes que precisam compartilhar tipos (app, daemon e protocolo). Sem um monorepo com tooling comum, cada parte divergiria em versão de TypeScript, lint e testes, e o protocolo WebSocket quebraria silenciosamente.
+Claude Remote has three parts that need to share types (app, daemon and protocol). Without a monorepo with common tooling, each part would drift apart in TypeScript version, lint and tests, and the WebSocket protocol would break silently.
 
 ## What Changes
 
-- Monorepo pnpm workspaces + Turborepo com `apps/daemon`, `apps/mobile` e `packages/protocol`.
-- `tsconfig.base.json` estrito compartilhado (TypeScript `strict`, `noUncheckedIndexedAccess`).
-- Biome para lint e formatação; Vitest para testes; scripts `typecheck`, `lint`, `test`, `build` orquestrados pelo Turborepo.
-- `.gitignore`, `.editorconfig`, `.nvmrc` e README inicial.
+- pnpm workspaces + Turborepo monorepo with `apps/daemon`, `apps/mobile` and `packages/protocol`.
+- Shared strict `tsconfig.base.json` (TypeScript `strict`, `noUncheckedIndexedAccess`).
+- Biome for lint and formatting; Vitest for tests; `typecheck`, `lint`, `test`, `build` scripts orchestrated by Turborepo.
+- `.gitignore`, `.editorconfig`, `.nvmrc` and an initial README.
 
 ## Capabilities
 
 ### New Capabilities
-<!-- Nenhuma: mudança só de tooling (skip_specs: true). -->
+<!-- None: tooling-only change (skip_specs: true). -->
 
 ### Modified Capabilities
-<!-- Nenhuma. -->
+<!-- None. -->
 
 ## Impact
 
-Cria a estrutura de diretórios e as dependências de desenvolvimento usadas por todos os changes seguintes.
+Creates the directory structure and the dev dependencies used by all subsequent changes.

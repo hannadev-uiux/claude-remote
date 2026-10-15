@@ -1,38 +1,38 @@
 ## Purpose
 
-Conecta as sessões do Claude Code ao daemon por meio de hooks HTTP instalados em cada perfil.
+Connects Claude Code sessions to the daemon through HTTP hooks installed in each profile.
 
 ## ADDED Requirements
 
-### Requirement: Instalação idempotente dos hooks
-O instalador SHALL mesclar no `settings.json` de cada perfil hooks HTTP para `SessionStart`, `SessionEnd`, `Stop`, `SubagentStop`, `Notification` e `PermissionRequest` apontando para o daemon local, preservando todas as outras chaves e hooks do arquivo. Rodar o instalador duas vezes MUST produzir o mesmo arquivo.
+### Requirement: Idempotent hook installation
+The installer SHALL merge into each profile's `settings.json` HTTP hooks for `SessionStart`, `SessionEnd`, `Stop`, `SubagentStop`, `Notification` and `PermissionRequest` pointing to the local daemon, preserving all other keys and hooks in the file. Running the installer twice MUST produce the same file.
 
-#### Scenario: settings.json com hooks do usuário
-- **WHEN** o perfil já tem um hook `Stop` próprio
-- **THEN** o hook do usuário continua lá e o hook do daemon é adicionado ao lado
+#### Scenario: settings.json with user hooks
+- **WHEN** the profile already has its own `Stop` hook
+- **THEN** the user's hook stays there and the daemon's hook is added alongside it
 
-#### Scenario: Reinstalação
-- **WHEN** o instalador roda pela segunda vez
-- **THEN** nenhum hook é duplicado
+#### Scenario: Reinstall
+- **WHEN** the installer runs a second time
+- **THEN** no hook is duplicated
 
 #### Scenario: Backup
-- **WHEN** o instalador altera um `settings.json`
-- **THEN** uma cópia `settings.json.bak-claude-remote` é gravada antes
+- **WHEN** the installer changes a `settings.json`
+- **THEN** a copy `settings.json.bak-claude-remote` is written first
 
-### Requirement: Desinstalação
-O `uninstall` SHALL remover apenas os hooks, o bloco do `~/.zshrc` e os launchers criados pelo instalador.
+### Requirement: Uninstall
+`uninstall` SHALL remove only the hooks, the `~/.zshrc` block and the launchers created by the installer.
 
-#### Scenario: Remoção limpa
-- **WHEN** o usuário roda `uninstall`
-- **THEN** o `settings.json` volta a ter só os hooks do usuário
+#### Scenario: Clean removal
+- **WHEN** the user runs `uninstall`
+- **THEN** `settings.json` goes back to containing only the user's hooks
 
-### Requirement: Recepção de eventos
-O daemon SHALL aceitar `POST /hooks/<evento>` com o payload do Claude Code, identificar o perfil e o painel tmux pelos headers enviados pelo hook, e publicar o evento internamente. Eventos que não sejam de permissão MUST ser respondidos imediatamente com corpo vazio, sem bloquear a sessão.
+### Requirement: Event reception
+The daemon SHALL accept `POST /hooks/<event>` with the Claude Code payload, identify the profile and the tmux pane from the headers sent by the hook, and publish the event internally. Non-permission events MUST be answered immediately with an empty body, without blocking the session.
 
-#### Scenario: SessionStart de sessão do launcher
-- **WHEN** chega `SessionStart` com header de painel `%12` e perfil `claudin`
-- **THEN** o daemon associa o `session_id` ao painel `%12` e ao perfil `claudin`
+#### Scenario: SessionStart from a launcher session
+- **WHEN** `SessionStart` arrives with pane header `%12` and profile `claudin`
+- **THEN** the daemon associates the `session_id` with pane `%12` and profile `claudin`
 
-#### Scenario: Daemon fora do ar
-- **WHEN** o Claude Code dispara um hook e o daemon não está rodando
-- **THEN** a sessão do Claude segue normalmente (o hook falha sem bloquear)
+#### Scenario: Daemon down
+- **WHEN** Claude Code fires a hook and the daemon is not running
+- **THEN** the Claude session continues normally (the hook fails without blocking)

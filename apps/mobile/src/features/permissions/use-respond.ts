@@ -1,12 +1,15 @@
 import type { RuleScope } from '@claude-remote/protocol'
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDaemonClient } from '@/core/connection'
 import { DaemonRequestError } from '@/core/connection/daemon-client'
+import { errorMessage } from '@/core/connection/error-message'
 import { buildRespond } from './describe'
 import { usePermissionsStore } from './store'
 
 export function useRespond() {
   const client = useDaemonClient()
+  const { t } = useTranslation()
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,15 +28,15 @@ export function useRespond() {
             const { [requestId]: _gone, ...rest } = s.pending
             return { pending: rest }
           })
-          setError('Este pedido já foi resolvido (no Mac ou por tempo esgotado).')
+          setError(t('permissions.alreadyResolved'))
         } else {
-          setError((e as Error).message)
+          setError(errorMessage(e, t))
         }
       } finally {
         setBusy(null)
       }
     },
-    [client],
+    [client, t],
   )
   return { respond, busy, error }
 }

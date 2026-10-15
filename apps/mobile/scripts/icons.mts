@@ -1,6 +1,8 @@
 /**
  * Generates the app icon and splash from code so the artwork stays reviewable and reproducible.
  * Foreground: the Claude spark in Claude orange. Background: a terminal window with a `>_` prompt.
+ * Android also gets an adaptive icon (the artwork inside the 66% safe zone over a solid background),
+ * a monochrome themed icon and the white status bar notification icon.
  * Run: pnpm --filter @claude-remote/mobile icons
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -64,6 +66,27 @@ function iconSvg(size = 1024): string {
 </svg>`
 }
 
+/** The icon artwork without its background, shrunk into the adaptive icon safe zone (66%). */
+function adaptiveForegroundSvg(): string {
+  const scale = 0.66
+  const offset = (1024 * (1 - scale)) / 2
+  const art = iconSvg()
+    .replace(/^<svg[^>]*>/, '')
+    .replace(/<\/svg>$/, '')
+    .replace('<rect width="1024" height="1024" fill="url(#bg)"/>', '')
+    .replace('<rect width="1024" height="1024" fill="url(#glow)"/>', '')
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <g transform="translate(${offset} ${offset}) scale(${scale})">${art}</g>
+</svg>`
+}
+
+/** White spark on transparent: Android themed (monochrome) icon and status bar notification icon. */
+function monochromeSvg(radius: number): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  ${spark(512, 512, radius).replace(`fill="${ORANGE}"`, 'fill="#FFFFFF"')}
+</svg>`
+}
+
 function splashSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <path d="M300 380 L440 512 L300 644" fill="none" stroke="#3A3836" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
@@ -86,3 +109,6 @@ writeFileSync(join(root, 'icon', 'splash.svg'), splashSvg())
 await render(iconSvg(), 'icon.png', 1024, BG)
 await render(splashSvg(), 'splash-icon.png', 1024)
 await render(iconSvg(), 'favicon.png', 48, BG)
+await render(adaptiveForegroundSvg(), 'adaptive-icon.png', 1024)
+await render(monochromeSvg(300), 'adaptive-icon-monochrome.png', 1024)
+await render(monochromeSvg(440), 'notification-icon.png', 96)

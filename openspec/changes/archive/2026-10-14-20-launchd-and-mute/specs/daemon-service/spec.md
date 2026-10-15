@@ -1,23 +1,23 @@
 ## Purpose
 
-Mantém o daemon rodando como serviço do usuário no macOS, iniciando com o login e se recuperando de falhas.
+Keeps the daemon running as a user service on macOS, starting at login and recovering from failures.
 
 ## ADDED Requirements
 
 ### Requirement: LaunchAgent
-`service install` SHALL gravar e carregar um LaunchAgent com `RunAtLoad` e `KeepAlive`, usando o caminho absoluto do Node atual; `service uninstall` MUST descarregar e remover o arquivo.
+`service install` SHALL write and load a LaunchAgent with `RunAtLoad` and `KeepAlive`, using the absolute path of the current Node; `service uninstall` MUST unload and remove the file.
 
 #### Scenario: Login
-- **WHEN** o usuário faz login no Mac
-- **THEN** o daemon inicia automaticamente
+- **WHEN** the user logs in on the Mac
+- **THEN** the daemon starts automatically
 
-#### Scenario: Queda do processo
-- **WHEN** o processo do daemon termina com erro
-- **THEN** o launchd o reinicia
+#### Scenario: Process crash
+- **WHEN** the daemon process exits with an error
+- **THEN** launchd restarts it
 
-### Requirement: Reinício do tmux
-Quando o servidor tmux reinicia, o daemon SHALL marcar como encerradas as sessões cujos painéis sumiram e continuar aceitando novas sessões sem reinício.
+### Requirement: tmux restart
+When the tmux server restarts, the daemon SHALL mark as ended the sessions whose panes disappeared and keep accepting new sessions without a restart.
 
 #### Scenario: tmux kill-server
-- **WHEN** o usuário roda `tmux kill-server`
-- **THEN** as sessões aparecem como encerradas e uma nova sessão via launcher é registrada normalmente
+- **WHEN** the user runs `tmux kill-server`
+- **THEN** the sessions show as ended and a new session started via a launcher is registered normally

@@ -10,20 +10,21 @@ Thanks for your interest! Bug reports, ideas, docs and code are all welcome.
 
 ## Setup
 
-Requirements: macOS, Node 24+, pnpm 12+, tmux, git, ripgrep, Xcode (for the app).
+Requirements: macOS or Linux, Node 24+, pnpm 12+, tmux, git, ripgrep, zsh; Xcode on a Mac (iOS) or the Android SDK with JDK 17 (Android) for the app.
 
 ```bash
 pnpm install
 pnpm check                                            # typecheck + tests + Biome — must be green
 pnpm --filter @claude-remote/daemon dev start --dev   # daemon from source on 127.0.0.1
-pnpm --filter @claude-remote/mobile ios               # app on the simulator
+pnpm --filter @claude-remote/mobile ios               # app on the iOS simulator
+pnpm --filter @claude-remote/mobile android           # app on an Android emulator
 ```
 
 Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — please read it before changing code.
 
 ## Workflow
 
-1. **Specs first (OpenSpec).** Features and behavior changes start as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change in `openspec/changes/`, with a proposal, spec deltas and tasks. Validate with `openspec validate <change> --strict`. When merged, the change is archived into `openspec/specs/`. Small fixes and docs don't need a change.
+1. **Specs first (OpenSpec).** Features and behavior changes start as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change in `openspec/changes/`, with a proposal, spec deltas and tasks. Validate with `openspec validate <change> --strict`. When merged, the change is archived into `openspec/specs/`. Small fixes and docs don't need a change. OpenSpec artifacts are always written in English (en-US).
 2. **Branch** from `development`: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
 
    | Branch | Purpose |
@@ -39,7 +40,7 @@ Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — pl
    - Only `features/transcript/parser.ts` knows the Claude Code `.jsonl` format; TUI labels live in one tested table.
    - Writes to user files are read → merge → backup → atomic write, and idempotent.
    - Native app dependencies are added with `npx expo install`.
-   - UI text is Brazilian Portuguese (translations welcome); code and identifiers are English.
+   - UI text always goes through i18n with typed catalogs in `pt-BR`, `en-US` and `es-ES` (same keys in all three, checked by tests); code and identifiers are English.
 4. **Test.** `pnpm check` must pass. Add tests for new logic; describe manual checks (simulator, real tmux session) in the PR.
 5. **Commit** with [Conventional Commits](https://www.conventionalcommits.org/) in English:
 

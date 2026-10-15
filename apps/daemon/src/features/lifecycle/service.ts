@@ -13,7 +13,7 @@ export const MAX_PROJECTS = 30
 export async function validateCwd(raw: string, home = homedir()): Promise<string> {
   const cwd = resolve(expandHome(raw.trim()))
   const inside = cwd === home || cwd.startsWith(`${home}${sep}`)
-  if (!inside || !(await isDirectory(cwd))) throw new DaemonError('invalid_cwd', `diretório inválido: ${raw}`)
+  if (!inside || !(await isDirectory(cwd))) throw new DaemonError('invalid_cwd', `invalid directory: ${raw}`)
   return cwd
 }
 
@@ -33,7 +33,7 @@ export class LifecycleService {
 
   private profile(id: string): Profile {
     const profile = this.profiles.find((p) => p.id === id)
-    if (!profile) throw new DaemonError('not_found', `perfil ${id} não encontrado`)
+    if (!profile) throw new DaemonError('not_found', `profile ${id} not found`)
     return profile
   }
 
@@ -60,8 +60,8 @@ export class LifecycleService {
   async resume(profileId: string, sessionId: string): Promise<{ paneId: string }> {
     const profile = this.profile(profileId)
     const session = this.store.get(sessionId)
-    if (!session) throw new DaemonError('not_found', `sessão ${sessionId} não encontrada`)
-    if (session.controllable) throw new DaemonError('bad_request', 'a sessão já está aberta no tmux')
+    if (!session) throw new DaemonError('not_found', `session ${sessionId} not found`)
+    if (session.controllable) throw new DaemonError('bad_request', 'the session is already open in tmux')
     // A repeated tap while Claude is still booting (or while the launcher is still running)
     // must not open another window; the promise is stored before any await.
     const pending = this.resuming.get(sessionId)

@@ -1,16 +1,16 @@
 ## MODIFIED Requirements
 
-### Requirement: Instalação idempotente dos hooks
-O instalador SHALL mesclar no `settings.json` de cada perfil hooks HTTP para `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `Notification` e `PermissionRequest` apontando para o daemon local, preservando todas as outras chaves e hooks do arquivo. Rodar o instalador duas vezes MUST produzir o mesmo arquivo.
+### Requirement: Idempotent hook installation
+The installer SHALL merge into each profile's `settings.json` HTTP hooks for `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `Notification` and `PermissionRequest` pointing to the local daemon, preserving all other keys and hooks in the file. Running the installer twice MUST produce the same file.
 
-#### Scenario: settings.json com hooks do usuário
-- **WHEN** o perfil já tem um hook `Stop` próprio
-- **THEN** o hook do usuário continua lá e o hook do daemon é adicionado ao lado
+#### Scenario: settings.json with user hooks
+- **WHEN** the profile already has its own `Stop` hook
+- **THEN** the user's hook stays there and the daemon's hook is added alongside it
 
-#### Scenario: Reinstalação
-- **WHEN** o instalador roda pela segunda vez
-- **THEN** nenhum hook é duplicado
+#### Scenario: Reinstall
+- **WHEN** the installer runs a second time
+- **THEN** no hook is duplicated
 
 #### Scenario: Backup
-- **WHEN** o instalador altera um `settings.json`
-- **THEN** uma cópia `settings.json.bak-claude-remote` é gravada antes
+- **WHEN** the installer changes a `settings.json`
+- **THEN** a copy `settings.json.bak-claude-remote` is written first

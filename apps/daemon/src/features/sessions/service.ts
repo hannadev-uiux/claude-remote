@@ -45,7 +45,7 @@ export class SessionService {
       id,
       profileId: hook.profileId ?? 'unknown',
       cwd,
-      title: cwd ? basename(cwd) : 'Sessão',
+      title: cwd ? basename(cwd) : 'Session',
       state: 'idle',
       permissionMode: null,
       controllable: false,

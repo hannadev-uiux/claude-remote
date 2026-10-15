@@ -14,6 +14,28 @@ export interface PushSender {
   send(tokens: readonly string[], message: PushMessage): Promise<{ invalidTokens: string[] }>
 }
 
+/** Android notification channel created by the app at startup (high importance). */
+export const ANDROID_CHANNEL_ID = 'claude-remote'
+
+/**
+ * FCM multicast payload. Both platform blocks go in every message: FCM applies `apns` to iPhones
+ * and `android` to Android phones. Only the title, body and identifiers travel (no session content).
+ */
+export function buildMulticast(tokens: readonly string[], message: PushMessage) {
+  return {
+    tokens: [...tokens],
+    notification: { title: message.title, body: message.body },
+    data: message.data,
+    apns: {
+      payload: { aps: { sound: 'default', ...(message.category ? { category: message.category } : {}) } },
+    },
+    android: {
+      priority: 'high' as const,
+      notification: { channelId: ANDROID_CHANNEL_ID, sound: 'default' },
+    },
+  }
+}
+
 const INVALID = new Set([
   'messaging/registration-token-not-registered',
   'messaging/invalid-registration-token',
@@ -41,14 +63,7 @@ export async function createFirebaseSender(
   return {
     async send(tokens, message) {
       if (tokens.length === 0) return { invalidTokens: [] }
-      const response = await messaging.sendEachForMulticast({
-        tokens: [...tokens],
-        notification: { title: message.title, body: message.body },
-        data: message.data,
-        apns: {
-          payload: { aps: { sound: 'default', ...(message.category ? { category: message.category } : {}) } },
-        },
-      })
+      const response = await messaging.sendEachForMulticast(buildMulticast(tokens, message))
       const invalidTokens = response.responses.flatMap((r, i) =>
         !r.success && r.error && INVALID.has(r.error.code) ? [tokens[i]!] : [],
       )

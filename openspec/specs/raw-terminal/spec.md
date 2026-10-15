@@ -1,24 +1,24 @@
 # raw-terminal Specification
 
 ## Purpose
-Espelha no app o conteúdo bruto do painel tmux da sessão, como fallback para menus e diálogos da TUI.
+Mirrors the raw content of the session's tmux pane in the app, as a fallback for TUI menus and dialogs.
 
 ## Requirements
 
-### Requirement: Stream do painel
-Após `pane.subscribe`, o daemon SHALL enviar `pane.frame { sessionId, text, cols, rows }` com o conteúdo visível do painel incluindo sequências de cor, apenas quando o conteúdo mudar, no máximo 4 vezes por segundo. `pane.unsubscribe` ou desconexão MUST encerrar a captura.
+### Requirement: Pane stream
+After `pane.subscribe`, the daemon SHALL send `pane.frame { sessionId, text, cols, rows }` with the visible pane content including color sequences, only when the content changes, at most 4 times per second. `pane.unsubscribe` or disconnection MUST stop the capture.
 
-#### Scenario: Menu aberto
-- **WHEN** a TUI abre o menu do `/model`
-- **THEN** o app recebe um quadro com o menu
+#### Scenario: Menu open
+- **WHEN** the TUI opens the `/model` menu
+- **THEN** the app receives a frame with the menu
 
-#### Scenario: Painel parado
-- **WHEN** o conteúdo não muda
-- **THEN** nenhum quadro novo é enviado
+#### Scenario: Idle pane
+- **WHEN** the content does not change
+- **THEN** no new frame is sent
 
-### Requirement: Terminal no app
-A aba Terminal SHALL renderizar os quadros num emulador de terminal com o tema do app e uma barra de teclas (setas, Enter, Esc, Tab, Shift+Tab, Ctrl+C, 1-9).
+### Requirement: Terminal in the app
+The Terminal tab SHALL render the frames in a terminal emulator using the app theme, with a key bar (arrows, Enter, Esc, Tab, Shift+Tab, Ctrl+C, 1-9).
 
-#### Scenario: Navegar menu
-- **WHEN** o usuário toca em seta para baixo e Enter
-- **THEN** o app envia `session.key` `Down` e `Enter` e o quadro seguinte mostra a seleção
+#### Scenario: Navigate a menu
+- **WHEN** the user taps the down arrow and Enter
+- **THEN** the app sends `session.key` `Down` and `Enter` and the next frame shows the selection

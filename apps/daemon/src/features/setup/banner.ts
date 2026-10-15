@@ -1,4 +1,5 @@
 import { stripVTControlCharacters } from 'node:util'
+import type { Messages } from '../../core/i18n/index.ts'
 
 /** Terminal styling for the setup wizard, in the colors of the app (see apps/mobile/src/core/theme). */
 export const palette = {
@@ -112,27 +113,34 @@ export function box(lines: readonly string[], paint: Paint, inner = BANNER_WIDTH
   return out.join('\n')
 }
 
-/**
- * Logo (icon + CLAUDE/REMOTE) followed by the welcome box. Narrow terminals get only the box.
- */
-export function renderBanner(paint: Paint, version: string, columns = 80): string {
-  const welcome = box(
-    [
-      `${paint('accent', '✻')} ${paint('bold', 'Boas-vindas ao Claude Remote!')}`,
-      '',
-      paint('muted', 'Vamos preparar este Mac para você acompanhar e controlar'),
-      paint('muted', 'o Claude Code pelo iPhone. Leva uns 2 minutos.'),
-      '',
-      paint('dim', `v${version} · ↑/↓ para escolher · Enter para confirmar · Ctrl+C sai`),
-    ],
-    paint,
-  )
-  if (columns < BANNER_WIDTH) return `\n${welcome}\n`
+/** Logo (icon + CLAUDE/REMOTE), language-neutral; empty on narrow terminals. */
+export function renderLogo(paint: Paint, columns = 80): string {
+  if (columns < BANNER_WIDTH) return ''
   const words = [...CLAUDE.map((l) => paint('text', l)), ...REMOTE.map((l) => paint('accent', l))]
   const logo = ICON.map((segments, i) => {
     const icon = segments.map(([color, text]) => paint(color, text)).join('')
     const pad = ' '.repeat(ICON_WIDTH - width(segments.map(([, t]) => t).join('')))
     return `${icon}${pad}  ${words[i] ?? ''}`.trimEnd()
   })
-  return `\n${logo.join('\n')}\n\n${welcome}\n`
+  return `\n${logo.join('\n')}\n`
+}
+
+/** Welcome box like Claude Code's, in the chosen language. */
+export function renderWelcome(
+  paint: Paint,
+  version: string,
+  m: Messages['setup']['welcome'],
+  machine: string,
+): string {
+  return box(
+    [
+      `${paint('accent', '✻')} ${paint('bold', m.title)}`,
+      '',
+      paint('muted', m.intro1(machine)),
+      paint('muted', m.intro2),
+      '',
+      paint('dim', m.footer(version)),
+    ],
+    paint,
+  )
 }

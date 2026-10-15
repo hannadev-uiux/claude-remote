@@ -1,41 +1,41 @@
 ## Purpose
 
-Entrega ao app o conteúdo das sessões em tempo real, com histórico paginado e retomada sem perdas.
+Delivers session content to the app in real time, with paginated history and lossless resumption.
 
 ## ADDED Requirements
 
-### Requirement: Normalização tolerante
-O daemon SHALL converter cada linha do transcript em zero ou mais entradas normalizadas (`user`, `assistant_text`, `thinking`, `tool_use`, `tool_result`, `system`, `unknown`). Linhas inválidas ou de tipo desconhecido MUST NOT interromper a leitura.
+### Requirement: Tolerant normalization
+The daemon SHALL convert each transcript line into zero or more normalized entries (`user`, `assistant_text`, `thinking`, `tool_use`, `tool_result`, `system`, `unknown`). Invalid lines or lines of an unknown type MUST NOT interrupt reading.
 
-#### Scenario: Linha corrompida
-- **WHEN** uma linha do `.jsonl` não é JSON válido
-- **THEN** ela é ignorada e as seguintes continuam sendo transmitidas
+#### Scenario: Corrupted line
+- **WHEN** a `.jsonl` line is not valid JSON
+- **THEN** it is ignored and the following lines keep being streamed
 
-#### Scenario: Tipos internos
-- **WHEN** a linha é `file-history-snapshot`, `atis-latch` ou `queue-operation`
-- **THEN** nenhuma entrada é enviada ao app
+#### Scenario: Internal types
+- **WHEN** the line is `file-history-snapshot`, `atis-latch` or `queue-operation`
+- **THEN** no entry is sent to the app
 
-#### Scenario: Pensamento vazio
-- **WHEN** um bloco `thinking` vem sem texto
-- **THEN** nenhuma entrada é enviada para ele
+#### Scenario: Empty thinking
+- **WHEN** a `thinking` block comes without text
+- **THEN** no entry is sent for it
 
-### Requirement: Transmissão em tempo real
-Após `session.subscribe`, o daemon SHALL enviar cada nova entrada como `transcript.entry` com `cursor` crescente em menos de 1 s após ser gravada no arquivo.
+### Requirement: Real-time streaming
+After `session.subscribe`, the daemon SHALL send each new entry as `transcript.entry` with an increasing `cursor` less than 1 s after it is written to the file.
 
-#### Scenario: Nova resposta
-- **WHEN** o Claude grava uma resposta no transcript de uma sessão assinada
-- **THEN** o app recebe `transcript.entry` correspondente
+#### Scenario: New response
+- **WHEN** Claude writes a response to the transcript of a subscribed session
+- **THEN** the app receives the corresponding `transcript.entry`
 
-### Requirement: Retomada por cursor
-Com `sinceCursor`, o daemon SHALL enviar todas as entradas posteriores ao cursor antes das novas; sem `sinceCursor`, MUST enviar a última página (50 entradas).
+### Requirement: Cursor-based resumption
+With `sinceCursor`, the daemon SHALL send all entries after the cursor before the new ones; without `sinceCursor`, it MUST send the last page (50 entries).
 
-#### Scenario: Reconexão
-- **WHEN** o app reconecta e assina com `sinceCursor` 120
-- **THEN** recebe as entradas a partir do cursor 121, sem duplicatas
+#### Scenario: Reconnection
+- **WHEN** the app reconnects and subscribes with `sinceCursor` 120
+- **THEN** it receives the entries starting from cursor 121, without duplicates
 
-### Requirement: Histórico paginado
-`session.history { before, limit }` SHALL retornar `transcript.page` com até `limit` (máx. 200) entradas anteriores a `before` e `hasMore`.
+### Requirement: Paginated history
+`session.history { before, limit }` SHALL return `transcript.page` with up to `limit` (max. 200) entries before `before`, and `hasMore`.
 
-#### Scenario: Rolagem para cima
-- **WHEN** o app pede `before` 50 e `limit` 50
-- **THEN** recebe as entradas de cursor 0 a 49 e `hasMore: false`
+#### Scenario: Scrolling up
+- **WHEN** the app requests `before` 50 and `limit` 50
+- **THEN** it receives the entries with cursor 0 to 49 and `hasMore: false`

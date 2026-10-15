@@ -1,13 +1,13 @@
 ## Context
 
-Launchers do change 04; registro do change 05.
+Launchers from change 04; registry from change 05.
 
 ## Decisions
 
-- **Reutiliza o launcher** (`~/.claude-remote/bin/<perfil>`) com variável `CLAUDE_REMOTE_NO_ATTACH=1` para não tentar anexar terminal.
-- **Diretórios recentes** derivados do registro de sessões + varredura de transcripts (campo `cwd`), sem decodificar o nome da pasta (ambíguo).
-- **Validação de `cwd`**: deve existir, ser diretório e estar dentro do `HOME`.
+- **Reuse the launcher** (`~/.claude-remote/bin/<profile>`) with the `CLAUDE_REMOTE_NO_ATTACH=1` variable so it does not try to attach a terminal.
+- **Recent directories** derived from the session registry + a scan of transcripts (`cwd` field), without decoding the folder name (ambiguous).
+- **`cwd` validation**: it must exist, be a directory and be inside `HOME`.
 
 ## Risks / Trade-offs
 
-- [Abrir shell remoto arbitrário] → só executa o launcher fixo; `cwd` validado.
+- [Opening an arbitrary remote shell] → only the fixed launcher is executed; `cwd` is validated.

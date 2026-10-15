@@ -1,23 +1,23 @@
 ## Context
 
-O Claude Code suporta hooks `type: "http"` com `url`, `headers`, `timeout` e `allowedEnvVars` (interpolação `$VAR` nos headers). Isso dispensa scripts intermediários.
+Claude Code supports `type: "http"` hooks with `url`, `headers`, `timeout` and `allowedEnvVars` (`$VAR` interpolation in headers). This removes the need for intermediate scripts.
 
 ## Goals / Non-Goals
 
-**Goals:** vincular sessão ↔ painel tmux ↔ perfil sem nenhuma chamada extra do launcher.
+**Goals:** link session ↔ tmux pane ↔ profile without any extra call from the launcher.
 
-**Non-Goals:** suportar shells além do zsh na v1.
+**Non-Goals:** supporting shells other than zsh in v1.
 
 ## Decisions
 
-- **Hooks HTTP diretos**: headers `X-Claude-Remote-Secret` (literal), `X-Claude-Remote-Pane: $TMUX_PANE` e `X-Claude-Remote-Profile: $CLAUDE_REMOTE_PROFILE`, com `allowedEnvVars: ["TMUX_PANE","CLAUDE_REMOTE_PROFILE"]`. Fora do tmux os headers chegam vazios e a sessão vira somente leitura.
-- **Marcação dos hooks**: URL contém `/hooks/` do daemon em `127.0.0.1:<porta>`; o instalador identifica os seus pela URL, sem campos extras que o Claude Code poderia rejeitar.
-- **Timeouts**: 5 s para eventos informativos; `PermissionRequest` com timeout configurável (padrão 300 s).
-- **Launchers como scripts zsh** gerados em `~/.claude-remote/bin/` a partir de um template com o perfil embutido; usam `tmux new-window -P -F '#{pane_id}'` e `attach`/`switch-client`.
-- **Perfil também detectado pelo `transcript_path`** (prefixo do `configDir`) como redundância.
-- **Escrita de JSON segura**: leitura, merge, escrita em arquivo temporário e `rename` atômico.
+- **Direct HTTP hooks**: headers `X-Claude-Remote-Secret` (literal), `X-Claude-Remote-Pane: $TMUX_PANE` and `X-Claude-Remote-Profile: $CLAUDE_REMOTE_PROFILE`, with `allowedEnvVars: ["TMUX_PANE","CLAUDE_REMOTE_PROFILE"]`. Outside tmux the headers arrive empty and the session becomes read-only.
+- **Hook tagging**: the URL contains the daemon's `/hooks/` at `127.0.0.1:<port>`; the installer identifies its own hooks by URL, without extra fields that Claude Code might reject.
+- **Timeouts**: 5 s for informational events; `PermissionRequest` with a configurable timeout (default 300 s).
+- **Launchers as zsh scripts** generated in `~/.claude-remote/bin/` from a template with the profile embedded; they use `tmux new-window -P -F '#{pane_id}'` and `attach`/`switch-client`.
+- **Profile also detected from `transcript_path`** (the `configDir` prefix) as redundancy.
+- **Safe JSON writing**: read, merge, write to a temporary file and atomic `rename`.
 
 ## Risks / Trade-offs
 
-- [Formato dos hooks muda] → instalador centraliza a montagem do bloco em uma função testada.
-- [Usuário edita o `settings.json` à mão depois] → merge por URL é tolerante.
+- [Hook format changes] → the installer centralizes building the block in a single tested function.
+- [User later edits `settings.json` by hand] → merging by URL is tolerant.

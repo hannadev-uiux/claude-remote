@@ -1,8 +1,18 @@
-/** One-line installer of the Mac side (served by maarkn.dev, redirecting to the repo's install.sh). */
+import type { TFunction } from '@/core/i18n/create'
+
+/** One-line installer of the computer side (served by maarkn.dev, redirecting to the repo's install.sh). */
 export const INSTALL_URL = 'https://maarkn.dev/claude-remote/install.sh'
 export const INSTALL_COMMAND = `curl -fsSL ${INSTALL_URL} | bash`
-export const TAILSCALE_IOS_URL = 'https://apps.apple.com/app/tailscale/id1470499037'
-export const TAILSCALE_MAC_URL = 'https://tailscale.com/download/mac'
+/** Tailscale in the store of the phone the guide runs on. */
+export const TAILSCALE_STORES = {
+  ios: { name: 'App Store', url: 'https://apps.apple.com/app/tailscale/id1470499037' },
+  android: {
+    name: 'Google Play',
+    url: 'https://play.google.com/store/apps/details?id=com.tailscale.ipn',
+  },
+} as const
+/** Download page that picks the right installer for macOS, Linux or Windows. */
+export const TAILSCALE_DOWNLOAD_URL = 'https://tailscale.com/download'
 export const REPO_URL = 'https://github.com/maarkN/claude-remote'
 
 export type GuideAction =
@@ -11,6 +21,7 @@ export type GuideAction =
   | { kind: 'scan'; label: string }
 
 export type GuideStep = {
+  id: StepId
   title: string
   body: string
   /** Shown as a copyable code block. */
@@ -18,28 +29,47 @@ export type GuideStep = {
   actions: GuideAction[]
 }
 
-/** First-run guide for people who installed the app before setting up the Mac. */
-export const SETUP_GUIDE: readonly GuideStep[] = [
-  {
-    title: 'Tailscale no iPhone',
-    body: 'O app fala com o seu Mac por uma rede privada do Tailscale, que funciona de qualquer lugar e é grátis para uso pessoal. Instale e entre com uma conta.',
-    actions: [{ kind: 'link', label: 'Abrir na App Store', url: TAILSCALE_IOS_URL }],
-  },
-  {
-    title: 'Tailscale no Mac',
-    body: 'Instale o Tailscale no Mac e entre com a mesma conta do iPhone. Os dois aparecem como dispositivos da mesma rede.',
-    code: 'brew install --cask tailscale',
-    actions: [{ kind: 'share', label: 'Enviar o link para o Mac', text: TAILSCALE_MAC_URL }],
-  },
-  {
-    title: 'Claude Remote no Mac',
-    body: 'No Terminal do Mac, rode o instalador. Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
-    code: INSTALL_COMMAND,
-    actions: [{ kind: 'share', label: 'Enviar o comando (AirDrop, Notas…)', text: INSTALL_COMMAND }],
-  },
-  {
-    title: 'Parear',
-    body: 'No fim, o instalador mostra um QR code (ou rode `claude-remote pair`). Escaneie com este app e pronto: abra o Claude Code no Mac pelo alias que você escolheu.',
-    actions: [{ kind: 'scan', label: 'Escanear o QR code' }],
-  },
-]
+/** Steps in order; texts come from `setupGuide.steps.<id>` in the catalogs. */
+export const SETUP_STEPS = ['tailscalePhone', 'tailscaleComputer', 'install', 'pair'] as const
+export type StepId = (typeof SETUP_STEPS)[number]
+
+/**
+ * First-run guide for people who installed the app before setting up the computer. `os` is
+ * `Platform.OS`: Android links Tailscale on Google Play, everything else on the App Store.
+ */
+export function buildSetupGuide(t: TFunction, os: string): GuideStep[] {
+  const store = os === 'android' ? TAILSCALE_STORES.android : TAILSCALE_STORES.ios
+  const text = (id: StepId) => ({
+    id,
+    title: t(`setupGuide.steps.${id}.title`),
+    body: t(`setupGuide.steps.${id}.body`),
+  })
+  return [
+    {
+      ...text('tailscalePhone'),
+      actions: [
+        {
+          kind: 'link',
+          label: t('setupGuide.steps.tailscalePhone.action', { store: store.name }),
+          url: store.url,
+        },
+      ],
+    },
+    {
+      ...text('tailscaleComputer'),
+      actions: [
+        {
+          kind: 'share',
+          label: t('setupGuide.steps.tailscaleComputer.action'),
+          text: TAILSCALE_DOWNLOAD_URL,
+        },
+      ],
+    },
+    {
+      ...text('install'),
+      code: INSTALL_COMMAND,
+      actions: [{ kind: 'share', label: t('setupGuide.steps.install.action'), text: INSTALL_COMMAND }],
+    },
+    { ...text('pair'), actions: [{ kind: 'scan', label: t('setupGuide.steps.pair.action') }] },
+  ]
+}

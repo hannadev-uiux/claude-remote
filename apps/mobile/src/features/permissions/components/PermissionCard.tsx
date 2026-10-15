@@ -1,6 +1,7 @@
 import type { PermissionRequestInfo } from '@claude-remote/protocol'
 import { ShieldAlert } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Button, Text } from '@/ui'
@@ -24,7 +25,8 @@ function useCountdown(expiresAt: string) {
 }
 
 export function PermissionCard({ request, busy, onAllow, onAlways, onDeny }: Props) {
-  const d = describePermission(request)
+  const { t } = useTranslation()
+  const d = describePermission(request, t)
   const left = useCountdown(request.expiresAt)
   return (
     <View style={styles.card}>
@@ -46,9 +48,23 @@ export function PermissionCard({ request, busy, onAllow, onAlways, onDeny }: Pro
         </Text>
       </ScrollView>
       <View style={styles.actions}>
-        <Button label="Negar" variant="danger" compact flex disabled={busy} onPress={onDeny} />
-        <Button label="Sempre" compact flex disabled={busy} onPress={onAlways} />
-        <Button label="Permitir" variant="success" compact flex loading={busy} onPress={onAllow} />
+        <Button
+          label={t('permissions.deny')}
+          variant="danger"
+          compact
+          flex
+          disabled={busy}
+          onPress={onDeny}
+        />
+        <Button label={t('permissions.always')} compact flex disabled={busy} onPress={onAlways} />
+        <Button
+          label={t('permissions.allow')}
+          variant="success"
+          compact
+          flex
+          loading={busy}
+          onPress={onAllow}
+        />
       </View>
     </View>
   )

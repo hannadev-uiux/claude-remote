@@ -1,21 +1,21 @@
 ## Why
 
-Ver a conversa em tempo real é a função central do app (D3). O `.jsonl` é formato interno do Claude Code e pode mudar; o parser precisa ser isolado e tolerante.
+Seeing the conversation in real time is the app's core function (D3). The `.jsonl` is an internal Claude Code format and may change; the parser needs to be isolated and tolerant.
 
 ## What Changes
 
-- Parser isolado que converte linhas do `.jsonl` em `TranscriptEntry` normalizadas, ignorando tipos internos (snapshots, latch, fila) e marcando desconhecidos como `unknown`.
-- Tail com `chokidar` por sessão assinada, transmitindo `transcript.entry` com `cursor`.
-- Histórico paginado (`session.history { before, limit }` → `transcript.page`).
-- Retomada: `session.subscribe { sinceCursor }` reenvia as entradas perdidas.
+- Isolated parser that converts `.jsonl` lines into normalized `TranscriptEntry` objects, ignoring internal types (snapshots, latch, queue) and marking unknown ones as `unknown`.
+- Tail with `chokidar` per subscribed session, streaming `transcript.entry` with a `cursor`.
+- Paginated history (`session.history { before, limit }` → `transcript.page`).
+- Resumption: `session.subscribe { sinceCursor }` resends the missed entries.
 
 ## Capabilities
 
 ### New Capabilities
-- `transcript-stream`: leitura, normalização e transmissão do transcript das sessões.
+- `transcript-stream`: reading, normalizing and streaming the sessions' transcripts.
 
 ### Modified Capabilities
 
 ## Impact
 
-Módulo `features/transcript` no daemon; dependência `chokidar`.
+`features/transcript` module in the daemon; `chokidar` dependency.

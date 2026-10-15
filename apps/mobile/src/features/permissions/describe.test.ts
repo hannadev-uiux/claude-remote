@@ -1,18 +1,23 @@
 import { describe, expect, test } from 'vitest'
+import { createI18n } from '@/core/i18n/create'
 import { buildRespond, describePermission, secondsLeft } from './describe'
+
+const en = createI18n('en-US').t
+const pt = createI18n('pt-BR').t
 
 describe('describePermission', () => {
   test('shows the full command for Bash', () => {
-    expect(describePermission({ tool: 'Bash', input: { command: 'rm -rf dist' } })).toEqual({
+    expect(describePermission({ tool: 'Bash', input: { command: 'rm -rf dist' } }, en)).toEqual({
       title: 'Bash(rm -rf dist)',
       detail: 'rm -rf dist',
-      detailLabel: 'comando',
+      detailLabel: 'command',
     })
+    expect(describePermission({ tool: 'Bash', input: { command: 'ls' } }, pt).detailLabel).toBe('comando')
   })
 
   test('shows paths and falls back to JSON', () => {
-    expect(describePermission({ tool: 'Edit', input: { file_path: '/w/a.ts' } }).detail).toBe('/w/a.ts')
-    expect(describePermission({ tool: 'mcp__x__y', input: { n: 1 } }).detailLabel).toBe('entrada')
+    expect(describePermission({ tool: 'Edit', input: { file_path: '/w/a.ts' } }, en).detail).toBe('/w/a.ts')
+    expect(describePermission({ tool: 'mcp__x__y', input: { n: 1 } }, en).detailLabel).toBe('input')
   })
 })
 
