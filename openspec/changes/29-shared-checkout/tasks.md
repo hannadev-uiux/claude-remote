@@ -14,4 +14,4 @@
 
 ## 4. Docs
 
-- [ ] 4.1 README; `pnpm check` and `openspec validate --strict`
+- [x] 4.1 README; `pnpm check` and `openspec validate --strict`

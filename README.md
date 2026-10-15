@@ -52,6 +52,7 @@ Claude Remote solves this with tools you already trust: sessions run inside **tm
 | 🖥️ **Raw terminal** | An xterm.js view of the tmux pane for TUI menus and anything the structured view does not cover. |
 | 🤖 **Subagents** | Follow subagents and background tasks of a session. |
 | 🚀 **Start & resume** | Start a new session in any project, or resume a read-only one. |
+| 🌿 **Shared checkout warning** | Each session shows its git branch; sessions working in the same checkout are flagged, and a new one can start in its own git worktree. |
 | 🔔 **Private push** | Notifications only to *your* registered phone, carrying no session content. Mute globally, per profile or per session. |
 
 ## How it works
@@ -192,6 +193,8 @@ trabalho --resume    # another account
 ```
 
 Both appear in the app, fully controllable. "Always allow" rules created from the phone: `claude-remote rules list` / `claude-remote rules undo <id>`.
+
+**Two sessions in the same repository?** They edit the same files and can switch the branch under each other. The app marks live sessions that share a git checkout ("shared checkout"), and **New session** warns before starting in a busy one. Turn on **Isolated copy (git worktree)** to start Claude Code with `--worktree`: it works on its own branch in `<repo>/.claude/worktrees/<name>` and asks on exit whether to keep or remove it (needs a Claude Code with `--worktree`).
 
 ### Push notifications (optional)
 
