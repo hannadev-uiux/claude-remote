@@ -1,38 +1,38 @@
 # daemon-service Specification
 
 ## Purpose
-Mantém o daemon rodando como serviço do usuário no macOS, iniciando com o login e se recuperando de falhas.
+Keeps the daemon running as a user service on macOS, starting at login and recovering from failures.
 
 ## Requirements
 
 ### Requirement: LaunchAgent
-`service install` SHALL gravar e carregar um LaunchAgent com `RunAtLoad` e `KeepAlive`, usando o caminho absoluto do Node atual; `service uninstall` MUST descarregar e remover o arquivo.
+`service install` SHALL write and load a LaunchAgent with `RunAtLoad` and `KeepAlive`, using the absolute path of the current Node; `service uninstall` MUST unload and remove the file.
 
 #### Scenario: Login
-- **WHEN** o usuário faz login no Mac
-- **THEN** o daemon inicia automaticamente
+- **WHEN** the user logs in on the Mac
+- **THEN** the daemon starts automatically
 
-#### Scenario: Queda do processo
-- **WHEN** o processo do daemon termina com erro
-- **THEN** o launchd o reinicia
+#### Scenario: Process crash
+- **WHEN** the daemon process exits with an error
+- **THEN** launchd restarts it
 
-### Requirement: Identidade do item de login
-O LaunchAgent SHALL executar o daemon por meio de um bundle `~/.claude-remote/Claude Remote.app` (assinado ad-hoc, com o ícone do app), para que o macOS mostre "Claude Remote" — e não o assinante do Node — em Itens de Início e no aviso de atividade em segundo plano. `service uninstall` MUST remover o bundle.
+### Requirement: Login item identity
+The LaunchAgent SHALL run the daemon through a `~/.claude-remote/Claude Remote.app` bundle (ad-hoc signed, with the app icon), so that macOS shows "Claude Remote" — and not Node's signer — in Login Items and in the background activity notice. `service uninstall` MUST remove the bundle.
 
-#### Scenario: Aviso de atividade em segundo plano
-- **WHEN** o serviço é instalado
-- **THEN** o macOS identifica o item como "Claude Remote"
+#### Scenario: Background activity notice
+- **WHEN** the service is installed
+- **THEN** macOS identifies the item as "Claude Remote"
 
-### Requirement: Espera pelo Tailscale
-Rodando como serviço, o daemon SHALL aguardar a interface Tailscale aparecer (consultando periodicamente e registrando um aviso único) em vez de encerrar, evitando um ciclo de reinícios do launchd. O endpoint de hooks MUST ficar disponível durante a espera, para que as sessões do Claude Code nunca encontrem a porta fechada.
+### Requirement: Waiting for Tailscale
+When running as a service, the daemon SHALL wait for the Tailscale interface to appear (polling periodically and logging a single warning) instead of exiting, avoiding a launchd restart loop. The hooks endpoint MUST stay available while waiting, so that Claude Code sessions never find the port closed.
 
-#### Scenario: Login antes do Tailscale conectar
-- **WHEN** o serviço inicia e ainda não há interface 100.x
-- **THEN** o daemon aguarda e passa a escutar assim que o Tailscale conecta
+#### Scenario: Login before Tailscale connects
+- **WHEN** the service starts and there is no 100.x interface yet
+- **THEN** the daemon waits and starts listening as soon as Tailscale connects
 
-### Requirement: Reinício do tmux
-Quando o servidor tmux reinicia, o daemon SHALL marcar como encerradas as sessões cujos painéis sumiram e continuar aceitando novas sessões sem reinício.
+### Requirement: tmux restart
+When the tmux server restarts, the daemon SHALL mark as ended the sessions whose panes disappeared and keep accepting new sessions without a restart.
 
 #### Scenario: tmux kill-server
-- **WHEN** o usuário roda `tmux kill-server`
-- **THEN** as sessões aparecem como encerradas e uma nova sessão via launcher é registrada normalmente
+- **WHEN** the user runs `tmux kill-server`
+- **THEN** the sessions show as ended and a new session started via a launcher is registered normally

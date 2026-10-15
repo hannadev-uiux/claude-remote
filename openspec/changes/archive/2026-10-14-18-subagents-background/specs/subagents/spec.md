@@ -1,37 +1,37 @@
 ## Purpose
 
-Mostra os subagentes e as tarefas em background de cada sessão, aninhados sob a sessão pai.
+Shows the subagents and background tasks of each session, nested under the parent session.
 
 ## ADDED Requirements
 
-### Requirement: Descoberta de subagentes
-O daemon SHALL listar os subagentes de cada sessão com `agentId`, `agentType`, `state` (`running` ou `done`) e `updatedAt`, a partir dos arquivos de transcript de subagentes e do hook `SubagentStop`, enviando `subagent.updated` a cada mudança.
+### Requirement: Subagent discovery
+The daemon SHALL list the subagents of each session with `agentId`, `agentType`, `state` (`running` or `done`) and `updatedAt`, based on the subagent transcript files and the `SubagentStop` hook, sending `subagent.updated` on every change.
 
-#### Scenario: Subagente iniciado
-- **WHEN** surge um novo `agent-<id>.jsonl` na pasta da sessão
-- **THEN** os clientes recebem `subagent.updated` com `state: "running"`
+#### Scenario: Subagent started
+- **WHEN** a new `agent-<id>.jsonl` appears in the session folder
+- **THEN** clients receive `subagent.updated` with `state: "running"`
 
-#### Scenario: Subagente concluído
-- **WHEN** chega `SubagentStop` para o agente
-- **THEN** o estado passa a `done`
+#### Scenario: Subagent finished
+- **WHEN** `SubagentStop` arrives for the agent
+- **THEN** the state becomes `done`
 
-### Requirement: Transcript de subagente
-`session.subscribe` com `agentId` SHALL transmitir o transcript do subagente com as mesmas regras do transcript principal.
+### Requirement: Subagent transcript
+`session.subscribe` with `agentId` SHALL stream the subagent transcript with the same rules as the main transcript.
 
-#### Scenario: Abrir subagente
-- **WHEN** o usuário toca num subagente
-- **THEN** vê a conversa do subagente em somente leitura
+#### Scenario: Open a subagent
+- **WHEN** the user taps a subagent
+- **THEN** they see the subagent conversation in read-only mode
 
-### Requirement: Tarefas em background
-A sessão SHALL expor `backgroundTasks` com as tarefas em background informadas no último `Stop`.
+### Requirement: Background tasks
+The session SHALL expose `backgroundTasks` with the background tasks reported in the last `Stop`.
 
-#### Scenario: Comando em background
-- **WHEN** o `Stop` informa uma tarefa em background
-- **THEN** a sessão aparece na lista com selo "background" e a contagem de tarefas
+#### Scenario: Background command
+- **WHEN** `Stop` reports a background task
+- **THEN** the session appears in the list with a "background" badge and the task count
 
-### Requirement: Aninhamento no app
-O app SHALL mostrar os subagentes aninhados sob a sessão pai, com estado, e uma seção de subagentes na tela da sessão.
+### Requirement: Nesting in the app
+The app SHALL show subagents nested under the parent session, with their state, and a subagents section on the session screen.
 
-#### Scenario: Lista
-- **WHEN** a sessão tem dois subagentes rodando
-- **THEN** a linha da sessão mostra "2 subagentes" e expande para listá-los
+#### Scenario: List
+- **WHEN** the session has two running subagents
+- **THEN** the session row shows "2 subagents" and expands to list them

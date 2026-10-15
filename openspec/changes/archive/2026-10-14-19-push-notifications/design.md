@@ -1,15 +1,15 @@
 ## Context
 
-Pré-requisitos (PRD 9.1): conta Apple Developer paga, chave APNs no Firebase, `GoogleService-Info.plist`, development build.
+Prerequisites (PRD 9.1): paid Apple Developer account, APNs key in Firebase, `GoogleService-Info.plist`, development build.
 
 ## Decisions
 
-- **Daemon**: `firebase-admin` carregado de forma preguiçosa só se `~/.claude-remote/firebase-service-account.json` existir. Tokens em `~/.claude-remote/devices.json`. Mensagens com `apns.payload.aps.category = "PERMISSION"` para pedidos.
-- **Primeiro plano**: o app envia `app.visibility { foreground }` (definida no protocolo) ao mudar `AppState`; o daemon suprime push se algum cliente estiver em primeiro plano.
-- **App**: `@react-native-firebase/messaging` para token/recebimento; `expo-notifications` para registrar a categoria com ações e tratar a resposta da ação (abre conexão curta, envia `permission.respond`, fecha).
+- **Daemon**: `firebase-admin` loaded lazily, only if `~/.claude-remote/firebase-service-account.json` exists. Tokens in `~/.claude-remote/devices.json`. Messages with `apns.payload.aps.category = "PERMISSION"` for requests.
+- **Foreground**: the app sends `app.visibility { foreground }` (defined in the protocol) when `AppState` changes; the daemon suppresses push if any client is in the foreground.
+- **App**: `@react-native-firebase/messaging` for token/receiving; `expo-notifications` to register the category with actions and handle the action response (opens a short-lived connection, sends `permission.respond`, closes).
 - **Deep link**: `claude-remote://session/<id>` via Expo Router.
-- Config plugin `@react-native-firebase/app` e `expo-build-properties` (`useFrameworks: "static"`).
+- Config plugins `@react-native-firebase/app` and `expo-build-properties` (`useFrameworks: "static"`).
 
 ## Risks / Trade-offs
 
-- [Ação em segundo plano sem tempo de conectar] → ação marcada `opensAppToForeground: false` com fallback para abrir o app se falhar.
+- [Background action without time to connect] → action marked `opensAppToForeground: false`, falling back to opening the app if it fails.
