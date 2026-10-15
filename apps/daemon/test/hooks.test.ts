@@ -107,6 +107,7 @@ describe('installer files', () => {
     expect((await stat(path!)).mode & 0o111).not.toBe(0)
     execFileSync('zsh', ['-n', path!])
     const content = await readFile(path!, 'utf8')
+    expect(content.startsWith('#!/usr/bin/env zsh\n')).toBe(true)
     expect(content).toContain(`export CLAUDE_CONFIG_DIR='${p.configDir}'`)
     expect(content).toContain('; select-window')
   })

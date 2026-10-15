@@ -21,7 +21,7 @@ export function isDefaultConfigDir(configDir: string, home = homedir()): boolean
 /**
  * Generates the zsh launcher for a profile. It opens `claude` (with all args) in a new window of
  * the shared tmux session and attaches through a grouped session, so several terminals can each
- * look at a different window.
+ * look at a different window. zsh is found through PATH (/bin/zsh on macOS, /usr/bin/zsh on Linux).
  */
 export function renderLauncher(
   profile: Profile,
@@ -34,7 +34,7 @@ export function renderLauncher(
     : `export CLAUDE_CONFIG_DIR=${zshQuote(profile.configDir)}`
   const unsetInPane = isDefault ? 'env -u CLAUDE_CONFIG_DIR ' : ''
   const configEnv = isDefault ? '' : '-e "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR" '
-  return `#!/bin/zsh
+  return `#!/usr/bin/env zsh
 # Claude Remote launcher for profile "${profile.id}" (${profile.name}). Generated; do not edit.
 ${configDir}
 export CLAUDE_REMOTE_PROFILE=${zshQuote(profile.id)}
