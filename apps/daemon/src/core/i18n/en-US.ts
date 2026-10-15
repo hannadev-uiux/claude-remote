@@ -97,6 +97,25 @@ export const enUS = {
           ? 'lingering on (keeps running after logout, starts at boot)'
           : 'lingering off (stops at logout)',
     },
+    update: {
+      description:
+        'update to the latest version: build, refresh hooks and restart the service (no questions)',
+      ref: 'branch or tag to install (default: main)',
+      force: 'rebuild even when already up to date',
+      checking: (ref: string) => `Checking ${ref} for a new version`,
+      notInstaller: (dir: string) =>
+        `This is not the installer's copy (${dir}). In a development clone use \`git pull\` and \`pnpm --filter @claude-remote/daemon build\`.`,
+      dirty: (dir: string) => `${dir} has local changes. Commit or discard them and run again.`,
+      fetchFailed: (error: string) => `Could not fetch the new version: ${error}`,
+      checkoutFailed: 'Could not switch to the new version.',
+      upToDate: (version: string, commit: string) => `Already up to date (${version}, ${commit}).`,
+      available: (version: string, commit: string) => `New version: ${version} (${commit})`,
+      failed: 'Update failed (see above). The previous version keeps running until the next restart.',
+      serviceRestarted: 'background service restarted',
+      serviceNotInstalled: 'background service not installed (optional: `claude-remote service install`)',
+      updated: (from: string, to: string) => `Claude Remote updated: ${from} → ${to}`,
+      rebuilt: (version: string) => `Claude Remote ${version} rebuilt`,
+    },
     rules: {
       description: '"always allow" rules created by the app',
       list: 'list the rules created by the app',
