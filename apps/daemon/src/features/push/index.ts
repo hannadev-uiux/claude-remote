@@ -1,3 +1,5 @@
+import { effectiveLocale } from '../../core/config.ts'
+import { messagesFor } from '../../core/i18n/index.ts'
 import { paths } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import { DeviceRegistry } from './devices.ts'
@@ -18,6 +20,7 @@ export async function registerPushFeature(
     profiles: ctx.profiles,
     hasForegroundClient: () => ctx.hub.hasForegroundClient(),
     isMuted: options.isMuted,
+    messages: messagesFor(effectiveLocale(ctx.config)).push,
   })
 
   ctx.router.register('device.register', async (msg) => {

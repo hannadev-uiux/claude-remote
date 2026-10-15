@@ -85,7 +85,7 @@ export function resolveWsHost(options: Pick<DaemonOptions, 'dev' | 'host'>): str
 }
 
 export const TAILSCALE_NOT_FOUND =
-  'Tailscale não encontrado (nenhuma interface 100.x). Instale e conecte o Tailscale, ou use --dev para 127.0.0.1.'
+  'Tailscale not found (no 100.x interface). Install and connect Tailscale, or use --dev for 127.0.0.1.'
 
 /** Resolves the WebSocket host, polling for the Tailscale interface when `waitForTailscale` is set. */
 export async function waitForWsHost(
@@ -103,7 +103,7 @@ export async function waitForWsHost(
       return address
     }
     if (!options.waitForTailscale) throw new Error(TAILSCALE_NOT_FOUND)
-    if (!warned) options.logger.warn(`${TAILSCALE_NOT_FOUND} Aguardando…`)
+    if (!warned) options.logger.warn(`${TAILSCALE_NOT_FOUND} Waiting…`)
     warned = true
     await new Promise((resolve) => setTimeout(resolve, intervalMs))
   }

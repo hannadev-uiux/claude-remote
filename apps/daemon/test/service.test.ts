@@ -117,7 +117,7 @@ describe('launchd', () => {
     expect(await serviceStatus(exec)).toEqual({ loaded: true, detail: 'running (pid 4242)' })
     expect(await serviceStatus(fakeExecutor(() => ({ exitCode: 113 })))).toEqual({
       loaded: false,
-      detail: 'não carregado',
+      detail: 'not loaded',
     })
   })
 })
