@@ -99,7 +99,7 @@ export const esES = {
     update: {
       description:
         'actualiza a la última versión: compila, actualiza los hooks y reinicia el servicio (sin preguntas)',
-      ref: 'rama o tag que se instala (por defecto: main)',
+      ref: 'rama o tag que se instala',
       force: 'vuelve a compilar aunque ya esté actualizado',
       checking: (ref: string) => `Buscando una versión nueva en ${ref}`,
       notInstaller: (dir: string) =>

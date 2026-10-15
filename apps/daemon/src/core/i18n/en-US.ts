@@ -100,7 +100,7 @@ export const enUS = {
     update: {
       description:
         'update to the latest version: build, refresh hooks and restart the service (no questions)',
-      ref: 'branch or tag to install (default: main)',
+      ref: 'branch or tag to install',
       force: 'rebuild even when already up to date',
       checking: (ref: string) => `Checking ${ref} for a new version`,
       notInstaller: (dir: string) =>

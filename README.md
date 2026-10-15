@@ -115,7 +115,7 @@ The installer checks the system (macOS or Linux) and Node, installs missing `tmu
 - installs the launchers, the `PATH` entry and the hooks (with backups), and the background service;
 - helps with Tailscale and shows the pairing QR code.
 
-Run it again to update. `claude-remote setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
+To update, run `claude-remote update` (or `--ref <branch|tag>`): it fetches the new version, rebuilds, refreshes the hooks and restarts the service, without the setup questions; the same as `bash -s -- --update` with the line above. `claude-remote setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
 
 <details>
 <summary>Linux notes</summary>

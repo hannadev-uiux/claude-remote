@@ -98,7 +98,7 @@ export const ptBR = {
     update: {
       description:
         'atualiza para a última versão: compila, atualiza os hooks e reinicia o serviço (sem perguntas)',
-      ref: 'branch ou tag a instalar (padrão: main)',
+      ref: 'branch ou tag a instalar',
       force: 'compila de novo mesmo se já estiver atualizado',
       checking: (ref: string) => `Procurando uma versão nova em ${ref}`,
       notInstaller: (dir: string) =>
