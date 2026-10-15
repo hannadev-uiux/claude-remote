@@ -2,6 +2,7 @@ import { type BarcodeScanningResult, CameraView, useCameraPermissions } from 'ex
 import { router, useLocalSearchParams } from 'expo-router'
 import { ChevronRight, Keyboard, QrCode, Rocket } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { Button, Card, Screen, Text } from '@/ui'
@@ -11,6 +12,7 @@ import { usePairing } from './use-pairing'
 type Mode = 'scan' | 'manual'
 
 export function PairScreen() {
+  const { t } = useTranslation()
   const params = useLocalSearchParams<{ host?: string; port?: string; token?: string }>()
   const [permission, requestPermission] = useCameraPermissions()
   const [mode, setMode] = useState<Mode>('scan')
@@ -32,7 +34,7 @@ export function PairScreen() {
     if (locked.current || busy) return
     const credentials = parsePairingUrl(data)
     if (!credentials) {
-      setError('QR inválido. Use o QR exibido por `claude-remote pair`.')
+      setError(t('pairing.invalidQr'))
       return
     }
     locked.current = true
@@ -49,24 +51,24 @@ export function PairScreen() {
             <Text size="xl" weight="bold" color="accent">
               {'> '}
             </Text>
-            Parear com o Mac
+            {t('pairing.title')}
           </Text>
           <Text color="textMuted">
-            No Mac, rode <Text color="accent">claude-remote pair</Text> e aponte a câmera para o QR code.
+            <Trans i18nKey="pairing.intro" components={{ cmd: <Text color="accent" /> }} />
           </Text>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Primeira vez? Configure o Mac"
+            accessibilityLabel={t('pairing.guideTitle')}
             onPress={() => router.push('/setup-guide')}
           >
             <Card accent={colors.accent}>
               <View style={styles.guide}>
                 <Rocket size={20} color={colors.accent} />
                 <View style={styles.flex}>
-                  <Text weight="bold">Primeira vez? Configure o Mac</Text>
+                  <Text weight="bold">{t('pairing.guideTitle')}</Text>
                   <Text size="sm" color="textMuted">
-                    Tailscale, instalação em uma linha e pareamento, passo a passo.
+                    {t('pairing.guideHint')}
                   </Text>
                 </View>
                 <ChevronRight size={18} color={colors.textMuted} />
@@ -76,7 +78,7 @@ export function PairScreen() {
 
           <View style={styles.tabs}>
             <Button
-              label="QR code"
+              label={t('pairing.tabQr')}
               compact
               flex
               variant={mode === 'scan' ? 'primary' : 'secondary'}
@@ -84,7 +86,7 @@ export function PairScreen() {
               onPress={() => setMode('scan')}
             />
             <Button
-              label="Manual"
+              label={t('pairing.tabManual')}
               compact
               flex
               variant={mode === 'manual' ? 'primary' : 'secondary'}
@@ -106,7 +108,7 @@ export function PairScreen() {
             <ManualForm
               busy={busy}
               onSubmit={(c) => void pair(c)}
-              onInvalid={() => setError('Preencha host, porta e token válidos.')}
+              onInvalid={() => setError(t('pairing.invalidManual'))}
             />
           )}
 
@@ -129,15 +131,16 @@ function Scanner(props: {
   onManual: () => void
   onScanned: (result: BarcodeScanningResult) => void
 }) {
+  const { t } = useTranslation()
   if (!props.granted) {
     return (
       <Card>
         <View style={styles.gap}>
-          <Text color="textMuted">A câmera é usada só para ler o QR de pareamento.</Text>
+          <Text color="textMuted">{t('pairing.cameraRationale')}</Text>
           {props.canAsk ? (
-            <Button label="Permitir câmera" variant="primary" onPress={props.onRequest} />
+            <Button label={t('pairing.allowCamera')} variant="primary" onPress={props.onRequest} />
           ) : (
-            <Button label="Digitar manualmente" onPress={props.onManual} />
+            <Button label={t('pairing.typeManually')} onPress={props.onManual} />
           )}
         </View>
       </Card>
@@ -154,7 +157,7 @@ function Scanner(props: {
       <View style={styles.reticle} pointerEvents="none" />
       {props.busy ? (
         <View style={styles.overlay}>
-          <Text color="accent">conectando…</Text>
+          <Text color="accent">{t('pairing.connecting')}</Text>
         </View>
       ) : null}
     </View>
@@ -170,6 +173,7 @@ function ManualForm({
   onSubmit: (credentials: { host: string; port: number; token: string }) => void
   onInvalid: () => void
 }) {
+  const { t } = useTranslation()
   const [host, setHost] = useState('')
   const [port, setPort] = useState('7337')
   const [token, setToken] = useState('')
@@ -181,15 +185,10 @@ function ManualForm({
   return (
     <Card>
       <View style={styles.gap}>
-        <Field
-          label="host (IP Tailscale ou MagicDNS)"
-          value={host}
-          onChangeText={setHost}
-          placeholder="100.x.y.z"
-        />
-        <Field label="porta" value={port} onChangeText={setPort} keyboardType="number-pad" />
-        <Field label="token" value={token} onChangeText={setToken} secure />
-        <Button label="Conectar" variant="primary" loading={busy} onPress={submit} />
+        <Field label={t('pairing.host')} value={host} onChangeText={setHost} placeholder="100.x.y.z" />
+        <Field label={t('pairing.port')} value={port} onChangeText={setPort} keyboardType="number-pad" />
+        <Field label={t('pairing.token')} value={token} onChangeText={setToken} secure />
+        <Button label={t('pairing.connect')} variant="primary" loading={busy} onPress={submit} />
       </View>
     </Card>
   )

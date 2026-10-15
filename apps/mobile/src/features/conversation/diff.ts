@@ -1,4 +1,5 @@
 import { diffLines } from 'diff'
+import type { TFunction } from '@/core/i18n/create'
 
 export type DiffLine = { kind: 'add' | 'remove' | 'context'; text: string }
 
@@ -18,7 +19,7 @@ function toLines(oldText: string, newText: string): DiffLine[] {
 }
 
 /** Builds a line diff for Edit / MultiEdit / Write tool inputs; null for other tools. */
-export function diffForTool(name: string, input: Record<string, unknown>): DiffLine[] | null {
+export function diffForTool(name: string, input: Record<string, unknown>, t: TFunction): DiffLine[] | null {
   let lines: DiffLine[] | null = null
   if (name === 'Edit' && typeof input.old_string === 'string' && typeof input.new_string === 'string') {
     lines = toLines(input.old_string, input.new_string)
@@ -32,6 +33,9 @@ export function diffForTool(name: string, input: Record<string, unknown>): DiffL
   }
   if (!lines) return null
   return lines.length > MAX_LINES
-    ? [...lines.slice(0, MAX_LINES), { kind: 'context', text: `… +${lines.length - MAX_LINES} linhas` }]
+    ? [
+        ...lines.slice(0, MAX_LINES),
+        { kind: 'context', text: t('conversation.moreLines', { count: lines.length - MAX_LINES }) },
+      ]
     : lines
 }

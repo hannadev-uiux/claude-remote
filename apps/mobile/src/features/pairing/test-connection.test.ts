@@ -55,13 +55,15 @@ describe('testConnection', () => {
   test('reports a rejected token', async () => {
     expect(await testConnection(credentials, { socketFactory: socketFactory('unauthorized') })).toEqual({
       ok: false,
-      error: 'Token recusado pelo daemon.',
+      error: 'unauthorized',
     })
   })
 
   test('reports connection failures', async () => {
-    expect(await testConnection(credentials, { socketFactory: socketFactory('refused') })).toMatchObject({
+    expect(await testConnection(credentials, { socketFactory: socketFactory('refused') })).toEqual({
       ok: false,
+      error: 'failed',
+      detail: 'refused',
     })
   })
 })

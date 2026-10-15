@@ -1,5 +1,6 @@
 import type { PermissionRequestInfo } from '@claude-remote/protocol'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useShallow } from 'zustand/react/shallow'
 import { useConnectionStore } from '@/core/connection'
 import { Text } from '@/ui'
@@ -18,6 +19,7 @@ export function SessionPermissions({
   cwd: string
   profileId: string
 }) {
+  const { t } = useTranslation()
   const pending = usePermissionsStore(useShallow(selectPendingFor(sessionId)))
   const profileName = useConnectionStore(
     (s) => s.hello?.profiles.find((p) => p.id === profileId)?.name ?? profileId,
@@ -39,7 +41,7 @@ export function SessionPermissions({
       ) : null}
       {pending.length > 1 ? (
         <Text size="xs" color="warning" style={{ paddingHorizontal: 16 }}>
-          +{pending.length - 1} pedido(s) na fila
+          {t('permissions.queued', { count: pending.length - 1 })}
         </Text>
       ) : null}
       {error ? (

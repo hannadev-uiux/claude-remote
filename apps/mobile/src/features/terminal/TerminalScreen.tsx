@@ -1,20 +1,27 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'
 import { useDaemonClient, useDaemonEvent } from '@/core/connection'
+import { errorMessage } from '@/core/connection/error-message'
+import type { TFunction } from '@/core/i18n/create'
 import { space } from '@/core/theme'
 import { ConnectionBanner, Screen, Text } from '@/ui'
-import { DEFAULT_KEYS, KeyBar } from '../conversation/components/KeyBar'
+import { DEFAULT_KEYS, KeyBar, type KeySpec } from '../conversation/components/KeyBar'
 import { TerminalView, type TerminalViewHandle } from './TerminalView'
 
-const TERMINAL_KEYS = [
-  ...DEFAULT_KEYS,
-  ...(['4', '5', '6', '7', '8', '9'] as const).map((key) => ({ key, label: key })),
-  { key: 'Space' as const, label: 'espaço' },
-  { key: 'BSpace' as const, label: '⌫' },
-]
+function terminalKeys(t: TFunction): KeySpec[] {
+  return [
+    ...DEFAULT_KEYS,
+    ...(['4', '5', '6', '7', '8', '9'] as const).map((key) => ({ key, label: key })),
+    { key: 'Space', label: t('terminal.space') },
+    { key: 'BSpace', label: '⌫' },
+  ]
+}
 
 /** Live mirror of the session's tmux pane, for TUI menus and dialogs the transcript can't show. */
 export function TerminalScreen({ sessionId }: { sessionId: string }) {
+  const { t } = useTranslation()
+  const keys = useMemo(() => terminalKeys(t), [t])
   const client = useDaemonClient()
   const terminal = useRef<TerminalViewHandle>(null)
   const [ready, setReady] = useState(false)
@@ -36,7 +43,7 @@ export function TerminalScreen({ sessionId }: { sessionId: string }) {
     const subscribe = () => {
       client.request({ type: 'pane.subscribe', sessionId }).then(
         () => setError(null),
-        (e: Error) => setError(e.message),
+        (e: unknown) => setError(errorMessage(e, t)),
       )
     }
     const off = client.onReady(subscribe)
@@ -45,7 +52,7 @@ export function TerminalScreen({ sessionId }: { sessionId: string }) {
       off()
       client.send({ type: 'pane.unsubscribe', sessionId })
     }
-  }, [client, sessionId])
+  }, [client, sessionId, t])
 
   return (
     <Screen>
@@ -58,7 +65,7 @@ export function TerminalScreen({ sessionId }: { sessionId: string }) {
       <View style={styles.flex}>
         <TerminalView ref={terminal} onReady={() => setReady(true)} />
       </View>
-      <KeyBar keys={TERMINAL_KEYS} onKey={(key) => client?.send({ type: 'session.key', sessionId, key })} />
+      <KeyBar keys={keys} onKey={(key) => client?.send({ type: 'session.key', sessionId, key })} />
     </Screen>
   )
 }

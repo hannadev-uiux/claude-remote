@@ -1,6 +1,7 @@
 import type { TranscriptEntry } from '@claude-remote/protocol'
 import { ChevronDown, ChevronRight } from 'lucide-react-native'
 import { memo, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
@@ -20,9 +21,10 @@ export const ToolCallCard = memo(function ToolCallCard({
   use: Use | null
   result: Result | null
 }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const title = use ? summarizeTool(use.name, use.input) : 'resultado'
-  const diff = useMemo(() => (use ? diffForTool(use.name, use.input) : null), [use])
+  const title = use ? summarizeTool(use.name, use.input, t) : t('conversation.toolResult')
+  const diff = useMemo(() => (use ? diffForTool(use.name, use.input, t) : null), [use, t])
   const status: 'running' | 'ok' | 'error' = !result ? 'running' : result.isError ? 'error' : 'ok'
   const Icon = open ? ChevronDown : ChevronRight
   const dotColor = status === 'running' ? 'warning' : status === 'error' ? 'danger' : 'success'
@@ -46,7 +48,7 @@ export const ToolCallCard = memo(function ToolCallCard({
           numberOfLines={1}
           style={styles.preview}
         >
-          ⎿ {firstLine || '(sem saída)'}
+          ⎿ {firstLine || t('conversation.noOutput')}
         </Text>
       ) : null}
       {diff ? <DiffView lines={open ? diff : diff.slice(0, 12)} /> : null}
@@ -60,13 +62,15 @@ export const ToolCallCard = memo(function ToolCallCard({
           {result ? (
             <ScrollView horizontal style={styles.result}>
               <Text size="xs" color={result.isError ? 'danger' : 'text'} selectable>
-                {result.content.slice(0, PREVIEW_CHARS) || '(sem saída)'}
-                {result.content.length > PREVIEW_CHARS || result.truncated ? '\n… (truncado)' : ''}
+                {result.content.slice(0, PREVIEW_CHARS) || t('conversation.noOutput')}
+                {result.content.length > PREVIEW_CHARS || result.truncated
+                  ? `\n${t('conversation.truncated')}`
+                  : ''}
               </Text>
             </ScrollView>
           ) : (
             <Text size="xs" color="warning">
-              executando…
+              {t('conversation.running')}
             </Text>
           )}
         </View>

@@ -6,7 +6,9 @@ import {
 } from '@/core/connection/daemon-client'
 import type { Credentials } from '@/core/storage/credentials'
 
-export type TestResult = { ok: true; hello: Hello } | { ok: false; error: string }
+/** Why the test failed; `detail` is the raw reason from the socket, when there is one. */
+export type TestFailure = 'timeout' | 'unauthorized' | 'failed'
+export type TestResult = { ok: true; hello: Hello } | { ok: false; error: TestFailure; detail?: string }
 
 /** Opens a one-off connection (no retries) to check the credentials before saving them. */
 export function testConnection(
@@ -27,15 +29,12 @@ export function testConnection(
       client.close()
       resolve(result)
     }
-    const timer = setTimeout(
-      () => finish({ ok: false, error: 'Tempo esgotado. O Mac está no Tailscale e o daemon rodando?' }),
-      options.timeoutMs ?? 8_000,
-    )
+    const timer = setTimeout(() => finish({ ok: false, error: 'timeout' }), options.timeoutMs ?? 8_000)
     client.onReady((hello) => finish({ ok: true, hello }))
     client.onStatus((status: ConnectionStatus, error?: string) => {
-      if (status === 'unauthorized') finish({ ok: false, error: 'Token recusado pelo daemon.' })
+      if (status === 'unauthorized') finish({ ok: false, error: 'unauthorized' })
       else if (status === 'closed')
-        finish({ ok: false, error: error || 'Não foi possível conectar ao daemon.' })
+        finish({ ok: false, error: 'failed', ...(error ? { detail: error } : {}) })
     })
     client.connect()
   })

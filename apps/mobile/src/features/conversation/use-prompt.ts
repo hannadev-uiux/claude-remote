@@ -1,22 +1,20 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useDaemonClient } from '@/core/connection'
-import { DaemonRequestError } from '@/core/connection/daemon-client'
+import { errorMessage } from '@/core/connection/error-message'
+import type { TFunction } from '@/core/i18n/create'
 
-export const PROMPT_ERRORS: Record<string, string> = {
-  not_controllable: 'Sessão sem painel tmux: somente leitura.',
-  too_large: 'Prompt grande demais (máx. 100 KB).',
-  disconnected: 'Sem conexão com o daemon.',
-  timeout: 'O daemon não respondeu.',
-}
-
-export function promptErrorMessage(error: unknown): string {
-  if (error instanceof DaemonRequestError) return PROMPT_ERRORS[error.code] ?? error.message
-  return error instanceof Error ? error.message : String(error)
+export function promptErrorMessage(error: unknown, t: TFunction): string {
+  return errorMessage(error, t, {
+    not_controllable: t('conversation.errors.notControllable'),
+    too_large: t('conversation.errors.tooLarge'),
+  })
 }
 
 /** Prompt text + send/keys actions for a session. Text is kept when sending fails. */
 export function usePrompt(sessionId: string) {
   const client = useDaemonClient()
+  const { t } = useTranslation()
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,13 +28,13 @@ export function usePrompt(sessionId: string) {
         await client.request({ type: 'session.input', sessionId, text: value })
         return true
       } catch (e) {
-        setError(promptErrorMessage(e))
+        setError(promptErrorMessage(e, t))
         return false
       } finally {
         setSending(false)
       }
     },
-    [client, sessionId],
+    [client, sessionId, t],
   )
 
   const send = useCallback(async () => {
@@ -48,9 +46,11 @@ export function usePrompt(sessionId: string) {
 
   const sendKey = useCallback(
     (key: string) => {
-      client?.request({ type: 'session.key', sessionId, key }).catch((e: Error) => setError(e.message))
+      client
+        ?.request({ type: 'session.key', sessionId, key })
+        .catch((e: unknown) => setError(errorMessage(e, t)))
     },
-    [client, sessionId],
+    [client, sessionId, t],
   )
 
   return { text, setText, send, sendText, sendKey, sending, error, setError }

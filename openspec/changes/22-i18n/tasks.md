@@ -15,8 +15,8 @@
 
 ## 4. App
 
-- [ ] 4.1 `expo-localization`, `i18next`, `react-i18next`; typed catalogs, device language resolution; parity tests
-- [ ] 4.2 Every screen, component and text-producing helper through the catalogs; verify with typecheck, tests and `npx expo export --platform ios`
+- [x] 4.1 `expo-localization`, `i18next`, `react-i18next`; typed catalogs, device language resolution; parity tests
+- [x] 4.2 Every screen, component and text-producing helper through the catalogs; verify with typecheck, tests and `npx expo export --platform ios`
 
 ## 5. OpenSpec in English
 

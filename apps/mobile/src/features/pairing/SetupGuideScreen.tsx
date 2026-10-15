@@ -1,9 +1,11 @@
 import { router } from 'expo-router'
 import { ExternalLink, QrCode, Share2 } from 'lucide-react-native'
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Linking, ScrollView, Share, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Button, Card, Screen, Text } from '@/ui'
-import { type GuideAction, REPO_URL, SETUP_GUIDE } from './setup-guide'
+import { buildSetupGuide, type GuideAction, REPO_URL } from './setup-guide'
 
 function runAction(action: GuideAction): void {
   if (action.kind === 'link') void Linking.openURL(action.url)
@@ -19,6 +21,8 @@ function actionIcon(action: GuideAction, color: string) {
 
 /** Step-by-step for people who installed the app before setting up Tailscale and the Mac. */
 export function SetupGuideScreen() {
+  const { t } = useTranslation()
+  const guide = useMemo(() => buildSetupGuide(t), [t])
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
@@ -26,16 +30,14 @@ export function SetupGuideScreen() {
           <Text size="xl" weight="bold" color="accent">
             {'> '}
           </Text>
-          Configurar o Mac
+          {t('setupGuide.title')}
         </Text>
-        <Text color="textMuted">
-          Quatro passos, uns 5 minutos. Você vai precisar do Mac em que o Claude Code roda.
-        </Text>
+        <Text color="textMuted">{t('setupGuide.intro')}</Text>
 
-        {SETUP_GUIDE.map((step, index) => {
-          const last = index === SETUP_GUIDE.length - 1
+        {guide.map((step, index) => {
+          const last = index === guide.length - 1
           return (
-            <Card key={step.title} accent={last ? colors.accent : undefined}>
+            <Card key={step.id} accent={last ? colors.accent : undefined}>
               <View style={styles.step}>
                 <View style={styles.header}>
                   <View style={styles.badge}>
@@ -73,7 +75,7 @@ export function SetupGuideScreen() {
         })}
 
         <Text size="sm" color="textDim" style={styles.footer}>
-          Dúvidas ou problemas: {REPO_URL}
+          {t('setupGuide.help', { url: REPO_URL })}
         </Text>
       </ScrollView>
     </Screen>
