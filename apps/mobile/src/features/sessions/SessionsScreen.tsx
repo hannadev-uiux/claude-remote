@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { colors, space } from '@/core/theme'
-import { Button, ConnectionBanner, EmptyState, Screen, Text } from '@/ui'
+import { Button, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
 import { NestedSubagents } from '../subagents/SubagentList'
 import { ProfileHeader } from './components/ProfileHeader'
 import { SessionRow } from './components/SessionRow'
@@ -32,6 +32,7 @@ export function SessionsScreen({ pendingBySession = {} }: { pendingBySession?: R
   return (
     <Screen>
       <ConnectionBanner />
+      <DaemonUpdateBanner />
       {profiles.length > 1 ? (
         <ScrollView
           horizontal

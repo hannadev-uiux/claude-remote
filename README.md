@@ -201,6 +201,15 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
 
 On Android 13+ the app asks for the notification permission; notifications use the high-priority `claude-remote` channel (it can be tuned in the system settings) and, like on iOS, carry only the event and the profile.
 
+### App updates over the air (optional)
+
+Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, build with one of:
+
+- `EAS_PROJECT_ID=<id>` — [EAS Update](https://docs.expo.dev/eas-update/introduction/) (`https://u.expo.dev/<id>`), or
+- `CLAUDE_REMOTE_UPDATES_URL=<url>` — any server that implements the Expo Updates protocol; it requires a code-signing certificate.
+
+With `apps/mobile/certs/updates-certificate.pem` (from `npx expo-updates codesigning:generate`, private key kept outside the repo) updates are verified before they run; on EAS this needs a paid plan. Publish with `pnpm --filter @claude-remote/mobile update:publish --channel preview` (add `--private-key-path` when signing). The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
+
 ### Uninstall
 
 ```bash
