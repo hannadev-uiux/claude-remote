@@ -235,6 +235,12 @@ const esES = {
   },
   sessions: {
     all: 'todos',
+    active: 'activas',
+    ended: 'terminadas',
+    searchPlaceholder: 'Buscar por nombre o carpeta',
+    clearSearch: 'Borrar búsqueda',
+    noMatch: 'Ninguna sesión coincide con los filtros',
+    clearFilters: 'Quitar filtros',
     emptyTitle: 'No hay sesiones',
     emptyBody: 'Inicia una sesión en el ordenador con los launchers:',
     emptyHint: 'Las sesiones abiertas con `claude` a secas aparecen como solo lectura.',

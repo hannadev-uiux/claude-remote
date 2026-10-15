@@ -237,6 +237,12 @@ const enUS = {
   },
   sessions: {
     all: 'all',
+    active: 'active',
+    ended: 'ended',
+    searchPlaceholder: 'Search by name or folder',
+    clearSearch: 'Clear search',
+    noMatch: 'No session matches the filters',
+    clearFilters: 'Clear filters',
     emptyTitle: 'No sessions',
     emptyBody: 'Start a session on the computer with the launchers:',
     emptyHint: 'Sessions opened with plain `claude` show up as read-only.',
