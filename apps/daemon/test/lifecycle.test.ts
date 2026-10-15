@@ -77,6 +77,26 @@ describe('LifecycleService', () => {
     await expect(service.resume('claudin', 'live')).rejects.toMatchObject({ code: 'bad_request' })
   })
 
+  test('a repeated resume reuses the pane while it is alive', async () => {
+    const { exec, store, project } = await setup()
+    const alive = new Set(['%9'])
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      async (pane) => alive.has(pane),
+    )
+    store.upsert('old', {}, () => record('old', { cwd: project }))
+    expect(await service.resume('claudin', 'old')).toEqual({ paneId: '%9' })
+    expect(await service.resume('claudin', 'old')).toEqual({ paneId: '%9' })
+    expect(exec.calls).toHaveLength(1)
+    alive.clear()
+    await service.resume('claudin', 'old')
+    expect(exec.calls).toHaveLength(2)
+  })
+
   test('lists recent directories per profile', async () => {
     const { store, service } = await setup()
     store.upsert('a', {}, () => record('a', { cwd: '/w/a', updatedAt: '2026-10-14T10:00:00Z' }))

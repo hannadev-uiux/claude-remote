@@ -19,12 +19,16 @@ export async function validateCwd(raw: string, home = homedir()): Promise<string
 
 /** Starts and resumes sessions by running the profile launcher without attaching a terminal. */
 export class LifecycleService {
+  /** Panes launched by \`resume\` that may not have reported SessionStart yet, by session id. */
+  private readonly resuming = new Map<string, string>()
+
   constructor(
     private readonly exec: Executor,
     private readonly store: SessionStore,
     private readonly profiles: readonly Profile[],
     private readonly binDir: string,
     private readonly home = homedir(),
+    private readonly hasPane: (paneId: string) => Promise<boolean> = async () => false,
   ) {}
 
   private profile(id: string): Profile {
@@ -58,8 +62,13 @@ export class LifecycleService {
     const session = this.store.get(sessionId)
     if (!session) throw new DaemonError('not_found', `sessão ${sessionId} não encontrada`)
     if (session.controllable) throw new DaemonError('bad_request', 'a sessão já está aberta no tmux')
+    // A repeated tap while Claude is still booting must not open another window.
+    const pending = this.resuming.get(sessionId)
+    if (pending && (await this.hasPane(pending))) return { paneId: pending }
     const cwd = await validateCwd(session.cwd, this.home)
-    return { paneId: await this.launch(profile, cwd, ['--resume', sessionId]) }
+    const paneId = await this.launch(profile, cwd, ['--resume', sessionId])
+    this.resuming.set(sessionId, paneId)
+    return { paneId }
   }
 
   /** Recent working directories of a profile, most recent first. */
