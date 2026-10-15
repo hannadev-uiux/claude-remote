@@ -35,6 +35,12 @@ describe('parseDevices', () => {
     ])
     expect(parseDevices({})).toEqual([])
   })
+
+  test('keeps a just-paired device whose `reality` is not reported yet', () => {
+    const fresh = raw('iPad de Hanna', 'F')
+    delete (fresh.hardwareProperties as { reality?: string }).reality
+    expect(parseDevices({ result: { devices: [fresh] } })).toEqual([{ name: 'iPad de Hanna', udid: 'F', state: 'ready' }])
+  })
 })
 
 describe('pickDevice', () => {
