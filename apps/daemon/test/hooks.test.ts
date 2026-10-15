@@ -14,7 +14,12 @@ import {
   uninstallHooks,
   uninstallZshrc,
 } from '../src/features/hooks/installer.ts'
-import { removeZshrcBlock, renderLauncher, upsertZshrcBlock } from '../src/features/hooks/launcher.ts'
+import {
+  isDefaultConfigDir,
+  removeZshrcBlock,
+  renderLauncher,
+  upsertZshrcBlock,
+} from '../src/features/hooks/launcher.ts'
 import type { HookEvent } from '../src/features/hooks/payloads.ts'
 import { HookReceiver, resolveProfileId } from '../src/features/hooks/receiver.ts'
 import { mergeOurHooks, removeOurHooks } from '../src/features/hooks/settings-hooks.ts'
@@ -122,6 +127,16 @@ describe('launcher script quoting', () => {
       { tmuxSession: 's', tmuxBin: 'tmux' },
     )
     expect(script).toContain(`'/tmp/it'\\''s'`)
+  })
+
+  test('the default ~/.claude profile runs with CLAUDE_CONFIG_DIR unset', () => {
+    const tmux = { tmuxSession: 's', tmuxBin: 'tmux', home: '/Users/u' }
+    const script = renderLauncher({ id: 'p', name: 'P', configDir: '/Users/u/.claude/', color: '' }, tmux)
+    execFileSync('zsh', ['-n', '-c', script])
+    expect(script).toContain('unset CLAUDE_CONFIG_DIR')
+    expect(script).toContain('cmd=(env -u CLAUDE_CONFIG_DIR "$CLAUDE_BIN" "$@")')
+    expect(script).not.toContain('-e "CLAUDE_CONFIG_DIR')
+    expect(isDefaultConfigDir('/Users/u/.claude-work', '/Users/u')).toBe(false)
   })
 })
 
