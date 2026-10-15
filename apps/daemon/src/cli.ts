@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
-import { writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
 import qrcode from 'qrcode-terminal'
 import { loadConfig, resolveProfiles } from './core/config.ts'
@@ -19,22 +17,16 @@ import {
 } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import {
-  installHooks,
-  installLaunchers,
-  installZshrc,
   settingsPath,
   uninstallHooks,
   uninstallLaunchers,
   uninstallZshrc,
 } from './features/hooks/installer.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
-import {
-  installAppBundle,
-  installService,
-  LAUNCHD_LABEL,
-  serviceStatus,
-  uninstallService,
-} from './features/service/launchd.ts'
+import { LAUNCHD_LABEL, serviceStatus, uninstallService } from './features/service/launchd.ts'
+import { colorEnabled, createPaint } from './features/setup/banner.ts'
+import { type InstallOptions, installAll, installServiceFromCli } from './features/setup/install.ts'
+import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { execaExecutor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
@@ -47,6 +39,17 @@ function tokenStore(): TokenStore {
 }
 
 /** Absolute path of the bundled CLI (dist/cli.js), whether running from source or from dist. */
+function printPairing(host: string, port: number, token: string): void {
+  const url = pairingUrl(host, port, token)
+  qrcode.generate(url, { small: true })
+  console.log(`\n${url}\n`)
+  console.log('Escaneie com o app Claude Remote. Não compartilhe este código.')
+}
+
+function installOptions(): InstallOptions {
+  return { exec: execaExecutor, cliPath: builtCliPath(), nodePath: process.execPath }
+}
+
 function builtCliPath(): string | null {
   const path = fileURLToPath(
     new URL(import.meta.url.endsWith('.ts') ? '../dist/cli.js' : './cli.js', import.meta.url),
@@ -128,10 +131,50 @@ program
       )
       process.exit(1)
     }
-    const url = pairingUrl(host, config.wsPort, token)
-    qrcode.generate(url, { small: true })
-    console.log(`\n${url}\n`)
-    console.log('Escaneie com o app Claude Remote. Não compartilhe este código.')
+    printPairing(host, config.wsPort, token)
+  })
+
+program
+  .command('setup')
+  .description('assistente: escolhe contas e aliases, instala hooks, serviço e pareia o iPhone')
+  .option('-y, --yes', 'sem perguntas: mantém o config ou usa as contas encontradas')
+  .option('--no-service', 'não instala o serviço em segundo plano')
+  .action(async (opts: { yes?: boolean; service: boolean }) => {
+    const interactive = !opts.yes && Boolean(process.stdin.isTTY)
+    try {
+      await runSetupWizard({
+        ...installOptions(),
+        paint: createPaint(colorEnabled()),
+        version: DAEMON_VERSION,
+        columns: process.stdout.columns ?? 80,
+        interactive,
+        service: opts.service,
+        installService: async () => {
+          const cliPath = builtCliPath()
+          if (!cliPath)
+            throw new SetupAborted('Build não encontrado: rode `pnpm --filter @claude-remote/daemon build`.')
+          return installServiceFromCli({ ...installOptions(), cliPath })
+        },
+        tailscaleAddress: () => findTailscaleAddress(),
+        pair: async (host) => {
+          const config = await loadConfig(createLogger({ level: 'silent' }))
+          printPairing(host, config.wsPort, await ensureToken(tokenStore()))
+        },
+      })
+    } catch (error) {
+      // Ctrl+C inside a prompt
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        console.log(
+          '\nInstalação interrompida. O que já foi mostrado como ✓ ficou feito; rode `claude-remote setup` de novo quando quiser.',
+        )
+        process.exit(130)
+      }
+      if (error instanceof SetupAborted) {
+        console.log(`\n${error.message}`)
+        process.exit(1)
+      }
+      throw error
+    }
   })
 
 program
@@ -183,35 +226,13 @@ program
 
 program
   .command('install')
-  .description('instala launchers (claudin, drclaude...), PATH no ~/.zshrc e hooks nos perfis')
+  .description('instala launchers, PATH no ~/.zshrc e hooks nos perfis do config (sem perguntas)')
   .action(async () => {
     const logger = createLogger({ level: 'silent' })
     const config = await loadConfig(logger)
     const profiles = await resolveProfiles(config, createLogger({ level: 'warn' }))
-    const secret = await ensureHookSecret()
-    const which = await execaExecutor('which', ['tmux'])
-    const tmuxBin = which.exitCode === 0 ? which.stdout.trim() : 'tmux'
-    const launchers = await installLaunchers(profiles, {
-      binDir: paths.bin(),
-      tmuxSession: config.tmuxSession,
-      tmuxBin,
-    })
-    for (const path of launchers) console.log(`✓ launcher ${path}`)
-    const built = builtCliPath()
-    if (built) {
-      const shim = join(paths.bin(), 'claude-remote')
-      await writeFile(shim, `#!/bin/sh\nexec "${process.execPath}" "${built}" "$@"\n`, { mode: 0o755 })
-      console.log(`✓ atalho ${shim}`)
-    }
-    console.log(`${(await installZshrc(paths.bin())) ? '✓' : '·'} PATH no ~/.zshrc`)
-    for (const profile of profiles) {
-      const changed = await installHooks(profile, {
-        port: config.hookPort,
-        secret,
-        permissionTimeoutSec: config.hookPermissionTimeoutSec,
-      })
-      console.log(`${changed ? '✓' : '·'} hooks em ${settingsPath(profile)}`)
-    }
+    const lines = await installAll(config, profiles, installOptions())
+    for (const line of lines) console.log(`${line.status === 'done' ? '✓' : '·'} ${line.text}`)
     console.log('\nAbra um novo terminal (ou `source ~/.zshrc`) e use os launchers no lugar do `claude`.')
   })
 
@@ -241,19 +262,7 @@ service
       console.error('Build não encontrado. Rode `pnpm --filter @claude-remote/daemon build`.')
       process.exit(1)
     }
-    const iconPng = fileURLToPath(new URL('../../mobile/assets/icon.png', pathToFileURL(cliPath)))
-    const executable = await installAppBundle(execaExecutor, {
-      appDir: paths.app(),
-      nodePath: process.execPath,
-      cliPath,
-      iconPng: existsSync(iconPng) ? iconPng : undefined,
-    })
-    const path = await installService(execaExecutor, {
-      executable,
-      logsDir: paths.logs(),
-      path: process.env.PATH ?? '/usr/bin:/bin',
-      home: homedir(),
-    })
+    const path = await installServiceFromCli({ ...installOptions(), cliPath })
     console.log(`✓ LaunchAgent carregado: ${path}`)
     console.log(`  app: ${paths.app()}`)
     if (!findTailscaleAddress())
