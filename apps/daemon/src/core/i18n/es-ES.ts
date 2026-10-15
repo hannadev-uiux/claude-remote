@@ -6,6 +6,8 @@ export const esES = {
     help: 'muestra la ayuda del comando',
     version: 'muestra la versión',
     buildMissing: 'No se encontró el build: ejecuta `pnpm --filter @claude-remote/daemon build`.',
+    unsupportedPlatform: (platform: string, supported: string) =>
+      `Sistema no compatible (${platform}). Claude Remote funciona en ${supported}.`,
     start: {
       description: 'inicia el daemon',
       dev: 'escucha en 127.0.0.1 en lugar de Tailscale',

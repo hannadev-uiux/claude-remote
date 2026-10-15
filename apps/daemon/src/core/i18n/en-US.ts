@@ -9,6 +9,8 @@ export const enUS = {
     help: 'display help for command',
     version: 'output the version number',
     buildMissing: 'Build not found: run `pnpm --filter @claude-remote/daemon build`.',
+    unsupportedPlatform: (platform: string, supported: string) =>
+      `Unsupported system (${platform}). Claude Remote runs on ${supported}.`,
     start: {
       description: 'start the daemon',
       dev: 'listen on 127.0.0.1 instead of Tailscale',

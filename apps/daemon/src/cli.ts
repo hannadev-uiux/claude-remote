@@ -32,11 +32,24 @@ import { type InstallOptions, installAll, installServiceFromCli } from './featur
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
+import { PLATFORM_NAMES, type Platform, resolvePlatform, UnsupportedPlatformError } from './infra/platform.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
 
 /** Language of every text below: config `language`, else the system one (read at startup). */
 let m: Messages = messagesFor(configuredLocaleSync())
+
+/** Fails before any work on systems without adapters (secrets, service, shell). */
+function currentPlatform(): Platform {
+  try {
+    return resolvePlatform()
+  } catch (error) {
+    if (!(error instanceof UnsupportedPlatformError)) throw error
+    console.error(`✗ ${m.cli.unsupportedPlatform(error.platform, Object.values(PLATFORM_NAMES).join(', '))}`)
+    process.exit(1)
+  }
+}
+currentPlatform()
 
 function tokenStore(): TokenStore {
   return process.env.CLAUDE_REMOTE_TOKEN_STORE === 'file'

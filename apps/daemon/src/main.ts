@@ -24,6 +24,7 @@ import { registerSubagentsFeature } from './features/subagents/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
 import type { Executor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
+import { resolvePlatform } from './infra/platform.ts'
 import { TmuxClient } from './infra/tmux.ts'
 import { ClientHub, type Connection } from './transport/connection.ts'
 import { createHooksServer } from './transport/hooks-server.ts'
@@ -111,6 +112,7 @@ export async function waitForWsHost(
 
 export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon> {
   const { logger } = options
+  resolvePlatform()
   const config = await loadConfig(logger, options.configPath)
   const profiles = await resolveProfiles(config, logger)
   let token = await ensureToken(options.tokenStore)
