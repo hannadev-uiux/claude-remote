@@ -1,20 +1,20 @@
 ## Context
 
-Snapshot e eventos vêm do daemon (change 05).
+Snapshot and events come from the daemon (change 05).
 
 ## Goals / Non-Goals
 
-**Goals:** rolagem fluida com dezenas de sessões.
+**Goals:** smooth scrolling with dozens of sessions.
 
-**Non-Goals:** busca textual.
+**Non-Goals:** text search.
 
 ## Decisions
 
-- **`useSessionsStore`** (Zustand) com `Map` por id, alimentado por `sessions.snapshot` e eventos; seletor `selectGroupedSessions` puro e testado (agrupamento e ordenação).
-- **FlashList** com itens de cabeçalho e de sessão (`getItemType`).
-- **Tempo relativo** com `Intl.RelativeTimeFormat` (pt-BR), sem dependência extra.
-- Toque leva a `/session/[id]`.
+- **`useSessionsStore`** (Zustand) with a `Map` by id, fed by `sessions.snapshot` and events; pure, tested `selectGroupedSessions` selector (grouping and sorting).
+- **FlashList** with header and session items (`getItemType`).
+- **Relative time** with `Intl.RelativeTimeFormat` (pt-BR), no extra dependency.
+- Tapping goes to `/session/[id]`.
 
 ## Risks / Trade-offs
 
-- [Muitos eventos seguidos] → atualizações agrupadas pelo próprio Zustand; itens memoizados.
+- [Many events in a row] → updates batched by Zustand itself; memoized items.

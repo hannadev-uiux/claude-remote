@@ -1,21 +1,21 @@
 ## Context
 
-Plugins instalados ficam em `<configDir>/plugins/` (manifesto `installed_plugins.json` com `installPath`).
+Installed plugins live in `<configDir>/plugins/` (manifest `installed_plugins.json` with `installPath`).
 
 ## Goals / Non-Goals
 
-**Goals:** resposta < 100 ms em repositórios médios.
+**Goals:** response < 100 ms in medium-sized repositories.
 
-**Non-Goals:** comandos de servidores MCP (texto livre continua aceito).
+**Non-Goals:** MCP server commands (free text is still accepted).
 
 ## Decisions
 
-- **Índice de arquivos por `cwd`**: `git ls-files -co --exclude-standard` se for repositório git; senão `rg --files`. Pastas derivadas dos caminhos. Cache com TTL de 30 s + invalidação por watcher raso (chokidar `depth: 0`... evitado; TTL basta).
-- **fuzzysort** (rápido, mantido) com `keys` no caminho e boost para o nome do arquivo.
-- **Frontmatter** com `yaml` após separar o bloco `---`; sem `name`, usa o nome da pasta/arquivo; comandos aninhados viram `pasta:nome`.
-- **Lista nativa** em `builtin-commands.ts` com flag `interactive`.
-- **App**: `useQuery` com chave `[sessionId, query]`, `staleTime` 10 s; detecção do token atual pelo cursor do `TextInput` (`selection`).
+- **File index per `cwd`**: `git ls-files -co --exclude-standard` if it is a git repository; otherwise `rg --files`. Folders derived from the paths. Cache with a 30 s TTL + invalidation by a shallow watcher (chokidar `depth: 0`... avoided; the TTL is enough).
+- **fuzzysort** (fast, maintained) with `keys` on the path and a boost for the file name.
+- **Frontmatter** parsed with `yaml` after splitting off the `---` block; without `name`, the folder/file name is used; nested commands become `folder:name`.
+- **Built-in list** in `builtin-commands.ts` with an `interactive` flag.
+- **App**: `useQuery` with key `[sessionId, query]`, `staleTime` 10 s; current token detected from the `TextInput` cursor (`selection`).
 
 ## Risks / Trade-offs
 
-- [Repositório gigante] → limite de 200 mil caminhos no índice.
+- [Huge repository] → limit of 200 thousand paths in the index.

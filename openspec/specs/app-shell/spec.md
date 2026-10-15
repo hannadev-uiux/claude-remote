@@ -1,45 +1,45 @@
 # app-shell Specification
 
 ## Purpose
-Fornece a base do app móvel: identidade visual de terminal, navegação e conexão resiliente com o daemon.
+Provides the foundation of the mobile app: terminal visual identity, navigation and a resilient connection to the daemon.
 
 ## Requirements
 
-### Requirement: Tema terminal escuro
-O app SHALL usar exclusivamente um tema escuro com fonte monoespaçada e o laranja do Claude como destaque, independentemente do tema do sistema.
+### Requirement: Dark terminal theme
+The app SHALL use only a dark theme with a monospaced font and Claude orange as the accent, regardless of the system theme.
 
-#### Scenario: iPhone em modo claro
-- **WHEN** o sistema está em modo claro
-- **THEN** o app continua com o tema escuro
+#### Scenario: iPhone in light mode
+- **WHEN** the system is in light mode
+- **THEN** the app keeps the dark theme
 
-### Requirement: Ícone do app
-O app SHALL ter ícone com o símbolo do Claude Code em primeiro plano sobre um terminal com `>_` ao fundo.
+### Requirement: App icon
+The app SHALL have an icon with the Claude Code symbol in the foreground over a terminal with `>_` in the background.
 
-#### Scenario: Tela inicial do iPhone
-- **WHEN** o app é instalado
-- **THEN** o ícone exibido é o do Claude Remote
+#### Scenario: iPhone home screen
+- **WHEN** the app is installed
+- **THEN** the icon shown is the Claude Remote icon
 
-### Requirement: Conexão autenticada
-Ao iniciar com credenciais pareadas, o app SHALL conectar ao daemon e enviar `auth` como primeira mensagem; sem credenciais, MUST abrir a tela de pareamento.
+### Requirement: Authenticated connection
+When starting with paired credentials, the app SHALL connect to the daemon and send `auth` as the first message; without credentials, it MUST open the pairing screen.
 
-#### Scenario: Sem pareamento
-- **WHEN** o app abre pela primeira vez
-- **THEN** a tela de pareamento é exibida
+#### Scenario: Not paired
+- **WHEN** the app opens for the first time
+- **THEN** the pairing screen is shown
 
-### Requirement: Reconexão automática
-Ao perder a conexão, o app SHALL tentar reconectar com backoff exponencial (1 s até 30 s), reconectar imediatamente ao voltar ao primeiro plano, e reassinar as sessões abertas com o último cursor recebido.
+### Requirement: Automatic reconnection
+When the connection is lost, the app SHALL try to reconnect with exponential backoff (1 s up to 30 s), reconnect immediately when returning to the foreground, and resubscribe to open sessions with the last cursor received.
 
-#### Scenario: Troca de rede
-- **WHEN** o celular troca de Wi-Fi para 4G
-- **THEN** o app reconecta e a conversa continua do ponto em que parou, sem mensagens duplicadas
+#### Scenario: Network change
+- **WHEN** the phone switches from Wi-Fi to 4G
+- **THEN** the app reconnects and the conversation continues from where it left off, without duplicate messages
 
-#### Scenario: Indicador de conexão
-- **WHEN** a conexão cai
-- **THEN** o app mostra o estado "reconectando" no topo
+#### Scenario: Connection indicator
+- **WHEN** the connection drops
+- **THEN** the app shows the "reconnecting" state at the top
 
-### Requirement: Requisições com tempo limite
-Requisições SHALL ser correlacionadas por `id` e falhar com erro após 15 s sem resposta.
+### Requirement: Requests with timeout
+Requests SHALL be correlated by `id` and fail with an error after 15 s without a response.
 
-#### Scenario: Daemon não responde
-- **WHEN** uma requisição fica 15 s sem resposta
-- **THEN** a promessa é rejeitada com erro de tempo limite
+#### Scenario: Daemon does not respond
+- **WHEN** a request goes 15 s without a response
+- **THEN** the promise is rejected with a timeout error

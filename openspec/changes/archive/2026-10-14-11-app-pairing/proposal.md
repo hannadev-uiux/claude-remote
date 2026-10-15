@@ -1,21 +1,21 @@
 ## Why
 
-O app precisa saber onde está o daemon e qual token usar sem digitação manual de token longo (A1).
+The app needs to know where the daemon is and which token to use without manually typing a long token (A1).
 
 ## What Changes
 
-- Tela de pareamento com leitor de QR (`expo-camera`) para a URL `claude-remote://pair?...`.
-- Entrada manual de host, porta e token como alternativa.
-- Teste de conexão antes de salvar; credenciais no `expo-secure-store`.
-- Tela de configurações com dados do pareamento, "esquecer daemon" e versão.
+- Pairing screen with a QR reader (`expo-camera`) for the `claude-remote://pair?...` URL.
+- Manual entry of host, port and token as an alternative.
+- Connection test before saving; credentials in `expo-secure-store`.
+- Settings screen with the pairing details, "forget daemon" and version.
 
 ## Capabilities
 
 ### New Capabilities
-- `app-pairing`: pareamento do app com o daemon e guarda segura das credenciais.
+- `app-pairing`: pairing the app with the daemon and storing the credentials securely.
 
 ### Modified Capabilities
 
 ## Impact
 
-`src/features/pairing`, `src/features/settings`; dependências `expo-camera`, `expo-secure-store`.
+`src/features/pairing`, `src/features/settings`; dependencies `expo-camera`, `expo-secure-store`.
