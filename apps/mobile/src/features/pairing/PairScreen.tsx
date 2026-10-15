@@ -1,8 +1,8 @@
 import { type BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera'
-import { useLocalSearchParams } from 'expo-router'
-import { Keyboard, QrCode } from 'lucide-react-native'
+import { router, useLocalSearchParams } from 'expo-router'
+import { ChevronRight, Keyboard, QrCode, Rocket } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native'
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { Button, Card, Screen, Text } from '@/ui'
 import { parseCredentials, parsePairingUrl } from './parse-pairing-url'
@@ -54,6 +54,25 @@ export function PairScreen() {
           <Text color="textMuted">
             No Mac, rode <Text color="accent">claude-remote pair</Text> e aponte a câmera para o QR code.
           </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Primeira vez? Configure o Mac"
+            onPress={() => router.push('/setup-guide')}
+          >
+            <Card accent={colors.accent}>
+              <View style={styles.guide}>
+                <Rocket size={20} color={colors.accent} />
+                <View style={styles.flex}>
+                  <Text weight="bold">Primeira vez? Configure o Mac</Text>
+                  <Text size="sm" color="textMuted">
+                    Tailscale, instalação em uma linha e pareamento, passo a passo.
+                  </Text>
+                </View>
+                <ChevronRight size={18} color={colors.textMuted} />
+              </View>
+            </Card>
+          </Pressable>
 
           <View style={styles.tabs}>
             <Button
@@ -208,6 +227,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: space.lg, gap: space.lg },
   tabs: { flexDirection: 'row', gap: space.sm },
+  guide: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   gap: { gap: space.md },
   cameraFrame: {
     aspectRatio: 1,

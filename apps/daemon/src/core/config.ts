@@ -20,9 +20,9 @@ export const ConfigSchema = z.object({
 })
 export type Config = z.infer<typeof ConfigSchema>
 
+/** Used only when no config exists; `claude-remote setup` picks the real profiles and aliases. */
 export const DEFAULT_PROFILES: Profile[] = [
   { id: 'claudin', name: 'Pessoal', configDir: '~/.claude', color: '#D97757' },
-  { id: 'drclaude', name: 'DoctorX', configDir: '~/.claude-doctorx', color: '#61AFEF' },
 ]
 
 export class ConfigError extends Error {

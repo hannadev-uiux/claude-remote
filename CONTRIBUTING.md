@@ -24,7 +24,14 @@ Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — pl
 ## Workflow
 
 1. **Specs first (OpenSpec).** Features and behavior changes start as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change in `openspec/changes/`, with a proposal, spec deltas and tasks. Validate with `openspec validate <change> --strict`. When merged, the change is archived into `openspec/specs/`. Small fixes and docs don't need a change.
-2. **Branch** from `main`: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
+2. **Branch** from `development`: `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
+
+   | Branch | Purpose |
+   |---|---|
+   | `development` | Integration branch. Every PR targets it. |
+   | `main` | Stable releases only, merged from `development` and tagged (`vX.Y.Z`). The one-line installer installs from `main`. |
+
+   Urgent fixes to a release may branch from `main` as `hotfix/<topic>` and are merged back into `development` too.
 3. **Code** following the conventions:
    - Strict TypeScript, no `any` — `unknown` + Zod at the edges.
    - New WebSocket message? Schema in `packages/protocol` → handler in the daemon → usage in the app.
@@ -43,7 +50,7 @@ Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — pl
    ```
 
    Types: `feat`, `fix`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `chore`. Scopes: `daemon`, `mobile`, `protocol`, `openspec`.
-6. **Open a PR** using the template. Keep it focused; screenshots or a short video for UI changes are much appreciated.
+6. **Open a PR against `development`** using the template. Keep it focused; screenshots or a short video for UI changes are much appreciated.
 
 ## Reporting bugs
 
