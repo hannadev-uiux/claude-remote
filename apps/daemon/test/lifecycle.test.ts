@@ -22,6 +22,7 @@ function record(id: string, patch: Partial<SessionRecord>): SessionRecord {
     updatedAt: '2026-10-14T10:00:00Z',
     subagents: [],
     backgroundTasks: 0,
+    checkout: null,
     transcriptPath: null,
     ...patch,
   }
@@ -66,6 +67,34 @@ describe('LifecycleService', () => {
       options: { cwd: project, env: { CLAUDE_REMOTE_NO_ATTACH: '1' } },
     })
     await expect(service.start('nope', project)).rejects.toMatchObject({ code: 'not_found' })
+  })
+
+  test('starts in a git worktree when asked, only inside a checkout', async () => {
+    const { exec, store, project } = await setup()
+    const checkout = async (dir: string) => (dir === project ? { root: project, branch: 'main' } : null)
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      undefined,
+      checkout,
+      () => new Date(2026, 9, 15, 16, 5, 0),
+    )
+    await service.start('claudin', project, { worktree: true })
+    expect(exec.calls[0]).toMatchObject({
+      args: ['--worktree', 'remote-20261015-160500'],
+      options: { cwd: project },
+    })
+    const plain = join(home.dir(), 'plain')
+    await mkdir(plain)
+    await expect(service.start('claudin', plain, { worktree: true })).rejects.toMatchObject({
+      code: 'bad_request',
+    })
+    expect(exec.calls).toHaveLength(1)
+    await service.start('claudin', plain)
+    expect(exec.calls[1]).toMatchObject({ args: [] })
   })
 
   test('resumes an ended session in its original directory', async () => {

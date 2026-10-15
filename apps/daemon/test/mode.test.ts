@@ -56,6 +56,7 @@ function setup(cycle: PermissionMode[], start = 0, pending = false) {
     updatedAt: '',
     subagents: [],
     backgroundTasks: 0,
+    checkout: null,
     transcriptPath: null,
   }))
   store.dispose()
