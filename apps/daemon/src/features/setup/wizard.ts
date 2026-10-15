@@ -1,4 +1,4 @@
-import { copyFile } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import type { Profile } from '@claude-remote/protocol'
 import { checkbox, confirm, input, select } from '@inquirer/prompts'
@@ -13,9 +13,12 @@ import {
   detectConfigDirs,
   mergeConfig,
   profilesToRemove,
+  readLogin,
+  suggestNewConfigDir,
   suggestProfile,
   tildify,
   validateAlias,
+  validateNewConfigDir,
 } from './profiles.ts'
 
 export type WizardOptions = InstallOptions & {
@@ -29,6 +32,8 @@ export type WizardOptions = InstallOptions & {
   tailscaleAddress: () => string | null
   /** Prints the pairing QR code for this host. */
   pair: (host: string) => Promise<void>
+  /** Opens Claude Code on this terminal with CLAUDE_CONFIG_DIR=configDir (for the login). */
+  runClaude: (configDir: string) => Promise<number>
   home?: string
 }
 
@@ -38,7 +43,7 @@ export class SetupAborted extends Error {
 
 const KEYS_PT: Record<string, string> = {
   navigate: 'navegar',
-  select: 'marcar',
+  select: 'escolher',
   submit: 'confirmar',
   all: 'todos',
   invert: 'inverter',
@@ -107,38 +112,59 @@ async function askProfiles(
     ),
   )
   const configured = new Set(existing.map((p) => tildify(expandHome(p.configDir), o.home)))
-  let selected = await checkbox({
-    message: 'Quais contas você quer controlar pelo iPhone?',
-    choices: dirs.map((dir, i) => {
-      const s = suggestProfile(dir, existing, i)
-      return {
-        name: `${dir.padEnd(22)} ${o.paint('muted', `${s.name} · ${s.id}`)}`,
-        value: dir,
-        short: dir,
-        checked: configured.size === 0 || configured.has(dir),
-      }
-    }),
-    validate: (choices) => (choices.length > 0 ? true : 'Escolha pelo menos uma conta (espaço marca).'),
-    theme,
-  })
-
-  while (
-    await confirm({
-      message: 'Adicionar outro diretório de configuração?',
-      default: false,
-      theme: { ...theme, keywords: { yes: 'sim', no: 'não' } },
-    })
-  ) {
-    const dir = await input({
-      message: 'Caminho do diretório (ex.: ~/.claude-trabalho):',
+  let selected: string[] = []
+  if (dirs.length > 0) {
+    selected = await checkbox({
+      message: 'Quais contas você quer controlar pelo iPhone?',
+      choices: dirs.map((dir, i) => {
+        const s = suggestProfile(dir, existing, i)
+        return {
+          name: `${dir.padEnd(22)} ${o.paint('muted', `${s.name} · ${s.id}`)}`,
+          value: dir,
+          short: dir,
+          checked: configured.size === 0 || configured.has(dir),
+        }
+      }),
       theme,
-      validate: async (value) => {
-        const path = expandHome(value.trim())
-        if (!(await isDirectory(path)))
-          return 'Diretório não encontrado. Faça login uma vez com `CLAUDE_CONFIG_DIR=<dir> claude`.'
-        return true
-      },
     })
+  } else {
+    console.log(o.paint('muted', '  Não encontrei nenhuma conta do Claude Code neste Mac; vamos criar uma.'))
+  }
+
+  for (;;) {
+    const next = await select({
+      message: selected.length > 0 ? 'Mais alguma conta?' : 'Como adicionar a conta?',
+      choices: [
+        ...(selected.length > 0 ? [{ name: 'Não, continuar', value: 'done' }] : []),
+        {
+          name: 'Criar uma conta nova',
+          value: 'create',
+          description:
+            'Cria a pasta e abre o Claude Code nela para você fazer login (ex.: conta do trabalho)',
+        },
+        {
+          name: 'Adicionar uma pasta que já existe',
+          value: 'existing',
+          description: 'Uma pasta usada antes com CLAUDE_CONFIG_DIR=<pasta> claude',
+        },
+      ],
+      theme,
+    })
+    if (next === 'done') break
+    const dir =
+      next === 'create'
+        ? await createAccount(o, [...dirs, ...selected])
+        : await input({
+            message: 'Caminho da pasta (ex.: ~/.claude-trabalho):',
+            theme,
+            validate: async (value) => {
+              const path = expandHome(value.trim())
+              if (!(await isDirectory(path)))
+                return 'Pasta não encontrada. Para uma conta que ainda não existe, escolha "Criar uma conta nova".'
+              return true
+            },
+          })
+    if (!dir) continue
     const tilde = tildify(expandHome(dir.trim()), o.home)
     if (!selected.includes(tilde)) selected = [...selected, tilde]
   }
@@ -180,6 +206,65 @@ async function askProfiles(
   return profiles
 }
 
+/**
+ * Creates the folder of a new account and opens Claude Code there so the user logs in.
+ * Returns the folder to add, or null when the user gives up.
+ */
+async function createAccount(o: WizardOptions, taken: readonly string[]): Promise<string | null> {
+  const theme = themeFor(o.paint)
+  const dir = (
+    await input({
+      message: 'Pasta da nova conta:',
+      default: suggestNewConfigDir(taken, o.home),
+      theme,
+      validate: (value) => validateNewConfigDir(value, taken),
+    })
+  ).trim()
+  const tilde = tildify(expandHome(dir), o.home)
+  await mkdir(expandHome(dir), { recursive: true })
+  const already = await readLogin(dir, o.home)
+  if (already) {
+    console.log(`  ${o.paint('success', '✓')} ${tilde} já está logada (${already})`)
+    return tilde
+  }
+  console.log(
+    o.paint(
+      'muted',
+      `\n  Vou abrir o Claude Code usando ${tilde}. Lá dentro:\n` +
+        '  1. Siga a configuração inicial e entre com a conta que essa pasta vai usar (se não pedir, digite /login)\n' +
+        '  2. Depois do login, digite /exit para voltar para cá\n',
+    ),
+  )
+  for (;;) {
+    await input({ message: 'Enter para abrir o Claude Code', theme })
+    const code = await o.runClaude(expandHome(dir))
+    const login = await readLogin(dir, o.home)
+    if (login) {
+      console.log(`\n  ${o.paint('success', '✓')} Logado em ${tilde} (${login})`)
+      return tilde
+    }
+    console.log(
+      o.paint(
+        'danger',
+        code === 127
+          ? '\n  Não consegui abrir o `claude`. Instale o Claude Code: https://claude.com/claude-code'
+          : '\n  Não encontrei um login nessa pasta.',
+      ),
+    )
+    const next = await select({
+      message: 'E agora?',
+      choices: [
+        { name: 'Abrir o Claude Code de novo', value: 'retry' },
+        { name: 'Adicionar mesmo assim (faço login depois pelo alias)', value: 'add' },
+        { name: 'Desistir desta conta', value: 'cancel' },
+      ],
+      theme,
+    })
+    if (next === 'add') return tilde
+    if (next === 'cancel') return null
+  }
+}
+
 /** Non-interactive choice: keep the current config, or every detected dir with unique suggestions. */
 function defaultProfiles(existing: readonly Profile[], dirs: readonly string[]): Profile[] {
   if (existing.length > 0) return [...existing]
@@ -213,7 +298,7 @@ export async function runSetupWizard(o: WizardOptions): Promise<void> {
   const existing = currentProfiles(raw)
   const detected = await detectConfigDirs(o.home)
   const dirs = [...new Set([...detected, ...existing.map((p) => tildify(expandHome(p.configDir), o.home))])]
-  if (dirs.length === 0) {
+  if (dirs.length === 0 && !o.interactive) {
     throw new SetupAborted(
       'Nenhuma conta do Claude Code encontrada. Rode `claude` uma vez para fazer login e depois `claude-remote setup`.',
     )

@@ -6,9 +6,12 @@ import {
   detectConfigDirs,
   mergeConfig,
   profilesToRemove,
+  readLogin,
+  suggestNewConfigDir,
   suggestProfile,
   tildify,
   validateAlias,
+  validateNewConfigDir,
 } from '../src/features/setup/profiles.ts'
 import { useTempHome } from './helpers.ts'
 
@@ -71,5 +74,37 @@ describe('setup profiles', () => {
   test('tildify', () => {
     expect(tildify('/Users/u/.claude', '/Users/u')).toBe('~/.claude')
     expect(tildify('/opt/x', '/Users/u')).toBe('/opt/x')
+  })
+
+  test('suggests a free folder for a new account', async () => {
+    const dir = home.dir()
+    expect(suggestNewConfigDir([], dir)).toBe('~/.claude')
+    await mkdir(join(dir, '.claude'))
+    expect(suggestNewConfigDir([], dir)).toBe('~/.claude-trabalho')
+    await mkdir(join(dir, '.claude-trabalho'))
+    expect(suggestNewConfigDir(['~/.claude-pessoal'], dir)).toBe('~/.claude-conta-2')
+  })
+
+  test('validates the folder of a new account', async () => {
+    const dir = home.dir()
+    await writeFile(join(dir, 'file'), '')
+    expect(validateNewConfigDir(join(dir, '.claude-novo'), [])).toBe(true)
+    expect(validateNewConfigDir('.claude-novo', [])).toMatch(/caminho absoluto/)
+    expect(validateNewConfigDir(join(dir, '.claude-mem'), [])).toMatch(/outra ferramenta/)
+    expect(validateNewConfigDir(`${join(dir, '.claude-a')}/`, [join(dir, '.claude-a')])).toMatch(/já está/)
+    expect(validateNewConfigDir(join(dir, 'file'), [])).toMatch(/arquivo/)
+  })
+
+  test('reads who is logged in to a config dir', async () => {
+    const dir = home.dir()
+    const account = join(dir, '.claude-work')
+    await mkdir(account)
+    expect(await readLogin(account, dir)).toBeNull()
+    await writeFile(join(account, '.claude.json'), '{"hasCompletedOnboarding":true}')
+    expect(await readLogin(account, dir)).toBeNull()
+    await writeFile(join(account, '.claude.json'), '{"oauthAccount":{"emailAddress":"a@b.c"}}')
+    expect(await readLogin(account, dir)).toBe('a@b.c')
+    await writeFile(join(dir, '.claude.json'), '{"primaryApiKey":"sk-x"}')
+    expect(await readLogin(join(dir, '.claude'), dir)).toBe('chave de API')
   })
 })

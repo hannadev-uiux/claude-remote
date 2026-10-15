@@ -27,6 +27,14 @@ Instala e configura o Claude Remote no Mac com um comando e um assistente guiado
 - **WHEN** existem `~/.claude` e `~/.claude-work` e o usuário escolhe os aliases `pessoal` e `trabalho`
 - **THEN** o `config.json` passa a ter os dois perfis e os comandos `pessoal` e `trabalho` abrem o Claude Code de cada conta no tmux
 
+#### Scenario: Conta nova
+- **WHEN** o usuário escolhe "Criar uma conta nova" e informa a pasta (sugestão `~/.claude-trabalho`)
+- **THEN** o assistente cria a pasta, abre o Claude Code com `CLAUDE_CONFIG_DIR` apontando para ela para o login, confere o login ao voltar (`oauthAccount` ou `primaryApiKey` no `.claude.json`) e adiciona a conta à lista; sem login, oferece abrir de novo, adicionar mesmo assim ou descartar
+
+#### Scenario: Nenhuma conta encontrada
+- **WHEN** não existe nenhum diretório de configuração e o assistente é interativo
+- **THEN** ele oferece criar uma conta nova em vez de encerrar
+
 #### Scenario: Diretório de outra ferramenta
 - **WHEN** existe `~/.claude-mem` (plugin claude-mem) ou um `~/.claude-*` sem `settings.json`, `.claude.json`, `.credentials.json` nem `projects/`
 - **THEN** ele não é oferecido como conta
