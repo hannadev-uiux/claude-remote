@@ -246,6 +246,8 @@ const enUS = {
     emptyTitle: 'No sessions',
     emptyBody: 'Start a session on the computer with the launchers:',
     emptyHint: 'Sessions opened with plain `claude` show up as read-only.',
+    detailEmptyTitle: 'Select a session',
+    detailEmptyBody: 'Choose a session from the list to see the conversation here.',
     background: 'background {{count}}',
     states: {
       running: 'running',

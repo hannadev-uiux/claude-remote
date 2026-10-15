@@ -1,6 +1,7 @@
 import { router } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TextInput } from 'react-native'
+import { addListener, constants } from 'react-native-key-command'
 import { useBackHandler } from '@/core/platform/use-back-handler'
 import { PromptComposer } from '../conversation/components/PromptComposer'
 import type { usePrompt } from '../conversation/use-prompt'
@@ -46,6 +47,21 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
     // Menus like /model only exist in the TUI: show the raw terminal to drive them.
     if (interactive && ok) router.push({ pathname: '/session/[id]/terminal', params: { id: sessionId } })
   }
+
+  const canSendRef = useRef(false)
+  canSendRef.current = !disabled && !prompt.sending && prompt.text.trim().length > 0
+  const sendRef = useRef(send)
+  sendRef.current = send
+
+  // Hardware keyboard: Cmd+Enter sends; plain Enter already inserts a newline by default on TextInput.
+  useEffect(() => {
+    return addListener(
+      { input: constants.keyInputEnter, modifierFlags: constants.keyModifierCommand },
+      () => {
+        if (canSendRef.current) void sendRef.current()
+      },
+    )
+  }, [])
 
   return (
     <PromptComposer

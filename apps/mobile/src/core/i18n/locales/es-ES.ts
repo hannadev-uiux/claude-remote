@@ -244,6 +244,8 @@ const esES = {
     emptyTitle: 'No hay sesiones',
     emptyBody: 'Inicia una sesión en el ordenador con los launchers:',
     emptyHint: 'Las sesiones abiertas con `claude` a secas aparecen como solo lectura.',
+    detailEmptyTitle: 'Selecciona una sesión',
+    detailEmptyBody: 'Elige una sesión de la lista para ver la conversación aquí.',
     background: 'segundo plano {{count}}',
     states: {
       running: 'en marcha',

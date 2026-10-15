@@ -243,6 +243,8 @@ const ptBR = {
     clearFilters: 'Limpar filtros',
     emptyTitle: 'Nenhuma sessão',
     emptyBody: 'Inicie uma sessão no computador usando os launchers:',
+    detailEmptyTitle: 'Selecione uma sessão',
+    detailEmptyBody: 'Escolha uma sessão na lista para ver a conversa aqui.',
     emptyHint: 'Sessões abertas com o `claude` puro aparecem como somente leitura.',
     background: 'background {{count}}',
     states: {

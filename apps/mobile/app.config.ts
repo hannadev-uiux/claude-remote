@@ -1,9 +1,11 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 import {
   type ConfigPlugin,
   type ExportedConfig,
   withAppDelegate,
+  withDangerousMod,
   withInfoPlist,
   withPlugins,
   withPodfile,
@@ -127,6 +129,64 @@ const withSceneLifecycle: ConfigPlugin = (config) => {
 }
 
 /**
+ * On iPad only, allow landscape alongside portrait (`orientation` above only ever writes the
+ * unsuffixed `UISupportedInterfaceOrientations`, never the `~ipad` key — checked in
+ * `@expo/config-plugins`'s `ios/Orientation.ts` and `ios/DeviceFamily.ts` — so this plugin can only
+ * add a key, never race with it regardless of plugin order).
+ */
+const withPerIdiomOrientation: ConfigPlugin = (config) =>
+  withInfoPlist(config, (plist) => {
+    plist.modResults['UISupportedInterfaceOrientations~ipad'] = [
+      'UIInterfaceOrientationPortrait',
+      'UIInterfaceOrientationPortraitUpsideDown',
+      'UIInterfaceOrientationLandscapeLeft',
+      'UIInterfaceOrientationLandscapeRight',
+    ]
+    return plist
+  })
+
+/**
+ * react-native-key-command is a static pod (no `use_frameworks!`), so its ObjC `HardwareShortcuts`
+ * class is only visible to `AppDelegate.swift` through the project's Swift bridging header.
+ */
+const withKeyCommandBridgingHeader: ConfigPlugin = (config) =>
+  withDangerousMod(config, [
+    'ios',
+    (config) => {
+      const name = config.modRequest.projectName
+      const headerPath = join(config.modRequest.platformProjectRoot, name ?? '', `${name}-Bridging-Header.h`)
+      const contents = readFileSync(headerPath, 'utf8')
+      const importLine = '#import "HardwareShortcuts.h"'
+      if (!contents.includes(importLine)) writeFileSync(headerPath, `${contents}\n${importLine}\n`)
+      return config
+    },
+  ])
+
+/** `keyCommands`/`handleKeyCommand` are the contract react-native-key-command requires on AppDelegate. */
+const withKeyCommandAppDelegate: ConfigPlugin = (config) =>
+  withAppDelegate(config, (delegate) => {
+    let source = delegate.modResults.contents
+    const marker = 'HardwareShortcuts.sharedInstance()'
+    if (!source.includes(marker)) {
+      const methods = [
+        '  override var keyCommands: [UIKeyCommand]? {',
+        '    return HardwareShortcuts.sharedInstance().keyCommands() as? [UIKeyCommand]',
+        '  }',
+        '',
+        '  @objc func handleKeyCommand(_ keyCommand: UIKeyCommand) {',
+        '    HardwareShortcuts.sharedInstance().handleKeyCommand(keyCommand)',
+        '  }',
+        '}',
+        '',
+        'class ReactNativeDelegate',
+      ].join('\n')
+      source = source.replace('}\n\nclass ReactNativeDelegate', methods)
+    }
+    delegate.modResults.contents = source
+    return delegate
+  })
+
+/**
  * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
  * drop the native mods of the platforms that have no file.
  */
@@ -144,7 +204,9 @@ const withFirebase: ConfigPlugin = (config) => {
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const expo = withSceneLifecycle(appConfig(config))
+  const expo = withKeyCommandAppDelegate(
+    withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+  )
   return firebase.ios || firebase.android ? withFirebase(expo) : expo
 }
 
@@ -161,7 +223,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ios: {
     bundleIdentifier: APP_ID,
     ...(firebase.ios ? { googleServicesFile: GOOGLE_SERVICES.ios } : {}),
-    supportsTablet: false,
+    supportsTablet: true,
     infoPlist: {
       // Personal dev build talking ws:// to the computer over Tailscale (WireGuard encrypts the link).
       NSAppTransportSecurity: { NSAllowsArbitraryLoads: true, NSAllowsLocalNetworking: true },

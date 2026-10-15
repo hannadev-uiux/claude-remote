@@ -1,34 +1,31 @@
-import { router, Stack } from 'expo-router'
-import { Plus, Settings } from 'lucide-react-native'
+import { Stack } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { StyleSheet, View } from 'react-native'
 import { useShallow } from 'zustand/react/shallow'
-import { space } from '@/core/theme'
+import { useWidthClass } from '@/core/layout'
 import { selectPendingCounts, usePermissionsStore } from '@/features/permissions/store'
+import { SessionListActions } from '@/features/sessions/components/SessionListActions'
 import { SessionsScreen } from '@/features/sessions/SessionsScreen'
-import { headerActions, IconButton } from '@/ui'
+import { EmptyState, headerActions, Text } from '@/ui'
 
 export default function SessionsRoute() {
   const { t } = useTranslation()
   const pending = usePermissionsStore(useShallow(selectPendingCounts))
+  const widthClass = useWidthClass()
+  // In regular width the list is already visible in the master pane; this route is the detail pane.
+  if (widthClass === 'regular') {
+    return (
+      <>
+        <Stack.Screen options={{ title: '' }} />
+        <EmptyState title={t('sessions.detailEmptyTitle')}>
+          <Text color="textMuted">{t('sessions.detailEmptyBody')}</Text>
+        </EmptyState>
+      </>
+    )
+  }
   return (
     <>
-      <Stack.Screen
-        options={headerActions(
-          <View style={styles.actions}>
-            <IconButton
-              icon={Plus}
-              label={t('nav.newSession')}
-              color="accent"
-              onPress={() => router.push('/new')}
-            />
-            <IconButton icon={Settings} label={t('nav.settings')} onPress={() => router.push('/settings')} />
-          </View>,
-        )}
-      />
+      <Stack.Screen options={headerActions(<SessionListActions />)} />
       <SessionsScreen pendingBySession={pending} />
     </>
   )
 }
-
-const styles = StyleSheet.create({ actions: { flexDirection: 'row', gap: space.xs } })
