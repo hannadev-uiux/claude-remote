@@ -45,6 +45,14 @@ describe('TmuxClient', () => {
     expect(await tmux.listPanes()).toEqual([])
   })
 
+  test('forces UTF-8 so -F tabs survive without a locale (launchd)', async () => {
+    const exec = fakeExecutor(() => ({ stdout: '%1\t42\tcr\tw\t/p\n' }))
+    expect(await new TmuxClient(exec).listPanes()).toEqual([
+      { paneId: '%1', pid: 42, sessionName: 'cr', windowName: 'w', cwd: '/p' },
+    ])
+    expect(exec.calls[0]?.rawArgs[0]).toBe('-u')
+  })
+
   test('pastes through a named buffer with bracketed paste', async () => {
     const exec = fakeExecutor()
     await new TmuxClient(exec).pasteText('%3', 'a\nb', 'cr-s1')
