@@ -37,19 +37,30 @@ Canceling a recording SHALL discard it without transcribing and without changing
 - **THEN** the recording overlay closes, no transcription happens, and the prompt field is unchanged
 
 ### Requirement: On-device transcription fills the prompt
-Finishing a recording SHALL transcribe it on-device, in the app's current language, and insert the result into the prompt field at the cursor position, exactly as if it had been typed; the user MUST be able to edit it before sending with the existing send button. The audio and its transcript MUST NOT be sent to the daemon or to any network service.
+Finishing a recording SHALL transcribe it on-device, in the chosen transcription language (see "Transcription language setting"), and insert the result into the prompt field at the cursor position, exactly as if it had been typed; the user MUST be able to edit it before sending with the existing send button. The audio and its transcript MUST NOT be sent to the daemon or to any network service.
 
 #### Scenario: Transcript fills the field
-- **WHEN** the user records "continuar com os testes" with the app in pt-BR
+- **WHEN** the user records "continuar com os testes" with the transcription language set to pt-BR
 - **THEN** the prompt field shows "continuar com os testes" and the existing send button sends it like typed text
-
-#### Scenario: Matches the app language
-- **WHEN** the app's current language is es-ES
-- **THEN** transcription is requested in es-ES, not the device's own system language if it differs
 
 #### Scenario: No network involved
 - **WHEN** a recording is transcribed
 - **THEN** no `session.input` or other daemon request is made for the audio itself, and no request reaches a third-party service
+
+### Requirement: Transcription language setting
+Settings SHALL offer a transcription language choice, independent of the app's UI language: "same as the app" (default) or one of the catalog's languages (pt-BR/en-US/es-ES). The choice SHALL persist across restarts and SHALL be used for every recording until changed.
+
+#### Scenario: Default follows the app language
+- **WHEN** the user has never changed the transcription language and the app's current language is es-ES
+- **THEN** recordings are transcribed in es-ES
+
+#### Scenario: Independent choice
+- **WHEN** the user sets the app to en-US but the transcription language to pt-BR
+- **THEN** recordings are transcribed in pt-BR regardless of the app's own language
+
+#### Scenario: Persists across restarts
+- **WHEN** the user picks a transcription language and relaunches the app
+- **THEN** the same language is still selected in Settings and used for the next recording
 
 ### Requirement: Microphone permission
 Before the first recording, the app SHALL request microphone and speech-recognition permission with localized explanations. If permission is denied, the app SHALL show a message explaining recording is unavailable, without crashing.

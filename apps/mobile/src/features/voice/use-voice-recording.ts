@@ -2,7 +2,9 @@ import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-spe
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { currentLocale } from '@/core/i18n'
 import { classifyRecognitionError } from './error-outcome'
+import { resolveVoiceLanguage } from './language'
 import { volumeToLevel } from './level'
+import { useVoiceLanguageStore } from './voice-language-store'
 
 export type VoiceRecordingState =
   | 'idle'
@@ -50,8 +52,9 @@ export function useVoiceRecording(onTranscript: (text: string) => void): UseVoic
       return
     }
     setLevel(0)
+    const language = useVoiceLanguageStore.getState().language
     ExpoSpeechRecognitionModule.start({
-      lang: currentLocale(),
+      lang: resolveVoiceLanguage(language, currentLocale()),
       requiresOnDeviceRecognition,
       interimResults: false,
       volumeChangeEventOptions: { enabled: true, intervalMillis: 100 },

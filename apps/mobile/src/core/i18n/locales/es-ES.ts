@@ -194,6 +194,9 @@ const esES = {
     offlineUnavailable:
       'El reconocimiento en el dispositivo no está disponible para este idioma. ¿Enviar la grabación por la red en su lugar?',
     retryOnline: 'Enviar en línea',
+    languageTitle: 'Idioma de la transcripción por voz',
+    languageHint: 'Qué idioma espera oír el dictado — te permite usar la app en un idioma y hablar en otro.',
+    languageApp: 'El mismo de la app',
   },
   newSession: {
     profile: 'perfil',

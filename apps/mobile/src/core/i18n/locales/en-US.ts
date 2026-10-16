@@ -195,6 +195,10 @@ const enUS = {
     offlineUnavailable:
       'On-device recognition is not available for this language. Send the recording over the network instead?',
     retryOnline: 'Send online',
+    languageTitle: 'Voice transcription language',
+    languageHint:
+      'Which language dictation expects to hear — lets you use the app in one language and dictate in another.',
+    languageApp: 'Same as the app',
   },
   newSession: {
     profile: 'profile',
