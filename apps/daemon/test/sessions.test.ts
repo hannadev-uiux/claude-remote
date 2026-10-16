@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import { SessionService } from '../src/features/sessions/service.ts'
 import { SessionStore } from '../src/features/sessions/store.ts'
-import { extractMeta, readTranscriptMeta } from '../src/features/sessions/transcript-meta.ts'
+import { extractMeta, findCustomTitle, readTranscriptMeta } from '../src/features/sessions/transcript-meta.ts'
 import { TmuxClient } from '../src/infra/tmux.ts'
 import { fakeExecutor, hookEvent, useTempHome } from './helpers.ts'
 
@@ -93,6 +93,57 @@ describe('transcript meta', () => {
     const path = join(home.dir(), 's.jsonl')
     await writeFile(path, `{"type":"user","cwd":"/w","message":{"content":"oi"}}\n{broken\n`)
     expect(await readTranscriptMeta(path)).toMatchObject({ title: 'oi', cwd: '/w' })
+  })
+
+  const filler = (kb: number) =>
+    Array.from({ length: kb }, (_, i) =>
+      JSON.stringify({ type: 'assistant', cwd: '/w', text: `${i}`.padEnd(1000, '.') }),
+    ).join('\n')
+
+  test('finds a name given before the last 64 KB', async () => {
+    const path = join(home.dir(), 'long.jsonl')
+    await writeFile(
+      path,
+      [
+        '{"type":"user","cwd":"/w","message":{"content":"primeiro prompt"}}',
+        '{"type":"custom-title","customTitle":"Nome antigo"}',
+        '{"type":"custom-title","customTitle":"Nome novo"}',
+        filler(200),
+        '{"type":"last-prompt","lastPrompt":"último"}',
+        '',
+      ].join('\n'),
+    )
+    expect(await readTranscriptMeta(path)).toMatchObject({ title: 'Nome novo', cwd: '/w' })
+  })
+
+  test('picks up a rename appended after an earlier read', async () => {
+    const path = join(home.dir(), 'grow.jsonl')
+    const start = `{"type":"custom-title","customTitle":"A"}\n${filler(100)}\n`
+    await writeFile(path, start)
+    expect((await readTranscriptMeta(path)).title).toBe('A')
+    await writeFile(path, `${start}{"type":"custom-title","customTitle":"B"}\n${filler(100)}\n`)
+    expect((await readTranscriptMeta(path)).title).toBe('B')
+  })
+
+  test('keeps the prompt fallbacks for a long session never named', async () => {
+    const path = join(home.dir(), 'unnamed.jsonl')
+    await writeFile(
+      path,
+      `{"type":"user","cwd":"/w","message":{"content":"primeiro prompt"}}\n${filler(200)}\n`,
+    )
+    expect((await readTranscriptMeta(path)).title).toBe('primeiro prompt')
+  })
+
+  test('findCustomTitle ignores lines that only mention the marker', () => {
+    expect(
+      findCustomTitle(
+        [
+          '{"type":"custom-title","customTitle":"X"}',
+          '{"type":"user","message":{"content":"\\"custom-title\\""}}',
+          '{broken "custom-title"',
+        ].join('\n'),
+      ),
+    ).toBe('X')
   })
 })
 
