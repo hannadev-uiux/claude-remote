@@ -124,6 +124,36 @@ export type RuleScope = z.infer<typeof RuleScopeSchema>
 export const DevicePlatformSchema = z.enum(['ios', 'android'])
 export type DevicePlatform = z.infer<typeof DevicePlatformSchema>
 
+export const QuestionKindSchema = z.enum(['choice', 'text', 'number'])
+export type QuestionKind = z.infer<typeof QuestionKindSchema>
+
+export const QuestionSchema = z.object({
+  question: z.string(),
+  header: z.string().nullable(),
+  kind: QuestionKindSchema,
+  options: z.array(z.object({ label: z.string(), description: z.string().nullable() })),
+  multiSelect: z.boolean(),
+})
+export type Question = z.infer<typeof QuestionSchema>
+
+/** Structured content of a request Claude Code shows as a menu (`AskUserQuestion`, `ExitPlanMode`). */
+export const PermissionInteractionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('question'), title: z.string().nullable(), questions: z.array(QuestionSchema) }),
+  z.object({ kind: z.literal('plan'), plan: z.string().nullable() }),
+])
+export type PermissionInteraction = z.infer<typeof PermissionInteractionSchema>
+
+/** Leaving plan mode never offers `auto` or `bypassPermissions`. */
+export const PlanDecisionSchema = z.enum(['acceptEdits', 'default', 'keepPlanning'])
+export type PlanDecision = z.infer<typeof PlanDecisionSchema>
+
+export const PermissionAnswerSchema = z.discriminatedUnion('kind', [
+  /** Question text → answer; multiple choices already joined with ", ". */
+  z.object({ kind: z.literal('question'), answers: z.record(z.string(), z.string()) }),
+  z.object({ kind: z.literal('plan'), decision: PlanDecisionSchema, feedback: z.string().optional() }),
+])
+export type PermissionAnswer = z.infer<typeof PermissionAnswerSchema>
+
 export const PermissionRequestInfoSchema = z.object({
   requestId: z.string(),
   sessionId: z.string(),
@@ -134,6 +164,7 @@ export const PermissionRequestInfoSchema = z.object({
   defaultScope: RuleScopeSchema,
   createdAt: z.string(),
   expiresAt: z.string(),
+  interaction: PermissionInteractionSchema.optional(),
 })
 export type PermissionRequestInfo = z.infer<typeof PermissionRequestInfoSchema>
 

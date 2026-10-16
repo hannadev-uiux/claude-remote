@@ -222,7 +222,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Claude Remote',
   slug: 'claude-remote',
-  version: '0.5.0',
+  version: '0.6.0',
   scheme: 'claude-remote',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -324,7 +324,14 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
       {
         // ws:// to the daemon over Tailscale (WireGuard encrypts the link); Android blocks cleartext by default.
         android: { usesCleartextTraffic: true },
-        ...(firebase.ios ? { ios: { useFrameworks: 'static' } } : {}),
+        ios: {
+          // The precompiled Expo modules are built with one Swift version and fail to import with a
+          // newer Xcode ("this SDK is not supported by the compiler"); build them with the local one.
+          usePrecompiledModules: false,
+          // UIKit scene lifecycle, required by the iOS 27 SDK (Xcode 27).
+          enableSceneSupport: true,
+          ...(firebase.ios ? { useFrameworks: 'static' as const } : {}),
+        },
       },
     ],
   ],

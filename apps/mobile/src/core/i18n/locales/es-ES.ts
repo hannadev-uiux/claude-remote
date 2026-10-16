@@ -149,6 +149,23 @@ const esES = {
       profileDetail: 'settings.json del perfil — todas sus sesiones',
       confirm: 'Guardar y permitir',
     },
+    question: {
+      title: 'Claude tiene una pregunta',
+      multi: 'Elige una o más',
+      other: 'Otra…',
+      answer: 'Tu respuesta…',
+      send: 'Enviar',
+      decline: 'Rechazar',
+    },
+    plan: {
+      title: 'Plan listo para revisar',
+      empty: 'El plan se muestra en la terminal.',
+      acceptEdits: 'Aprobar, aceptar ediciones',
+      reviewEdits: 'Aprobar, revisar cada edición',
+      keepPlanning: 'Seguir planificando',
+      feedback: '¿Qué debería cambiar? (opcional)',
+      cancel: 'Cancelar',
+    },
   },
   autocomplete: {
     empty: 'sin sugerencias',
@@ -194,6 +211,9 @@ const esES = {
     offlineUnavailable:
       'El reconocimiento en el dispositivo no está disponible para este idioma. ¿Enviar la grabación por la red en su lugar?',
     retryOnline: 'Enviar en línea',
+    languageTitle: 'Idioma de la transcripción por voz',
+    languageHint: 'Qué idioma espera oír el dictado — te permite usar la app en un idioma y hablar en otro.',
+    languageApp: 'El mismo de la app',
   },
   newSession: {
     profile: 'perfil',

@@ -49,8 +49,15 @@ export class PushService {
   }
 
   messageForPermission(info: PermissionRequestInfo): PushMessage {
+    const { messages } = this.options
+    const kind = info.interaction?.kind
     return {
-      title: this.options.messages.permissionPending,
+      title:
+        kind === 'question'
+          ? messages.questionPending
+          : kind === 'plan'
+            ? messages.planPending
+            : messages.permissionPending,
       body: this.profileName(info.profileId),
       data: {
         sessionId: info.sessionId,
@@ -58,7 +65,8 @@ export class PushService {
         event: 'PermissionRequest',
         requestId: info.requestId,
       },
-      category: PERMISSION_CATEGORY,
+      // Questions and plans are answered in the app: no one-tap Allow/Deny.
+      ...(kind ? {} : { category: PERMISSION_CATEGORY }),
     }
   }
 

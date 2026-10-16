@@ -149,6 +149,23 @@ const ptBR = {
       profileDetail: 'settings.json do perfil — todas as sessões dele',
       confirm: 'Gravar e permitir',
     },
+    question: {
+      title: 'O Claude tem uma pergunta',
+      multi: 'Escolha uma ou mais',
+      other: 'Outra…',
+      answer: 'Sua resposta…',
+      send: 'Enviar',
+      decline: 'Recusar',
+    },
+    plan: {
+      title: 'Plano pronto para revisão',
+      empty: 'O plano aparece no terminal.',
+      acceptEdits: 'Aprovar, aceitar edições',
+      reviewEdits: 'Aprovar, revisar cada edição',
+      keepPlanning: 'Continuar planejando',
+      feedback: 'O que deve mudar? (opcional)',
+      cancel: 'Cancelar',
+    },
   },
   autocomplete: {
     empty: 'nenhuma sugestão',
@@ -193,6 +210,9 @@ const ptBR = {
     offlineUnavailable:
       'O reconhecimento no aparelho não está disponível para este idioma. Enviar a gravação pela rede em vez disso?',
     retryOnline: 'Enviar online',
+    languageTitle: 'Idioma da transcrição por voz',
+    languageHint: 'Qual idioma o ditado espera ouvir — permite usar o app num idioma e falar em outro.',
+    languageApp: 'Mesmo do app',
   },
   newSession: {
     profile: 'perfil',
