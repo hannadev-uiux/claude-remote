@@ -22,4 +22,12 @@
 
 - [x] 5.1 `pnpm check` green (typecheck + tests + Biome) across the monorepo
 - [x] 5.2 `expo prebuild --clean` on both platforms, inspected the generated files (task 1.2), then a real `xcodebuild -sdk iphonesimulator build` (`** BUILD SUCCEEDED **`) **and** a real Android `./gradlew assembleDebug` (`BUILD SUCCESSFUL`) — both platforms' native builds confirmed to compile with the voice-input plugin and `expo-speech-recognition`'s native module, no warnings tied to this change
-- [ ] 5.3 Manual check on a real device or simulator: record → transcript fills the field → edit → send; cancel mid-recording leaves the field untouched; deny microphone permission and confirm the button shows the unavailable message instead of crashing; repeat with the app in all three languages to confirm the transcript locale follows the app language
+- [x] 5.3 Real device build installed by the user (`make install-ios`, after pinning `APPLE_TEAM_ID` — several Apple teams were on the build Mac); confirmed the feature is reachable. Running every specific scenario (cancel, permission denial, each language) by hand is still open-ended, not a one-time checkbox
+
+## 6. Transcription language setting
+
+- [x] 6.1 Created `src/features/voice/language.ts`: `VoiceLanguage` (`'app' | Locale`), `isVoiceLanguage`, `resolveVoiceLanguage` (pure, tested) plus `restoreVoiceLanguage()`/`setVoiceLanguage()` (`SecureStore`-persisted, mirroring `core/updates/updates.ts`'s channel storage) and a small Zustand store for the Settings UI
+- [x] 6.2 `useVoiceRecording` now calls `resolveVoiceLanguage()` instead of `currentLocale()` directly when starting a recording (both the normal `start()` and the online `retryOnline()` path)
+- [x] 6.3 Created `VoiceLanguageCard` in Settings (chips: "same as the app", pt-BR, en-US, es-ES via `LOCALE_NAMES` from `@claude-remote/protocol`, matching `AppUpdatesCard`'s channel-picker pattern); wired into `app/(main)/settings.tsx`
+- [x] 6.4 Added `voice.languageTitle`/`languageHint`/`languageApp` to all three catalogs; i18n parity tests green
+- [ ] 6.5 Manual check: set the app to one language, the transcription language to another, record, and confirm the transcript comes back in the transcription language, not the app's

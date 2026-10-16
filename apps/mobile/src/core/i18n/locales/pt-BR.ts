@@ -193,6 +193,9 @@ const ptBR = {
     offlineUnavailable:
       'O reconhecimento no aparelho não está disponível para este idioma. Enviar a gravação pela rede em vez disso?',
     retryOnline: 'Enviar online',
+    languageTitle: 'Idioma da transcrição por voz',
+    languageHint: 'Qual idioma o ditado espera ouvir — permite usar o app num idioma e falar em outro.',
+    languageApp: 'Mesmo do app',
   },
   newSession: {
     profile: 'perfil',
