@@ -145,6 +145,30 @@ describe('PushService', () => {
     expect(JSON.stringify(sent)).not.toContain('secret')
   })
 
+  test('questions and plans get their own title and no Allow/Deny actions', async () => {
+    const { service } = await setup()
+    const base = {
+      requestId: 'r1',
+      sessionId: 's',
+      profileId: 'drclaude',
+      tool: 'AskUserQuestion',
+      input: {},
+      suggestedRule: null,
+      defaultScope: 'project' as const,
+      createdAt: '',
+      expiresAt: '',
+    }
+    const question = service.messageForPermission({
+      ...base,
+      interaction: { kind: 'question', title: null, questions: [] },
+    })
+    expect(question.title).toBe('Claude is waiting for your answer')
+    expect(question.category).toBeUndefined()
+    const plan = service.messageForPermission({ ...base, interaction: { kind: 'plan', plan: 'secret plan' } })
+    expect(plan.title).toBe('Plan ready for review')
+    expect(JSON.stringify(plan)).not.toContain('secret')
+  })
+
   test('permission_prompt notifications are left to the permission flow', async () => {
     const { service } = await setup()
     expect(

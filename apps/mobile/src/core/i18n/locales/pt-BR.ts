@@ -149,6 +149,23 @@ const ptBR = {
       profileDetail: 'settings.json do perfil — todas as sessões dele',
       confirm: 'Gravar e permitir',
     },
+    question: {
+      title: 'O Claude tem uma pergunta',
+      multi: 'Escolha uma ou mais',
+      other: 'Outra…',
+      answer: 'Sua resposta…',
+      send: 'Enviar',
+      decline: 'Recusar',
+    },
+    plan: {
+      title: 'Plano pronto para revisão',
+      empty: 'O plano aparece no terminal.',
+      acceptEdits: 'Aprovar, aceitar edições',
+      reviewEdits: 'Aprovar, revisar cada edição',
+      keepPlanning: 'Continuar planejando',
+      feedback: 'O que deve mudar? (opcional)',
+      cancel: 'Cancelar',
+    },
   },
   autocomplete: {
     empty: 'nenhuma sugestão',

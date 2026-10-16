@@ -311,10 +311,13 @@ export const ptBR = {
   /** Sent back to Claude Code (shown in its TUI). */
   claudeCode: {
     denied: 'Negado pelo Claude Remote',
+    keepPlanning: 'O usuário quer continuar planejando. Revise o plano antes de chamar ExitPlanMode de novo.',
   },
   push: {
     sessionDone: 'Sessão concluída',
     sessionWaiting: 'Sessão aguardando você',
     permissionPending: 'Permissão pendente',
+    questionPending: 'O Claude está esperando sua resposta',
+    planPending: 'Plano pronto para revisão',
   },
 } satisfies Messages

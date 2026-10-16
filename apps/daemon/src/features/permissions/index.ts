@@ -7,11 +7,13 @@ import { RulesLog } from './rules-log.ts'
 
 export function registerPermissionsFeature(ctx: DaemonContext) {
   const rulesLog = new RulesLog(paths.rulesLog())
+  const messages = messagesFor(effectiveLocale(ctx.config))
   const broker = new PermissionBroker(ctx.hub, {
     timeoutMs: ctx.config.permissionTimeoutSec * 1000,
     defaultScope: ctx.config.defaultRuleScope,
     profiles: ctx.profiles,
-    denyMessage: messagesFor(effectiveLocale(ctx.config)).claudeCode.denied,
+    denyMessage: messages.claudeCode.denied,
+    keepPlanningMessage: messages.claudeCode.keepPlanning,
     onRequested: (info) => ctx.bus.emit('permission.requested', info),
     onResolved: (info, outcome) => ctx.bus.emit('permission.resolved', { info, outcome }),
     onRuleCreated: (rule) => {
@@ -26,6 +28,10 @@ export function registerPermissionsFeature(ctx: DaemonContext) {
       behavior: msg.decision,
       always: msg.decision === 'allow' ? msg.always : undefined,
     })
+    return undefined
+  })
+  ctx.router.register('permission.answer', (msg) => {
+    broker.answer(msg.requestId, msg.answer)
     return undefined
   })
   // A phone that connects late still sees requests that are waiting.

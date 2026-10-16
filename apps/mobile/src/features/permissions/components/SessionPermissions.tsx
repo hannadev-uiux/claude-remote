@@ -8,6 +8,8 @@ import { selectPendingFor, usePermissionsStore } from '../store'
 import { useRespond } from '../use-respond'
 import { AlwaysAllowSheet } from './AlwaysAllowSheet'
 import { PermissionCard } from './PermissionCard'
+import { PlanCard } from './PlanCard'
+import { QuestionCard } from './QuestionCard'
 
 /** Pending permission cards for one session (oldest first) plus the always-allow sheet. */
 export function SessionPermissions({
@@ -24,13 +26,30 @@ export function SessionPermissions({
   const profileName = useConnectionStore(
     (s) => s.hello?.profiles.find((p) => p.id === profileId)?.name ?? profileId,
   )
-  const { respond, busy, error } = useRespond()
+  const { respond, answer, busy, error } = useRespond()
   const [always, setAlways] = useState<PermissionRequestInfo | null>(null)
   const current = [...pending].sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0]
+  const interaction = current?.interaction
 
   return (
     <>
-      {current ? (
+      {current && interaction?.kind === 'question' ? (
+        <QuestionCard
+          key={current.requestId}
+          title={interaction.title}
+          questions={interaction.questions}
+          busy={busy === current.requestId}
+          onAnswer={(value) => void answer(current.requestId, value)}
+          onDecline={() => void respond(current.requestId, 'deny')}
+        />
+      ) : current && interaction?.kind === 'plan' ? (
+        <PlanCard
+          key={current.requestId}
+          plan={interaction.plan}
+          busy={busy === current.requestId}
+          onAnswer={(value) => void answer(current.requestId, value)}
+        />
+      ) : current ? (
         <PermissionCard
           request={current}
           busy={busy === current.requestId}
