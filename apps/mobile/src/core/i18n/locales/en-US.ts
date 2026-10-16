@@ -151,6 +151,23 @@ const enUS = {
       profileDetail: "the profile's settings.json — all of its sessions",
       confirm: 'Save and allow',
     },
+    question: {
+      title: 'Claude has a question',
+      multi: 'Pick one or more',
+      other: 'Other…',
+      answer: 'Your answer…',
+      send: 'Send',
+      decline: 'Decline',
+    },
+    plan: {
+      title: 'Plan ready for review',
+      empty: 'The plan is shown in the terminal.',
+      acceptEdits: 'Approve, accept edits',
+      reviewEdits: 'Approve, review each edit',
+      keepPlanning: 'Keep planning',
+      feedback: 'What should change? (optional)',
+      cancel: 'Cancel',
+    },
   },
   autocomplete: {
     empty: 'no suggestions',

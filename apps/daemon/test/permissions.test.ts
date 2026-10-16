@@ -7,8 +7,10 @@ import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
 import { FileTokenStore } from '../src/core/secrets.ts'
 import { buildHookOutput, PermissionBroker } from '../src/features/permissions/broker.ts'
+import { parseInteraction } from '../src/features/permissions/interaction.ts'
 
 const DENY = 'Denied by Claude Remote'
+const KEEP_PLANNING = 'Keep planning'
 
 import { bashPrefixRule, parseRule, suggestRule } from '../src/features/permissions/rules.ts'
 import { RulesLog } from '../src/features/permissions/rules-log.ts'
@@ -94,7 +96,13 @@ describe('hook output', () => {
 })
 
 describe('PermissionBroker', () => {
-  function setup(timeoutMs = 1_000) {
+  function setup(
+    timeoutMs = 1_000,
+    tool: { name: string; input: Record<string, unknown> } = {
+      name: 'Bash',
+      input: { command: 'pnpm test' },
+    },
+  ) {
     const sent: ServerMessage[] = []
     const rules: unknown[] = []
     const broker = new PermissionBroker(
@@ -104,14 +112,15 @@ describe('PermissionBroker', () => {
         defaultScope: 'project',
         profiles: [{ id: 'claudin', name: 'P', configDir: '/cfg', color: '' }],
         denyMessage: DENY,
+        keepPlanningMessage: KEEP_PLANNING,
         onRuleCreated: (r) => rules.push(r),
       },
     )
     const hook = hookEvent('PermissionRequest', {
       session_id: 's',
       cwd: '/w',
-      tool_name: 'Bash',
-      tool_input: { command: 'pnpm test' },
+      tool_name: tool.name,
+      tool_input: tool.input,
     })
     const requestId = () =>
       (
@@ -173,6 +182,128 @@ describe('PermissionBroker', () => {
     expect(rules).toEqual([
       { rule: 'Bash(pnpm test:*)', scope: 'project', file: '/w/.claude/settings.local.json', sessionId: 's' },
     ])
+  })
+
+  const QUESTION = {
+    name: 'AskUserQuestion',
+    input: {
+      questions: [
+        {
+          question: 'Which database?',
+          header: 'DB',
+          options: [{ label: 'Postgres', description: 'relational' }, { label: 'SQLite' }],
+          multiSelect: false,
+        },
+      ],
+    },
+  }
+
+  test('a question carries its options and is answered with updatedInput', async () => {
+    const { broker, hook, sent, requestId } = setup(1_000, QUESTION)
+    const pending = broker.handle(hook, new AbortController().signal)
+    expect(sent[0]).toMatchObject({
+      request: {
+        interaction: {
+          kind: 'question',
+          questions: [{ question: 'Which database?', kind: 'choice', options: [{ label: 'Postgres' }, {}] }],
+        },
+      },
+    })
+    expect(() => broker.respond(requestId(), { behavior: 'allow' })).toThrow(
+      expect.objectContaining({ code: 'bad_request' }),
+    )
+    expect(() => broker.answer(requestId(), { kind: 'plan', decision: 'default' })).toThrow(
+      expect.objectContaining({ code: 'bad_request' }),
+    )
+    broker.answer(requestId(), {
+      kind: 'question',
+      answers: { 'Which database?': 'Postgres', 'Not asked': 'x' },
+    })
+    expect(await pending).toEqual({
+      hookSpecificOutput: {
+        hookEventName: 'PermissionRequest',
+        decision: {
+          behavior: 'allow',
+          updatedInput: { ...QUESTION.input, answers: { 'Which database?': 'Postgres' } },
+        },
+      },
+    })
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'allowed' })
+  })
+
+  test('a question can still be declined', async () => {
+    const { broker, hook, requestId } = setup(1_000, QUESTION)
+    const pending = broker.handle(hook, new AbortController().signal)
+    broker.respond(requestId(), { behavior: 'deny' })
+    expect(await pending).toMatchObject({ hookSpecificOutput: { decision: { behavior: 'deny' } } })
+  })
+
+  const PLAN = { name: 'ExitPlanMode', input: { plan: '1. do it', planFilePath: '/p.md' } }
+
+  test('plan approval switches the session mode', async () => {
+    const { broker, hook, sent, requestId } = setup(1_000, PLAN)
+    const pending = broker.handle(hook, new AbortController().signal)
+    expect(sent[0]).toMatchObject({ request: { interaction: { kind: 'plan', plan: '1. do it' } } })
+    broker.answer(requestId(), { kind: 'plan', decision: 'acceptEdits' })
+    expect(await pending).toEqual({
+      hookSpecificOutput: {
+        hookEventName: 'PermissionRequest',
+        decision: {
+          behavior: 'allow',
+          updatedPermissions: [{ type: 'setMode', mode: 'acceptEdits', destination: 'session' }],
+        },
+      },
+    })
+  })
+
+  test('keep planning denies with the feedback or the default message', async () => {
+    for (const [feedback, message] of [
+      ['split step 2', 'split step 2'],
+      ['  ', KEEP_PLANNING],
+    ] as const) {
+      const { broker, hook, requestId } = setup(1_000, PLAN)
+      const pending = broker.handle(hook, new AbortController().signal)
+      broker.answer(requestId(), { kind: 'plan', decision: 'keepPlanning', feedback })
+      expect(await pending).toMatchObject({ hookSpecificOutput: { decision: { behavior: 'deny', message } } })
+    }
+  })
+})
+
+describe('parseInteraction', () => {
+  test('questions: defaults, text questions and the optional title', () => {
+    expect(
+      parseInteraction('AskUserQuestion', {
+        title: 'Before I start',
+        questions: [
+          { question: 'Name?', kind: 'text' },
+          { question: 'Tests?', options: [{ label: 'Unit' }, { label: 'E2E' }], multiSelect: true },
+        ],
+      }),
+    ).toEqual({
+      kind: 'question',
+      title: 'Before I start',
+      questions: [
+        { question: 'Name?', header: null, kind: 'text', options: [], multiSelect: false },
+        {
+          question: 'Tests?',
+          header: null,
+          kind: 'choice',
+          options: [
+            { label: 'Unit', description: null },
+            { label: 'E2E', description: null },
+          ],
+          multiSelect: true,
+        },
+      ],
+    })
+  })
+
+  test('malformed or unrelated input has no interaction', () => {
+    expect(parseInteraction('AskUserQuestion', {})).toBeNull()
+    expect(parseInteraction('AskUserQuestion', { questions: [] })).toBeNull()
+    expect(parseInteraction('AskUserQuestion', { questions: [{ question: 'Q', options: [] }] })).toBeNull()
+    expect(parseInteraction('Bash', { command: 'ls' })).toBeNull()
+    expect(parseInteraction('ExitPlanMode', {})).toEqual({ kind: 'plan', plan: null })
   })
 })
 

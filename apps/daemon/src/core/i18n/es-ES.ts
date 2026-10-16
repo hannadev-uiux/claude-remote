@@ -314,10 +314,14 @@ export const esES = {
   /** Sent back to Claude Code (shown in its TUI). */
   claudeCode: {
     denied: 'Denegado por Claude Remote',
+    keepPlanning:
+      'El usuario quiere seguir planificando. Revisa el plan antes de volver a llamar a ExitPlanMode.',
   },
   push: {
     sessionDone: 'Sesión terminada',
     sessionWaiting: 'Sesión esperándote',
     permissionPending: 'Permiso pendiente',
+    questionPending: 'Claude está esperando tu respuesta',
+    planPending: 'Plan listo para revisar',
   },
 } satisfies Messages

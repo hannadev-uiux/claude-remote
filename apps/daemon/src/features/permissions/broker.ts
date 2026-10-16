@@ -1,12 +1,28 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import type { PermissionOutcome, PermissionRequestInfo, Profile, RuleScope } from '@claude-remote/protocol'
+import type {
+  PermissionAnswer,
+  PermissionOutcome,
+  PermissionRequestInfo,
+  Profile,
+  RuleScope,
+} from '@claude-remote/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { Broadcaster } from '../../transport/connection.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
+import { answerDecision, parseInteraction } from './interaction.ts'
 import { parseRule, suggestRule } from './rules.ts'
 
-export type Decision = { behavior: 'allow' | 'deny'; always?: { rule: string; scope: RuleScope } }
+export type Decision = {
+  behavior: 'allow' | 'deny'
+  always?: { rule: string; scope: RuleScope }
+  /** Replaces the tool input (answers to `AskUserQuestion`). */
+  updatedInput?: Record<string, unknown>
+  /** Permission mode the session switches to (leaving plan mode). */
+  mode?: 'acceptEdits' | 'default'
+  /** Deny message for Claude instead of the default one (plan feedback). */
+  message?: string
+}
 type Outcome = { kind: 'decision'; decision: Decision } | { kind: 'expired' } | { kind: 'cancelled' }
 
 type Pending = { info: PermissionRequestInfo; cwd: string; settle: (outcome: Outcome) => void }
@@ -21,6 +37,8 @@ export type BrokerOptions = {
   onRequested?: (info: PermissionRequestInfo) => void
   /** Shown by Claude Code when the phone denies, in the configured language. */
   denyMessage: string
+  /** Sent to Claude when the user keeps planning without feedback, in the configured language. */
+  keepPlanningMessage: string
 }
 
 const SCOPE_DESTINATION: Record<RuleScope, 'userSettings' | 'localSettings'> = {
@@ -37,28 +55,31 @@ export function buildHookOutput(decision: Decision, denyMessage: string): Record
     return {
       hookSpecificOutput: {
         hookEventName: 'PermissionRequest',
-        decision: { behavior: 'deny', message: denyMessage },
+        decision: { behavior: 'deny', message: decision.message ?? denyMessage },
       },
     }
   }
   const parsed = decision.always ? parseRule(decision.always.rule) : null
+  const updatedPermissions = [
+    ...(parsed && decision.always
+      ? [
+          {
+            type: 'addRules',
+            rules: [parsed],
+            behavior: 'allow',
+            destination: SCOPE_DESTINATION[decision.always.scope],
+          },
+        ]
+      : []),
+    ...(decision.mode ? [{ type: 'setMode', mode: decision.mode, destination: 'session' }] : []),
+  ]
   return {
     hookSpecificOutput: {
       hookEventName: 'PermissionRequest',
       decision: {
         behavior: 'allow',
-        ...(parsed && decision.always
-          ? {
-              updatedPermissions: [
-                {
-                  type: 'addRules',
-                  rules: [parsed],
-                  behavior: 'allow',
-                  destination: SCOPE_DESTINATION[decision.always.scope],
-                },
-              ],
-            }
-          : {}),
+        ...(decision.updatedInput ? { updatedInput: decision.updatedInput } : {}),
+        ...(updatedPermissions.length > 0 ? { updatedPermissions } : {}),
       },
     },
   }
@@ -86,6 +107,7 @@ export class PermissionBroker {
     const tool = typeof payload.tool_name === 'string' ? payload.tool_name : 'tool'
     const input = isRecord(payload.tool_input) ? payload.tool_input : {}
     const now = Date.now()
+    const interaction = parseInteraction(tool, input)
     const info: PermissionRequestInfo = {
       requestId: randomUUID(),
       sessionId: payload.session_id,
@@ -96,6 +118,7 @@ export class PermissionBroker {
       defaultScope: this.options.defaultScope,
       createdAt: new Date(now).toISOString(),
       expiresAt: new Date(now + this.options.timeoutMs).toISOString(),
+      ...(interaction ? { interaction } : {}),
     }
 
     const outcome = await new Promise<Outcome>((resolve) => {
@@ -148,6 +171,17 @@ export class PermissionBroker {
     if (!pending) throw new DaemonError('already_resolved', 'request already resolved or expired')
     if (decision.always && !parseRule(decision.always.rule))
       throw new DaemonError('bad_request', 'invalid rule')
+    // Allowing a menu without its answer would only show it again in the terminal.
+    if (decision.behavior === 'allow' && pending.info.interaction)
+      throw new DaemonError('bad_request', 'interactive requests take permission.answer')
+    pending.settle({ kind: 'decision', decision })
+  }
+
+  /** Answers a question or plan approval; the first answer (phone or terminal) wins. */
+  answer(requestId: string, answer: PermissionAnswer): void {
+    const pending = this.pending.get(requestId)
+    if (!pending) throw new DaemonError('already_resolved', 'request already resolved or expired')
+    const decision = answerDecision(pending.info, answer, this.options.keepPlanningMessage)
     pending.settle({ kind: 'decision', decision })
   }
 

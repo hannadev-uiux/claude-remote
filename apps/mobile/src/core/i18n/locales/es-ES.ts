@@ -149,6 +149,23 @@ const esES = {
       profileDetail: 'settings.json del perfil — todas sus sesiones',
       confirm: 'Guardar y permitir',
     },
+    question: {
+      title: 'Claude tiene una pregunta',
+      multi: 'Elige una o más',
+      other: 'Otra…',
+      answer: 'Tu respuesta…',
+      send: 'Enviar',
+      decline: 'Rechazar',
+    },
+    plan: {
+      title: 'Plan listo para revisar',
+      empty: 'El plan se muestra en la terminal.',
+      acceptEdits: 'Aprobar, aceptar ediciones',
+      reviewEdits: 'Aprobar, revisar cada edición',
+      keepPlanning: 'Seguir planificando',
+      feedback: '¿Qué debería cambiar? (opcional)',
+      cancel: 'Cancelar',
+    },
   },
   autocomplete: {
     empty: 'sin sugerencias',
