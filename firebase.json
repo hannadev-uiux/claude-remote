@@ -6,14 +6,9 @@
       "runtime": "nodejs22",
       "predeploy": [
         "pnpm --filter @remote-harness/push-relay build",
-        "npm install --prefix apps/push-relay/deploy --omit=dev --no-audit --no-fund --no-package-lock"
+        "npm --prefix \"$RESOURCE_DIR\" install --omit dev --no-audit --no-fund --no-package-lock"
       ],
-      "ignore": [
-        "node_modules",
-        ".git",
-        "*.local",
-        "firebase-debug.log"
-      ]
+      "ignore": ["node_modules", ".git", "*.local", "firebase-debug.log"]
     }
   ]
 }
