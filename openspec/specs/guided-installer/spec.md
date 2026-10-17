@@ -1,12 +1,12 @@
 # guided-installer Specification
 
 ## Purpose
-Installs and configures Claude Remote on the Mac with a single command and a guided wizard.
+Installs and configures Remote Harness on the Mac with a single command and a guided wizard.
 
 ## Requirements
 
 ### Requirement: One-line installation
-`install.sh` SHALL install or update the code in `~/.claude-remote/src`, build the daemon and open the wizard, failing with a clear message on unsupported systems or without git. Missing `tmux` and `ripgrep` MUST be installed via Homebrew when available. When Node 24+ is missing, it SHALL download the latest Node 24 from nodejs.org into `~/.claude-remote/node`, verify its SHA-256 against the official `SHASUMS256.txt`, and use it only for Claude Remote, without changing the user's shell or system Node.
+`install.sh` SHALL install or update the code in `~/.remote-harness/src`, build the daemon and open the wizard, failing with a clear message on unsupported systems or without git. Missing `tmux` and `ripgrep` MUST be installed via Homebrew when available. When Node 24+ is missing, it SHALL download the latest Node 24 from nodejs.org into `~/.remote-harness/node`, verify its SHA-256 against the official `SHASUMS256.txt`, and use it only for Remote Harness, without changing the user's shell or system Node.
 
 #### Scenario: First installation
 - **WHEN** the user runs `curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash`
@@ -22,10 +22,10 @@ Installs and configures Claude Remote on the Mac with a single command and a gui
 
 #### Scenario: Fresh system without Node
 - **WHEN** the installer runs on a fresh Ubuntu (for example inside WSL) without Node
-- **THEN** Node 24 is downloaded into `~/.claude-remote/node` after its checksum is verified, and the daemon, the `claude-remote` shortcut and the service use it
+- **THEN** Node 24 is downloaded into `~/.remote-harness/node` after its checksum is verified, and the daemon, the `claude-remote` shortcut and the service use it
 
 ### Requirement: Profile wizard
-`claude-remote setup` SHALL show the logo, detect the Claude Code configuration directories, let the user choose the profiles and set the alias and name of each, and only write after confirmation. The alias MUST be valid, unique and different from `claude` and `claude-remote`.
+`remote-harness setup` SHALL show the logo, detect the Claude Code configuration directories, let the user choose the profiles and set the alias and name of each, and only write after confirmation. The alias MUST be valid, unique and different from `claude` and `claude-remote`.
 
 #### Scenario: Two accounts
 - **WHEN** `~/.claude` and `~/.claude-work` exist and the user chooses the aliases `personal` and `work`
@@ -59,17 +59,17 @@ Installs and configures Claude Remote on the Mac with a single command and a gui
 - **THEN** the script content is downloaded
 
 ### Requirement: Tutorial in the app
-The pairing screen SHALL offer a step-by-step guide for those who installed the app before setting up the Mac: install Tailscale on the iPhone (App Store link) and on the Mac with the same account, install Claude Remote on the Mac with the one-line command (which can be shared, for example via AirDrop), and pair via the QR code.
+The pairing screen SHALL offer a step-by-step guide for those who installed the app before setting up the Mac: install Tailscale on the iPhone (App Store link) and on the Mac with the same account, install Remote Harness on the Mac with the one-line command (which can be shared, for example via AirDrop), and pair via the QR code.
 
 #### Scenario: App installed first
 - **WHEN** the user opens the app without pairing and taps "First time? Set up your Mac"
 - **THEN** they see the steps in order, with the install command ready to share and a shortcut back to the QR scanner
 
 ### Requirement: Update command
-`claude-remote update [--ref <ref>] [--force]` SHALL update an installation made by the installer: fetch the ref (default `main`) into `~/.claude-remote/src`, run the new `install.sh --update` (checks, dependencies and build without the wizard), refresh launchers, shortcut, PATH and hooks idempotently, restart the background service only when it is installed, and print the old and new version. It MUST NOT ask setup questions or show the pairing code, MUST refuse a checkout other than the installer's or one with local changes, and SHALL say when the installation is already up to date.
+`remote-harness update [--ref <ref>] [--force]` SHALL update an installation made by the installer: fetch the ref (default `main`) into `~/.remote-harness/src`, run the new `install.sh --update` (checks, dependencies and build without the wizard), refresh launchers, shortcut, PATH and hooks idempotently, restart the background service only when it is installed, and print the old and new version. It MUST NOT ask setup questions or show the pairing code, MUST refuse a checkout other than the installer's or one with local changes, and SHALL say when the installation is already up to date.
 
 #### Scenario: New version available
-- **WHEN** the user runs `claude-remote update` and `main` has new commits
+- **WHEN** the user runs `remote-harness update` and `main` has new commits
 - **THEN** the code is rebuilt, the service is restarted and the CLI prints `0.3.0 → 0.3.1`
 
 #### Scenario: Already up to date
@@ -77,7 +77,7 @@ The pairing screen SHALL offer a step-by-step guide for those who installed the 
 - **THEN** nothing is rebuilt and the CLI says it is up to date (unless `--force`)
 
 #### Scenario: Development checkout
-- **WHEN** the CLI runs from a clone outside `~/.claude-remote/src`
+- **WHEN** the CLI runs from a clone outside `~/.remote-harness/src`
 - **THEN** it refuses and suggests `git pull` and a build
 
 #### Scenario: Installer only

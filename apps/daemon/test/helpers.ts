@@ -1,20 +1,20 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { ServerMessage } from '@claude-remote/protocol'
+import type { ServerMessage } from '@remote-harness/protocol'
 import { afterEach, beforeEach } from 'vitest'
 import type { ExecOptions, ExecResult, Executor } from '../src/infra/exec.ts'
 import type { Connection } from '../src/transport/connection.ts'
 
-/** Creates a fresh temp dir per test and points CLAUDE_REMOTE_HOME at it. */
+/** Creates a fresh temp dir per test and points REMOTE_HARNESS_HOME at it. */
 export function useTempHome(): { dir: () => string } {
   let dir = ''
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'cr-test-'))
-    process.env.CLAUDE_REMOTE_HOME = join(dir, '.claude-remote')
+    process.env.REMOTE_HARNESS_HOME = join(dir, '.remote-harness')
   })
   afterEach(async () => {
-    delete process.env.CLAUDE_REMOTE_HOME
+    delete process.env.REMOTE_HARNESS_HOME
     await rm(dir, { recursive: true, force: true })
   })
   return { dir: () => dir }
@@ -75,8 +75,8 @@ export async function writeTestConfig(
   const { mkdir, writeFile } = await import('node:fs/promises')
   const profiles = ids.map((id) => ({ id, name: id, configDir: join(root, `cfg-${id}`), color: '#fff' }))
   for (const p of profiles) await mkdir(join(p.configDir, 'projects'), { recursive: true })
-  await mkdir(join(root, '.claude-remote'), { recursive: true })
-  await writeFile(join(root, '.claude-remote', 'config.json'), JSON.stringify({ profiles, ...extra }))
+  await mkdir(join(root, '.remote-harness'), { recursive: true })
+  await writeFile(join(root, '.remote-harness', 'config.json'), JSON.stringify({ profiles, ...extra }))
   return profiles
 }
 

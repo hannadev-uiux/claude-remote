@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { Folder, GitBranch } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } from '@/core/connection'
-import { errorMessage } from '@/core/connection/error-message'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { useDebounced } from '@/core/utils/use-debounced'
 import { Button, Card, Screen, Text } from '@/ui'
+import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
 
 export function NewSessionScreen() {
   const { t } = useTranslation()
@@ -20,6 +20,8 @@ export function NewSessionScreen() {
   const [cwd, setCwd] = useState('')
   const [worktree, setWorktree] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Set synchronously so a second tap during the inspection or the launch is ignored.
+  const starting = useRef(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -51,10 +53,14 @@ export function NewSessionScreen() {
   const current = inspectedCwd === cwd.trim() ? inspection.data : undefined
   const checkout = current?.checkout ?? null
   const peers = current?.peers ?? []
-  const isolated = worktree && checkout !== null
+
+  const finish = () => {
+    starting.current = false
+    setBusy(false)
+  }
 
   const launch = async (inWorktree: boolean) => {
-    if (!client || !profileId || !cwd.trim()) return
+    if (!client || !profileId || !cwd.trim()) return finish()
     setBusy(true)
     setError(null)
     try {
@@ -66,22 +72,33 @@ export function NewSessionScreen() {
       })
       router.back()
     } catch (e) {
-      setError(errorMessage(e, t))
+      setError(startErrorMessage(e, t))
     } finally {
-      setBusy(false)
+      finish()
     }
   }
 
   const start = async () => {
-    if (isolated) return void launch(true)
-    // Tapped before the debounced inspection of this directory came back: ask now.
-    const info = current !== undefined ? current : await inspect(cwd.trim()).catch(() => null)
-    if (!info?.peers.length) return void launch(false)
-    Alert.alert(t('newSession.confirmTitle'), t('newSession.confirmBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('newSession.confirmWorktree'), onPress: () => void launch(true) },
-      { text: t('newSession.confirmStart'), style: 'destructive', onPress: () => void launch(false) },
-    ])
+    if (starting.current) return
+    starting.current = true
+    setBusy(true)
+    setError(null)
+    // Tapped before the debounced inspection of this directory came back: ask now, but never wait
+    // long (an older or busy daemon must not leave the button looking dead).
+    const info =
+      current !== undefined ? current : await withTimeout(inspect(cwd.trim()), INSPECT_BEFORE_START_MS, null)
+    const plan = planStart({ worktree, inCheckout: info?.checkout != null, peers: info?.peers.length ?? 0 })
+    if (plan.action === 'launch') return void launch(plan.worktree)
+    Alert.alert(
+      t('newSession.confirmTitle'),
+      t('newSession.confirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel', onPress: finish },
+        { text: t('newSession.confirmWorktree'), onPress: () => void launch(true) },
+        { text: t('newSession.confirmStart'), style: 'destructive', onPress: () => void launch(false) },
+      ],
+      { cancelable: true, onDismiss: finish },
+    )
   }
 
   return (

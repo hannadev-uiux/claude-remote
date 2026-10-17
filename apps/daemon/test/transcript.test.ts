@@ -1,6 +1,6 @@
 import { appendFile, copyFile, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { ServerMessage } from '@claude-remote/protocol'
+import type { ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import {
@@ -169,6 +169,36 @@ describe('TranscriptService', () => {
     const other = fakeConnection()
     const resumed = await service.subscribe({ sessionId: 's', path }, other, 19)
     expect(resumed.entries.map((e) => e.cursor)).toEqual([21])
+  })
+
+  test('follow feeds new entries only and keeps the stream while subscribers remain', async () => {
+    const path = join(home.dir(), 'f.jsonl')
+    await copyFile(fixture, path)
+    service = new TranscriptService(silentLogger)
+    const seen: string[] = []
+    const stop = await service.follow({ sessionId: 's', path }, (sessionId, entry) =>
+      seen.push(`${sessionId}:${entry.kind}`),
+    )
+    const conn = fakeConnection()
+    await service.subscribe({ sessionId: 's', path }, conn)
+    stop()
+    await appendFile(
+      path,
+      `${JSON.stringify({ type: 'assistant', uuid: 'y', message: { content: [{ type: 'text', text: 'one' }] } })}\n`,
+    )
+    await waitFor(() => conn.sent.some((m) => m.type === 'transcript.entry'))
+    expect(seen).toEqual([])
+
+    const again = await service.follow({ sessionId: 's', path }, (sessionId, entry) =>
+      seen.push(`${sessionId}:${entry.kind}`),
+    )
+    await appendFile(
+      path,
+      `${JSON.stringify({ type: 'assistant', uuid: 'x', message: { content: [{ type: 'thinking', thinking: 'hm' }] } })}\n`,
+    )
+    await waitFor(() => seen.length > 0)
+    expect(seen).toEqual(['s:thinking'])
+    again()
   })
 
   test('history works without a subscription', async () => {

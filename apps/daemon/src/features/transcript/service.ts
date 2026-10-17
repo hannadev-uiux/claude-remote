@@ -1,4 +1,4 @@
-import type { ServerMessageOf, TranscriptEntry } from '@claude-remote/protocol'
+import type { ServerMessageOf, TranscriptEntry } from '@remote-harness/protocol'
 import { type FSWatcher, watch } from 'chokidar'
 import type { Logger } from '../../core/logger.ts'
 import type { Connection } from '../../transport/connection.ts'
@@ -16,11 +16,15 @@ type Stream = {
   file: TranscriptFile
   watcher: FSWatcher
   subscribers: Set<Connection>
+  /** Daemon-side listeners (live status), fed the same entries as the subscribers. */
+  listeners: Set<EntryListener>
 }
+
+export type EntryListener = (sessionId: string, entry: TranscriptEntry) => void
 
 export type StreamTarget = { sessionId: string; agentId?: string; path: string }
 
-/** Tails transcripts that have at least one subscriber and fans entries out to them. */
+/** Tails transcripts that have at least one subscriber or listener and fans entries out to them. */
 export class TranscriptService {
   private readonly streams = new Map<string, Stream>()
   /** Files kept around (with their line index) for history requests without a live subscription. */
@@ -59,29 +63,7 @@ export class TranscriptService {
     connection: Connection,
     sinceCursor?: number,
   ): Promise<Omit<ServerMessageOf<'transcript.page'>, 'type' | 'replyTo'>> {
-    const key = TranscriptService.key(target.sessionId, target.agentId)
-    let stream = this.streams.get(key)
-    if (!stream) {
-      const file = this.fileFor(target.path)
-      await file.sync()
-      const watcher = watch(target.path, { ignoreInitial: true })
-      const created: Stream = {
-        key,
-        sessionId: target.sessionId,
-        agentId: target.agentId,
-        file,
-        watcher,
-        subscribers: new Set(),
-      }
-      watcher.on('add', () => void this.pump(created))
-      watcher.on('change', () => void this.pump(created))
-      watcher.on('error', (error) => this.logger.warn({ err: error, key }, 'transcript watcher error'))
-      this.streams.set(key, created)
-      await new Promise<void>((resolve) => watcher.once('ready', () => resolve()))
-      stream = created
-    } else {
-      await this.pump(stream)
-    }
+    const stream = await this.open(target)
     if (!stream.subscribers.has(connection)) {
       stream.subscribers.add(connection)
       connection.onClose(() => this.unsubscribe(target.sessionId, connection, target.agentId))
@@ -100,15 +82,61 @@ export class TranscriptService {
     return { sessionId: target.sessionId, agentId: target.agentId, ...page, lineCount: file.lineCount }
   }
 
+  /**
+   * Feeds `listener` the entries appended to the transcript from now on (no backlog). Returns a
+   * function that stops it; the file stops being watched once nobody needs it.
+   */
+  async follow(target: StreamTarget, listener: EntryListener): Promise<() => void> {
+    const stream = await this.open(target)
+    stream.listeners.add(listener)
+    return () => {
+      stream.listeners.delete(listener)
+      this.closeIfUnused(stream)
+    }
+  }
+
+  /** The stream of a transcript, created (and caught up) when missing. */
+  private async open(target: StreamTarget): Promise<Stream> {
+    const key = TranscriptService.key(target.sessionId, target.agentId)
+    let stream = this.streams.get(key)
+    if (!stream) {
+      const file = this.fileFor(target.path)
+      await file.sync()
+      const watcher = watch(target.path, { ignoreInitial: true })
+      const created: Stream = {
+        key,
+        sessionId: target.sessionId,
+        agentId: target.agentId,
+        file,
+        watcher,
+        subscribers: new Set(),
+        listeners: new Set(),
+      }
+      watcher.on('add', () => void this.pump(created))
+      watcher.on('change', () => void this.pump(created))
+      watcher.on('error', (error) => this.logger.warn({ err: error, key }, 'transcript watcher error'))
+      this.streams.set(key, created)
+      await new Promise<void>((resolve) => watcher.once('ready', () => resolve()))
+      stream = created
+    } else {
+      await this.pump(stream)
+    }
+    return stream
+  }
+
+  private closeIfUnused(stream: Stream): void {
+    if (stream.subscribers.size > 0 || stream.listeners.size > 0) return
+    if (this.streams.get(stream.key) !== stream) return
+    void stream.watcher.close()
+    this.streams.delete(stream.key)
+  }
+
   unsubscribe(sessionId: string, connection: Connection, agentId?: string): void {
     const key = TranscriptService.key(sessionId, agentId)
     const stream = this.streams.get(key)
     if (!stream) return
     stream.subscribers.delete(connection)
-    if (stream.subscribers.size === 0) {
-      void stream.watcher.close()
-      this.streams.delete(key)
-    }
+    this.closeIfUnused(stream)
   }
 
   async history(target: StreamTarget, before: number, limit: number) {
@@ -141,6 +169,7 @@ export class TranscriptService {
   }
 
   private emit(stream: Stream, entry: TranscriptEntry): void {
+    for (const listener of stream.listeners) listener(stream.sessionId, entry)
     for (const connection of stream.subscribers) {
       connection.send({
         type: 'transcript.entry',

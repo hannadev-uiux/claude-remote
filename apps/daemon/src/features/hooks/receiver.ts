@@ -1,4 +1,4 @@
-import type { Profile } from '@claude-remote/protocol'
+import type { Profile } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { EventBus } from '../../core/event-bus.ts'
 import type { DaemonEvents } from '../../core/events.ts'

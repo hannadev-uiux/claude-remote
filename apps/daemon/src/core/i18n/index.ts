@@ -1,4 +1,5 @@
-import { type Locale, resolveLocale } from '@claude-remote/protocol'
+import { type Locale, resolveLocale } from '@remote-harness/protocol'
+import { envVar } from '../env.ts'
 import { enUS, type Messages } from './en-US.ts'
 import { esES } from './es-ES.ts'
 import { ptBR } from './pt-BR.ts'
@@ -23,10 +24,10 @@ export function createI18n(locale: Locale): I18n {
 }
 
 /**
- * Locale of the environment: `CLAUDE_REMOTE_LANG` (set by install.sh), then the POSIX order
+ * Locale of the environment: `REMOTE_HARNESS_LANG` (set by install.sh), then the POSIX order
  * `LC_ALL`, `LC_MESSAGES`, `LANG`; the first non-empty one wins. Unknown or unset → en-US.
  */
 export function systemLocale(env: NodeJS.ProcessEnv = process.env): Locale {
-  const tag = [env.CLAUDE_REMOTE_LANG, env.LC_ALL, env.LC_MESSAGES, env.LANG].find((v) => v?.trim())
+  const tag = [envVar('LANG', env), env.LC_ALL, env.LC_MESSAGES, env.LANG].find((v) => v?.trim())
   return resolveLocale(tag)
 }

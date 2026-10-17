@@ -25,14 +25,14 @@ The pairing token SHALL be stored in the macOS Keychain on macOS and in the Secr
 
 #### Scenario: Headless Linux
 - **WHEN** `secret-tool` is missing or there is no Secret Service
-- **THEN** the token is stored in `~/.claude-remote/token` with mode `0600` and `doctor` reports the file store
+- **THEN** the token is stored in `~/.remote-harness/token` with mode `0600` and `doctor` reports the file store
 
 ### Requirement: Background service per platform
-`claude-remote service install` SHALL install a launchd LaunchAgent on macOS and a systemd user unit on Linux, both restarting the daemon when it stops; on Linux the setup MUST offer to enable lingering.
+`remote-harness service install` SHALL install a launchd LaunchAgent on macOS and a systemd user unit on Linux, both restarting the daemon when it stops; on Linux the setup MUST offer to enable lingering.
 
 #### Scenario: systemd user unit
 - **WHEN** the user accepts the service on Linux
-- **THEN** `~/.config/systemd/user/claude-remote.service` is written, enabled and started, and `claude-remote service status` shows it running
+- **THEN** `~/.config/systemd/user/claude-remote.service` is written, enabled and started, and `remote-harness service status` shows it running
 
 ### Requirement: Shell PATH
 The setup SHALL add the launcher directory to the PATH in the user's zsh and/or bash startup files, idempotently, with a backup and an atomic write.

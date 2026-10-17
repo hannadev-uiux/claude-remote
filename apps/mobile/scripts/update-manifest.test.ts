@@ -16,7 +16,7 @@ describe('buildManifest', () => {
       { data: bytes('png'), ext: 'png' },
       { data: bytes('png'), ext: 'png' },
     ],
-    expoClient: { name: 'Claude Remote' },
+    expoClient: { name: 'Remote Harness' },
   })
   const parsed = JSON.parse(manifest)
 
@@ -29,7 +29,7 @@ describe('buildManifest', () => {
       url: `https://maarkn.dev/api/claude-remote/updates/assets/${hash}`,
     })
     expect(parsed.assets[0]).toMatchObject({ contentType: 'image/png', fileExtension: '.png' })
-    expect(parsed.extra.expoClient.name).toBe('Claude Remote')
+    expect(parsed.extra.expoClient.name).toBe('Remote Harness')
     expect(parsed.metadata).toEqual({ channel: 'development' })
   })
 

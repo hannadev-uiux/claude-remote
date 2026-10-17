@@ -3,7 +3,7 @@ import { writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { Profile } from '@claude-remote/protocol'
+import type { Profile } from '@remote-harness/protocol'
 import type { Config } from '../../core/config.ts'
 import type { Messages } from '../../core/i18n/index.ts'
 import { expandHome, paths } from '../../core/paths.ts'
@@ -50,7 +50,10 @@ export function displayPaths(files: readonly string[], home = homedir()): string
   return files.map((f) => (f.startsWith(`${home}/`) ? `~/${f.slice(home.length + 1)}` : f)).join(', ')
 }
 
-/** Launchers, `claude-remote` shortcut, PATH in the shell rc files and hooks in every (resolved) profile. */
+/** CLI shortcut names; `claude-remote` is the alias kept from before the rename. */
+export const CLI_NAMES = ['remote-harness', 'claude-remote'] as const
+
+/** Launchers, `remote-harness` shortcut (and its `claude-remote` alias), PATH in the shell rc files and hooks in every (resolved) profile. */
 export async function installAll(
   config: Config,
   profiles: readonly Profile[],
@@ -67,9 +70,9 @@ export async function installAll(
   })
   for (const path of launchers) lines.push({ status: 'done', text: `launcher ${path}` })
   if (o.cliPath) {
-    const shim = join(paths.bin(), 'claude-remote')
-    await writeFile(shim, `#!/bin/sh\nexec "${o.nodePath}" "${o.cliPath}" "$@"\n`, { mode: 0o755 })
-    lines.push({ status: 'done', text: m.shortcut(shim) })
+    const script = `#!/bin/sh\nexec "${o.nodePath}" "${o.cliPath}" "$@"\n`
+    for (const name of CLI_NAMES) await writeFile(join(paths.bin(), name), script, { mode: 0o755 })
+    lines.push({ status: 'done', text: m.shortcut(join(paths.bin(), CLI_NAMES[0])) })
   }
   const changed = await installShellPath(paths.bin(), o.rcFiles)
   lines.push({

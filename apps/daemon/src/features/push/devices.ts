@@ -1,4 +1,4 @@
-import { type DevicePlatform, DevicePlatformSchema } from '@claude-remote/protocol'
+import { type DevicePlatform, DevicePlatformSchema } from '@remote-harness/protocol'
 import { z } from 'zod'
 import { readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 

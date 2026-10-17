@@ -17,6 +17,8 @@ import { ConnectionProvider, useConnectionStore } from '@/core/connection'
 import '@/core/i18n'
 import { colors, fonts } from '@/core/theme'
 import { useBackgroundUpdates } from '@/core/updates'
+import { restoreKeyBar } from '@/features/conversation/key-bar-store'
+import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
 
 void SplashScreen.preventAutoHideAsync()
 
@@ -35,6 +37,11 @@ export default function RootLayout() {
   const credentialsLoaded = useConnectionStore((s) => s.credentialsLoaded)
   const ready = fontsLoaded && credentialsLoaded
   useBackgroundUpdates()
+
+  useEffect(() => {
+    void restoreKeyBar()
+    void restoreLiveStatusSetting()
+  }, [])
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync()

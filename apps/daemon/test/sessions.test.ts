@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Profile, ServerMessage } from '@claude-remote/protocol'
+import type { Profile, ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import { SessionService } from '../src/features/sessions/service.ts'

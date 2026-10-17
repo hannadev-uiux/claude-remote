@@ -1,4 +1,4 @@
-import type { Key } from '@claude-remote/protocol'
+import type { Key } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,7 +11,10 @@ import { ConnectionBanner, Screen, Text } from '@/ui'
 import { useSessionsStore } from '../sessions/store'
 import { KeyBar } from './components/KeyBar'
 import { AssistantMessage, SystemLine, ThinkingBlock, UnknownEntry, UserMessage } from './components/Messages'
+import { PromptHistorySheet } from './components/PromptHistorySheet'
 import { ToolCallCard } from './components/ToolCallCard'
+import { useKeyBarStore } from './key-bar-store'
+import type { PromptHistoryItem } from './prompt-history'
 import { loadOlder, selectStream, streamKey, subscribeTranscript, useTranscriptStore } from './store'
 import { buildTimeline, type TimelineItem } from './timeline'
 
@@ -42,14 +45,27 @@ type Props = {
   /** Rendered above the list (subagents strip). */
   header?: ReactNode
   onKey?: (key: Key) => void
+  /** Shows the prompt history sheet (opened from the session options menu). */
+  historyOpen?: boolean
+  onHistoryClose?: () => void
 }
 
-export function ConversationScreen({ sessionId, agentId, composer, footer, header, onKey }: Props) {
+export function ConversationScreen({
+  sessionId,
+  agentId,
+  composer,
+  footer,
+  header,
+  onKey,
+  historyOpen = false,
+  onHistoryClose,
+}: Props) {
   const { t } = useTranslation()
   const client = useDaemonClient()
   const key = streamKey(sessionId, agentId)
   const stream = useTranscriptStore(selectStream(key))
   const controllable = useSessionsStore((s) => s.sessions[sessionId]?.controllable ?? false)
+  const keyBarVisible = useKeyBarStore((s) => s.visible)
   const items = useMemo(() => buildTimeline(stream.entries), [stream.entries])
   const listRef = useRef<FlashListRef<TimelineItem>>(null)
   const atBottom = useRef(true)
@@ -65,6 +81,16 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
     if (items.length > seenCount.current && !atBottom.current && seenCount.current > 0) setUnseen(true)
     seenCount.current = items.length
   }, [items.length])
+
+  const loadEarlier = () => {
+    if (client) void loadOlder(client, sessionId, agentId).catch(() => undefined)
+  }
+
+  const jumpToPrompt = (prompt: PromptHistoryItem) => {
+    onHistoryClose?.()
+    const item = items.find((i) => i.key === prompt.key)
+    if (item) listRef.current?.scrollToItem({ item, animated: true, viewPosition: 0 })
+  }
 
   const jumpToEnd = () => {
     listRef.current?.scrollToEnd({ animated: true })
@@ -91,9 +117,7 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
               startRenderingFromBottom: true,
               autoscrollToBottomThreshold: 0.2,
             }}
-            onStartReached={() => {
-              if (client) void loadOlder(client, sessionId, agentId).catch(() => undefined)
-            }}
+            onStartReached={loadEarlier}
             onStartReachedThreshold={0.5}
             onScroll={({ nativeEvent }) => {
               const distance =
@@ -127,9 +151,18 @@ export function ConversationScreen({ sessionId, agentId, composer, footer, heade
           ) : null}
         </View>
         {footer}
-        {onKey ? <KeyBar onKey={onKey} disabled={!controllable} /> : null}
+        {onKey && keyBarVisible ? <KeyBar onKey={onKey} disabled={!controllable} /> : null}
         {composer}
       </KeyboardAvoidingView>
+      {onHistoryClose ? (
+        <PromptHistorySheet
+          visible={historyOpen}
+          stream={stream}
+          onPick={jumpToPrompt}
+          onLoadEarlier={loadEarlier}
+          onClose={onHistoryClose}
+        />
+      ) : null}
     </Screen>
   )
 }

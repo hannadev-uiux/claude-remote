@@ -1,16 +1,16 @@
 /**
  * Reference catalog: its shape is the `Messages` type, and `pt-BR`/`es-ES` must match it.
- * Interpolation and plurals are functions. Product names (Claude Code, Claude Remote, Tailscale,
+ * Interpolation and plurals are functions. Product names (Claude Code, Remote Harness, Tailscale,
  * tmux) are never translated. Log messages are not here: logs stay in English.
  */
 export const enUS = {
   cli: {
-    description: 'Claude Remote daemon: control Claude Code sessions in tmux from your phone',
+    description: 'Remote Harness daemon: control Claude Code sessions in tmux from your phone',
     help: 'display help for command',
     version: 'output the version number',
-    buildMissing: 'Build not found: run `pnpm --filter @claude-remote/daemon build`.',
+    buildMissing: 'Build not found: run `pnpm --filter @remote-harness/daemon build`.',
     unsupportedPlatform: (platform: string, supported: string) =>
-      `Unsupported system (${platform}). Claude Remote runs on ${supported}.`,
+      `Unsupported system (${platform}). Remote Harness runs on ${supported}.`,
     start: {
       description: 'start the daemon',
       dev: 'listen on 127.0.0.1 instead of Tailscale',
@@ -24,9 +24,9 @@ export const enUS = {
       tailscaleNotFound:
         'Tailscale not found (no 100.x interface). Install and connect Tailscale, or use --dev for 127.0.0.1.',
       simulatorHint: (port: number) =>
-        'To test locally (e.g. in the iOS simulator): `claude-remote start --dev` and `claude-remote pair --dev`' +
+        'To test locally (e.g. in the iOS simulator): `remote-harness start --dev` and `remote-harness pair --dev`' +
         ` (Android emulator: also \`adb reverse tcp:${port} tcp:${port}\`).`,
-      scan: 'Scan it with the Claude Remote app. Do not share this code.',
+      scan: 'Scan it with the Remote Harness app. Do not share this code.',
     },
     setup: {
       description: 'wizard: choose accounts and aliases, install hooks and the service, pair the phone',
@@ -35,13 +35,13 @@ export const enUS = {
       lang: (codes: string) => `language (${codes}); skips the question`,
       invalidLang: (value: string, codes: string) => `Unknown language "${value}". Use one of: ${codes}.`,
       interrupted:
-        'Setup interrupted. Everything shown with ✓ is done; run `claude-remote setup` again whenever you like.',
+        'Setup interrupted. Everything shown with ✓ is done; run `remote-harness setup` again whenever you like.',
     },
     rotateToken: {
       description: 'generate a new token and drop existing connections',
       rotated: 'Token rotated; connections closed.',
       rotatedOffline: 'Token rotated (the daemon is not running).',
-      pairAgain: 'Run `claude-remote pair` to pair again.',
+      pairAgain: 'Run `remote-harness pair` to pair again.',
     },
     doctor: {
       description: 'check dependencies and configuration',
@@ -50,16 +50,16 @@ export const enUS = {
       profile: (id: string, configDir: string) => `profile ${id} (${configDir})`,
       dirMissing: 'directory does not exist',
       daemonRunning: 'daemon running',
-      runStart: 'run `claude-remote start`',
+      runStart: 'run `remote-harness start`',
       token: (store: string) => `token ${store}`,
       tokenStores: {
         keychain: 'in the macOS Keychain',
         secretTool: 'in the Secret Service (secret-tool)',
         file: (path: string) => `in the file ${path} (0600)`,
       },
-      runPair: 'run `claude-remote pair`',
+      runPair: 'run `remote-harness pair`',
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
-      serviceHint: 'optional: `claude-remote service install`',
+      serviceHint: 'optional: `remote-harness service install`',
       linger: 'lingering (the service keeps running after logout)',
       lingerHint: 'run `loginctl enable-linger $USER`',
       devices: (platforms: string) => `phones registered for push: ${platforms}`,
@@ -89,7 +89,7 @@ export const enUS = {
       status: 'show whether the service is loaded',
       notLoaded: 'not loaded',
       unavailable:
-        'systemd user services are not available here (`systemctl --user` failed). Run `claude-remote start` whenever you want to use it (e.g. in a tmux window).',
+        'systemd user services are not available here (`systemctl --user` failed). Run `remote-harness start` whenever you want to use it (e.g. in a tmux window).',
       lingerHint:
         'Lingering is off: the service stops when you log out. To keep it running and start it at boot: `loginctl enable-linger $USER`',
       linger: (enabled: boolean): string =>
@@ -104,7 +104,7 @@ export const enUS = {
       force: 'rebuild even when already up to date',
       checking: (ref: string) => `Checking ${ref} for a new version`,
       notInstaller: (dir: string) =>
-        `This is not the installer's copy (${dir}). In a development clone use \`git pull\` and \`pnpm --filter @claude-remote/daemon build\`.`,
+        `This is not the installer's copy (${dir}). In a development clone use \`git pull\` and \`pnpm --filter @remote-harness/daemon build\`.`,
       dirty: (dir: string) => `${dir} has local changes. Commit or discard them and run again.`,
       fetchFailed: (error: string) => `Could not fetch the new version: ${error}`,
       checkoutFailed: 'Could not switch to the new version.',
@@ -112,9 +112,9 @@ export const enUS = {
       available: (version: string, commit: string) => `New version: ${version} (${commit})`,
       failed: 'Update failed (see above). The previous version keeps running until the next restart.',
       serviceRestarted: 'background service restarted',
-      serviceNotInstalled: 'background service not installed (optional: `claude-remote service install`)',
-      updated: (from: string, to: string) => `Claude Remote updated: ${from} → ${to}`,
-      rebuilt: (version: string) => `Claude Remote ${version} rebuilt`,
+      serviceNotInstalled: 'background service not installed (optional: `remote-harness service install`)',
+      updated: (from: string, to: string) => `Remote Harness updated: ${from} → ${to}`,
+      rebuilt: (version: string) => `Remote Harness ${version} rebuilt`,
     },
     rules: {
       description: '"always allow" rules created by the app',
@@ -145,7 +145,7 @@ export const enUS = {
     yes: 'yes',
     no: 'no',
     welcome: {
-      title: 'Welcome to Claude Remote!',
+      title: 'Welcome to Remote Harness!',
       intro1: (machine: string) => `Let's get this ${machine} ready so you can follow and control`,
       intro2: 'Claude Code from your phone. It takes about 2 minutes.',
       footer: (version: string) => `v${version} · ↑/↓ to choose · Enter to confirm · Ctrl+C to quit`,
@@ -156,17 +156,17 @@ export const enUS = {
       service: 'Background service',
       tailscale: 'Tailscale and phone',
     },
-    noAccounts: 'No Claude Code account found. Run `claude` once to log in, then `claude-remote setup`.',
+    noAccounts: 'No Claude Code account found. Run `claude` once to log in, then `remote-harness setup`.',
     confirmSave: 'Save and install?',
     nothingChanged: 'Nothing was changed.',
     serviceQuestion: (machine: string) =>
-      `Start Claude Remote with the ${machine} (and restart it if it crashes)?`,
-    noService: 'No service: run `claude-remote start` whenever you want to use it.',
+      `Start Remote Harness with the ${machine} (and restart it if it crashes)?`,
+    noService: 'No service: run `remote-harness start` whenever you want to use it.',
     serviceUnavailable:
       '  systemd user services are not available here (`systemctl --user`).\n' +
-      '  Run `claude-remote start` whenever you want to use it (e.g. in a tmux window or from your init system).',
+      '  Run `remote-harness start` whenever you want to use it (e.g. in a tmux window or from your init system).',
     lingerQuestion:
-      'Keep Claude Remote running after you log out and start it at boot? (loginctl enable-linger)',
+      'Keep Remote Harness running after you log out and start it at boot? (loginctl enable-linger)',
     lingerEnabled: 'lingering enabled (loginctl enable-linger)',
     lingerFailed:
       "  Couldn't enable lingering. Run `sudo loginctl enable-linger $USER` to keep the daemon running after logout.",
@@ -186,16 +186,16 @@ export const enUS = {
     tailscaleSkip: "I'll do it later",
     tailscaleNotYet: '  Still no Tailscale interface (100.x) found.',
     phoneHint:
-      '  On the phone: install the Claude Remote app and Tailscale (same account) and tap "QR code".',
+      '  On the phone: install the Remote Harness app and Tailscale (same account) and tap "QR code".',
     showQr: 'Show the pairing QR code now?',
     done: {
-      installed: 'Claude Remote installed.',
+      installed: 'Remote Harness installed.',
       openTerminal: (command: string) => `1. Open a new terminal (or ${command})`,
       useAliases: (aliases: string, claude: string) =>
         `2. Use ${aliases} instead of ${claude}, with the same arguments`,
       pairIfNeeded: (command: string) => `3. Pair with ${command} if you haven't yet`,
       connectAndPair: (command: string) => `3. Connect Tailscale and run ${command}`,
-      footer: 'claude-remote doctor checks it all · claude-remote setup edits accounts',
+      footer: 'remote-harness doctor checks it all · remote-harness setup edits accounts',
     },
     accounts: {
       explain:
@@ -240,30 +240,30 @@ export const enUS = {
   /** Windows (WSL2) texts: CLI, doctor and setup. */
   wsl: {
     windowsHint:
-      'On Windows, Claude Remote runs inside WSL2. In PowerShell: `irm https://maarkn.dev/claude-remote/install.ps1 | iex`',
+      'On Windows, Remote Harness runs inside WSL2. In PowerShell: `irm https://maarkn.dev/claude-remote/install.ps1 | iex`',
     detected: (distro: string) => `WSL2 (distribution ${distro})`,
     unknownDistro: 'unknown',
     systemd: 'systemd running in WSL',
-    systemdHint: 'run `claude-remote setup` to enable it ([boot] systemd=true in /etc/wsl.conf)',
+    systemdHint: 'run `remote-harness setup` to enable it ([boot] systemd=true in /etc/wsl.conf)',
     systemdPendingHint:
       'already enabled in /etc/wsl.conf: run `wsl --shutdown` in Windows PowerShell and open the distribution again',
     networking: (mode: string) => `WSL networking: ${mode}`,
     networkingUnknown: 'unknown (%UserProfile%\\.wslconfig not found)',
     tailscaleHint:
-      'run Tailscale inside WSL or use mirrored networking with Tailscale on Windows (`claude-remote setup` explains both)',
+      'run Tailscale inside WSL or use mirrored networking with Tailscale on Windows (`remote-harness setup` explains both)',
     source: {
       wsl: 'inside WSL',
       mirrored: 'Windows, mirrored networking',
       unknown: 'WSL',
     },
-    logonTask: 'Windows logon task "Claude Remote" (starts WSL at logon)',
-    logonTaskHint: 'optional: `claude-remote setup` creates it',
+    logonTask: 'Windows logon task "Remote Harness" (starts WSL at logon)',
+    logonTaskHint: 'optional: `remote-harness setup` creates it',
     logonTaskMissing: 'no Windows logon task: WSL (and the daemon) only start when you open the distribution',
-    logonTaskRemoved: 'Windows logon task "Claude Remote" removed',
+    logonTaskRemoved: 'Windows logon task "Remote Harness" removed',
     serviceNoSystemd:
-      'systemd is not running in this WSL distribution, so there is no background service. Run `claude-remote setup` to enable it ([boot] systemd=true in /etc/wsl.conf), then `wsl --shutdown` in Windows PowerShell.',
+      'systemd is not running in this WSL distribution, so there is no background service. Run `remote-harness setup` to enable it ([boot] systemd=true in /etc/wsl.conf), then `wsl --shutdown` in Windows PowerShell.',
     restart:
-      '  For it to take effect, in Windows PowerShell run `wsl --shutdown`, open the distribution again and run `claude-remote setup`.',
+      '  For it to take effect, in Windows PowerShell run `wsl --shutdown`, open the distribution again and run `remote-harness setup`.',
     systemdIntro:
       '  Inside WSL the background service needs systemd, which is off in this distribution.\n' +
       '  It is turned on by [boot] systemd=true in /etc/wsl.conf (a root file, backed up first) with:',
@@ -273,15 +273,15 @@ export const enUS = {
     systemdFailed: (error: string) =>
       `  Couldn't change /etc/wsl.conf (${error}). Add these lines to it with \`sudo nano /etc/wsl.conf\`:\n    [boot]\n    systemd=true`,
     systemdSkipped:
-      '  Without systemd there is no background service: run `claude-remote start` whenever you want to use it.',
+      '  Without systemd there is no background service: run `remote-harness start` whenever you want to use it.',
     systemdPending: '  systemd is already enabled in /etc/wsl.conf, but WSL has not restarted since.',
     logonTaskQuestion:
-      'Start WSL when you log in to Windows, so the daemon runs without opening a terminal? (Scheduled Task "Claude Remote")',
-    logonTaskCreated: 'Windows logon task "Claude Remote"',
+      'Start WSL when you log in to Windows, so the daemon runs without opening a terminal? (Scheduled Task "Remote Harness")',
+    logonTaskCreated: 'Windows logon task "Remote Harness"',
     logonTaskFailed: (error: string, command: string) =>
       `  Couldn't create the task (${error}). In PowerShell (as administrator if access is denied):\n    ${command}`,
     logonTaskSkipped:
-      '  Without the logon task, WSL and the daemon start when you open the distribution. Create it later with `claude-remote setup`.',
+      '  Without the logon task, WSL and the daemon start when you open the distribution. Create it later with `remote-harness setup`.',
     tailscaleIntro:
       '  The computer and the phone talk over a private Tailscale network (free). Inside WSL there are two ways:\n' +
       '  A. Tailscale inside WSL (any Windows): `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`\n' +
@@ -312,8 +312,25 @@ export const enUS = {
   },
   /** Sent back to Claude Code (shown in its TUI). */
   claudeCode: {
-    denied: 'Denied by Claude Remote',
+    denied: 'Denied by Remote Harness',
     keepPlanning: 'The user wants to keep planning. Revise the plan before calling ExitPlanMode again.',
+  },
+  live: {
+    states: { working: 'Working', waiting: 'Waiting for you', done: 'Done', closed: 'Session closed' },
+    steps: {
+      thinking: 'thinking',
+      writing: 'writing the answer',
+      command: 'running a command',
+      editing: 'editing files',
+      reading: 'reading files',
+      searching: 'searching the code',
+      web: 'browsing the web',
+      agent: 'running a subagent',
+      planning: 'updating the plan',
+      tool: 'using a tool',
+      permission: 'permission pending',
+    },
+    tools: (count: number) => (count === 1 ? '1 tool' : `${count} tools`),
   },
   push: {
     sessionDone: 'Session finished',

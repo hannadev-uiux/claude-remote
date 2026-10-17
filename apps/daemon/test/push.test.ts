@@ -22,6 +22,9 @@ function fakeSender(invalid: string[] = []) {
       sent.push({ tokens, message })
       return { invalidTokens: invalid }
     },
+    async sendLive() {
+      return { invalid: false }
+    },
   }
   return { sender, sent }
 }
@@ -229,7 +232,7 @@ describe('integration: hook → push', () => {
     const { FileTokenStore } = await import('../src/core/secrets.ts')
     const { SECRET_HEADER } = await import('../src/transport/hooks-server.ts')
     const { fakeExecutor, writeTestConfig } = await import('./helpers.ts')
-    const root = paths.devices().replace(/\/\.claude-remote\/devices\.json$/, '')
+    const root = paths.devices().replace(/\/\.remote-harness\/devices\.json$/, '')
     await writeTestConfig(root, ['claudin'], { language: 'en-US' })
     await new DeviceRegistry(paths.devices()).register('phone')
     const { sender, sent } = fakeSender()
@@ -263,9 +266,9 @@ describe('integration: device.register', () => {
     const { startDaemon } = await import('../src/main.ts')
     const { FileTokenStore } = await import('../src/core/secrets.ts')
     const { fakeExecutor, writeTestConfig } = await import('./helpers.ts')
-    const { PROTOCOL_VERSION } = await import('@claude-remote/protocol')
+    const { PROTOCOL_VERSION } = await import('@remote-harness/protocol')
     const { default: WebSocket } = await import('ws')
-    const root = paths.devices().replace(/\/\.claude-remote\/devices\.json$/, '')
+    const root = paths.devices().replace(/\/\.remote-harness\/devices\.json$/, '')
     await writeTestConfig(root, ['claudin'])
     const store = new FileTokenStore()
     await store.set('tok')

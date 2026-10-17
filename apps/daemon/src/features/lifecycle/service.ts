@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
-import type { Checkout, Profile, ProjectItem } from '@claude-remote/protocol'
+import type { Checkout, Profile, ProjectItem } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import { expandHome } from '../../core/paths.ts'
 import type { Executor } from '../../infra/exec.ts'
@@ -9,6 +9,8 @@ import { worktreeName } from '../checkout/resolver.ts'
 import type { SessionStore } from '../sessions/store.ts'
 
 export const MAX_PROJECTS = 30
+/** How long `start` waits before checking that Claude Code is still running in the new pane. */
+export const START_SETTLE_MS = 1_500
 
 /** Accepts only existing directories inside the user's home. */
 export async function validateCwd(raw: string, home = homedir()): Promise<string> {
@@ -32,6 +34,8 @@ export class LifecycleService {
     private readonly hasPane: (paneId: string) => Promise<boolean> = async () => false,
     private readonly checkout: (dir: string) => Promise<Checkout | null> = async () => null,
     private readonly now: () => Date = () => new Date(),
+    /** 0 skips the check that the new pane survived its first moments. */
+    private readonly settleMs = 0,
   ) {}
 
   private profile(id: string): Profile {
@@ -48,7 +52,7 @@ export class LifecycleService {
       timeoutMs: 10_000,
     })
     if (result.exitCode !== 0) {
-      const reason = result.stderr.trim() || 'launcher falhou (rode `claude-remote install`)'
+      const reason = result.stderr.trim() || 'the profile launcher failed (run `remote-harness install`)'
       throw new DaemonError('internal', reason)
     }
     return result.stdout.trim()
@@ -67,7 +71,15 @@ export class LifecycleService {
       if (!(await this.checkout(cwd))) throw new DaemonError('bad_request', `not a git checkout: ${cwd}`)
       args.push('--worktree', worktreeName(this.now()))
     }
-    return { paneId: await this.launch(profile, cwd, args) }
+    const paneId = await this.launch(profile, cwd, args)
+    // The launcher only reports the window it created; a window whose command exits closes at once.
+    if (this.settleMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, this.settleMs))
+      if (!(await this.hasPane(paneId))) {
+        throw new DaemonError('internal', `Claude Code exited right after starting (pane ${paneId} closed)`)
+      }
+    }
+    return { paneId }
   }
 
   async resume(profileId: string, sessionId: string): Promise<{ paneId: string }> {

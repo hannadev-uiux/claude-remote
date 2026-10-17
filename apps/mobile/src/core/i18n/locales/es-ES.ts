@@ -48,12 +48,12 @@ const esES = {
   },
   pairing: {
     title: 'Vincular con el ordenador',
-    intro: 'En el ordenador, ejecuta <cmd>claude-remote pair</cmd> y apunta la cámara al código QR.',
+    intro: 'En el ordenador, ejecuta <cmd>remote-harness pair</cmd> y apunta la cámara al código QR.',
     guideTitle: '¿Primera vez? Configura el ordenador',
     guideHint: 'Tailscale, instalación en una línea y vinculación, paso a paso.',
     tabQr: 'Código QR',
     tabManual: 'Manual',
-    invalidQr: 'QR no válido. Usa el QR que muestra `claude-remote pair`.',
+    invalidQr: 'QR no válido. Usa el QR que muestra `remote-harness pair`.',
     invalidManual: 'Introduce un host, un puerto y un token válidos.',
     cameraRationale: 'La cámara solo se usa para leer el QR de vinculación.',
     allowCamera: 'Permitir cámara',
@@ -86,13 +86,13 @@ const esES = {
         action: 'Enviar el enlace al ordenador',
       },
       install: {
-        title: 'Claude Remote en el ordenador',
+        title: 'Remote Harness en el ordenador',
         body: 'En un terminal del ordenador, ejecuta el instalador. Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
         action: 'Enviar el comando al ordenador',
       },
       pair: {
         title: 'Vincular',
-        body: 'Al final, el instalador muestra un código QR (o ejecuta `claude-remote pair`). Escanéalo con esta app y listo: abre Claude Code en el ordenador con el alias que hayas elegido.',
+        body: 'Al final, el instalador muestra un código QR (o ejecuta `remote-harness pair`). Escanéalo con esta app y listo: abre Claude Code en el ordenador con el alias que hayas elegido.',
         action: 'Escanear el código QR',
       },
     },
@@ -117,6 +117,30 @@ const esES = {
       notControllable: 'Sesión sin panel de tmux: solo lectura.',
       tooLarge: 'Prompt demasiado grande (máx. 100 KB).',
     },
+  },
+  sessionMenu: {
+    moreOptions: 'Más opciones',
+    terminal: 'Ver terminal',
+    showKeys: 'Mostrar atajos de teclado',
+    hideKeys: 'Ocultar atajos de teclado',
+    history: 'Historial de la conversación',
+    readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
+  },
+  promptHistory: {
+    title: 'Historial de la conversación',
+    hint: 'Tus prompts en esta sesión, del más reciente al más antiguo. Toca uno para ir a él.',
+    empty: 'Aún no hay prompts cargados.',
+    loadEarlier: 'Cargar anteriores',
+    loading: 'cargando…',
+    start: 'Inicio de la conversación',
+  },
+  liveStatus: {
+    states: { working: 'Trabajando', waiting: 'Esperándote', done: 'Terminada', closed: 'Sesión cerrada' },
+    title: 'Estado en vivo',
+    hint: 'Mientras una sesión trabaja, síguela en la pantalla de bloqueo y en la Dynamic Island (iPhone) o en una notificación silenciosa (Android). Solo se muestran el estado, el tipo de paso y el tiempo, nunca la conversación.',
+    enabled: 'Mostrar estado en vivo',
+    channelName: 'Estado en vivo',
+    channelDescription: 'Progreso de las sesiones mientras trabajan (silencioso).',
   },
   tools: {
     grepIn: '{{pattern}} en {{path}}',
@@ -201,6 +225,25 @@ const esES = {
       plugin: 'plugin',
     },
   },
+  attachments: {
+    attach: 'Adjuntar fotos',
+    chooseTitle: 'Adjuntar fotos',
+    camera: 'Hacer foto',
+    library: 'Elegir de la galería',
+    photo: 'Foto {{index}}',
+    remove: 'Quitar foto {{index}}',
+    limit_one: 'Hasta {{count}} foto por mensaje.',
+    limit_other: 'Hasta {{count}} fotos por mensaje.',
+    errors: {
+      tooLarge: 'Imagen demasiado grande (máx. 5 MB).',
+      unsupported: 'Formato de imagen no compatible.',
+      expired: 'Una foto adjunta caducó en el ordenador. Adjúntala de nuevo.',
+      daemonOutdated:
+        'El daemon de tu ordenador no puede recibir fotos. Actualízalo con `claude-remote update`.',
+      cameraDenied: 'Acceso a la cámara denegado. Permítelo en Ajustes.',
+      loadFailed: 'No se pudo cargar la foto.',
+    },
+  },
   voice: {
     start: 'Grabar un mensaje de voz',
     stop: 'Detener la grabación',
@@ -231,6 +274,11 @@ const esES = {
     confirmBody: 'Las sesiones pueden editar los mismos archivos y cambiarse la rama entre sí.',
     confirmStart: 'Crear de todos modos',
     confirmWorktree: 'Usar un worktree',
+    errors: {
+      invalidCwd: 'Directorio no encontrado o fuera de tu carpeta personal.',
+      profileNotFound: 'Este perfil ya no existe en el ordenador. Elige otro.',
+      launchFailed: 'No se pudo abrir Claude Code en tmux: {{reason}}',
+    },
   },
   resume: {
     title: 'Sesión de solo lectura',
@@ -338,7 +386,7 @@ const esES = {
     disabled:
       'Las actualizaciones por aire están desactivadas en este build: instala un build nuevo para actualizar.',
     daemonOutdated:
-      'El ordenador ejecuta Claude Remote {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta claude-remote update.',
+      'El ordenador ejecuta Remote Harness {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta claude-remote update.',
     dismiss: 'Descartar',
   },
   terminal: {

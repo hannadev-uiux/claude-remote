@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
-import type { Profile } from '@claude-remote/protocol'
+import type { Profile } from '@remote-harness/protocol'
 
 const PATH_BLOCK_START = '# >>> claude-remote >>>'
 const PATH_BLOCK_END = '# <<< claude-remote <<<'
@@ -35,7 +35,7 @@ export function renderLauncher(
   const unsetInPane = isDefault ? 'env -u CLAUDE_CONFIG_DIR ' : ''
   const configEnv = isDefault ? '' : '-e "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR" '
   return `#!/usr/bin/env zsh
-# Claude Remote launcher for profile "${profile.id}" (${profile.name}). Generated; do not edit.
+# Remote Harness launcher for profile "${profile.id}" (${profile.name}). Generated; do not edit.
 ${configDir}
 export CLAUDE_REMOTE_PROFILE=${zshQuote(profile.id)}
 TMUX_BIN=\${CLAUDE_REMOTE_TMUX:-${zshQuote(options.tmuxBin)}}

@@ -1,4 +1,4 @@
-import type { PermissionMode, SelectableMode } from '@claude-remote/protocol'
+import type { PermissionMode, SelectableMode } from '@remote-harness/protocol'
 import * as Haptics from 'expo-haptics'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'

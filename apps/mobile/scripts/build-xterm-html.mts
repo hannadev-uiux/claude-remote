@@ -1,6 +1,6 @@
 /**
  * Embeds xterm.js (UMD build + CSS) into a self-contained HTML string for the WebView, so the
- * terminal works offline. Run: pnpm --filter @claude-remote/mobile xterm
+ * terminal works offline. Run: pnpm --filter @remote-harness/mobile xterm
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'

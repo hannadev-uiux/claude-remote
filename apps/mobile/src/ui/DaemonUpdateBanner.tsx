@@ -1,4 +1,4 @@
-import { MIN_DAEMON_VERSION } from '@claude-remote/protocol'
+import { MIN_DAEMON_VERSION } from '@remote-harness/protocol'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'

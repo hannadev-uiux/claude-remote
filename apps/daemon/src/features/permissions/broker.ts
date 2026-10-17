@@ -6,7 +6,7 @@ import type {
   PermissionRequestInfo,
   Profile,
   RuleScope,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { Broadcaster } from '../../transport/connection.ts'
 import type { HookEvent } from '../hooks/payloads.ts'

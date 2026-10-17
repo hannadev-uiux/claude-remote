@@ -17,7 +17,7 @@ The app SHALL have an icon with the Claude Code symbol in the foreground over a 
 
 #### Scenario: iPhone home screen
 - **WHEN** the app is installed
-- **THEN** the icon shown is the Claude Remote icon
+- **THEN** the icon shown is the Remote Harness icon
 
 ### Requirement: Authenticated connection
 When starting with paired credentials, the app SHALL connect to the daemon and send `auth` as the first message; without credentials, it MUST open the pairing screen.

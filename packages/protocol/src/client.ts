@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { DevicePlatformSchema, PermissionAnswerSchema, RuleScopeSchema } from './domain.ts'
+import {
+  AttachmentMimeTypeSchema,
+  DevicePlatformSchema,
+  MAX_ATTACHMENTS,
+  PermissionAnswerSchema,
+  RuleScopeSchema,
+} from './domain.ts'
 
 const id = z.string().min(1)
 const sessionId = z.string().min(1)
@@ -30,7 +36,22 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     before: z.number().int().nonnegative(),
     limit: z.number().int().positive().max(200).default(50),
   }),
-  z.object({ type: z.literal('session.input'), id, sessionId, text: z.string().min(1) }),
+  z.object({
+    type: z.literal('session.input'),
+    id,
+    sessionId,
+    // May be empty when the prompt only carries images (the daemon rejects an empty prompt).
+    text: z.string(),
+    attachmentIds: z.array(z.string().min(1)).min(1).max(MAX_ATTACHMENTS).optional(),
+  }),
+  /** One image per message; answered with `attachment.uploaded`. Size and bytes are checked by the daemon. */
+  z.object({
+    type: z.literal('attachment.upload'),
+    id,
+    sessionId,
+    mimeType: AttachmentMimeTypeSchema,
+    data: z.string().min(1),
+  }),
   // Validated by the daemon against ALLOWED_KEYS so it can answer `invalid_key`.
   z.object({ type: z.literal('session.key'), id, sessionId, key: z.string().min(1) }),
   z.object({ type: z.literal('session.setMode'), id, sessionId, mode: z.string() }),
@@ -55,6 +76,16 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     platform: DevicePlatformSchema.optional(),
   }),
   z.object({ type: z.literal('app.visibility'), id, foreground: z.boolean() }),
+  z.object({
+    type: z.literal('live.register'),
+    id,
+    sessionId,
+    platform: DevicePlatformSchema,
+    fcmToken: z.string().min(1),
+    /** iOS Live Activity push token (hex); absent on Android. */
+    activityToken: z.string().min(1).optional(),
+  }),
+  z.object({ type: z.literal('live.unregister'), id, sessionId }),
   z.object({
     type: z.literal('files.search'),
     id,

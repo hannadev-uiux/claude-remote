@@ -1,4 +1,4 @@
-import type { SubagentInfo } from '@claude-remote/protocol'
+import type { SubagentInfo } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { sortSubagents, subagentLabel } from './sort'
 

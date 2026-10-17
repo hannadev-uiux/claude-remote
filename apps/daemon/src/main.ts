@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type Profile } from '@claude-remote/protocol'
+import { PROTOCOL_VERSION, type Profile } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
 import { type Config, loadConfig, resolveProfiles } from './core/config.ts'
@@ -8,11 +8,13 @@ import { KeyedMutex } from './core/keyed-mutex.ts'
 import type { Logger } from './core/logger.ts'
 import { ensureHookSecret, ensureToken, type TokenStore } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
+import { registerAttachmentsFeature } from './features/attachments/index.ts'
 import { registerAutocompleteFeature } from './features/autocomplete/index.ts'
 import { registerCheckoutFeature } from './features/checkout/index.ts'
 import { HookReceiver } from './features/hooks/receiver.ts'
 import { registerInputFeature } from './features/input/index.ts'
 import { registerLifecycleFeature } from './features/lifecycle/index.ts'
+import { registerLiveStatusFeature } from './features/live-status/index.ts'
 import { registerModeFeature } from './features/mode/index.ts'
 import { registerMuteFeature } from './features/mute/index.ts'
 import type { MuteStore } from './features/mute/store.ts'
@@ -214,7 +216,8 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
   const transcript = registerTranscriptFeature(ctx, sessions.store)
   registerSubagentsFeature(ctx, sessions.store, transcript.addResolver)
   const sessionLock = new KeyedMutex()
-  registerInputFeature(ctx, sessions.store, sessionLock)
+  const attachments = registerAttachmentsFeature(ctx, sessions.store)
+  registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
   const permissions = registerPermissionsFeature(ctx)
   registerModeFeature(ctx, sessions.store, sessionLock, (id) => permissions.broker.hasPending(id))
   registerAutocompleteFeature(ctx, sessions.store)
@@ -222,9 +225,13 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
   const checkout = registerCheckoutFeature(ctx, sessions.store)
   registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver)
   const mute = await registerMuteFeature(ctx)
-  await registerPushFeature(ctx, {
-    isMuted: (profileId, sessionId) => mute.store.isMuted(profileId, sessionId),
-    sender: ctx.pushSender,
+  const isMuted = (profileId: string | null, sessionId: string) => mute.store.isMuted(profileId, sessionId)
+  const push = await registerPushFeature(ctx, { isMuted, sender: ctx.pushSender })
+  registerLiveStatusFeature(ctx, {
+    store: sessions.store,
+    sender: push.sender,
+    isMuted,
+    follow: transcript.follow,
   })
   await sessions.start()
   return { mute: mute.store }

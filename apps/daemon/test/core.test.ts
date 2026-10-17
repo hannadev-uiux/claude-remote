@@ -40,13 +40,13 @@ describe('config', () => {
   })
 
   test('fails with the invalid field', async () => {
-    await mkdir(join(home.dir(), '.claude-remote'), { recursive: true })
+    await mkdir(join(home.dir(), '.remote-harness'), { recursive: true })
     await writeFile(paths.config(), JSON.stringify({ profiles: [{ id: 'x' }] }))
     await expect(loadConfig(silentLogger)).rejects.toThrow(/profiles\.0\.name/)
   })
 
   test('fails on invalid JSON', async () => {
-    await mkdir(join(home.dir(), '.claude-remote'), { recursive: true })
+    await mkdir(join(home.dir(), '.remote-harness'), { recursive: true })
     await writeFile(paths.config(), '{nope')
     await expect(loadConfig(silentLogger)).rejects.toBeInstanceOf(ConfigError)
   })
@@ -152,7 +152,7 @@ describe('token store selection', () => {
     expect(exec.calls).toEqual([])
   })
 
-  test('CLAUDE_REMOTE_TOKEN_STORE forces a store', async () => {
+  test('REMOTE_HARNESS_TOKEN_STORE forces a store', async () => {
     for (const forced of TOKEN_STORE_KINDS) {
       const selected = await selectTokenStore({ platform: 'darwin', exec: fakeExecutor(), forced })
       expect(selected.kind).toBe(forced)
@@ -197,7 +197,7 @@ describe('token store selection', () => {
   })
 
   test('the recorded choice wins over a new probe', async () => {
-    await mkdir(join(home.dir(), '.claude-remote'), { recursive: true })
+    await mkdir(join(home.dir(), '.remote-harness'), { recursive: true })
     await writeFile(paths.tokenStoreChoice(), 'secret-tool\n')
     const o = linux(() => ({ exitCode: 1 }))
     expect((await selectTokenStore(o)).kind).toBe('secret-tool')

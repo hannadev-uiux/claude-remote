@@ -1,14 +1,16 @@
 import { realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { envVar } from '../../core/env.ts'
+import { dataHome } from '../../core/paths.ts'
 import type { Executor } from '../../infra/exec.ts'
 
 /**
- * Where `install.sh` keeps the code (`CLAUDE_REMOTE_SRC`, else `~/.claude-remote/src`), with symlinks
+ * Where `install.sh` keeps the code (`REMOTE_HARNESS_SRC`, else `src` in the data directory), with symlinks
  * resolved like the path of the running module.
  */
 export function installerSourceDir(env: NodeJS.ProcessEnv = process.env, home = homedir()): string {
-  const dir = resolve(env.CLAUDE_REMOTE_SRC || join(home, '.claude-remote', 'src'))
+  const dir = resolve(envVar('SRC', env) || join(dataHome(env, home), 'src'))
   try {
     return realpathSync(dir)
   } catch {
@@ -50,7 +52,7 @@ export type FetchResult =
 
 const GIT_TIMEOUT_MS = 120_000
 
-/** git steps of `claude-remote update`, run in the installer's checkout. */
+/** git steps of `remote-harness update`, run in the installer's checkout. */
 export class SourceUpdater {
   constructor(
     private readonly exec: Executor,

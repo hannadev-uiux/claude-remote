@@ -3,7 +3,7 @@ import type {
   ClientMessageOf,
   ClientMessageType,
   ServerMessage,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 import { DaemonError } from '../core/errors.ts'
 import type { Logger } from '../core/logger.ts'
 import type { Connection } from './connection.ts'

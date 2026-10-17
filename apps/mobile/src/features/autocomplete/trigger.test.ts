@@ -1,4 +1,4 @@
-import type { CommandItem } from '@claude-remote/protocol'
+import type { CommandItem } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { applySuggestion, filterCommands, findTrigger, isInteractiveCommand, triggerKey } from './trigger'
 

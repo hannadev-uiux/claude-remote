@@ -1,5 +1,5 @@
 import { open } from 'node:fs/promises'
-import type { TranscriptEntry } from '@claude-remote/protocol'
+import type { TranscriptEntry } from '@remote-harness/protocol'
 import { parseTranscriptLine } from './parser.ts'
 
 export type RawLine = { cursor: number; text: string }

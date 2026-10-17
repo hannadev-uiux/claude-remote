@@ -1,7 +1,7 @@
 import { copyFile, mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { LOCALE_NAMES, LOCALES, type Locale, LocaleSchema, type Profile } from '@claude-remote/protocol'
 import { checkbox, confirm, input, select } from '@inquirer/prompts'
+import { LOCALE_NAMES, LOCALES, type Locale, LocaleSchema, type Profile } from '@remote-harness/protocol'
 import { ConfigSchema } from '../../core/config.ts'
 import { type Messages, messagesFor, systemLocale } from '../../core/i18n/index.ts'
 import { expandHome, paths } from '../../core/paths.ts'
@@ -508,8 +508,8 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
         s.done.openTerminal(paint('bold', `source ${displayPaths(o.rcFiles.slice(0, 1), o.home)}`)),
         s.done.useAliases(aliases, paint('muted', 'claude')),
         host
-          ? s.done.pairIfNeeded(paint('bold', 'claude-remote pair'))
-          : s.done.connectAndPair(paint('bold', 'claude-remote pair')),
+          ? s.done.pairIfNeeded(paint('bold', 'remote-harness pair'))
+          : s.done.connectAndPair(paint('bold', 'remote-harness pair')),
         '',
         paint('dim', s.done.footer),
       ],

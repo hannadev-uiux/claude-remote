@@ -1,4 +1,4 @@
-import type { ServerMessageOf } from '@claude-remote/protocol'
+import type { ServerMessageOf } from '@remote-harness/protocol'
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { StyleSheet } from 'react-native'
 import { WebView } from 'react-native-webview'

@@ -50,12 +50,12 @@ const enUS = {
   },
   pairing: {
     title: 'Pair with your computer',
-    intro: 'On your computer, run <cmd>claude-remote pair</cmd> and point the camera at the QR code.',
+    intro: 'On your computer, run <cmd>remote-harness pair</cmd> and point the camera at the QR code.',
     guideTitle: 'First time? Set up your computer',
     guideHint: 'Tailscale, a one-line install and pairing, step by step.',
     tabQr: 'QR code',
     tabManual: 'Manual',
-    invalidQr: 'Invalid QR code. Use the one shown by `claude-remote pair`.',
+    invalidQr: 'Invalid QR code. Use the one shown by `remote-harness pair`.',
     invalidManual: 'Enter a valid host, port and token.',
     cameraRationale: 'The camera is only used to read the pairing QR code.',
     allowCamera: 'Allow camera',
@@ -88,13 +88,13 @@ const enUS = {
         action: 'Send the link to the computer',
       },
       install: {
-        title: 'Claude Remote on the computer',
+        title: 'Remote Harness on the computer',
         body: 'In a terminal on the computer, run the installer. It checks the prerequisites, asks which Claude Code accounts you want to control (or creates a new one, with login) and the command (alias) for each.',
         action: 'Send the command to the computer',
       },
       pair: {
         title: 'Pair',
-        body: 'At the end, the installer shows a QR code (or run `claude-remote pair`). Scan it with this app and you are done: open Claude Code on the computer with the alias you chose.',
+        body: 'At the end, the installer shows a QR code (or run `remote-harness pair`). Scan it with this app and you are done: open Claude Code on the computer with the alias you chose.',
         action: 'Scan the QR code',
       },
     },
@@ -119,6 +119,30 @@ const enUS = {
       notControllable: 'Session without a tmux pane: read-only.',
       tooLarge: 'Prompt too large (max. 100 KB).',
     },
+  },
+  sessionMenu: {
+    moreOptions: 'More options',
+    terminal: 'View terminal',
+    showKeys: 'Show keyboard shortcuts',
+    hideKeys: 'Hide keyboard shortcuts',
+    history: 'Conversation history',
+    readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
+  },
+  promptHistory: {
+    title: 'Conversation history',
+    hint: 'Your prompts in this session, newest first. Tap one to jump to it.',
+    empty: 'No prompts loaded yet.',
+    loadEarlier: 'Load earlier',
+    loading: 'loading…',
+    start: 'Start of the conversation',
+  },
+  liveStatus: {
+    states: { working: 'Working', waiting: 'Waiting for you', done: 'Done', closed: 'Session closed' },
+    title: 'Live status',
+    hint: 'While a session works, follow it on the lock screen and in the Dynamic Island (iPhone) or in a silent notification (Android). Only the state, step type and timer are shown, never the conversation.',
+    enabled: 'Show live status',
+    channelName: 'Live status',
+    channelDescription: 'Progress of sessions while they work (silent).',
   },
   tools: {
     grepIn: '{{pattern}} in {{path}}',
@@ -203,6 +227,25 @@ const enUS = {
       plugin: 'plugin',
     },
   },
+  attachments: {
+    attach: 'Attach photos',
+    chooseTitle: 'Attach photos',
+    camera: 'Take photo',
+    library: 'Choose from library',
+    photo: 'Photo {{index}}',
+    remove: 'Remove photo {{index}}',
+    limit_one: 'Up to {{count}} photo per message.',
+    limit_other: 'Up to {{count}} photos per message.',
+    errors: {
+      tooLarge: 'Image too large (max. 5 MB).',
+      unsupported: 'Unsupported image format.',
+      expired: 'An attached photo expired on the computer. Attach it again.',
+      daemonOutdated:
+        "The daemon on your computer can't receive photos. Update it with `claude-remote update`.",
+      cameraDenied: 'Camera access denied. Allow it in Settings.',
+      loadFailed: "Couldn't load the photo.",
+    },
+  },
   voice: {
     start: 'Record a voice message',
     stop: 'Stop recording',
@@ -233,6 +276,11 @@ const enUS = {
     confirmBody: 'The sessions may edit the same files and switch the branch under each other.',
     confirmStart: 'Start anyway',
     confirmWorktree: 'Use a worktree',
+    errors: {
+      invalidCwd: 'Directory not found or outside your home folder.',
+      profileNotFound: 'This profile no longer exists on the computer. Pick another one.',
+      launchFailed: 'Could not open Claude Code in tmux: {{reason}}',
+    },
   },
   resume: {
     title: 'Read-only session',
@@ -339,7 +387,7 @@ const enUS = {
     error: 'Could not check for updates. Try again later.',
     disabled: 'Over-the-air updates are off in this build: install a new build to update.',
     daemonOutdated:
-      'The computer runs Claude Remote {{version}}; this app needs {{minimum}} or newer. On the computer, run claude-remote update.',
+      'The computer runs Remote Harness {{version}}; this app needs {{minimum}} or newer. On the computer, run claude-remote update.',
     dismiss: 'Dismiss',
   },
   terminal: {

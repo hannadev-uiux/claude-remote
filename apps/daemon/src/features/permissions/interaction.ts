@@ -4,7 +4,7 @@ import type {
   PermissionRequestInfo,
   Question,
   QuestionKind,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { Decision } from './broker.ts'
 

@@ -8,7 +8,7 @@ import type { TFunction } from '@/core/i18n/create'
 import { devicePlatform } from '@/core/platform/platform'
 import { loadMessaging } from './firebase'
 import { ACTION_ALLOW, ACTION_DENY, extractPushData, PERMISSION_CATEGORY, type PushData } from './payload'
-import { createTapDeduper, NOTIFICATION_CHANNEL_ID } from './platform'
+import { createTapDeduper, LIVE_STATUS_CHANNEL_ID, NOTIFICATION_CHANNEL_ID } from './platform'
 import { respondInBackground } from './respond-in-background'
 
 Notifications.setNotificationHandler({
@@ -46,6 +46,14 @@ async function registerChannel(t: TFunction) {
     name: t('push.channelName'),
     description: t('push.channelDescription'),
     importance: Notifications.AndroidImportance.HIGH,
+  })
+  // Live status: silent, no heads-up, replaced in place on each update.
+  await Notifications.setNotificationChannelAsync(LIVE_STATUS_CHANNEL_ID, {
+    name: t('liveStatus.channelName'),
+    description: t('liveStatus.channelDescription'),
+    importance: Notifications.AndroidImportance.LOW,
+    sound: null,
+    enableVibrate: false,
   })
 }
 

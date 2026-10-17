@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { stripVTControlCharacters } from 'node:util'
-import { LOCALES } from '@claude-remote/protocol'
+import { LOCALES } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { configuredLocaleSync, defaultProfiles, effectiveLocale } from '../src/core/config.ts'
 import { CATALOGS, createI18n, messagesFor, systemLocale } from '../src/core/i18n/index.ts'
@@ -49,8 +49,8 @@ describe('catalogs', () => {
     const fixed = [
       done.footer,
       done.openTerminal('source ~/.zshrc'),
-      done.pairIfNeeded('claude-remote pair'),
-      done.connectAndPair('claude-remote pair'),
+      done.pairIfNeeded('remote-harness pair'),
+      done.connectAndPair('remote-harness pair'),
     ]
     for (const text of fixed) expect([...text].length).toBeLessThanOrEqual(BANNER_WIDTH - 4)
   })
@@ -95,17 +95,18 @@ describe('catalogs', () => {
   test('createI18n returns the catalog of the locale', () => {
     expect(createI18n('es-ES')).toEqual({ locale: 'es-ES', m: CATALOGS['es-ES'] })
     expect(messagesFor('en-US').push.sessionDone).toBe('Session finished')
-    expect(messagesFor('en-US').claudeCode.denied).toBe('Denied by Claude Remote')
+    expect(messagesFor('en-US').claudeCode.denied).toBe('Denied by Remote Harness')
   })
 })
 
 describe('systemLocale', () => {
-  test('follows CLAUDE_REMOTE_LANG, then LC_ALL, LC_MESSAGES and LANG', () => {
+  test('follows REMOTE_HARNESS_LANG (or the legacy name), then LC_ALL, LC_MESSAGES and LANG', () => {
     expect(systemLocale({ LANG: 'pt_BR.UTF-8' })).toBe('pt-BR')
     expect(systemLocale({ LANG: 'es_MX.UTF-8' })).toBe('es-ES')
     expect(systemLocale({ LC_MESSAGES: 'es_ES.UTF-8', LANG: 'pt_BR.UTF-8' })).toBe('es-ES')
     expect(systemLocale({ LC_ALL: 'en_US.UTF-8', LC_MESSAGES: 'es_ES', LANG: 'pt_BR' })).toBe('en-US')
-    expect(systemLocale({ CLAUDE_REMOTE_LANG: 'pt-BR', LC_ALL: 'es_ES.UTF-8' })).toBe('pt-BR')
+    expect(systemLocale({ REMOTE_HARNESS_LANG: 'pt-BR', LC_ALL: 'es_ES.UTF-8' })).toBe('pt-BR')
+    expect(systemLocale({ CLAUDE_REMOTE_LANG: 'es-ES', LC_ALL: 'en_US.UTF-8' })).toBe('es-ES')
     expect(systemLocale({ LC_ALL: '', LANG: 'es_ES.UTF-8' })).toBe('es-ES')
   })
 
@@ -123,7 +124,7 @@ describe('configured language', () => {
   })
 
   test('reads the config file leniently', async () => {
-    const dir = join(home.dir(), '.claude-remote')
+    const dir = join(home.dir(), '.remote-harness')
     const path = join(dir, 'config.json')
     const env = { LANG: 'pt_BR.UTF-8' }
     expect(configuredLocaleSync(path, env)).toBe('pt-BR')

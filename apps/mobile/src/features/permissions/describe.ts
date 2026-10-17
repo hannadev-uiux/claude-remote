@@ -1,4 +1,4 @@
-import type { PermissionRequestInfo, RuleScope } from '@claude-remote/protocol'
+import type { PermissionRequestInfo, RuleScope } from '@remote-harness/protocol'
 import type { TFunction } from '@/core/i18n/create'
 import { summarizeTool } from '../conversation/summarize-tool'
 

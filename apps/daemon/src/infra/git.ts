@@ -1,4 +1,4 @@
-import type { Checkout } from '@claude-remote/protocol'
+import type { Checkout } from '@remote-harness/protocol'
 import type { Executor } from './exec.ts'
 
 const GIT_TIMEOUT_MS = 5_000

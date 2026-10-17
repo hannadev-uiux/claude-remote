@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type ServerMessage } from '@claude-remote/protocol'
+import { PROTOCOL_VERSION, type ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import WebSocket from 'ws'
 import { silentLogger } from '../src/core/logger.ts'
@@ -129,6 +129,21 @@ describe('sessions.list', () => {
     await client.next()
     client.ws.send(JSON.stringify({ type: 'sessions.list', id: 'abc' }))
     expect(await client.next()).toEqual({ type: 'sessions.snapshot', replyTo: 'abc', sessions: [] })
+    client.ws.close()
+  })
+})
+
+describe('attachment.upload', () => {
+  test('accepts frames above 1 MB and checks the session before saving', async () => {
+    const { daemon, token } = await boot()
+    const client = await connect(daemon.wsPort)
+    client.ws.send(JSON.stringify({ type: 'auth', id: 'a1', token, protocolVersion: PROTOCOL_VERSION }))
+    await client.next()
+    const data = Buffer.alloc(2 * 1024 * 1024).toString('base64')
+    client.ws.send(
+      JSON.stringify({ type: 'attachment.upload', id: 'u1', sessionId: 'nope', mimeType: 'image/png', data }),
+    )
+    expect(await client.next()).toMatchObject({ type: 'error', replyTo: 'u1', code: 'not_found' })
     client.ws.close()
   })
 })

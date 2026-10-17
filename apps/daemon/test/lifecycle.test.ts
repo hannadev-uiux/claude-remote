@@ -69,6 +69,44 @@ describe('LifecycleService', () => {
     await expect(service.start('nope', project)).rejects.toMatchObject({ code: 'not_found' })
   })
 
+  test('fails when Claude Code exits before the settle check', async () => {
+    const { exec, store, project } = await setup()
+    const alive = new Set<string>()
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      async (pane) => alive.has(pane),
+      undefined,
+      undefined,
+      1,
+    )
+    await expect(service.start('claudin', project)).rejects.toMatchObject({
+      code: 'internal',
+      message: expect.stringContaining('exited right after starting'),
+    })
+    alive.add('%9')
+    expect(await service.start('claudin', project)).toEqual({ paneId: '%9' })
+  })
+
+  test('reports a failing launcher in English when it prints nothing', async () => {
+    const { store, project } = await setup()
+    const exec = fakeExecutor(() => ({ stdout: '', exitCode: 1 }))
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+    )
+    await expect(service.start('claudin', project)).rejects.toMatchObject({
+      code: 'internal',
+      message: expect.stringContaining('launcher failed'),
+    })
+  })
+
   test('starts in a git worktree when asked, only inside a checkout', async () => {
     const { exec, store, project } = await setup()
     const checkout = async (dir: string) => (dir === project ? { root: project, branch: 'main' } : null)

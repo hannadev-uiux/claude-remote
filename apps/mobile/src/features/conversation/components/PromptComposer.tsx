@@ -2,8 +2,10 @@ import { ArrowUp } from 'lucide-react-native'
 import { forwardRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, type TextInputProps, View } from 'react-native'
+import Animated, { LayoutAnimationConfig, ReduceMotion, ZoomIn, ZoomOut } from 'react-native-reanimated'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
+import { composerActions } from '../composer-actions'
 
 type Props = {
   value: string
@@ -18,11 +20,34 @@ type Props = {
   accessory?: ReactNode
   /** Rendered between the input and the send button (the voice mic button). */
   voiceButton?: ReactNode
+  /** Rendered before the voice button (the attach photos button). */
+  attachButton?: ReactNode
+  /** Photos waiting to be sent, shown above the input. */
+  attachments?: ReactNode
+  /** Photos alone are enough to send. */
+  hasAttachments?: boolean
+  /** A recording is running or being transcribed: the voice button stays to stop it. */
+  voiceActive?: boolean
 }
+
+// Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
+const SWAP_MS = 150
+const entering = ZoomIn.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
+const exiting = ZoomOut.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
   const { t } = useTranslation()
-  const canSend = !props.disabled && !props.sending && props.value.trim().length > 0
+  const hasText = props.value.trim().length > 0
+  const hasAttachments = props.hasAttachments === true
+  const canSend = !props.disabled && !props.sending && (hasText || hasAttachments)
+  const show = composerActions({
+    hasText,
+    hasAttachments,
+    voiceActive: props.voiceActive === true,
+    sending: props.sending,
+    hasAttach: props.attachButton != null,
+    hasVoice: props.voiceButton != null,
+  })
   return (
     <View style={styles.wrap}>
       {props.accessory}
@@ -31,6 +56,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           {props.error}
         </Text>
       ) : null}
+      {props.attachments}
       <View style={styles.row}>
         <Text color="accent" weight="bold" style={styles.prompt}>
           {'>'}
@@ -49,19 +75,38 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           autoCorrect={false}
           style={styles.input}
         />
-        {props.voiceButton}
-        <Pressable
-          accessibilityLabel={t('common.send')}
-          disabled={!canSend}
-          onPress={props.onSend}
-          style={[styles.send, { backgroundColor: canSend ? colors.accent : colors.surfaceRaised }]}
-        >
-          {props.sending ? (
-            <ActivityIndicator size="small" color={colors.background} />
-          ) : (
-            <ArrowUp size={18} color={canSend ? colors.background : colors.textDim} />
-          )}
-        </Pressable>
+        {/* Only swaps animate: the buttons present when the screen opens just appear. */}
+        <LayoutAnimationConfig skipEntering>
+          {show.attach ? (
+            <Animated.View key="attach" entering={entering} exiting={exiting}>
+              {props.attachButton}
+            </Animated.View>
+          ) : null}
+          {show.voice ? (
+            <Animated.View key="voice" entering={entering} exiting={exiting}>
+              {props.voiceButton}
+            </Animated.View>
+          ) : null}
+          {show.send ? (
+            <Animated.View key="send" entering={entering} exiting={exiting}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('common.send')}
+                accessibilityState={{ disabled: !canSend, busy: props.sending }}
+                hitSlop={6}
+                disabled={!canSend}
+                onPress={props.onSend}
+                style={[styles.send, { backgroundColor: canSend ? colors.accent : colors.surfaceRaised }]}
+              >
+                {props.sending ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <ArrowUp size={18} color={canSend ? colors.background : colors.textDim} />
+                )}
+              </Pressable>
+            </Animated.View>
+          ) : null}
+        </LayoutAnimationConfig>
       </View>
     </View>
   )

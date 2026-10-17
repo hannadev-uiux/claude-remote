@@ -1,4 +1,4 @@
-import type { SubagentInfo } from '@claude-remote/protocol'
+import type { SubagentInfo } from '@remote-harness/protocol'
 import { router } from 'expo-router'
 import { Bot } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'

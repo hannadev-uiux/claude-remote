@@ -11,7 +11,7 @@ describe('platform', () => {
   test('fails early on other systems with a message listing the supported ones', () => {
     expect(isSupportedPlatform('win32')).toBe(false)
     expect(() => resolvePlatform('win32')).toThrow(UnsupportedPlatformError)
-    expect(() => resolvePlatform('freebsd')).toThrow('Claude Remote runs on macOS and Linux')
+    expect(() => resolvePlatform('freebsd')).toThrow('Remote Harness runs on macOS and Linux')
   })
 
   test('the current system is supported (tests run on macOS and Linux)', () => {

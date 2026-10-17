@@ -3,7 +3,7 @@
  * Claude Code and changes between versions, so everything here is defensive: unknown shapes become
  * `unknown` entries (or are skipped when they are clearly metadata) and nothing throws.
  */
-import type { TranscriptEntry } from '@claude-remote/protocol'
+import type { TranscriptEntry } from '@remote-harness/protocol'
 
 export const MAX_TOOL_RESULT_CHARS = 20_000
 const MAX_UNKNOWN_RAW_CHARS = 2_000

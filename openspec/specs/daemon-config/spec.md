@@ -6,7 +6,7 @@ Allows configuring the Claude Code profiles (configuration directories) and the 
 ## Requirements
 
 ### Requirement: Configurable profiles
-The daemon SHALL load profiles with `id`, `name`, `configDir` and `color` from `~/.claude-remote/config.json`. If the file is missing, it MUST create one with the default profiles `claudin` (`~/.claude`) and `drclaude` (`~/.claude-doctorx`).
+The daemon SHALL load profiles with `id`, `name`, `configDir` and `color` from `~/.remote-harness/config.json`. If the file is missing, it MUST create one with the default profiles `claudin` (`~/.claude`) and `drclaude` (`~/.claude-doctorx`).
 
 #### Scenario: First run
 - **WHEN** the daemon starts without a configuration file

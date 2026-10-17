@@ -1,5 +1,7 @@
+import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { envVar } from './env.ts'
 
 export function expandHome(p: string): string {
   if (p === '~') return homedir()
@@ -7,24 +9,41 @@ export function expandHome(p: string): string {
   return p
 }
 
-/** Root directory for everything the daemon persists. Overridable for tests. */
-export function claudeRemoteHome(): string {
-  return expandHome(process.env.CLAUDE_REMOTE_HOME ?? '~/.claude-remote')
+export const DATA_DIR = '.remote-harness'
+/** Data directory of installs made before the rename; kept in place, never moved. */
+export const LEGACY_DATA_DIR = '.claude-remote'
+
+/**
+ * Root directory for everything the daemon persists: the `HOME` override, else `~/.remote-harness`
+ * when it exists, else an existing `~/.claude-remote`, else `~/.remote-harness`.
+ */
+export function dataHome(
+  env: NodeJS.ProcessEnv = process.env,
+  home = homedir(),
+  exists: (path: string) => boolean = existsSync,
+): string {
+  const override = envVar('HOME', env)
+  if (override) return expandHome(override)
+  const current = join(home, DATA_DIR)
+  const legacy = join(home, LEGACY_DATA_DIR)
+  return !exists(current) && exists(legacy) ? legacy : current
 }
 
 export const paths = {
-  config: () => join(claudeRemoteHome(), 'config.json'),
-  state: () => join(claudeRemoteHome(), 'state.json'),
-  hookSecret: () => join(claudeRemoteHome(), 'hook-secret'),
-  tokenFile: () => join(claudeRemoteHome(), 'token'),
+  config: () => join(dataHome(), 'config.json'),
+  state: () => join(dataHome(), 'state.json'),
+  hookSecret: () => join(dataHome(), 'hook-secret'),
+  tokenFile: () => join(dataHome(), 'token'),
   /** Token store picked on Linux (`secret-tool` or `file`), kept so every run uses the same one. */
-  tokenStoreChoice: () => join(claudeRemoteHome(), 'token-store'),
-  rulesLog: () => join(claudeRemoteHome(), 'rules-log.jsonl'),
-  devices: () => join(claudeRemoteHome(), 'devices.json'),
-  mute: () => join(claudeRemoteHome(), 'mute.json'),
-  firebaseServiceAccount: () => join(claudeRemoteHome(), 'firebase-service-account.json'),
-  bin: () => join(claudeRemoteHome(), 'bin'),
-  logs: () => join(claudeRemoteHome(), 'logs'),
+  tokenStoreChoice: () => join(dataHome(), 'token-store'),
+  rulesLog: () => join(dataHome(), 'rules-log.jsonl'),
+  devices: () => join(dataHome(), 'devices.json'),
+  mute: () => join(dataHome(), 'mute.json'),
+  firebaseServiceAccount: () => join(dataHome(), 'firebase-service-account.json'),
+  /** Images uploaded from the app (0700), pruned after a day. */
+  attachments: () => join(dataHome(), 'attachments'),
+  bin: () => join(dataHome(), 'bin'),
+  logs: () => join(dataHome(), 'logs'),
   /** App bundle launched by the LaunchAgent (gives the background item its name and icon). */
-  app: () => join(claudeRemoteHome(), 'Claude Remote.app'),
+  app: () => join(dataHome(), 'Claude Remote.app'),
 }

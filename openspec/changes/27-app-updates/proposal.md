@@ -8,7 +8,7 @@ The app is installed as a local build (`expo run`, Xcode or an EAS internal buil
 - **When**: the app checks at launch and when it returns to the foreground (at most every 30 min), downloads in the background and applies it on the next cold start. **Settings → Check for updates** checks now and offers to restart. The app never reloads by itself while a permission request is open or text is being typed.
 - **Settings** shows the app version, runtime version, update id and date, and the daemon version.
 - **Compatibility with the daemon**: the daemon announces its version in `hello` (already does) and the app declares the minimum daemon version it needs. When the daemon is older, a banner suggests `claude-remote update` on the computer. When an update needs native code the binary does not have, the app says a new build is needed (no OTA).
-- **Release flow**: `pnpm --filter @claude-remote/mobile ota:publish` publishes signed updates to the self-hosted server on maarkn.dev (maarkN/maarkn.dev#4), documented in README/CONTRIBUTING.
+- **Release flow**: `pnpm --filter @remote-harness/mobile ota:publish` publishes signed updates to the self-hosted server on maarkn.dev (maarkN/maarkn.dev#4), documented in README/CONTRIBUTING.
 - **Channels** `production` (builds) and `development` (published by CI on every merge into `development`), switchable in Settings (issue #33).
 - Texts in pt-BR, en-US and es-ES.
 

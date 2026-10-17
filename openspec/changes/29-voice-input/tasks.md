@@ -28,6 +28,6 @@
 
 - [x] 6.1 Created `src/features/voice/language.ts`: `VoiceLanguage` (`'app' | Locale`), `isVoiceLanguage`, `resolveVoiceLanguage` (pure, tested) plus `restoreVoiceLanguage()`/`setVoiceLanguage()` (`SecureStore`-persisted, mirroring `core/updates/updates.ts`'s channel storage) and a small Zustand store for the Settings UI
 - [x] 6.2 `useVoiceRecording` now calls `resolveVoiceLanguage()` instead of `currentLocale()` directly when starting a recording (both the normal `start()` and the online `retryOnline()` path)
-- [x] 6.3 Created `VoiceLanguageCard` in Settings (chips: "same as the app", pt-BR, en-US, es-ES via `LOCALE_NAMES` from `@claude-remote/protocol`, matching `AppUpdatesCard`'s channel-picker pattern); wired into `app/(main)/settings.tsx`
+- [x] 6.3 Created `VoiceLanguageCard` in Settings (chips: "same as the app", pt-BR, en-US, es-ES via `LOCALE_NAMES` from `@remote-harness/protocol`, matching `AppUpdatesCard`'s channel-picker pattern); wired into `app/(main)/settings.tsx`
 - [x] 6.4 Added `voice.languageTitle`/`languageHint`/`languageApp` to all three catalogs; i18n parity tests green
 - [ ] 6.5 Manual check: set the app to one language, the transcription language to another, record, and confirm the transcript comes back in the transcription language, not the app's

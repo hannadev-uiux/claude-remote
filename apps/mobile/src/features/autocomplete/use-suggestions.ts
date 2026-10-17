@@ -1,4 +1,4 @@
-import type { CommandItem, FileItem } from '@claude-remote/protocol'
+import type { CommandItem, FileItem } from '@remote-harness/protocol'
 import { useQuery } from '@tanstack/react-query'
 import { useDaemonClient, useIsConnected } from '@/core/connection'
 import { useDebounced } from '@/core/utils/use-debounced'

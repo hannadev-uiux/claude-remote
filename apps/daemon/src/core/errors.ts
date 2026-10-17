@@ -1,4 +1,4 @@
-import type { ErrorCode } from '@claude-remote/protocol'
+import type { ErrorCode } from '@remote-harness/protocol'
 
 /** Error carrying a protocol error code; the router turns it into an `error` message. */
 export class DaemonError extends Error {

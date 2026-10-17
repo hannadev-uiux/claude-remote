@@ -4,7 +4,7 @@ import {
   parseClientMessage,
   type ServerMessage,
   type ServerMessageOf,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 import { type WebSocket, WebSocketServer } from 'ws'
 import type { Logger } from '../core/logger.ts'
 import type { ClientHub, Connection } from './connection.ts'
@@ -12,6 +12,8 @@ import type { MessageRouter } from './router.ts'
 
 export const AUTH_TIMEOUT_MS = 5_000
 const HEARTBEAT_MS = 30_000
+/** Fits one image attachment (5 MB decoded is ~6.7 MB in base64) plus the envelope. */
+export const MAX_PAYLOAD_BYTES = 8 * 1024 * 1024
 
 export type WsServerOptions = {
   host: string
@@ -58,7 +60,7 @@ class SocketConnection implements Connection {
 
 export async function startWsServer(options: WsServerOptions): Promise<WebSocketServer> {
   const { router, hub, logger } = options
-  const wss = new WebSocketServer({ host: options.host, port: options.port, maxPayload: 1024 * 1024 })
+  const wss = new WebSocketServer({ host: options.host, port: options.port, maxPayload: MAX_PAYLOAD_BYTES })
   const alive = new WeakMap<WebSocket, boolean>()
 
   wss.on('connection', (socket, request) => {
