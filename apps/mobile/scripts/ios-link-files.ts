@@ -93,3 +93,21 @@ export function buildPage(app: AppInfo, manifestUrl: string, builtAt: Date): str
 </html>
 `
 }
+
+/** The only files the local server behind `tailscale serve` hands out, with their content types. */
+const SERVED: Record<string, string> = {
+  'index.html': 'text/html; charset=utf-8',
+  'manifest.plist': 'text/xml; charset=utf-8',
+  'ClaudeRemote.ipa': 'application/octet-stream',
+}
+
+/**
+ * Maps a request path to one of the served files, by its last segment (whether or not Tailscale
+ * kept the `/claude-remote` prefix); anything else is not served.
+ */
+export function servedFile(url: string): { name: string; type: string } | undefined {
+  const last = (url.split('?')[0] ?? '').split('/').pop() ?? ''
+  const name = last === '' || last === 'claude-remote' ? 'index.html' : last
+  const type = SERVED[name]
+  return type ? { name, type } : undefined
+}

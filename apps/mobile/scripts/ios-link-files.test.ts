@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildManifest, buildPage, tailnetHost } from './ios-link-files'
+import { buildManifest, buildPage, servedFile, tailnetHost } from './ios-link-files'
 
 const app = { bundleId: 'tech.doctorx.clauderemote', version: '0.6.0', build: '7', title: 'Claude & Remote' }
 
@@ -48,5 +48,20 @@ describe('buildPage', () => {
     )
     expect(page).toContain('0.6.0 (7) · built 2026-10-17 12:34 UTC')
     expect(page).toContain('<h1>Claude &amp; Remote</h1>')
+  })
+})
+
+describe('servedFile', () => {
+  test('serves only the page, the manifest and the IPA', () => {
+    expect(servedFile('/')).toEqual({ name: 'index.html', type: 'text/html; charset=utf-8' })
+    expect(servedFile('/claude-remote')?.name).toBe('index.html')
+    expect(servedFile('/claude-remote/')?.name).toBe('index.html')
+    expect(servedFile('/manifest.plist?v=1')?.name).toBe('manifest.plist')
+    expect(servedFile('/claude-remote/ClaudeRemote.ipa?v=1')).toEqual({
+      name: 'ClaudeRemote.ipa',
+      type: 'application/octet-stream',
+    })
+    expect(servedFile('/../.env.local')).toBeUndefined()
+    expect(servedFile('/claude-remote/other.txt')).toBeUndefined()
   })
 })
