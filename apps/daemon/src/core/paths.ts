@@ -23,6 +23,8 @@ export const paths = {
   devices: () => join(claudeRemoteHome(), 'devices.json'),
   mute: () => join(claudeRemoteHome(), 'mute.json'),
   firebaseServiceAccount: () => join(claudeRemoteHome(), 'firebase-service-account.json'),
+  /** Images uploaded from the app (0700), pruned after a day. */
+  attachments: () => join(claudeRemoteHome(), 'attachments'),
   bin: () => join(claudeRemoteHome(), 'bin'),
   logs: () => join(claudeRemoteHome(), 'logs'),
   /** App bundle launched by the LaunchAgent (gives the background item its name and icon). */

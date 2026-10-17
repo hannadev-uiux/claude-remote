@@ -201,6 +201,25 @@ const esES = {
       plugin: 'plugin',
     },
   },
+  attachments: {
+    attach: 'Adjuntar fotos',
+    chooseTitle: 'Adjuntar fotos',
+    camera: 'Hacer foto',
+    library: 'Elegir de la galería',
+    photo: 'Foto {{index}}',
+    remove: 'Quitar foto {{index}}',
+    limit_one: 'Hasta {{count}} foto por mensaje.',
+    limit_other: 'Hasta {{count}} fotos por mensaje.',
+    errors: {
+      tooLarge: 'Imagen demasiado grande (máx. 5 MB).',
+      unsupported: 'Formato de imagen no compatible.',
+      expired: 'Una foto adjunta caducó en el ordenador. Adjúntala de nuevo.',
+      daemonOutdated:
+        'El daemon de tu ordenador no puede recibir fotos. Actualízalo con `claude-remote update`.',
+      cameraDenied: 'Acceso a la cámara denegado. Permítelo en Ajustes.',
+      loadFailed: 'No se pudo cargar la foto.',
+    },
+  },
   voice: {
     start: 'Grabar un mensaje de voz',
     stop: 'Detener la grabación',

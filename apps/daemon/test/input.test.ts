@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
+import { DaemonError } from '../src/core/errors.ts'
 import { KeyedMutex } from '../src/core/keyed-mutex.ts'
 import { silentLogger } from '../src/core/logger.ts'
 import { InputService } from '../src/features/input/service.ts'
@@ -29,19 +30,34 @@ function session(patch: Partial<SessionRecord> = {}): SessionRecord {
   }
 }
 
+const attachments = {
+  resolve: (sessionId: string, ids: readonly string[]) =>
+    ids.map((id) => {
+      if (sessionId !== 'abcdef123456' || !id.startsWith('img'))
+        throw new DaemonError('not_found', `attachment ${id} not found`)
+      return `/h/.claude-remote/attachments/${id}.jpg`
+    }),
+}
+
 function setup(strategy: 'paste' | 'type' = 'paste', record = session()) {
   const exec = fakeExecutor()
   const store = new SessionStore({ broadcast: () => {} }, join(home.dir(), 's.json'), silentLogger, 60_000)
   store.upsert(record.id, {}, () => record)
   store.dispose()
   const sleeps: number[] = []
-  const service = new InputService(new TmuxClient(exec), store, new KeyedMutex(), {
-    strategy,
-    pasteEnterDelayMs: 80,
-    sleep: async (ms) => {
-      sleeps.push(ms)
+  const service = new InputService(
+    new TmuxClient(exec),
+    store,
+    new KeyedMutex(),
+    {
+      strategy,
+      pasteEnterDelayMs: 80,
+      sleep: async (ms) => {
+        sleeps.push(ms)
+      },
     },
-  })
+    attachments,
+  )
   return { exec, service, sleeps }
 }
 
@@ -94,5 +110,29 @@ describe('InputService', () => {
     await expect(service.sendText('abcdef123456', 'x'.repeat(200 * 1024))).rejects.toMatchObject({
       code: 'too_large',
     })
+  })
+
+  test('pastes the text followed by the attachment paths', async () => {
+    const { exec, service } = setup()
+    await service.sendText('abcdef123456', 'what is wrong?', ['img1', 'img2'])
+    expect(exec.calls[0]?.options?.input).toBe(
+      'what is wrong?\n/h/.claude-remote/attachments/img1.jpg\n/h/.claude-remote/attachments/img2.jpg',
+    )
+    expect(exec.calls.at(-1)?.args).toEqual(['send-keys', '-t', '%7', 'Enter'])
+  })
+
+  test('sends attachments without text', async () => {
+    const { exec, service } = setup()
+    await service.sendText('abcdef123456', '', ['img1'])
+    expect(exec.calls[0]?.options?.input).toBe('/h/.claude-remote/attachments/img1.jpg')
+  })
+
+  test('rejects unknown attachments and empty prompts without pasting', async () => {
+    const { exec, service } = setup()
+    await expect(service.sendText('abcdef123456', 'oi', ['nope'])).rejects.toMatchObject({
+      code: 'not_found',
+    })
+    await expect(service.sendText('abcdef123456', '  ')).rejects.toMatchObject({ code: 'bad_request' })
+    expect(exec.calls).toEqual([])
   })
 })

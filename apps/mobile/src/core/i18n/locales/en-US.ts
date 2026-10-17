@@ -203,6 +203,25 @@ const enUS = {
       plugin: 'plugin',
     },
   },
+  attachments: {
+    attach: 'Attach photos',
+    chooseTitle: 'Attach photos',
+    camera: 'Take photo',
+    library: 'Choose from library',
+    photo: 'Photo {{index}}',
+    remove: 'Remove photo {{index}}',
+    limit_one: 'Up to {{count}} photo per message.',
+    limit_other: 'Up to {{count}} photos per message.',
+    errors: {
+      tooLarge: 'Image too large (max. 5 MB).',
+      unsupported: 'Unsupported image format.',
+      expired: 'An attached photo expired on the computer. Attach it again.',
+      daemonOutdated:
+        "The daemon on your computer can't receive photos. Update it with `claude-remote update`.",
+      cameraDenied: 'Camera access denied. Allow it in Settings.',
+      loadFailed: "Couldn't load the photo.",
+    },
+  },
   voice: {
     start: 'Record a voice message',
     stop: 'Stop recording',

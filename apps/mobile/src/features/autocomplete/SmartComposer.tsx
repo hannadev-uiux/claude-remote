@@ -1,8 +1,15 @@
+import { MAX_ATTACHMENTS } from '@claude-remote/protocol'
 import { router } from 'expo-router'
+import { ImagePlus } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { TextInput } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { Alert, type TextInput } from 'react-native'
 import { addListener, constants } from 'react-native-key-command'
 import { useBackHandler } from '@/core/platform/use-back-handler'
+import { IconButton } from '@/ui'
+import { AttachmentChips } from '../attachments/components/AttachmentChips'
+import { remainingSlots } from '../attachments/limits'
+import { type ImageSource, useImagePicker } from '../attachments/use-image-picker'
 import { PromptComposer } from '../conversation/components/PromptComposer'
 import type { usePrompt } from '../conversation/use-prompt'
 import { RecordingOverlay } from '../voice/components/RecordingOverlay'
@@ -17,6 +24,7 @@ type Props = { sessionId: string; prompt: ReturnType<typeof usePrompt>; disabled
 
 /** Prompt composer with `@` file and `/` command suggestions. */
 export function SmartComposer({ sessionId, prompt, disabled }: Props) {
+  const { t } = useTranslation()
   const input = useRef<TextInput>(null)
   const [cursor, setCursor] = useState(0)
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>()
@@ -48,6 +56,26 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
     insert(insertTranscriptAtCursor(prompt.text, cursor, transcript)),
   )
 
+  const picker = useImagePicker()
+  const pickFrom = async (source: ImageSource) => {
+    try {
+      prompt.addAttachments(await picker.pick(source, remainingSlots(prompt.attachments.length)))
+    } catch (e) {
+      prompt.setError(e instanceof Error ? e.message : String(e))
+    }
+  }
+  const attach = () => {
+    if (remainingSlots(prompt.attachments.length) === 0) {
+      prompt.setError(t('attachments.limit', { count: MAX_ATTACHMENTS }))
+      return
+    }
+    Alert.alert(t('attachments.chooseTitle'), undefined, [
+      { text: t('attachments.camera'), onPress: () => void pickFrom('camera') },
+      { text: t('attachments.library'), onPress: () => void pickFrom('library') },
+      { text: t('common.cancel'), style: 'cancel' },
+    ])
+  }
+
   const send = async () => {
     const text = prompt.text
     const interactive = isInteractiveCommand(text, commands.data ?? [])
@@ -57,7 +85,8 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
   }
 
   const canSendRef = useRef(false)
-  canSendRef.current = !disabled && !prompt.sending && prompt.text.trim().length > 0
+  canSendRef.current =
+    !disabled && !prompt.sending && (prompt.text.trim().length > 0 || prompt.attachments.length > 0)
   const sendRef = useRef(send)
   sendRef.current = send
 
@@ -99,6 +128,22 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
             onRetryOnline={() => void voice.retryOnline()}
           />
         ) : null
+      }
+      hasAttachments={prompt.attachments.length > 0}
+      attachments={
+        <AttachmentChips
+          images={prompt.attachments}
+          onRemove={prompt.removeAttachment}
+          disabled={prompt.sending}
+        />
+      }
+      attachButton={
+        <IconButton
+          icon={ImagePlus}
+          label={t('attachments.attach')}
+          disabled={disabled || picker.busy || prompt.sending}
+          onPress={attach}
+        />
       }
       voiceButton={
         <VoiceButton

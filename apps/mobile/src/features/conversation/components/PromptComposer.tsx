@@ -18,11 +18,18 @@ type Props = {
   accessory?: ReactNode
   /** Rendered between the input and the send button (the voice mic button). */
   voiceButton?: ReactNode
+  /** Rendered before the voice button (the attach photos button). */
+  attachButton?: ReactNode
+  /** Photos waiting to be sent, shown above the input. */
+  attachments?: ReactNode
+  /** Photos alone are enough to send. */
+  hasAttachments?: boolean
 }
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
   const { t } = useTranslation()
-  const canSend = !props.disabled && !props.sending && props.value.trim().length > 0
+  const canSend =
+    !props.disabled && !props.sending && (props.value.trim().length > 0 || props.hasAttachments === true)
   return (
     <View style={styles.wrap}>
       {props.accessory}
@@ -31,6 +38,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           {props.error}
         </Text>
       ) : null}
+      {props.attachments}
       <View style={styles.row}>
         <Text color="accent" weight="bold" style={styles.prompt}>
           {'>'}
@@ -49,6 +57,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           autoCorrect={false}
           style={styles.input}
         />
+        {props.attachButton}
         {props.voiceButton}
         <Pressable
           accessibilityLabel={t('common.send')}
