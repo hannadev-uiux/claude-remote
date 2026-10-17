@@ -19,4 +19,4 @@
 
 ## 5. Verification
 
-- [ ] 5.1 `pnpm check` green; redirects, proxy and install link checked against the live domain
+- [x] 5.1 `pnpm check` green; redirects, proxy and install link checked against the live domain
