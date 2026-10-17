@@ -266,6 +266,11 @@ const esES = {
     confirmBody: 'Las sesiones pueden editar los mismos archivos y cambiarse la rama entre sí.',
     confirmStart: 'Crear de todos modos',
     confirmWorktree: 'Usar un worktree',
+    errors: {
+      invalidCwd: 'Directorio no encontrado o fuera de tu carpeta personal.',
+      profileNotFound: 'Este perfil ya no existe en el ordenador. Elige otro.',
+      launchFailed: 'No se pudo abrir Claude Code en tmux: {{reason}}',
+    },
   },
   resume: {
     title: 'Sesión de solo lectura',

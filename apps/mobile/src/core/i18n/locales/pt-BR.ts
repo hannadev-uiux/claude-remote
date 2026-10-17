@@ -265,6 +265,11 @@ const ptBR = {
     confirmBody: 'As sessões podem editar os mesmos arquivos e trocar a branch uma da outra.',
     confirmStart: 'Iniciar mesmo assim',
     confirmWorktree: 'Usar uma worktree',
+    errors: {
+      invalidCwd: 'Diretório não encontrado ou fora da sua pasta pessoal.',
+      profileNotFound: 'Este perfil não existe mais no computador. Escolha outro.',
+      launchFailed: 'Não foi possível abrir o Claude Code no tmux: {{reason}}',
+    },
   },
   resume: {
     title: 'Sessão somente leitura',
