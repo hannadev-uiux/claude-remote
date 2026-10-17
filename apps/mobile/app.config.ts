@@ -35,7 +35,9 @@ const firebase = {
 const SYSTEM_PROMPTS = {
   en: {
     NSCameraUsageDescription:
-      'The camera is used to read the pairing QR code shown by the daemon on your computer.',
+      'The camera is used to read the pairing QR code shown by the daemon on your computer and to take photos for the prompt.',
+    NSPhotoLibraryUsageDescription:
+      'Photos you pick are sent with the prompt to Claude Code on your computer.',
     NSLocalNetworkUsageDescription: 'Claude Remote connects to the daemon on your computer.',
     NSMicrophoneUsageDescription: 'The microphone is used to record voice messages for the prompt.',
     NSSpeechRecognitionUsageDescription:
@@ -43,7 +45,9 @@ const SYSTEM_PROMPTS = {
   },
   'pt-BR': {
     NSCameraUsageDescription:
-      'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no computador.',
+      'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no computador e para tirar fotos para o prompt.',
+    NSPhotoLibraryUsageDescription:
+      'As fotos escolhidas são enviadas com o prompt ao Claude Code no seu computador.',
     NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu computador.',
     NSMicrophoneUsageDescription: 'O microfone é usado para gravar mensagens de voz do prompt.',
     NSSpeechRecognitionUsageDescription:
@@ -51,7 +55,9 @@ const SYSTEM_PROMPTS = {
   },
   es: {
     NSCameraUsageDescription:
-      'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el ordenador.',
+      'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el ordenador y para hacer fotos para el mensaje.',
+    NSPhotoLibraryUsageDescription:
+      'Las fotos que elijas se envían con el mensaje a Claude Code en tu ordenador.',
     NSLocalNetworkUsageDescription: 'Claude Remote se conecta al daemon de tu ordenador.',
     NSMicrophoneUsageDescription: 'El micrófono se usa para grabar mensajes de voz del mensaje.',
     NSSpeechRecognitionUsageDescription:
@@ -301,6 +307,15 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
         microphonePermission: SYSTEM_PROMPTS.en.NSMicrophoneUsageDescription,
         recordAudioAndroid: false,
         barcodeScannerEnabled: true,
+      },
+    ],
+    [
+      'expo-image-picker',
+      {
+        // Same texts as expo-camera above, for the same reason (plugin order must not matter).
+        photosPermission: SYSTEM_PROMPTS.en.NSPhotoLibraryUsageDescription,
+        cameraPermission: SYSTEM_PROMPTS.en.NSCameraUsageDescription,
+        microphonePermission: SYSTEM_PROMPTS.en.NSMicrophoneUsageDescription,
       },
     ],
     [

@@ -16,6 +16,8 @@ const clientSamples: ClientMessage[] = [
   { type: 'session.unsubscribe', id: '1', sessionId: 's' },
   { type: 'session.history', id: '1', sessionId: 's', before: 50, limit: 50 },
   { type: 'session.input', id: '1', sessionId: 's', text: 'oi\nlinha 2 @src/a.ts' },
+  { type: 'session.input', id: '1', sessionId: 's', text: '', attachmentIds: ['a1', 'a2'] },
+  { type: 'attachment.upload', id: '1', sessionId: 's', mimeType: 'image/png', data: 'iVBORw0KGgo=' },
   { type: 'session.key', id: '1', sessionId: 's', key: 'Escape' },
   { type: 'session.setMode', id: '1', sessionId: 's', mode: 'plan' },
   {
@@ -157,6 +159,7 @@ const serverSamples: ServerMessage[] = [
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
   { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
+  { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
 ]
 
 describe('client messages', () => {
@@ -198,6 +201,22 @@ describe('client messages', () => {
     expect(parseClientMessage({ type: 'device.register', id: '1', fcmToken: 't', platform: 'web' }).ok).toBe(
       false,
     )
+  })
+
+  test('rejects an attachment type Claude cannot read', () => {
+    const msg = { type: 'attachment.upload', id: '1', sessionId: 's', mimeType: 'application/pdf', data: 'x' }
+    expect(parseClientMessage(msg)).toMatchObject({ ok: false, error: { code: 'bad_request' } })
+  })
+
+  test('limits attachments per prompt', () => {
+    const msg = {
+      type: 'session.input',
+      id: '1',
+      sessionId: 's',
+      text: '',
+      attachmentIds: ['1', '2', '3', '4', '5'],
+    }
+    expect(parseClientMessage(msg)).toMatchObject({ ok: false, error: { code: 'bad_request' } })
   })
 
   test('applies defaults', () => {

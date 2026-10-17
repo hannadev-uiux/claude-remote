@@ -194,6 +194,15 @@ export const MuteStateSchema = z.object({
 })
 export type MuteState = z.infer<typeof MuteStateSchema>
 
+/** Image types Claude accepts; the daemon also checks the bytes against the declared type. */
+export const ATTACHMENT_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const
+export const AttachmentMimeTypeSchema = z.enum(ATTACHMENT_MIME_TYPES)
+export type AttachmentMimeType = z.infer<typeof AttachmentMimeTypeSchema>
+/** Images per prompt. */
+export const MAX_ATTACHMENTS = 4
+/** Decoded bytes per image (the Claude API limit). */
+export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024
+
 /** Keys the app may send to a session. Anything else is rejected by the daemon. */
 export const ALLOWED_KEYS = [
   'Enter',
@@ -230,6 +239,7 @@ export const ErrorCodeSchema = z.enum([
   'not_controllable',
   'invalid_key',
   'too_large',
+  'unsupported_media',
   'already_resolved',
   'mode_forbidden',
   'mode_unreachable',

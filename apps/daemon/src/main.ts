@@ -8,6 +8,7 @@ import { KeyedMutex } from './core/keyed-mutex.ts'
 import type { Logger } from './core/logger.ts'
 import { ensureHookSecret, ensureToken, type TokenStore } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
+import { registerAttachmentsFeature } from './features/attachments/index.ts'
 import { registerAutocompleteFeature } from './features/autocomplete/index.ts'
 import { registerCheckoutFeature } from './features/checkout/index.ts'
 import { HookReceiver } from './features/hooks/receiver.ts'
@@ -214,7 +215,8 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
   const transcript = registerTranscriptFeature(ctx, sessions.store)
   registerSubagentsFeature(ctx, sessions.store, transcript.addResolver)
   const sessionLock = new KeyedMutex()
-  registerInputFeature(ctx, sessions.store, sessionLock)
+  const attachments = registerAttachmentsFeature(ctx, sessions.store)
+  registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
   const permissions = registerPermissionsFeature(ctx)
   registerModeFeature(ctx, sessions.store, sessionLock, (id) => permissions.broker.hasPending(id))
   registerAutocompleteFeature(ctx, sessions.store)
