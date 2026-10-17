@@ -4,7 +4,7 @@ import { buildSetupGuide, INSTALL_COMMAND, SETUP_STEPS } from './setup-guide'
 
 describe('setup guide', () => {
   test('installs through the HTTPS one-liner', () => {
-    expect(INSTALL_COMMAND).toBe('curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash')
+    expect(INSTALL_COMMAND).toBe('curl -fsSL https://remoteharness.app/install.sh | bash')
   })
 
   test('walks from Tailscale to pairing, every link over HTTPS', () => {

@@ -107,7 +107,7 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 ### 1. Computer (macOS or Linux): one-line install
 
 ```bash
-curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
+curl -fsSL https://remoteharness.app/install.sh | bash
 ```
 
 The installer checks the system (macOS or Linux) and Node, installs missing `tmux`/`ripgrep`/`zsh`/`git` (Homebrew on macOS; apt, dnf, pacman or zypper on Linux, with `sudo` after telling you why), puts the source in `~/.remote-harness/src`, builds the daemon and opens a guided setup (`remote-harness setup`) that:
@@ -136,10 +136,10 @@ To update, run `remote-harness update` (or `--ref <branch|tag>`): it fetches the
 Remote Harness drives Claude Code through tmux, so on Windows it runs inside **WSL2** (Linux on Windows), where Claude Code is best supported too. In PowerShell:
 
 ```powershell
-irm https://maarkn.dev/claude-remote/install.ps1 | iex
+irm https://remoteharness.app/install.ps1 | iex
 ```
 
-The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when it is missing (Windows asks for administrator permission; reboot if asked, then run the same command again), helps create the Linux user, and then runs the Linux installer above inside the distribution. Options: `& ([scriptblock]::Create((irm https://maarkn.dev/claude-remote/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when it is missing (Windows asks for administrator permission; reboot if asked, then run the same command again), helps create the Linux user, and then runs the Linux installer above inside the distribution. Options: `& ([scriptblock]::Create((irm https://remoteharness.app/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
 
 - **Node and Claude Code** must be installed **inside WSL** (not only on Windows); the installer says what is missing.
 - **systemd**: the background service is a systemd user unit, and WSL only boots systemd with `[boot] systemd=true` in `/etc/wsl.conf`. The setup shows the exact `sudo` command, runs it only if you agree (with a backup), and asks you to run `wsl --shutdown` from PowerShell.
@@ -225,17 +225,20 @@ On Android 13+ the app asks for the notification permission; notifications use t
 
 ### App updates over the air (optional)
 
-Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, the app uses a self-hosted [Expo Updates](https://docs.expo.dev/technical-specs/expo-updates-1/) server — the one at `maarkn.dev` (no EAS account or fees), or any other implementation of the protocol.
+Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, the app uses a self-hosted [Expo Updates](https://docs.expo.dev/technical-specs/expo-updates-1/) server — the project's, at `remoteharness.app/api/updates` (no EAS account or fees), or any other implementation of the protocol.
 
-1. **Signing key, once.** `cd apps/mobile && npx expo-updates codesigning:generate --key-output-directory ~/.claude-remote-keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Remote Harness"`. Commit `certs/certificate.pem`; keep the private key out of the repo (and backed up: losing it means a new build for every phone).
+1. **Signing key, once.** `cd apps/mobile && npx expo-updates codesigning:generate --key-output-directory ~/.remote-harness-keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Remote Harness"`. Commit `certs/certificate.pem`; keep the private key out of the repo (and backed up: losing it means a new build for every phone).
 2. **Build** with the server URL, e.g. in `apps/mobile/.env.local` (git-ignored, read by the build and the publisher):
    ```dotenv
-   REMOTE_HARNESS_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest
+   REMOTE_HARNESS_UPDATES_URL=https://remoteharness.app/api/updates/manifest
+   # Optional: prefix of the asset URLs signed into each update, for a server that only accepts its own address
+   REMOTE_HARNESS_UPDATES_ASSETS_URL=https://maarkn.dev/api/claude-remote/updates/assets/
    ```
-   A custom URL without `certs/certificate.pem` is refused. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
+   `remoteharness.app/api/updates/*` is a Cloudflare Worker (`apps/web`) that forwards to the update server, so the server can move without new builds.
+   A custom URL without `certs/certificate.pem` is refused. The URL is part of the runtime version: builds made with the old `https://maarkn.dev/api/claude-remote/updates/manifest` only receive updates published with that URL, so publish once more with it until those builds are replaced. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
 3. **Publish** a JavaScript change:
    ```bash
-   REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/.claude-remote-keys/private-key.pem \
+   REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/.remote-harness-keys/private-key.pem \
      pnpm --filter @remote-harness/mobile ota:publish          # --platform ios|android, --dry-run
    ```
    It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `REMOTE_HARNESS_UPDATES_TOKEN`.
@@ -275,7 +278,7 @@ Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Development
 
-`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one), `make install-ios-link` (same release build, installed from a Safari link served over Tailscale, so the iPhone needs no cable and can be on any network; it must already be registered in the Apple team, and the tailnet needs HTTPS certificates enabled; Tailscale cannot serve a folder on macOS, so a small server on `127.0.0.1` keeps running behind `tailscale serve`) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `REMOTE_HARNESS_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
+`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one), `make install-ios-link` (same release build, installed from a Safari link served over Tailscale, so the iPhone needs no cable and can be on any network; it must already be registered in the Apple team, and the tailnet needs HTTPS certificates enabled; Tailscale cannot serve a folder on macOS, so a small server on `127.0.0.1` keeps running behind `tailscale serve`; with `IOS_LINK=web` the build goes to Cloudflare R2 instead and the link is `https://remoteharness.app/ios/<token>/`, so the phone needs no Tailscale: the random token in `IOS_LINK_DIR/.web-token` is the only protection, since a development-signed IPA lists the registered devices; uploading needs the `cf` CLI logged in) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.remote-harness-keys/private-key.pem`, or `~/.claude-remote-keys` when only that one exists; token in `REMOTE_HARNESS_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
 
 ```bash
 pnpm check                                             # typecheck + tests + Biome across the monorepo
