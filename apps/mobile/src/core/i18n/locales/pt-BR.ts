@@ -118,6 +118,22 @@ const ptBR = {
       tooLarge: 'Prompt grande demais (máx. 100 KB).',
     },
   },
+  sessionMenu: {
+    moreOptions: 'Mais opções',
+    terminal: 'Ver terminal',
+    showKeys: 'Mostrar atalhos de teclado',
+    hideKeys: 'Ocultar atalhos de teclado',
+    history: 'Histórico da conversa',
+    readOnly: 'Sessão somente leitura (sem painel tmux): o terminal e os atalhos não estão disponíveis.',
+  },
+  promptHistory: {
+    title: 'Histórico da conversa',
+    hint: 'Seus prompts nesta sessão, do mais recente ao mais antigo. Toque em um para ir até ele.',
+    empty: 'Nenhum prompt carregado ainda.',
+    loadEarlier: 'Carregar anteriores',
+    loading: 'carregando…',
+    start: 'Início da conversa',
+  },
   tools: {
     grepIn: '{{pattern}} em {{path}}',
     todoItems_one: '{{count}} item',

@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { SquareTerminal } from 'lucide-react-native'
+import { EllipsisVertical } from 'lucide-react-native'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
@@ -7,6 +8,8 @@ import { colors, space } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
 import { SmartComposer } from '@/features/autocomplete/SmartComposer'
 import { ConversationScreen } from '@/features/conversation/ConversationScreen'
+import { setKeyBarVisible, useKeyBarStore } from '@/features/conversation/key-bar-store'
+import { type SessionMenuAction, sessionMenu } from '@/features/conversation/session-menu'
 import { usePrompt } from '@/features/conversation/use-prompt'
 import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
 import { ModeSelector } from '@/features/mode/ModeSelector'
@@ -15,7 +18,7 @@ import { SessionPermissions } from '@/features/permissions/components/SessionPer
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
 import { SubagentStrip } from '@/features/subagents/SubagentList'
-import { headerActions, IconButton, Text } from '@/ui'
+import { ActionMenu, headerActions, Text } from '@/ui'
 
 export default function SessionRoute() {
   const { t } = useTranslation()
@@ -24,6 +27,14 @@ export default function SessionRoute() {
   const profile = useConnectionStore((s) => s.hello?.profiles.find((p) => p.id === session?.profileId))
   const prompt = usePrompt(id)
   const controllable = session?.controllable ?? false
+  const keyBarVisible = useKeyBarStore((s) => s.visible)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const menu = sessionMenu({ controllable, keyBarVisible }, t)
+  const actions: Record<SessionMenuAction, () => void> = {
+    terminal: () => router.push({ pathname: '/session/[id]/terminal', params: { id } }),
+    toggleKeyBar: () => void setKeyBarVisible(!keyBarVisible),
+    history: () => setHistoryOpen(true),
+  }
 
   return (
     <>
@@ -33,11 +44,11 @@ export default function SessionRoute() {
             session ? (
               <View style={styles.actions}>
                 <SessionMuteButton sessionId={id} />
-                <IconButton
-                  icon={SquareTerminal}
-                  label={t('nav.terminal')}
-                  disabled={!controllable}
-                  onPress={() => router.push({ pathname: '/session/[id]/terminal', params: { id } })}
+                <ActionMenu
+                  icon={EllipsisVertical}
+                  label={t('sessionMenu.moreOptions')}
+                  items={menu.items.map((item) => ({ ...item, onPress: actions[item.key] }))}
+                  disabledReason={menu.disabledReason}
                 />
               </View>
             ) : null,
@@ -52,6 +63,8 @@ export default function SessionRoute() {
       <ConversationScreen
         sessionId={id}
         onKey={prompt.sendKey}
+        historyOpen={historyOpen}
+        onHistoryClose={() => setHistoryOpen(false)}
         header={
           session ? (
             <>

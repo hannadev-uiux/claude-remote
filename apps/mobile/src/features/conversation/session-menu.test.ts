@@ -1,0 +1,59 @@
+import type { TranscriptEntry } from '@remote-harness/protocol'
+import { describe, expect, test } from 'vitest'
+import { createI18n } from '@/core/i18n/create'
+import { promptHistory } from './prompt-history'
+import { sessionMenu } from './session-menu'
+
+const en = createI18n('en-US').t
+
+const entry = (cursor: number, kind: 'user' | 'assistant_text', text: string): TranscriptEntry => ({
+  kind,
+  text,
+  cursor,
+  index: 0,
+  uuid: `e${cursor}`,
+  key: `e${cursor}:0`,
+  timestamp: null,
+  isSidechain: false,
+})
+
+describe('promptHistory', () => {
+  test('lists user prompts newest first, skipping empty ones', () => {
+    const entries = [
+      entry(1, 'user', 'first'),
+      entry(2, 'assistant_text', 'answer'),
+      entry(3, 'user', '   '),
+      entry(4, 'user', ' second\n'),
+    ]
+    expect(promptHistory(entries)).toEqual([
+      { key: 'e4:0', text: 'second' },
+      { key: 'e1:0', text: 'first' },
+    ])
+  })
+
+  test('empty transcript', () => {
+    expect(promptHistory([])).toEqual([])
+  })
+})
+
+describe('sessionMenu', () => {
+  test('controllable session enables everything and labels the toggle by state', () => {
+    const hidden = sessionMenu({ controllable: true, keyBarVisible: false }, en)
+    expect(hidden.items.map((i) => [i.key, i.disabled])).toEqual([
+      ['terminal', false],
+      ['toggleKeyBar', false],
+      ['history', false],
+    ])
+    expect(hidden.items[1]?.label).toBe('Show keyboard shortcuts')
+    expect(hidden.disabledReason).toBeUndefined()
+    expect(sessionMenu({ controllable: true, keyBarVisible: true }, en).items[1]?.label).toBe(
+      'Hide keyboard shortcuts',
+    )
+  })
+
+  test('read-only session disables terminal and keys, keeps history and explains why', () => {
+    const menu = sessionMenu({ controllable: false, keyBarVisible: false }, en)
+    expect(menu.items.filter((i) => i.disabled).map((i) => i.key)).toEqual(['terminal', 'toggleKeyBar'])
+    expect(menu.disabledReason).toMatch(/read-only/i)
+  })
+})
