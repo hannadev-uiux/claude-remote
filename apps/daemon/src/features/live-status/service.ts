@@ -1,4 +1,4 @@
-import type { DevicePlatform } from '@remote-harness/protocol'
+import type { DevicePlatform, PushRelay } from '@remote-harness/protocol'
 import type { Messages } from '../../core/i18n/index.ts'
 import type { Logger } from '../../core/logger.ts'
 import type { PushSender } from '../push/sender.ts'
@@ -19,6 +19,7 @@ export type LiveRegistration = {
   platform: DevicePlatform
   fcmToken: string
   activityToken?: string
+  relay?: PushRelay
 }
 
 type Entry = LiveRegistration & {
@@ -138,6 +139,7 @@ export class LiveStatusService {
         platform: entry.platform,
         fcmToken: entry.fcmToken,
         ...(entry.activityToken ? { activityToken: entry.activityToken } : {}),
+        ...(entry.relay ? { relay: entry.relay } : {}),
         props: liveProps(entry.status, this.options.profileName(profileId), this.options.messages),
         event: final ? 'end' : 'update',
         at: now,

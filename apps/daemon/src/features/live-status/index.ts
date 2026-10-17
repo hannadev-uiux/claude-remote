@@ -37,6 +37,7 @@ export function registerLiveStatusFeature(
       platform: msg.platform,
       fcmToken: msg.fcmToken,
       ...(msg.activityToken ? { activityToken: msg.activityToken } : {}),
+      ...(msg.relay ? { relay: msg.relay } : {}),
     })
     return undefined
   })

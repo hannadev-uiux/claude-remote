@@ -3,6 +3,7 @@ import { messagesFor } from '../../core/i18n/index.ts'
 import { paths } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import { DeviceRegistry } from './devices.ts'
+import { createRelaySender } from './relay-sender.ts'
 import { createFirebaseSender, type PushSender } from './sender.ts'
 import { PushService } from './service.ts'
 
@@ -15,7 +16,9 @@ export async function registerPushFeature(
   const sender =
     options.sender !== undefined
       ? options.sender
-      : await createFirebaseSender(paths.firebaseServiceAccount(), ctx.logger)
+      : // A local service account (self-hosted Firebase) wins; otherwise the phones' relay grants.
+        ((await createFirebaseSender(paths.firebaseServiceAccount(), ctx.logger)) ??
+        createRelaySender(ctx.logger))
   const service = new PushService(sender, devices, ctx.logger, {
     profiles: ctx.profiles,
     hasForegroundClient: () => ctx.hub.hasForegroundClient(),
@@ -24,7 +27,7 @@ export async function registerPushFeature(
   })
 
   ctx.router.register('device.register', async (msg) => {
-    await devices.register(msg.fcmToken, msg.platform)
+    await devices.register(msg.fcmToken, msg.platform, msg.relay)
     return undefined
   })
   ctx.router.register('app.visibility', (msg, connection) => {

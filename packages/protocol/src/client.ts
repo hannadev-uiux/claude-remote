@@ -4,6 +4,7 @@ import {
   DevicePlatformSchema,
   MAX_ATTACHMENTS,
   PermissionAnswerSchema,
+  PushRelaySchema,
   RuleScopeSchema,
 } from './domain.ts'
 
@@ -74,6 +75,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     fcmToken: z.string().min(1),
     // Optional for apps paired before Android support (they are iOS).
     platform: DevicePlatformSchema.optional(),
+    relay: PushRelaySchema.optional(),
   }),
   z.object({ type: z.literal('app.visibility'), id, foreground: z.boolean() }),
   z.object({
@@ -84,6 +86,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     fcmToken: z.string().min(1),
     /** iOS Live Activity push token (hex); absent on Android. */
     activityToken: z.string().min(1).optional(),
+    relay: PushRelaySchema.optional(),
   }),
   z.object({ type: z.literal('live.unregister'), id, sessionId }),
   z.object({
