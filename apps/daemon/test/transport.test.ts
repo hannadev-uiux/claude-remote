@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type ServerMessage } from '@claude-remote/protocol'
+import { PROTOCOL_VERSION, type ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import WebSocket from 'ws'
 import { silentLogger } from '../src/core/logger.ts'

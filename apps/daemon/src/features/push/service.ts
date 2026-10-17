@@ -1,4 +1,4 @@
-import type { PermissionRequestInfo, Profile } from '@claude-remote/protocol'
+import type { PermissionRequestInfo, Profile } from '@remote-harness/protocol'
 import type { Messages } from '../../core/i18n/index.ts'
 import type { Logger } from '../../core/logger.ts'
 import type { HookEvent } from '../hooks/payloads.ts'

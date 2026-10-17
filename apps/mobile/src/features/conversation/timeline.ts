@@ -1,4 +1,4 @@
-import type { TranscriptEntry } from '@claude-remote/protocol'
+import type { TranscriptEntry } from '@remote-harness/protocol'
 import type { TFunction } from '../../core/i18n/create'
 
 type Of<K extends TranscriptEntry['kind']> = Extract<TranscriptEntry, { kind: K }>

@@ -2,20 +2,20 @@ import { existsSync, statSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
-import type { Locale, Profile } from '@claude-remote/protocol'
+import type { Locale, Profile } from '@remote-harness/protocol'
 import type { Messages } from '../../core/i18n/index.ts'
 import { expandHome } from '../../core/paths.ts'
 import { isDirectory } from '../../infra/fs.ts'
 
 /** `~/.claude` and `~/.claude-<name>`. */
 const CONFIG_DIR = /^\.claude(-[\w.-]+)?$/
-/** Same naming, but data of other tools: ours and the claude-mem plugin. */
+/** Same naming, but data of other tools: ours (before the rename) and the claude-mem plugin. */
 const NOT_PROFILES = new Set(['.claude-remote', '.claude-mem'])
 /** Any of these marks a dir Claude Code has already used as CLAUDE_CONFIG_DIR. */
 const PROFILE_MARKERS = ['.claude.json', 'settings.json', '.credentials.json', 'projects']
 const ALIAS = /^[a-z][a-z0-9_-]{0,31}$/
 /** The launcher runs `claude` and its directory comes first on PATH; these would call themselves. */
-const RESERVED_ALIASES = new Set(['claude', 'claude-remote', 'tmux'])
+const RESERVED_ALIASES = new Set(['claude', 'claude-remote', 'remote-harness', 'tmux'])
 export const PROFILE_COLORS = ['#D97757', '#61AFEF', '#98C379', '#C678DD', '#E5C07B', '#56B6C2']
 
 export function tildify(path: string, home = homedir()): string {

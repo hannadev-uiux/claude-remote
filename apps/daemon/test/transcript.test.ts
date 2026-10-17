@@ -1,6 +1,6 @@
 import { appendFile, copyFile, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { ServerMessage } from '@claude-remote/protocol'
+import type { ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import {

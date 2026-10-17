@@ -1,4 +1,4 @@
-import { LOCALES } from '@claude-remote/protocol'
+import { LOCALES } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { createI18n } from './create'
 import { deviceLocale } from './device'

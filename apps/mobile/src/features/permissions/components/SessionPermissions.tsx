@@ -1,4 +1,4 @@
-import type { PermissionRequestInfo } from '@claude-remote/protocol'
+import type { PermissionRequestInfo } from '@remote-harness/protocol'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useShallow } from 'zustand/react/shallow'

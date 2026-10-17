@@ -1,4 +1,4 @@
-import type { Profile, Session, SessionState } from '@claude-remote/protocol'
+import type { Profile, Session, SessionState } from '@remote-harness/protocol'
 
 export type SessionSection = { profile: Profile; sessions: Session[] }
 

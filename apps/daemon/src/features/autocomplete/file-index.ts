@@ -1,4 +1,4 @@
-import type { FileItem } from '@claude-remote/protocol'
+import type { FileItem } from '@remote-harness/protocol'
 import fuzzysort from 'fuzzysort'
 import type { Executor } from '../../infra/exec.ts'
 

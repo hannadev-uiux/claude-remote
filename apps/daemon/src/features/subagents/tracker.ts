@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
-import type { SubagentInfo } from '@claude-remote/protocol'
+import type { SubagentInfo } from '@remote-harness/protocol'
 import { type FSWatcher, watch } from 'chokidar'
 import type { Logger } from '../../core/logger.ts'
 import type { Broadcaster } from '../../transport/connection.ts'

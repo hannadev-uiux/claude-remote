@@ -1,4 +1,4 @@
-import type { CommandItem } from '@claude-remote/protocol'
+import type { CommandItem } from '@remote-harness/protocol'
 import type { TFunction } from '../../core/i18n/create'
 import type { Messages } from '../../core/i18n/resources'
 

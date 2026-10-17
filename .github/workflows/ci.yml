@@ -38,7 +38,7 @@ jobs:
           cache: pnpm
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq tmux ripgrep zsh
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo run typecheck test --filter '@claude-remote/daemon...'
+      - run: pnpm turbo run typecheck test --filter '@remote-harness/daemon...'
       - run: bash -n install.sh
       # Windows installer: parse and lint with the PowerShell preinstalled on the runner.
       - name: Check install.ps1

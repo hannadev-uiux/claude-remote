@@ -5,7 +5,7 @@ import {
   type Profile,
   ProfileSchema,
   RuleScopeSchema,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 import { z } from 'zod'
 import { isDirectory, readJsonFile, writeJsonAtomic } from '../infra/fs.ts'
 import { messagesFor, systemLocale } from './i18n/index.ts'
@@ -30,7 +30,7 @@ export const ConfigSchema = z.object({
 })
 export type Config = z.infer<typeof ConfigSchema>
 
-/** Used only when no config exists; `claude-remote setup` picks the real profiles and aliases. */
+/** Used only when no config exists; `remote-harness setup` picks the real profiles and aliases. */
 export function defaultProfiles(locale: Locale = systemLocale()): Profile[] {
   return [
     {

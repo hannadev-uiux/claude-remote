@@ -1,4 +1,4 @@
-import type { CommandItem } from '@claude-remote/protocol'
+import type { CommandItem } from '@remote-harness/protocol'
 
 /**
  * Native Claude Code slash commands, described in English (the app shows its own translation by name). Review on every CLI update. `interactive` commands open a

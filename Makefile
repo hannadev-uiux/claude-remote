@@ -5,14 +5,14 @@
 #   PLATFORM=ios|android publish-ota for a single platform (default: both)
 #   CHANNEL=<name>       publish-ota channel (default: production; CI publishes development)
 #   OTA_KEY=<path>       private key that signs OTA updates
-#   CLAUDE_REMOTE_UPDATES_TOKEN must be in the environment for publish-ota (never stored here).
+#   REMOTE_HARNESS_UPDATES_TOKEN (or the older CLAUDE_REMOTE_UPDATES_TOKEN) must be in the environment for publish-ota (never stored here).
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 MOBILE := apps/mobile
-DAEMON := @claude-remote/daemon
-APP := @claude-remote/mobile
+DAEMON := @remote-harness/daemon
+APP := @remote-harness/mobile
 OTA_KEY ?= $(HOME)/.claude-remote-keys/private-key.pem
 
 device_flag = $(if $(DEVICE),--device "$(DEVICE)",--device)
@@ -49,7 +49,7 @@ openspec: ## Validate every OpenSpec spec and change
 daemon-dev: ## Run the daemon from source on 127.0.0.1 (--dev)
 	pnpm --filter $(DAEMON) dev start --dev
 
-daemon-build: ## Build dist/cli.js (used by the service and the claude-remote shortcut)
+daemon-build: ## Build dist/cli.js (used by the service and the remote-harness shortcut)
 	pnpm --filter $(DAEMON) build
 
 ## App
@@ -90,10 +90,10 @@ install-android: ## Release build on a connected Android phone (fresh android/)
 ## OTA updates
 
 publish-ota: ## Publish the app JavaScript over the air (CHANNEL=production, PLATFORM=ios|android)
-	@test -n "$$CLAUDE_REMOTE_UPDATES_TOKEN" || { echo "✗ set CLAUDE_REMOTE_UPDATES_TOKEN (the server's publish token)"; exit 1; }
+	@test -n "$$REMOTE_HARNESS_UPDATES_TOKEN$$CLAUDE_REMOTE_UPDATES_TOKEN" || { echo "✗ set REMOTE_HARNESS_UPDATES_TOKEN (the server's publish token)"; exit 1; }
 	@test -f "$(OTA_KEY)" || { echo "✗ signing key not found: $(OTA_KEY) (OTA_KEY=...)"; exit 1; }
-	CLAUDE_REMOTE_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag)
+	REMOTE_HARNESS_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag)
 
 publish-ota-dry: ## Export and sign without uploading (checks the key and the config)
 	@test -f "$(OTA_KEY)" || { echo "✗ signing key not found: $(OTA_KEY) (OTA_KEY=...)"; exit 1; }
-	CLAUDE_REMOTE_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag) --dry-run
+	REMOTE_HARNESS_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag) --dry-run

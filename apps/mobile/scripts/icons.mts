@@ -3,7 +3,7 @@
  * Foreground: the Claude spark in Claude orange. Background: a terminal window with a `>_` prompt.
  * Android also gets an adaptive icon (the artwork inside the 66% safe zone over a solid background),
  * a monochrome themed icon and the white status bar notification icon.
- * Run: pnpm --filter @claude-remote/mobile icons
+ * Run: pnpm --filter @remote-harness/mobile icons
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'

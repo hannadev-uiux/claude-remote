@@ -1,4 +1,4 @@
-import { LOCALE_NAMES, LOCALES } from '@claude-remote/protocol'
+import { LOCALE_NAMES, LOCALES } from '@remote-harness/protocol'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'

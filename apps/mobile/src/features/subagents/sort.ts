@@ -1,4 +1,4 @@
-import type { SubagentInfo } from '@claude-remote/protocol'
+import type { SubagentInfo } from '@remote-harness/protocol'
 
 /** Running first, then most recently updated. */
 export function sortSubagents(list: readonly SubagentInfo[]): SubagentInfo[] {

@@ -34,17 +34,19 @@ describe('updateSource', () => {
 })
 
 describe('installerSourceDir', () => {
-  test('uses CLAUDE_REMOTE_SRC, else ~/.claude-remote/src', () => {
+  test('uses REMOTE_HARNESS_SRC (or the legacy name), else src in the data directory', () => {
+    expect(installerSourceDir({ REMOTE_HARNESS_SRC: '/opt/rh' }, '/home/u')).toBe('/opt/rh')
     expect(installerSourceDir({ CLAUDE_REMOTE_SRC: '/opt/cr' }, '/home/u')).toBe('/opt/cr')
-    expect(installerSourceDir({ CLAUDE_REMOTE_SRC: '' }, '/home/u')).toBe('/home/u/.claude-remote/src')
+    expect(installerSourceDir({ CLAUDE_REMOTE_SRC: '' }, '/home/u')).toBe('/home/u/.remote-harness/src')
+    expect(installerSourceDir({ REMOTE_HARNESS_HOME: '/data' }, '/home/u')).toBe('/data/src')
   })
 
   test('resolves symlinks', async () => {
     const real = join(home.dir(), 'real')
     await mkdir(real)
     await symlink(real, join(home.dir(), 'link'))
-    const resolved = installerSourceDir({ CLAUDE_REMOTE_SRC: join(home.dir(), 'link') })
-    expect(resolved).toBe(installerSourceDir({ CLAUDE_REMOTE_SRC: real }))
+    const resolved = installerSourceDir({ REMOTE_HARNESS_SRC: join(home.dir(), 'link') })
+    expect(resolved).toBe(installerSourceDir({ REMOTE_HARNESS_SRC: real }))
     expect(resolved.endsWith('/real')).toBe(true)
   })
 })

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="apps/mobile/assets/icon.png" width="112" alt="Claude Remote icon" />
+<img src="apps/mobile/assets/icon.png" width="112" alt="Remote Harness icon" />
 
-# Claude Remote
+# Remote Harness
 
 **Follow and drive the Claude Code sessions running on your Mac, Linux or Windows (WSL) machine — from your iPhone or Android phone.**
 
@@ -37,7 +37,7 @@ The built-in remote control (`/rc`) helps, but it did not fit a real setup:
 - **It works with one account at a time.** Many of us run two Claude Code logins on the same computer (personal and work, via `CLAUDE_CONFIG_DIR`) and want a single view of both.
 - **There is no public API to attach to a live interactive session** from another process.
 
-Claude Remote solves this with tools you already trust: sessions run inside **tmux**, Claude Code reports what happens through its native **HTTP hooks**, and a local **daemon** bridges both to the phone over **Tailscale**.
+Remote Harness solves this with tools you already trust: sessions run inside **tmux**, Claude Code reports what happens through its native **HTTP hooks**, and a local **daemon** bridges both to the phone over **Tailscale**.
 
 ## What it does
 
@@ -46,7 +46,7 @@ Claude Remote solves this with tools you already trust: sessions run inside **tm
 | 📋 **One list, every profile** | Sessions from all your Claude Code profiles (`~/.claude`, `~/.claude-work`, …), grouped by project, with live state (running, waiting, idle). |
 | 💬 **Live conversation** | The same history you see on the computer: markdown, thinking, tool calls, diffs, results — streamed in real time and paginated. |
 | ⌨️ **Send prompts** | Type into the very same process that is open on the computer. `Esc` and `Ctrl+C` included. |
-| ✅ **Approve permissions** | Allow, deny or **always allow** (written as a rule by Claude Code itself, undoable with `claude-remote rules undo`). |
+| ✅ **Approve permissions** | Allow, deny or **always allow** (written as a rule by Claude Code itself, undoable with `remote-harness rules undo`). |
 | 🔀 **Switch permission mode** | Default, accept edits, plan, auto. `bypassPermissions` is intentionally never offered. |
 | 🔎 **Autocomplete** | `@files` (git/ripgrep + fuzzy search) and `/commands` (project, profile, plugins and built-ins). |
 | 🖥️ **Raw terminal** | An xterm.js view of the tmux pane for TUI menus and anything the structured view does not cover. |
@@ -59,7 +59,7 @@ Claude Remote solves this with tools you already trust: sessions run inside **tm
 
 ```
 ┌──────────────┐  WebSocket over Tailscale   ┌─────────────────────────────────┐
-│  phone app   │ ◄─────────────────────────► │  claude-remote daemon (computer)│
+│  phone app   │ ◄─────────────────────────► │ remote-harness daemon (computer)│
 │ iOS / Android│       token-authenticated   │  ├─ tmux: send-keys / capture   │
 └──────▲───────┘                             │  ├─ tails transcript .jsonl     │
        │ push (FCM, no content)              │  └─ HTTP hooks on 127.0.0.1     │
@@ -85,18 +85,18 @@ Sessions started with plain `claude` (outside tmux) still show up — read-only 
 The daemon is effectively a remote shell, so it is locked down by default:
 
 - The WebSocket listens **only on the Tailscale interface** (100.64.0.0/10) — or `127.0.0.1` with an explicit `--dev`.
-- Every connection must present a token (**Keychain** on macOS, the **Secret Service** via `secret-tool` or a `0600` file on Linux, **SecureStore** on the phone). `claude-remote rotate-token` invalidates it and drops all clients.
+- Every connection must present a token (**Keychain** on macOS, the **Secret Service** via `secret-tool` or a `0600` file on Linux, **SecureStore** on the phone). `remote-harness rotate-token` invalidates it and drops all clients.
 - The hooks endpoint listens **only on `127.0.0.1`** and requires a local shared secret.
 - Push payloads carry **only** a title, profile and session id — never session content.
 - `bypassPermissions` is never offered by the app.
-- Edits to your files (`settings.json`, `~/.zshrc`, `~/.bashrc`) are merge → backup → atomic write, idempotent, and fully reverted by `claude-remote uninstall`.
+- Edits to your files (`settings.json`, `~/.zshrc`, `~/.bashrc`) are merge → backup → atomic write, idempotent, and fully reverted by `remote-harness uninstall`.
 
 See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## Requirements
 
 - macOS, Linux (systemd recommended) or Windows 10 2004+/11 through WSL2, with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` on the `PATH` (the installer adds the missing tools)
-- Node 24+ (the one-line installer downloads a private Node into `~/.claude-remote/node` when it is missing; pnpm 12+ only for development)
+- Node 24+ (the one-line installer downloads a private Node into `~/.remote-harness/node` when it is missing; pnpm 12+ only for development)
 - [Tailscale](https://tailscale.com) on the computer and the phone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
 - For the app (Expo Go is not enough: it uses native modules): Xcode on a Mac for the iOS development build, or Android Studio / the Android SDK (JDK 17) for Android 10+
 - Optional, for push: a Firebase project (plus a paid Apple Developer account on iOS)
@@ -109,22 +109,22 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 ```
 
-The installer checks the system (macOS or Linux) and Node, installs missing `tmux`/`ripgrep`/`zsh`/`git` (Homebrew on macOS; apt, dnf, pacman or zypper on Linux, with `sudo` after telling you why), puts the source in `~/.claude-remote/src`, builds the daemon and opens a guided setup (`claude-remote setup`) that:
+The installer checks the system (macOS or Linux) and Node, installs missing `tmux`/`ripgrep`/`zsh`/`git` (Homebrew on macOS; apt, dnf, pacman or zypper on Linux, with `sudo` after telling you why), puts the source in `~/.remote-harness/src`, builds the daemon and opens a guided setup (`remote-harness setup`) that:
 
 - finds your Claude Code accounts (`~/.claude`, `~/.claude-*`) and lets you pick which ones to control, or creates a new one (makes the folder and opens Claude Code there so you log in);
 - asks the **alias** of each one: the command that opens that account inside tmux (e.g. `pessoal`, `trabalho`);
 - installs the launchers, the `PATH` entry and the hooks (with backups), and the background service;
 - helps with Tailscale and shows the pairing QR code.
 
-To update, run `claude-remote update` (or `--ref <branch|tag>`): it fetches the new version, rebuilds, refreshes the hooks and restarts the service, without the setup questions; the same as `bash -s -- --update` with the line above. `claude-remote setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
+To update, run `remote-harness update` (or `--ref <branch|tag>`): it fetches the new version, rebuilds, refreshes the hooks and restarts the service, without the setup questions; the same as `bash -s -- --update` with the line above. `remote-harness setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
 
 <details>
 <summary>Linux notes</summary>
 
-- **Service**: a systemd user unit, `~/.config/systemd/user/claude-remote.service` (restarts on failure, logs in `~/.claude-remote/logs`). Check it with `claude-remote service status` or `systemctl --user status claude-remote`.
+- **Service**: a systemd user unit, `~/.config/systemd/user/claude-remote.service` (restarts on failure, logs in `~/.remote-harness/logs`). Check it with `remote-harness service status` or `systemctl --user status claude-remote`.
 - **Lingering**: user services stop when you log out. The setup asks before running `loginctl enable-linger $USER`, which keeps the daemon running after logout and starts it at boot (needed on servers you reach over SSH).
-- **No systemd** (containers, some WSL setups): the setup says so; run `claude-remote start` yourself, e.g. in a tmux window.
-- **Token**: kept in the Secret Service (GNOME Keyring, KWallet…) through `secret-tool` when it is available, otherwise in `~/.claude-remote/token` (mode `0600`), which is what headless servers use. `claude-remote doctor` shows which one; `CLAUDE_REMOTE_TOKEN_STORE=secret-tool|file` forces it.
+- **No systemd** (containers, some WSL setups): the setup says so; run `remote-harness start` yourself, e.g. in a tmux window.
+- **Token**: kept in the Secret Service (GNOME Keyring, KWallet…) through `secret-tool` when it is available, otherwise in `~/.remote-harness/token` (mode `0600`), which is what headless servers use. `remote-harness doctor` shows which one; `REMOTE_HARNESS_TOKEN_STORE=secret-tool|file` forces it.
 - **Shell**: the `PATH` entry goes to `~/.bashrc` and/or `~/.zshrc`; the launchers themselves run with `zsh`.
 
 </details>
@@ -132,7 +132,7 @@ To update, run `claude-remote update` (or `--ref <branch|tag>`): it fetches the 
 <details>
 <summary>Windows (WSL2)</summary>
 
-Claude Remote drives Claude Code through tmux, so on Windows it runs inside **WSL2** (Linux on Windows), where Claude Code is best supported too. In PowerShell:
+Remote Harness drives Claude Code through tmux, so on Windows it runs inside **WSL2** (Linux on Windows), where Claude Code is best supported too. In PowerShell:
 
 ```powershell
 irm https://maarkn.dev/claude-remote/install.ps1 | iex
@@ -142,9 +142,9 @@ The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when
 
 - **Node and Claude Code** must be installed **inside WSL** (not only on Windows); the installer says what is missing.
 - **systemd**: the background service is a systemd user unit, and WSL only boots systemd with `[boot] systemd=true` in `/etc/wsl.conf`. The setup shows the exact `sudo` command, runs it only if you agree (with a backup), and asks you to run `wsl --shutdown` from PowerShell.
-- **Starting at logon**: WSL only runs while something uses it. The setup can create a Windows Scheduled Task, "Claude Remote", that starts the distribution when you log in (`schtasks.exe /Create /SC ONLOGON … /TR "wsl.exe -d <distro> --exec /bin/true"`); `claude-remote service uninstall` removes it. If WSL still stops when idle, raise `vmIdleTimeout` in `[wsl2]` of `%UserProfile%\.wslconfig`.
+- **Starting at logon**: WSL only runs while something uses it. The setup can create a Windows Scheduled Task, "Remote Harness", that starts the distribution when you log in (`schtasks.exe /Create /SC ONLOGON … /TR "wsl.exe -d <distro> --exec /bin/true"`); `remote-harness service uninstall` removes it. If WSL still stops when idle, raise `vmIdleTimeout` in `[wsl2]` of `%UserProfile%\.wslconfig`.
 - **Tailscale**: WSL2 uses NAT by default, so a Tailscale running on Windows is not visible inside WSL. Either run Tailscale **inside WSL** (`curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`; works on any Windows), or keep it on Windows and turn on **mirrored networking** (Windows 11 22H2+): the setup can add `networkingMode=mirrored` to `[wsl2]` in `%UserProfile%\.wslconfig` (with a backup); then run `wsl --shutdown`.
-- `claude-remote doctor` shows the distribution, the networking mode, systemd and the logon task.
+- `remote-harness doctor` shows the distribution, the networking mode, systemd and the logon task.
 
 </details>
 
@@ -152,16 +152,16 @@ The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when
 <summary>Manual install (from a clone)</summary>
 
 ```bash
-git clone https://github.com/maarkN/claude-remote.git
-cd claude-remote
+git clone https://github.com/maarkN/remote-harness.git
+cd remote-harness
 pnpm install
-pnpm --filter @claude-remote/daemon build
+pnpm --filter @remote-harness/daemon build
 node apps/daemon/dist/cli.js setup
 ```
 
 </details>
 
-Profiles and ports live in `~/.claude-remote/config.json`:
+Profiles and ports live in `~/.remote-harness/config.json` (installs made before the rename to Remote Harness keep using `~/.claude-remote`, and the old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working):
 
 ```json
 {
@@ -181,9 +181,9 @@ pnpm android         # expo run:android — development build on an emulator or 
 pnpm build:android   # release APK built locally (eas.json also has development/preview/production profiles)
 ```
 
-Open the app, scan the QR code from `claude-remote pair`, and you are in. Installed the app first? The pairing screen has a step-by-step guide for setting up the computer.
+Open the app, scan the QR code from `remote-harness pair`, and you are in. Installed the app first? The pairing screen has a step-by-step guide for setting up the computer.
 
-> **Trying it on the simulator without Tailscale?** Run `claude-remote start --dev` (binds to `127.0.0.1`) and `claude-remote pair --dev`. On the Android emulator also run `adb reverse tcp:7337 tcp:7337` so its `127.0.0.1` reaches the computer.
+> **Trying it on the simulator without Tailscale?** Run `remote-harness start --dev` (binds to `127.0.0.1`) and `remote-harness pair --dev`. On the Android emulator also run `adb reverse tcp:7337 tcp:7337` so its `127.0.0.1` reaches the computer.
 
 ### 3. Use it
 
@@ -192,7 +192,7 @@ pessoal              # your alias; same arguments as `claude`
 trabalho --resume    # another account
 ```
 
-Both appear in the app, fully controllable. "Always allow" rules created from the phone: `claude-remote rules list` / `claude-remote rules undo <id>`.
+Both appear in the app, fully controllable. "Always allow" rules created from the phone: `remote-harness rules list` / `remote-harness rules undo <id>`.
 
 **Two sessions in the same repository?** They edit the same files and can switch the branch under each other. The app marks live sessions that share a git checkout ("shared checkout"), and **New session** warns before starting in a busy one. Turn on **Isolated copy (git worktree)** to start Claude Code with `--worktree`: it works on its own branch in `<repo>/.claude/worktrees/<name>` and asks on exit whether to keep or remove it (needs a Claude Code with `--worktree`).
 
@@ -200,7 +200,7 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
 
 1. In one Firebase project, create the apps you need with the id `tech.doctorx.clauderemote`: an iOS app (upload your APNs key) and/or an Android app.
 2. Put `GoogleService-Info.plist` (iOS) and/or `google-services.json` (Android) in `apps/mobile/` (both git-ignored) and run `pnpm ios` / `pnpm android` again — Firebase is only linked on a platform when its file exists.
-3. Save the Firebase service account to `~/.claude-remote/firebase-service-account.json` and restart the daemon. `claude-remote doctor` lists the phones registered for push and their platform.
+3. Save the Firebase service account to `~/.remote-harness/firebase-service-account.json` and restart the daemon. `remote-harness doctor` lists the phones registered for push and their platform.
 
 On Android 13+ the app asks for the notification permission; notifications use the high-priority `claude-remote` channel (it can be tuned in the system settings) and, like on iOS, carry only the event and the profile.
 
@@ -208,28 +208,28 @@ On Android 13+ the app asks for the notification permission; notifications use t
 
 Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, the app uses a self-hosted [Expo Updates](https://docs.expo.dev/technical-specs/expo-updates-1/) server — the one at `maarkn.dev` (no EAS account or fees), or any other implementation of the protocol.
 
-1. **Signing key, once.** `cd apps/mobile && npx expo-updates codesigning:generate --key-output-directory ~/.claude-remote-keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Claude Remote"`. Commit `certs/certificate.pem`; keep the private key out of the repo (and backed up: losing it means a new build for every phone).
+1. **Signing key, once.** `cd apps/mobile && npx expo-updates codesigning:generate --key-output-directory ~/.claude-remote-keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Remote Harness"`. Commit `certs/certificate.pem`; keep the private key out of the repo (and backed up: losing it means a new build for every phone).
 2. **Build** with the server URL, e.g. in `apps/mobile/.env.local` (git-ignored, read by the build and the publisher):
    ```dotenv
-   CLAUDE_REMOTE_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest
+   REMOTE_HARNESS_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest
    ```
    A custom URL without `certs/certificate.pem` is refused. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
 3. **Publish** a JavaScript change:
    ```bash
-   CLAUDE_REMOTE_UPDATES_TOKEN=… CLAUDE_REMOTE_UPDATES_KEY=~/.claude-remote-keys/private-key.pem \
-     pnpm --filter @claude-remote/mobile ota:publish          # --platform ios|android, --dry-run
+   REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/.claude-remote-keys/private-key.pem \
+     pnpm --filter @remote-harness/mobile ota:publish          # --platform ios|android, --dry-run
    ```
-   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `CLAUDE_REMOTE_UPDATES_TOKEN`.
+   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `REMOTE_HARNESS_UPDATES_TOKEN`.
 
-**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the server's `CLAUDE_REMOTE_UPDATES_DEV_TOKEN`, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
+**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the server's `REMOTE_HARNESS_UPDATES_DEV_TOKEN`, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
 
 The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 
 ### Uninstall
 
 ```bash
-claude-remote service uninstall
-claude-remote uninstall   # removes launchers, the PATH block in ~/.zshrc / ~/.bashrc and only the hooks it created
+remote-harness service uninstall
+remote-harness uninstall   # removes launchers, the PATH block in ~/.zshrc / ~/.bashrc and only the hooks it created
 ```
 
 ## Tech stack
@@ -256,13 +256,13 @@ Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Development
 
-`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `CLAUDE_REMOTE_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
+`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.claude-remote-keys/private-key.pem`; token in `REMOTE_HARNESS_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
 
 ```bash
 pnpm check                                             # typecheck + tests + Biome across the monorepo
-pnpm --filter @claude-remote/daemon dev start --dev    # daemon from source on 127.0.0.1
-pnpm --filter @claude-remote/mobile icons              # regenerate icon/splash
-pnpm --filter @claude-remote/mobile xterm              # regenerate the terminal HTML
+pnpm --filter @remote-harness/daemon dev start --dev    # daemon from source on 127.0.0.1
+pnpm --filter @remote-harness/mobile icons              # regenerate icon/splash
+pnpm --filter @remote-harness/mobile xterm              # regenerate the terminal HTML
 ```
 
 ## Limitations
@@ -280,4 +280,4 @@ Issues and pull requests are welcome! Read [CONTRIBUTING.md](CONTRIBUTING.md) fo
 
 [MIT](LICENSE) © Marco Filho
 
-<sub>Claude Remote is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.</sub>
+<sub>Remote Harness is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.</sub>

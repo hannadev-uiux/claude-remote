@@ -2,13 +2,14 @@
  * Publishes an over-the-air update of the app to a self-hosted Expo Updates server (maarkn.dev):
  * `expo export`, one manifest per platform signed locally, content-addressed asset upload.
  *
- *   CLAUDE_REMOTE_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest \
- *   CLAUDE_REMOTE_UPDATES_TOKEN=… CLAUDE_REMOTE_UPDATES_KEY=~/keys/private-key.pem \
- *   pnpm --filter @claude-remote/mobile ota:publish [--channel production|development]
+ *   REMOTE_HARNESS_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest \
+ *   REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/keys/private-key.pem \
+ *   pnpm --filter @remote-harness/mobile ota:publish [--channel production|development]
  *     [--platform ios|android] [--dry-run]
  *
  * The URL must be the one the installed builds were made with (it is part of their runtime
  * version). The private key never leaves this machine; the server only stores the signature.
+ * Each REMOTE_HARNESS_UPDATES_* variable falls back to its CLAUDE_REMOTE_UPDATES_* name.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -35,19 +36,24 @@ const { values } = parseArgs({
 const platforms = (values.platform ?? ['ios', 'android']) as Array<'ios' | 'android'>
 const channel = values.channel ?? 'production'
 
+/** `REMOTE_HARNESS_<name>`, else the `CLAUDE_REMOTE_<name>` used before the rename. */
+function env(name: string): string | undefined {
+  return process.env[`REMOTE_HARNESS_${name}`] || process.env[`CLAUDE_REMOTE_${name}`] || undefined
+}
+
 function fail(message: string): never {
   console.error(`✗ ${message}`)
   process.exit(1)
 }
 
-const updatesUrl = process.env.CLAUDE_REMOTE_UPDATES_URL
+const updatesUrl = env('UPDATES_URL')
 if (!/^[a-z][a-z0-9-]{0,31}$/.test(channel)) fail(`invalid channel: ${channel}`)
-if (!updatesUrl) fail('CLAUDE_REMOTE_UPDATES_URL is not set (the URL the builds were made with)')
+if (!updatesUrl) fail('REMOTE_HARNESS_UPDATES_URL is not set (the URL the builds were made with)')
 const server = new URL(updatesUrl).origin
-const keyPath = (process.env.CLAUDE_REMOTE_UPDATES_KEY ?? '').replace(/^~(?=\/)/, homedir())
-if (!keyPath || !existsSync(keyPath)) fail('CLAUDE_REMOTE_UPDATES_KEY must point to the private key (PEM)')
-const token = process.env.CLAUDE_REMOTE_UPDATES_TOKEN
-if (!token && !values['dry-run']) fail('CLAUDE_REMOTE_UPDATES_TOKEN is not set')
+const keyPath = (env('UPDATES_KEY') ?? '').replace(/^~(?=\/)/, homedir())
+if (!keyPath || !existsSync(keyPath)) fail('REMOTE_HARNESS_UPDATES_KEY must point to the private key (PEM)')
+const token = env('UPDATES_TOKEN')
+if (!token && !values['dry-run']) fail('REMOTE_HARNESS_UPDATES_TOKEN is not set')
 const privateKey = createPrivateKey(readFileSync(keyPath))
 
 function run(args: string[]): string {

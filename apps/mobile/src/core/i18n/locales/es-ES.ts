@@ -48,12 +48,12 @@ const esES = {
   },
   pairing: {
     title: 'Vincular con el ordenador',
-    intro: 'En el ordenador, ejecuta <cmd>claude-remote pair</cmd> y apunta la cámara al código QR.',
+    intro: 'En el ordenador, ejecuta <cmd>remote-harness pair</cmd> y apunta la cámara al código QR.',
     guideTitle: '¿Primera vez? Configura el ordenador',
     guideHint: 'Tailscale, instalación en una línea y vinculación, paso a paso.',
     tabQr: 'Código QR',
     tabManual: 'Manual',
-    invalidQr: 'QR no válido. Usa el QR que muestra `claude-remote pair`.',
+    invalidQr: 'QR no válido. Usa el QR que muestra `remote-harness pair`.',
     invalidManual: 'Introduce un host, un puerto y un token válidos.',
     cameraRationale: 'La cámara solo se usa para leer el QR de vinculación.',
     allowCamera: 'Permitir cámara',
@@ -86,13 +86,13 @@ const esES = {
         action: 'Enviar el enlace al ordenador',
       },
       install: {
-        title: 'Claude Remote en el ordenador',
+        title: 'Remote Harness en el ordenador',
         body: 'En un terminal del ordenador, ejecuta el instalador. Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
         action: 'Enviar el comando al ordenador',
       },
       pair: {
         title: 'Vincular',
-        body: 'Al final, el instalador muestra un código QR (o ejecuta `claude-remote pair`). Escanéalo con esta app y listo: abre Claude Code en el ordenador con el alias que hayas elegido.',
+        body: 'Al final, el instalador muestra un código QR (o ejecuta `remote-harness pair`). Escanéalo con esta app y listo: abre Claude Code en el ordenador con el alias que hayas elegido.',
         action: 'Escanear el código QR',
       },
     },
@@ -357,7 +357,7 @@ const esES = {
     disabled:
       'Las actualizaciones por aire están desactivadas en este build: instala un build nuevo para actualizar.',
     daemonOutdated:
-      'El ordenador ejecuta Claude Remote {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta claude-remote update.',
+      'El ordenador ejecuta Remote Harness {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta claude-remote update.',
     dismiss: 'Descartar',
   },
   terminal: {

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { chmod, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { type AttachmentMimeType, MAX_ATTACHMENT_BYTES } from '@claude-remote/protocol'
+import { type AttachmentMimeType, MAX_ATTACHMENT_BYTES } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { Logger } from '../../core/logger.ts'
 import { ATTACHMENT_EXTENSIONS, base64DecodedBytes, decodeBase64, detectImageType } from './detect.ts'

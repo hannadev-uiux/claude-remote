@@ -13,7 +13,7 @@ describe('setup guide', () => {
     expect(guide.map((s) => s.title)).toEqual([
       'Tailscale on this phone',
       'Tailscale on the computer',
-      'Claude Remote on the computer',
+      'Remote Harness on the computer',
       'Pair',
     ])
     expect(guide.at(-1)?.actions).toEqual([{ kind: 'scan', label: 'Scan the QR code' }])
@@ -56,7 +56,7 @@ describe('setup guide', () => {
     expect(guide.map((s) => s.title)).toEqual([
       'Tailscale neste celular',
       'Tailscale no computador',
-      'Claude Remote no computador',
+      'Remote Harness no computador',
       'Parear',
     ])
     expect(guide[0]?.actions[0]).toMatchObject({ label: 'Abrir na Google Play' })

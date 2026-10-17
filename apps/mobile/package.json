@@ -1,9 +1,9 @@
 {
-  "name": "@claude-remote/mobile",
+  "name": "@remote-harness/mobile",
   "version": "0.6.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@claude-remote/protocol": "workspace:*",
+    "@remote-harness/protocol": "workspace:*",
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@react-native-firebase/app": "^26.4.0",
     "@react-native-firebase/messaging": "^26.4.0",

@@ -1,4 +1,4 @@
-import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS } from '@claude-remote/protocol'
+import { MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS } from '@remote-harness/protocol'
 
 /** Longest side sent to Claude; the API downscales anything larger, so bigger only costs upload time. */
 export const MAX_IMAGE_DIMENSION = 1568

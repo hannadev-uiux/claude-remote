@@ -17,7 +17,7 @@ Keeps the daemon running as a user service on macOS, starting at login and recov
 - **THEN** launchd restarts it
 
 ### Requirement: Login item identity
-The LaunchAgent SHALL run the daemon through a `~/.claude-remote/Claude Remote.app` bundle (ad-hoc signed, with the app icon), so that macOS shows "Claude Remote" — and not Node's signer — in Login Items and in the background activity notice. `service uninstall` MUST remove the bundle.
+The LaunchAgent SHALL run the daemon through a `~/.remote-harness/Claude Remote.app` bundle (ad-hoc signed, with the app icon), so that macOS shows "Claude Remote" — and not Node's signer — in Login Items and in the background activity notice. `service uninstall` MUST remove the bundle.
 
 #### Scenario: Background activity notice
 - **WHEN** the service is installed

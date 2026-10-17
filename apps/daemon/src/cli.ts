@@ -2,10 +2,11 @@
 import { existsSync } from 'node:fs'
 import { homedir, userInfo } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { LOCALES, type Locale, LocaleSchema } from '@claude-remote/protocol'
+import { LOCALES, type Locale, LocaleSchema } from '@remote-harness/protocol'
 import { Command, InvalidArgumentError, Option } from 'commander'
 import qrcode from 'qrcode-terminal'
 import { configuredLocaleSync, loadConfig, resolveProfiles } from './core/config.ts'
+import { envVar } from './core/env.ts'
 import { type Messages, messagesFor } from './core/i18n/index.ts'
 import { createLogger } from './core/logger.ts'
 import { paths } from './core/paths.ts'
@@ -84,12 +85,12 @@ function serviceManager(): ServiceManager {
 
 let selectedStore: Promise<SelectedTokenStore> | undefined
 
-/** Keychain (macOS), Secret Service or 0600 file (Linux); `CLAUDE_REMOTE_TOKEN_STORE` forces one. */
+/** Keychain (macOS), Secret Service or 0600 file (Linux); `REMOTE_HARNESS_TOKEN_STORE` forces one. */
 function selectStore(): Promise<SelectedTokenStore> {
   selectedStore ??= selectTokenStore({
     platform,
     exec: execaExecutor,
-    forced: process.env.CLAUDE_REMOTE_TOKEN_STORE,
+    forced: envVar('TOKEN_STORE'),
   })
   return selectedStore
 }
@@ -151,7 +152,7 @@ async function notifyDaemon(path: string): Promise<boolean> {
 }
 
 const program = new Command()
-  .name('claude-remote')
+  .name('remote-harness')
   .description(m.cli.description)
   .version(DAEMON_VERSION, '-V, --version', m.cli.version)
   .helpOption('-h, --help', m.cli.help)
@@ -437,7 +438,7 @@ service
 program
   .command('update')
   .description(m.cli.update.description)
-  .option('--ref <ref>', m.cli.update.ref, process.env.CLAUDE_REMOTE_REF || 'main')
+  .option('--ref <ref>', m.cli.update.ref, envVar('REF') || 'main')
   .option('--force', m.cli.update.force)
   // Second half, run by `install.sh --update` with the freshly built CLI.
   .addOption(new Option('--finish').hideHelp())
@@ -482,9 +483,9 @@ program
       {
         env: {
           ...process.env,
-          CLAUDE_REMOTE_SRC: source.root,
-          CLAUDE_REMOTE_LANG: configuredLocaleSync(),
-          CLAUDE_REMOTE_UPDATE_FROM: DAEMON_VERSION,
+          REMOTE_HARNESS_SRC: source.root,
+          REMOTE_HARNESS_LANG: configuredLocaleSync(),
+          REMOTE_HARNESS_UPDATE_FROM: DAEMON_VERSION,
         },
       },
     )

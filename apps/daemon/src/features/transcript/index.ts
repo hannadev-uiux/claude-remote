@@ -1,4 +1,4 @@
-import { PermissionModeSchema } from '@claude-remote/protocol'
+import { PermissionModeSchema } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { SessionStore } from '../sessions/store.ts'

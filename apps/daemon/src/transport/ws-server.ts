@@ -4,7 +4,7 @@ import {
   parseClientMessage,
   type ServerMessage,
   type ServerMessageOf,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 import { type WebSocket, WebSocketServer } from 'ws'
 import type { Logger } from '../core/logger.ts'
 import type { ClientHub, Connection } from './connection.ts'

@@ -1,4 +1,4 @@
-import { MAX_ATTACHMENTS } from '@claude-remote/protocol'
+import { MAX_ATTACHMENTS } from '@remote-harness/protocol'
 import { router } from 'expo-router'
 import { ImagePlus } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'

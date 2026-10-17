@@ -1,4 +1,4 @@
-import type { TranscriptEntry } from '@claude-remote/protocol'
+import type { TranscriptEntry } from '@remote-harness/protocol'
 import { ChevronDown, ChevronRight } from 'lucide-react-native'
 import { memo, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'

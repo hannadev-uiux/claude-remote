@@ -1,10 +1,10 @@
 # Security Policy
 
-Claude Remote's daemon can type into your Claude Code sessions and approve tool calls — it is effectively a remote shell on your Mac. Security reports are taken seriously.
+Remote Harness's daemon can type into your Claude Code sessions and approve tool calls — it is effectively a remote shell on your Mac. Security reports are taken seriously.
 
 ## Reporting a vulnerability
 
-**Please do not open a public issue.** Report privately through [GitHub Security Advisories](https://github.com/maarkN/claude-remote/security/advisories/new) with:
+**Please do not open a public issue.** Report privately through [GitHub Security Advisories](https://github.com/maarkN/remote-harness/security/advisories/new) with:
 
 - a description of the issue and its impact;
 - steps to reproduce (versions of macOS, Node, Claude Code and the app);

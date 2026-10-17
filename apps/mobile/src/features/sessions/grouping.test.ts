@@ -1,4 +1,4 @@
-import type { Profile, Session } from '@claude-remote/protocol'
+import type { Profile, Session } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import {
   flattenSections,

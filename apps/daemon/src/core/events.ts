@@ -1,4 +1,4 @@
-import type { PermissionOutcome, PermissionRequestInfo } from '@claude-remote/protocol'
+import type { PermissionOutcome, PermissionRequestInfo } from '@remote-harness/protocol'
 import type { HookEvent } from '../features/hooks/payloads.ts'
 
 /** Domain events exchanged between features through the bus. Grows as features are added. */

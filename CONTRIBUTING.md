@@ -1,4 +1,4 @@
-# Contributing to Claude Remote
+# Contributing to Remote Harness
 
 Thanks for your interest! Bug reports, ideas, docs and code are all welcome.
 
@@ -15,9 +15,9 @@ Requirements: macOS or Linux, Node 24+, pnpm 12+, tmux, git, ripgrep, zsh; Xcode
 ```bash
 pnpm install
 pnpm check                                            # typecheck + tests + Biome — must be green
-pnpm --filter @claude-remote/daemon dev start --dev   # daemon from source on 127.0.0.1
-pnpm --filter @claude-remote/mobile ios               # app on the iOS simulator
-pnpm --filter @claude-remote/mobile android           # app on an Android emulator
+pnpm --filter @remote-harness/daemon dev start --dev   # daemon from source on 127.0.0.1
+pnpm --filter @remote-harness/mobile ios               # app on the iOS simulator
+pnpm --filter @remote-harness/mobile android           # app on an Android emulator
 ```
 
 Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — please read it before changing code.
@@ -56,7 +56,7 @@ Architecture, folder layout and conventions are in [CLAUDE.md](CLAUDE.md) — pl
 
 ## Reporting bugs
 
-Use the bug report template and include `claude-remote doctor` output, versions (macOS, Node, Claude Code, iOS) and daemon logs from `~/.claude-remote/logs` — **redact tokens and session content**.
+Use the bug report template and include `remote-harness doctor` output, versions (macOS, Node, Claude Code, iOS) and daemon logs from `~/.remote-harness/logs` — **redact tokens and session content**.
 
 ## License
 

@@ -1,4 +1,4 @@
-import type { ServerMessageOf, TranscriptEntry } from '@claude-remote/protocol'
+import type { ServerMessageOf, TranscriptEntry } from '@remote-harness/protocol'
 import { type FSWatcher, watch } from 'chokidar'
 import type { Logger } from '../../core/logger.ts'
 import type { Connection } from '../../transport/connection.ts'

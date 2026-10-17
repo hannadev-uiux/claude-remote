@@ -118,7 +118,7 @@ export type SelectedTokenStore = { kind: TokenStoreKind; store: TokenStore }
 export type TokenStoreSelection = {
   platform: Platform
   exec: Executor
-  /** `CLAUDE_REMOTE_TOKEN_STORE`: forces a store (`keychain`, `secret-tool` or `file`). */
+  /** `REMOTE_HARNESS_TOKEN_STORE`: forces a store (`keychain`, `secret-tool` or `file`). */
   forced?: string
   tokenFile?: string
   /** Remembers the store picked on Linux, so a later run (e.g. the service at boot) uses the same one. */

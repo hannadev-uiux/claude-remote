@@ -1,44 +1,51 @@
 #!/usr/bin/env bash
-# Claude Remote installer.
+# Remote Harness installer.
 #
 #   curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 #   curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash -s -- --yes   # no questions
 #
 # Runs on macOS and Linux. Missing tools (tmux, ripgrep, zsh, git) are installed with apt-get, dnf,
 # pacman or zypper (with sudo, after saying why) or Homebrew; Node 24+ must already be installed.
-# Installs (or updates) the daemon from source into ~/.claude-remote/src, builds it and opens
-# the guided `claude-remote setup` (accounts and aliases, hooks, background service, pairing).
-# Running it again updates to the latest version; `--update` (what `claude-remote update` runs)
+# Installs (or updates) the daemon from source into ~/.remote-harness/src, builds it and opens
+# the guided `remote-harness setup` (accounts and aliases, hooks, background service, pairing).
+# Running it again updates to the latest version; `--update` (what `remote-harness update` runs)
 # skips the wizard and only refreshes launchers/hooks and restarts the service. Everything lives in
-# main() so a partially downloaded script never runs. Messages follow CLAUDE_REMOTE_LANG, then
+# main() so a partially downloaded script never runs. Messages follow REMOTE_HARNESS_LANG, then
 # LC_ALL/LC_MESSAGES/LANG (pt*, es*, else English); the
-# detected language is passed to the setup as CLAUDE_REMOTE_LANG, the default of its language question.
+# detected language is passed to the setup as REMOTE_HARNESS_LANG, the default of its language question.
+# Every REMOTE_HARNESS_* variable falls back to its CLAUDE_REMOTE_* name from before the rename.
 
 set -euo pipefail
 
-REPO_URL="${CLAUDE_REMOTE_REPO:-https://github.com/maarkN/claude-remote.git}"
-REF="${CLAUDE_REMOTE_REF:-main}"
-SRC_DIR="${CLAUDE_REMOTE_SRC:-$HOME/.claude-remote/src}"
+REPO_URL="${REMOTE_HARNESS_REPO:-${CLAUDE_REMOTE_REPO:-https://github.com/maarkN/remote-harness.git}}"
+REF="${REMOTE_HARNESS_REF:-${CLAUDE_REMOTE_REF:-main}}"
+# Data directory, as the daemon resolves it: an install made before the rename keeps ~/.claude-remote.
+DATA_DIR="${REMOTE_HARNESS_HOME:-${CLAUDE_REMOTE_HOME:-}}"
+if [[ -z "$DATA_DIR" ]]; then
+  DATA_DIR="$HOME/.remote-harness"
+  if [[ ! -d "$DATA_DIR" && -d "$HOME/.claude-remote" ]]; then DATA_DIR="$HOME/.claude-remote"; fi
+fi
+SRC_DIR="${REMOTE_HARNESS_SRC:-${CLAUDE_REMOTE_SRC:-$DATA_DIR/src}}"
 MIN_NODE_MAJOR=24
 # Private Node used when the system one is missing or too old (never added to the user's shell).
-NODE_DIR="${CLAUDE_REMOTE_NODE_DIR:-$HOME/.claude-remote/node}"
+NODE_DIR="${REMOTE_HARNESS_NODE_DIR:-${CLAUDE_REMOTE_NODE_DIR:-$DATA_DIR/node}}"
 
 # Messages, in the language of the system. `%s` placeholders are filled with printf.
-LOCALE_TAG="${CLAUDE_REMOTE_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}"
+LOCALE_TAG="${REMOTE_HARNESS_LANG:-${CLAUDE_REMOTE_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}}"
 case "$LOCALE_TAG" in
 pt*)
   UI_LANG=pt-BR
   T_USAGE='Uso: install.sh [--ref <branch|tag>] [--yes] [--no-service] [--update]'
-  T_OPT_REF='versão a instalar (padrão: main). Env: CLAUDE_REMOTE_REF'
+  T_OPT_REF='versão a instalar (padrão: main). Env: REMOTE_HARNESS_REF'
   T_OPT_YES='sem perguntas: mantém o config ou usa as contas encontradas'
   T_OPT_NO_SERVICE='não instala o serviço em segundo plano'
   T_OPT_HELP='mostra esta ajuda'
-  T_SRC='Código em: %s (env: CLAUDE_REMOTE_SRC)'
+  T_SRC='Código em: %s (env: REMOTE_HARNESS_SRC)'
   T_INSTALLER='instalador'
-  T_UNSUPPORTED='Sistema não suportado (%s). O Claude Remote roda em macOS e Linux.'
-  T_WINDOWS='No Windows, o Claude Remote roda dentro do WSL2. No PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
+  T_UNSUPPORTED='Sistema não suportado (%s). O Remote Harness roda em macOS e Linux.'
+  T_WINDOWS='No Windows, o Remote Harness roda dentro do WSL2. No PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='É preciso o Node.js %s+: https://nodejs.org (ou `brew install node`, nvm, fnm…).'
-  T_NODE_PRIVATE='Node.js %s+ não encontrado: baixando o Node %s só para o Claude Remote em %s (não muda o seu Node).'
+  T_NODE_PRIVATE='Node.js %s+ não encontrado: baixando o Node %s só para o Remote Harness em %s (não muda o seu Node).'
   T_NODE_DOWNLOAD_FAILED='Não consegui baixar o Node.js (%s). Instale o Node.js %s+ (https://nodejs.org) e rode de novo.'
   T_NEED_GIT='É preciso o git: rode `xcode-select --install`.'
   T_MISSING='Faltando: %s. Instale com o gerenciador de pacotes do sistema e rode de novo.'
@@ -47,29 +54,29 @@ pt*)
   T_NO_SUDO='Faltando: %s. Instale como root (sudo não encontrado) e rode de novo.'
   T_NO_CLAUDE='Claude Code (`claude`) não encontrado no PATH: https://claude.com/claude-code'
   T_UPDATING='Atualizando %s para %s'
-  T_DIRTY='%s tem mudanças locais. Faça commit ou descarte, ou use outro diretório em CLAUDE_REMOTE_SRC.'
-  T_CLONING='Baixando o Claude Remote (%s) em %s'
+  T_DIRTY='%s tem mudanças locais. Faça commit ou descarte, ou use outro diretório em REMOTE_HARNESS_SRC.'
+  T_CLONING='Baixando o Remote Harness (%s) em %s'
   T_FAILED='Falhou: %s (log completo em %s)'
   T_DEPS='Instalando dependências'
   T_BUILD='Compilando o daemon'
   T_REF_VALUE='--ref precisa de um valor'
   T_UNKNOWN='Opção desconhecida: %s (veja --help)'
-  T_OPT_UPDATE='só atualiza: compila e reinicia o serviço, sem o assistente (= claude-remote update)'
-  T_NOT_INSTALLED='O Claude Remote ainda não está instalado em %s: rode o instalador sem --update.'
+  T_OPT_UPDATE='só atualiza: compila e reinicia o serviço, sem o assistente (= remote-harness update)'
+  T_NOT_INSTALLED='O Remote Harness ainda não está instalado em %s: rode o instalador sem --update.'
   ;;
 es*)
   UI_LANG=es-ES
   T_USAGE='Uso: install.sh [--ref <rama|tag>] [--yes] [--no-service] [--update]'
-  T_OPT_REF='versión que se instala (por defecto: main). Env: CLAUDE_REMOTE_REF'
+  T_OPT_REF='versión que se instala (por defecto: main). Env: REMOTE_HARNESS_REF'
   T_OPT_YES='sin preguntas: mantiene la configuración o usa las cuentas encontradas'
   T_OPT_NO_SERVICE='no instala el servicio en segundo plano'
   T_OPT_HELP='muestra esta ayuda'
-  T_SRC='Código en: %s (env: CLAUDE_REMOTE_SRC)'
+  T_SRC='Código en: %s (env: REMOTE_HARNESS_SRC)'
   T_INSTALLER='instalador'
-  T_UNSUPPORTED='Sistema no compatible (%s). Claude Remote funciona en macOS y Linux.'
-  T_WINDOWS='En Windows, Claude Remote funciona dentro de WSL2. En PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
+  T_UNSUPPORTED='Sistema no compatible (%s). Remote Harness funciona en macOS y Linux.'
+  T_WINDOWS='En Windows, Remote Harness funciona dentro de WSL2. En PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='Necesitas Node.js %s+: https://nodejs.org (o `brew install node`, nvm, fnm…).'
-  T_NODE_PRIVATE='No se encontró Node.js %s+: descargando Node %s solo para Claude Remote en %s (no cambia tu Node).'
+  T_NODE_PRIVATE='No se encontró Node.js %s+: descargando Node %s solo para Remote Harness en %s (no cambia tu Node).'
   T_NODE_DOWNLOAD_FAILED='No se pudo descargar Node.js (%s). Instala Node.js %s+ (https://nodejs.org) y vuelve a ejecutarlo.'
   T_NEED_GIT='Necesitas git: ejecuta `xcode-select --install`.'
   T_MISSING='Falta: %s. Instálalo con el gestor de paquetes del sistema y vuelve a ejecutarlo.'
@@ -78,29 +85,29 @@ es*)
   T_NO_SUDO='Falta: %s. Instálalo como root (no se encontró sudo) y vuelve a ejecutarlo.'
   T_NO_CLAUDE='No se encontró Claude Code (`claude`) en el PATH: https://claude.com/claude-code'
   T_UPDATING='Actualizando %s a %s'
-  T_DIRTY='%s tiene cambios locales. Haz commit o descártalos, o usa otro directorio en CLAUDE_REMOTE_SRC.'
-  T_CLONING='Descargando Claude Remote (%s) en %s'
+  T_DIRTY='%s tiene cambios locales. Haz commit o descártalos, o usa otro directorio en REMOTE_HARNESS_SRC.'
+  T_CLONING='Descargando Remote Harness (%s) en %s'
   T_FAILED='Ha fallado: %s (log completo en %s)'
   T_DEPS='Instalando dependencias'
   T_BUILD='Compilando el daemon'
   T_REF_VALUE='--ref necesita un valor'
   T_UNKNOWN='Opción desconocida: %s (consulta --help)'
-  T_OPT_UPDATE='solo actualiza: compila y reinicia el servicio, sin el asistente (= claude-remote update)'
-  T_NOT_INSTALLED='Claude Remote todavía no está instalado en %s: ejecuta el instalador sin --update.'
+  T_OPT_UPDATE='solo actualiza: compila y reinicia el servicio, sin el asistente (= remote-harness update)'
+  T_NOT_INSTALLED='Remote Harness todavía no está instalado en %s: ejecuta el instalador sin --update.'
   ;;
 *)
   UI_LANG=en-US
   T_USAGE='Usage: install.sh [--ref <branch|tag>] [--yes] [--no-service] [--update]'
-  T_OPT_REF='version to install (default: main). Env: CLAUDE_REMOTE_REF'
+  T_OPT_REF='version to install (default: main). Env: REMOTE_HARNESS_REF'
   T_OPT_YES='no questions: keep the config or use the accounts found'
   T_OPT_NO_SERVICE='do not install the background service'
   T_OPT_HELP='show this help'
-  T_SRC='Source in: %s (env: CLAUDE_REMOTE_SRC)'
+  T_SRC='Source in: %s (env: REMOTE_HARNESS_SRC)'
   T_INSTALLER='installer'
-  T_UNSUPPORTED='Unsupported system (%s). Claude Remote runs on macOS and Linux.'
-  T_WINDOWS='On Windows, Claude Remote runs inside WSL2. In PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
+  T_UNSUPPORTED='Unsupported system (%s). Remote Harness runs on macOS and Linux.'
+  T_WINDOWS='On Windows, Remote Harness runs inside WSL2. In PowerShell: irm https://maarkn.dev/claude-remote/install.ps1 | iex'
   T_NEED_NODE='Node.js %s+ is required: https://nodejs.org (or `brew install node`, nvm, fnm…).'
-  T_NODE_PRIVATE='Node.js %s+ not found: downloading Node %s just for Claude Remote into %s (your Node is untouched).'
+  T_NODE_PRIVATE='Node.js %s+ not found: downloading Node %s just for Remote Harness into %s (your Node is untouched).'
   T_NODE_DOWNLOAD_FAILED='Could not download Node.js (%s). Install Node.js %s+ (https://nodejs.org) and run this again.'
   T_NEED_GIT='git is required: run `xcode-select --install`.'
   T_MISSING='Missing: %s. Install it with your package manager and run this again.'
@@ -109,15 +116,15 @@ es*)
   T_NO_SUDO='Missing: %s. Install it as root (sudo not found) and run this again.'
   T_NO_CLAUDE='Claude Code (`claude`) not found in PATH: https://claude.com/claude-code'
   T_UPDATING='Updating %s to %s'
-  T_DIRTY='%s has local changes. Commit or discard them, or use another directory in CLAUDE_REMOTE_SRC.'
-  T_CLONING='Downloading Claude Remote (%s) into %s'
+  T_DIRTY='%s has local changes. Commit or discard them, or use another directory in REMOTE_HARNESS_SRC.'
+  T_CLONING='Downloading Remote Harness (%s) into %s'
   T_FAILED='Failed: %s (full log in %s)'
   T_DEPS='Installing dependencies'
   T_BUILD='Building the daemon'
   T_REF_VALUE='--ref needs a value'
   T_UNKNOWN='Unknown option: %s (see --help)'
-  T_OPT_UPDATE='update only: build and restart the service, without the wizard (= claude-remote update)'
-  T_NOT_INSTALLED='Claude Remote is not installed in %s yet: run the installer without --update.'
+  T_OPT_UPDATE='update only: build and restart the service, without the wizard (= remote-harness update)'
+  T_NOT_INSTALLED='Remote Harness is not installed in %s yet: run the installer without --update.'
   ;;
 esac
 
@@ -320,12 +327,12 @@ quiet() {
 build_daemon() {
   pnpm_cmd
   step "$T_DEPS"
-  quiet "${PNPM[@]}" install --frozen-lockfile --filter '@claude-remote/daemon...'
+  quiet "${PNPM[@]}" install --frozen-lockfile --filter '@remote-harness/daemon...'
   step "$T_BUILD"
-  quiet "${PNPM[@]}" --filter @claude-remote/daemon build
+  quiet "${PNPM[@]}" --filter @remote-harness/daemon build
 }
 
-# Version of the code in $SRC_DIR (before fetching), shown by `claude-remote update --finish`.
+# Version of the code in $SRC_DIR (before fetching), shown by `remote-harness update --finish`.
 installed_version() {
   sed -n 's/^  "version": "\(.*\)",$/\1/p' "$SRC_DIR/apps/daemon/package.json" 2>/dev/null | head -n 1
 }
@@ -355,14 +362,14 @@ main() {
     esac
   done
 
-  printf '\n%s✻%s %sClaude Remote%s %s· %s%s\n\n' "$ORANGE" "$RESET" "$BOLD" "$RESET" "$DIM" "$T_INSTALLER" "$RESET"
+  printf '\n%s✻%s %sRemote Harness%s %s· %s%s\n\n' "$ORANGE" "$RESET" "$BOLD" "$RESET" "$DIM" "$T_INSTALLER" "$RESET"
   detect_platform
   require_node
   require_tools
   if $update; then
     [[ -d "$SRC_DIR/.git" ]] || die "$(t "$T_NOT_INSTALLED" "$SRC_DIR")"
-    # `claude-remote update` checks out the new code first, so it passes the version it replaced.
-    from="${CLAUDE_REMOTE_UPDATE_FROM:-$(installed_version)}"
+    # `remote-harness update` checks out the new code first, so it passes the version it replaced.
+    from="${REMOTE_HARNESS_UPDATE_FROM:-${CLAUDE_REMOTE_UPDATE_FROM:-$(installed_version)}}"
   fi
   fetch_source
   build_daemon
@@ -374,8 +381,8 @@ main() {
   fi
 
   # The wizard asks questions; under `curl | bash` stdin is this script, so it reads the terminal.
-  # CLAUDE_REMOTE_LANG is only the default of its language question (an explicit choice still wins).
-  export CLAUDE_REMOTE_LANG="${CLAUDE_REMOTE_LANG:-$UI_LANG}"
+  # REMOTE_HARNESS_LANG is only the default of its language question (an explicit choice still wins).
+  export REMOTE_HARNESS_LANG="${REMOTE_HARNESS_LANG:-${CLAUDE_REMOTE_LANG:-$UI_LANG}}"
   local cli=(node "$SRC_DIR/apps/daemon/dist/cli.js" setup "${setup_args[@]+"${setup_args[@]}"}")
   if [[ -t 1 ]] && { : </dev/tty; } 2>/dev/null; then
     "${cli[@]}" </dev/tty

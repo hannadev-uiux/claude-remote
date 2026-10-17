@@ -1,4 +1,4 @@
-import type { PermissionAnswer, PlanDecision } from '@claude-remote/protocol'
+import type { PermissionAnswer, PlanDecision } from '@remote-harness/protocol'
 import { ClipboardList } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'

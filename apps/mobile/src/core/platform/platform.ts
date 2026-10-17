@@ -1,4 +1,4 @@
-import type { DevicePlatform } from '@claude-remote/protocol'
+import type { DevicePlatform } from '@remote-harness/protocol'
 
 /** Platform reported to the daemon in `device.register` (undefined on web, which has no push). */
 export function devicePlatform(os: string): DevicePlatform | undefined {

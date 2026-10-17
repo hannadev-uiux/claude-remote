@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { basename, join, relative } from 'node:path'
-import type { CommandItem, CommandSource } from '@claude-remote/protocol'
+import type { CommandItem, CommandSource } from '@remote-harness/protocol'
 import { parse as parseYaml } from 'yaml'
 import { BUILTIN_COMMANDS } from './builtin-commands.ts'
 

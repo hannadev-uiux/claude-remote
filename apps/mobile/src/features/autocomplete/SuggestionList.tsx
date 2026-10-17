@@ -1,4 +1,4 @@
-import type { CommandItem, FileItem } from '@claude-remote/protocol'
+import type { CommandItem, FileItem } from '@remote-harness/protocol'
 import { File, Folder, Terminal } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'

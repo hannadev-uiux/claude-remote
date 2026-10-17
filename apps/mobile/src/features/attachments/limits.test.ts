@@ -1,4 +1,4 @@
-import { MAX_ATTACHMENT_BYTES } from '@claude-remote/protocol'
+import { MAX_ATTACHMENT_BYTES } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { base64Bytes, exceedsUploadLimit, fitWithin, remainingSlots } from './limits'
 

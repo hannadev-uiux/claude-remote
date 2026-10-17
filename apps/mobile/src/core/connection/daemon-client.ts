@@ -6,7 +6,7 @@ import {
   type ServerMessage,
   type ServerMessageOf,
   type ServerMessageType,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 
 export type ConnectionStatus =
   | 'idle'

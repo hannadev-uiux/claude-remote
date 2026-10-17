@@ -1,4 +1,4 @@
-import type { Profile } from '@claude-remote/protocol'
+import type { Profile } from '@remote-harness/protocol'
 import { StyleSheet, View } from 'react-native'
 import { colors, space } from '@/core/theme'
 import { Text } from '@/ui'

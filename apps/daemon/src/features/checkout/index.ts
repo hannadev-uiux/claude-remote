@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
 import { isDeepStrictEqual } from 'node:util'
-import { checkoutPeers } from '@claude-remote/protocol'
+import { checkoutPeers } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import { GitClient } from '../../infra/git.ts'
 import type { DaemonContext } from '../../main.ts'

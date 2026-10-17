@@ -1,9 +1,10 @@
 {
-  "name": "@claude-remote/daemon",
+  "name": "@remote-harness/daemon",
   "version": "0.6.0",
   "private": true,
   "type": "module",
   "bin": {
+    "remote-harness": "./dist/cli.js",
     "claude-remote": "./dist/cli.js"
   },
   "scripts": {
@@ -13,7 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@claude-remote/protocol": "workspace:*",
+    "@remote-harness/protocol": "workspace:*",
     "@inquirer/prompts": "^8.7.3",
     "chokidar": "^5.0.0",
     "commander": "^15.0.0",

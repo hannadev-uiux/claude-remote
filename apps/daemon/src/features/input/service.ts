@@ -1,4 +1,4 @@
-import { KeySchema } from '@claude-remote/protocol'
+import { KeySchema } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { KeyedMutex } from '../../core/keyed-mutex.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'

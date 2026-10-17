@@ -1,4 +1,4 @@
-import type { Locale } from '@claude-remote/protocol'
+import type { Locale } from '@remote-harness/protocol'
 import enUS, { type Messages } from './locales/en-US'
 import esES from './locales/es-ES'
 import ptBR from './locales/pt-BR'

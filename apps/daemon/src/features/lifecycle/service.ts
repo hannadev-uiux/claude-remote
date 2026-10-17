@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
-import type { Checkout, Profile, ProjectItem } from '@claude-remote/protocol'
+import type { Checkout, Profile, ProjectItem } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import { expandHome } from '../../core/paths.ts'
 import type { Executor } from '../../infra/exec.ts'
@@ -48,7 +48,7 @@ export class LifecycleService {
       timeoutMs: 10_000,
     })
     if (result.exitCode !== 0) {
-      const reason = result.stderr.trim() || 'launcher falhou (rode `claude-remote install`)'
+      const reason = result.stderr.trim() || 'launcher falhou (rode `remote-harness install`)'
       throw new DaemonError('internal', reason)
     }
     return result.stdout.trim()

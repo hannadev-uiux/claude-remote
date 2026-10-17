@@ -1,4 +1,4 @@
-import type { PermissionRequestInfo } from '@claude-remote/protocol'
+import type { PermissionRequestInfo } from '@remote-harness/protocol'
 import { ShieldAlert } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'

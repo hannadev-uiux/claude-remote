@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, LOCALES, type Locale } from '@claude-remote/protocol'
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '@remote-harness/protocol'
 import i18next, { type i18n, type Module, type TFunction } from 'i18next'
 import { resources } from './resources'
 

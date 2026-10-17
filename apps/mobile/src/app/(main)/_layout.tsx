@@ -61,7 +61,7 @@ export default function MainLayout() {
           <>
             <View style={styles.sidebarHeader}>
               <Text weight="bold" size="lg">
-                Claude Remote
+                Remote Harness
               </Text>
               <SessionListActions />
             </View>
@@ -80,7 +80,7 @@ export default function MainLayout() {
           headerBackButtonDisplayMode: 'minimal',
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Claude Remote' }} />
+        <Stack.Screen name="index" options={{ title: 'Remote Harness' }} />
         <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
         <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
         <Stack.Screen name="session/[id]/index" options={{ title: '' }} />

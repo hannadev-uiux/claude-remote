@@ -17,7 +17,7 @@ The app is built locally or with EAS internal distribution; there is no store re
 - **`checkAutomatically: 'NEVER'`**: the native side never checks by itself; `src/core/updates` decides when (launch, foreground with throttle), so the policy is testable.
 - **Apply on cold start by default.** `checkForUpdateAsync` + `fetchUpdateAsync` in the background; `reloadAsync` only from the Settings button, after confirmation, and never while a permission sheet is open or the composer has text.
 - **Throttle**: last check time in memory (a cold start always checks); foreground checks at most every 30 minutes; failures are silent (logged) since the app works offline from the internet as long as Tailscale is up.
-- **Daemon compatibility**: `MIN_DAEMON_VERSION` in `@claude-remote/protocol`; the app compares semver with `hello.daemonVersion` and shows a dismissible banner with `claude-remote update`. Protocol breaking changes still use `protocolVersion`.
+- **Daemon compatibility**: `MIN_DAEMON_VERSION` in `@remote-harness/protocol`; the app compares semver with `hello.daemonVersion` and shows a dismissible banner with `claude-remote update`. Protocol breaking changes still use `protocolVersion`.
 - **Development builds** keep `expo-updates` disabled (`updates.enabled` false for the `development` profile) so Metro keeps working.
 
 ## Risks / Trade-offs

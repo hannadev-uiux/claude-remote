@@ -1,4 +1,4 @@
-import type { ServerMessage } from '@claude-remote/protocol'
+import type { ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import { PaneStreamer } from '../src/features/pane/streamer.ts'

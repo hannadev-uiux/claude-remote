@@ -1,4 +1,4 @@
-import type { Question } from '@claude-remote/protocol'
+import type { Question } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import {
   answerFor,

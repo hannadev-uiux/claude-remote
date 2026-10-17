@@ -1,4 +1,4 @@
-import type { AttachmentMimeType } from '@claude-remote/protocol'
+import type { AttachmentMimeType } from '@remote-harness/protocol'
 
 /** File extension per accepted type; files are always named from the validated type. */
 export const ATTACHMENT_EXTENSIONS: Record<AttachmentMimeType, string> = {

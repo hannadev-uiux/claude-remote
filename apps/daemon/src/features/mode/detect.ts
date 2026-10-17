@@ -1,4 +1,4 @@
-import type { PermissionMode } from '@claude-remote/protocol'
+import type { PermissionMode } from '@remote-harness/protocol'
 
 /**
  * Status-line labels shown by the Claude Code TUI for each permission mode. Order matters: the

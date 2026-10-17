@@ -1,4 +1,4 @@
-import type { PermissionRequestInfo, RuleScope } from '@claude-remote/protocol'
+import type { PermissionRequestInfo, RuleScope } from '@remote-harness/protocol'
 import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Modal, StyleSheet, TextInput, View } from 'react-native'
