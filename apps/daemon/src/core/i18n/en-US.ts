@@ -315,6 +315,23 @@ export const enUS = {
     denied: 'Denied by Remote Harness',
     keepPlanning: 'The user wants to keep planning. Revise the plan before calling ExitPlanMode again.',
   },
+  live: {
+    states: { working: 'Working', waiting: 'Waiting for you', done: 'Done', closed: 'Session closed' },
+    steps: {
+      thinking: 'thinking',
+      writing: 'writing the answer',
+      command: 'running a command',
+      editing: 'editing files',
+      reading: 'reading files',
+      searching: 'searching the code',
+      web: 'browsing the web',
+      agent: 'running a subagent',
+      planning: 'updating the plan',
+      tool: 'using a tool',
+      permission: 'permission pending',
+    },
+    tools: (count: number) => (count === 1 ? '1 tool' : `${count} tools`),
+  },
   push: {
     sessionDone: 'Session finished',
     sessionWaiting: 'Session waiting for you',

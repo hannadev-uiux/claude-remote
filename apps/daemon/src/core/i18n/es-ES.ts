@@ -317,6 +317,23 @@ export const esES = {
     keepPlanning:
       'El usuario quiere seguir planificando. Revisa el plan antes de volver a llamar a ExitPlanMode.',
   },
+  live: {
+    states: { working: 'Trabajando', waiting: 'Esperándote', done: 'Terminada', closed: 'Sesión cerrada' },
+    steps: {
+      thinking: 'pensando',
+      writing: 'escribiendo la respuesta',
+      command: 'ejecutando un comando',
+      editing: 'editando archivos',
+      reading: 'leyendo archivos',
+      searching: 'buscando en el código',
+      web: 'navegando por la web',
+      agent: 'ejecutando un subagente',
+      planning: 'actualizando el plan',
+      tool: 'usando una herramienta',
+      permission: 'permiso pendiente',
+    },
+    tools: (count: number) => (count === 1 ? '1 herramienta' : `${count} herramientas`),
+  },
   push: {
     sessionDone: 'Sesión terminada',
     sessionWaiting: 'Sesión esperándote',

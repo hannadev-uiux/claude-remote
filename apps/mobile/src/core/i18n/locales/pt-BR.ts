@@ -134,6 +134,19 @@ const ptBR = {
     loading: 'carregando…',
     start: 'Início da conversa',
   },
+  liveStatus: {
+    states: {
+      working: 'Trabalhando',
+      waiting: 'Esperando você',
+      done: 'Concluída',
+      closed: 'Sessão encerrada',
+    },
+    title: 'Status ao vivo',
+    hint: 'Enquanto uma sessão trabalha, acompanhe na tela bloqueada e na Dynamic Island (iPhone) ou numa notificação silenciosa (Android). Só aparecem o estado, o tipo de etapa e o tempo, nunca a conversa.',
+    enabled: 'Mostrar status ao vivo',
+    channelName: 'Status ao vivo',
+    channelDescription: 'Progresso das sessões enquanto trabalham (silencioso).',
+  },
   tools: {
     grepIn: '{{pattern}} em {{path}}',
     todoItems_one: '{{count}} item',

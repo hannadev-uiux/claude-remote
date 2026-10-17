@@ -313,6 +313,28 @@ export const ptBR = {
     denied: 'Negado pelo Remote Harness',
     keepPlanning: 'O usuário quer continuar planejando. Revise o plano antes de chamar ExitPlanMode de novo.',
   },
+  live: {
+    states: {
+      working: 'Trabalhando',
+      waiting: 'Esperando você',
+      done: 'Concluída',
+      closed: 'Sessão encerrada',
+    },
+    steps: {
+      thinking: 'pensando',
+      writing: 'escrevendo a resposta',
+      command: 'executando um comando',
+      editing: 'editando arquivos',
+      reading: 'lendo arquivos',
+      searching: 'buscando no código',
+      web: 'navegando na web',
+      agent: 'rodando um subagente',
+      planning: 'atualizando o plano',
+      tool: 'usando uma ferramenta',
+      permission: 'permissão pendente',
+    },
+    tools: (count: number) => (count === 1 ? '1 ferramenta' : `${count} ferramentas`),
+  },
   push: {
     sessionDone: 'Sessão concluída',
     sessionWaiting: 'Sessão aguardando você',

@@ -22,6 +22,9 @@ function fakeSender(invalid: string[] = []) {
       sent.push({ tokens, message })
       return { invalidTokens: invalid }
     },
+    async sendLive() {
+      return { invalid: false }
+    },
   }
   return { sender, sent }
 }

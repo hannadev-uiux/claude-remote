@@ -54,6 +54,7 @@ Remote Harness solves this with tools you already trust: sessions run inside **t
 | 🚀 **Start & resume** | Start a new session in any project, or resume a read-only one. |
 | 🌿 **Shared checkout warning** | Each session shows its git branch; sessions working in the same checkout are flagged, and a new one can start in its own git worktree. |
 | 🔔 **Private push** | Notifications only to *your* registered phone, carrying no session content. Mute globally, per profile or per session. |
+| ⏱️ **Live status** | While a session works, its state, step type and elapsed time show on the lock screen and in the Dynamic Island (iOS Live Activity) or in a silent notification (Android). |
 
 ## How it works
 
@@ -201,6 +202,8 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
 1. In one Firebase project, create the apps you need with the id `tech.doctorx.clauderemote`: an iOS app (upload your APNs key) and/or an Android app.
 2. Put `GoogleService-Info.plist` (iOS) and/or `google-services.json` (Android) in `apps/mobile/` (both git-ignored) and run `pnpm ios` / `pnpm android` again — Firebase is only linked on a platform when its file exists.
 3. Save the Firebase service account to `~/.remote-harness/firebase-service-account.json` and restart the daemon. `remote-harness doctor` lists the phones registered for push and their platform.
+
+**Live status** uses the same Firebase setup. On iOS the Live Activity updates go through FCM, which needs the APNs **authentication key** (`.p8`) in Firebase, not a certificate. It starts when a session begins working while the app is open (typically after sending a prompt from the phone) and can be turned off in **Settings → Live status**. Pushes carry only the profile name, the state, the step category ("running a command"), the tool count and times.
 
 On Android 13+ the app asks for the notification permission; notifications use the high-priority `claude-remote` channel (it can be tuned in the system settings) and, like on iOS, carry only the event and the profile.
 

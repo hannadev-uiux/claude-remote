@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useConnectionStore } from '@/core/connection'
 import { useWidthClass, type WidthClass } from '@/core/layout'
 import { colors, fonts, space } from '@/core/theme'
+import { useLiveStatus } from '@/features/live-status/use-live-status'
 import { selectPendingCounts, usePermissionsStore } from '@/features/permissions/store'
 import { usePush } from '@/features/push/use-push'
 import { extractSessionIdFromPathname } from '@/features/sessions/active-session'
@@ -46,6 +47,7 @@ export default function MainLayout() {
   const credentials = useConnectionStore((s) => s.credentials)
   useDaemonSync()
   usePush()
+  useLiveStatus()
   const widthClass = useWidthClass()
   const pathname = usePathname()
   const pending = usePermissionsStore(useShallow(selectPendingCounts))

@@ -336,6 +336,8 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
         defaultChannel: NOTIFICATION_CHANNEL,
       },
     ],
+    // Live Activity of running sessions: widget extension, App Group and remote (FCM) updates.
+    ['expo-widgets', { enablePushNotifications: true, frequentUpdates: true }],
     [
       'expo-build-properties',
       {

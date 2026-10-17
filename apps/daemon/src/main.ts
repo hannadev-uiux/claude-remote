@@ -14,6 +14,7 @@ import { registerCheckoutFeature } from './features/checkout/index.ts'
 import { HookReceiver } from './features/hooks/receiver.ts'
 import { registerInputFeature } from './features/input/index.ts'
 import { registerLifecycleFeature } from './features/lifecycle/index.ts'
+import { registerLiveStatusFeature } from './features/live-status/index.ts'
 import { registerModeFeature } from './features/mode/index.ts'
 import { registerMuteFeature } from './features/mute/index.ts'
 import type { MuteStore } from './features/mute/store.ts'
@@ -224,9 +225,13 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
   const checkout = registerCheckoutFeature(ctx, sessions.store)
   registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver)
   const mute = await registerMuteFeature(ctx)
-  await registerPushFeature(ctx, {
-    isMuted: (profileId, sessionId) => mute.store.isMuted(profileId, sessionId),
-    sender: ctx.pushSender,
+  const isMuted = (profileId: string | null, sessionId: string) => mute.store.isMuted(profileId, sessionId)
+  const push = await registerPushFeature(ctx, { isMuted, sender: ctx.pushSender })
+  registerLiveStatusFeature(ctx, {
+    store: sessions.store,
+    sender: push.sender,
+    isMuted,
+    follow: transcript.follow,
   })
   await sessions.start()
   return { mute: mute.store }

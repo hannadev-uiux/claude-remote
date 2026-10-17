@@ -45,6 +45,7 @@ O Remote Harness resolve isso com ferramentas em que você já confia: as sessõ
 - **Subagentes** — acompanhe subagentes e tarefas em segundo plano.
 - **Iniciar e retomar** — nova sessão em qualquer projeto ou retomar uma somente leitura.
 - **Push privado** — só no *seu* aparelho, sem conteúdo da sessão; silencie por perfil ou sessão.
+- **Status ao vivo** — enquanto uma sessão trabalha, o estado, o tipo de etapa e o tempo aparecem na tela bloqueada e na Dynamic Island (Live Activity no iOS) ou numa notificação silenciosa (Android).
 
 ## Como funciona
 
@@ -78,6 +79,8 @@ pnpm build:android   # APK de release local (o eas.json também tem os perfis de
 ```
 
 Push (opcional): no mesmo projeto do Firebase, crie um app Android com o id `tech.doctorx.clauderemote`, coloque o `google-services.json` em `apps/mobile/` (fora do git, como o `GoogleService-Info.plist` do iOS) e rode `pnpm android` de novo; sem o arquivo o app compila sem Firebase. O daemon precisa da conta de serviço em `~/.remote-harness/firebase-service-account.json`. No Android 13+ o app pede a permissão de notificações; elas usam o canal `claude-remote` (alta prioridade) e, como no iOS, levam só o evento e o perfil. Os botões Permitir/Negar não aparecem na notificação do Android: toque nela para responder no app. `remote-harness doctor` lista os celulares registrados e a plataforma de cada um.
+
+O **status ao vivo** usa a mesma configuração do Firebase. No iOS as atualizações da Live Activity passam pelo FCM, que exige a **chave de autenticação** APNs (`.p8`) no Firebase, não um certificado. Ele começa quando uma sessão passa a trabalhar com o app aberto (normalmente depois de enviar um prompt pelo celular) e pode ser desligado em **Configurações → Status ao vivo**. O push leva só o nome do perfil, o estado, a categoria da etapa ("executando um comando"), a contagem de ferramentas e horários.
 
 No emulador sem Tailscale: `remote-harness start --dev`, `remote-harness pair --dev` e `adb reverse tcp:7337 tcp:7337`.
 

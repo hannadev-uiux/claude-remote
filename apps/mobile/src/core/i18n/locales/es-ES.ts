@@ -134,6 +134,14 @@ const esES = {
     loading: 'cargando…',
     start: 'Inicio de la conversación',
   },
+  liveStatus: {
+    states: { working: 'Trabajando', waiting: 'Esperándote', done: 'Terminada', closed: 'Sesión cerrada' },
+    title: 'Estado en vivo',
+    hint: 'Mientras una sesión trabaja, síguela en la pantalla de bloqueo y en la Dynamic Island (iPhone) o en una notificación silenciosa (Android). Solo se muestran el estado, el tipo de paso y el tiempo, nunca la conversación.',
+    enabled: 'Mostrar estado en vivo',
+    channelName: 'Estado en vivo',
+    channelDescription: 'Progreso de las sesiones mientras trabajan (silencioso).',
+  },
   tools: {
     grepIn: '{{pattern}} en {{path}}',
     todoItems_one: '{{count}} elemento',

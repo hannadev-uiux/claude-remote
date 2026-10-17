@@ -77,6 +77,16 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('app.visibility'), id, foreground: z.boolean() }),
   z.object({
+    type: z.literal('live.register'),
+    id,
+    sessionId,
+    platform: DevicePlatformSchema,
+    fcmToken: z.string().min(1),
+    /** iOS Live Activity push token (hex); absent on Android. */
+    activityToken: z.string().min(1).optional(),
+  }),
+  z.object({ type: z.literal('live.unregister'), id, sessionId }),
+  z.object({
     type: z.literal('files.search'),
     id,
     sessionId,
