@@ -12,6 +12,8 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 MOBILE := apps/mobile
+# Xcode workspace, scheme and product; `expo prebuild` derives it from the app name in app.config.ts.
+IOS_APP := RemoteHarness
 DAEMON := @remote-harness/daemon
 APP := @remote-harness/mobile
 OTA_KEY ?= $(HOME)/.claude-remote-keys/private-key.pem
@@ -78,11 +80,11 @@ install-ios: ## Release build on a connected iPhone/iPad, no Metro needed (fresh
 	@cd $(MOBILE) && udid=$$(npx tsx scripts/ios-devices.mts --udid $(if $(DEVICE),"$(DEVICE)")) && \
 		npx expo prebuild --platform ios --clean && \
 		echo "▸ xcodebuild (Release) for $$udid" && \
-		xcodebuild -quiet -workspace ios/ClaudeRemote.xcworkspace -scheme ClaudeRemote \
+		xcodebuild -quiet -workspace ios/$(IOS_APP).xcworkspace -scheme $(IOS_APP) \
 			-configuration Release -destination "id=$$udid" -derivedDataPath ios/build \
 			-allowProvisioningUpdates -allowProvisioningDeviceRegistration build && \
 		xcrun devicectl device install app --device "$$udid" \
-			ios/build/Build/Products/Release-iphoneos/ClaudeRemote.app && \
+			ios/build/Build/Products/Release-iphoneos/$(IOS_APP).app && \
 		xcrun devicectl device process launch --device "$$udid" tech.doctorx.clauderemote
 
 install-ios-link: ## Release build the iPhone installs from a Safari link over Tailscale (any network, no cable)
@@ -91,10 +93,10 @@ install-ios-link: ## Release build the iPhone installs from a Safari link over T
 	@cd $(MOBILE) && npx tsx scripts/ios-link.mts --check && \
 		npx expo prebuild --platform ios --clean && \
 		echo "▸ xcodebuild archive (Release)" && \
-		xcodebuild -quiet -workspace ios/ClaudeRemote.xcworkspace -scheme ClaudeRemote \
+		xcodebuild -quiet -workspace ios/$(IOS_APP).xcworkspace -scheme $(IOS_APP) \
 			-configuration Release -destination generic/platform=iOS -derivedDataPath ios/build \
-			-archivePath ios/build/ClaudeRemote.xcarchive -allowProvisioningUpdates archive && \
-		npx tsx scripts/ios-link.mts ios/build/ClaudeRemote.xcarchive "$(IOS_LINK_DIR)"
+			-archivePath ios/build/$(IOS_APP).xcarchive -allowProvisioningUpdates archive && \
+		npx tsx scripts/ios-link.mts ios/build/$(IOS_APP).xcarchive "$(IOS_LINK_DIR)"
 
 install-android: ## Release build on a connected Android phone (fresh android/)
 	cd $(MOBILE) && npx expo prebuild --platform android --clean && \

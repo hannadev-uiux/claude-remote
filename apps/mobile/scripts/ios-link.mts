@@ -29,8 +29,8 @@ import { fileURLToPath } from 'node:url'
 import { type AppInfo, buildManifest, buildPage, HINTS, servedFile, tailnetHost } from './ios-link-files.ts'
 
 /** Path under the Mac's tailnet name, so other `tailscale serve` routes are left alone. */
-const SERVE_PATH = '/claude-remote'
-const IPA = 'ClaudeRemote.ipa'
+const SERVE_PATH = '/remote-harness'
+const IPA = 'RemoteHarness.ipa'
 const PORT = 47391
 const LOCAL = `http://127.0.0.1:${PORT}`
 /** Answers with a hash of the served folder (not its path, since Tailscale proxies every path). */
