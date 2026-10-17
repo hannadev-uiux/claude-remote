@@ -9,6 +9,7 @@ import type { TFunction } from '@/core/i18n/create'
 import { devicePlatform } from '@/core/platform/platform'
 import { useMuteStore } from '../mute/store'
 import { loadMessaging } from '../push/firebase'
+import { relayFor } from '../push/push-relay'
 import { useSessionsStore } from '../sessions/store'
 import { DONE_DISMISS_MS, isMutedSession, localLiveProps, sessionsToStart } from './logic'
 import { SessionActivity } from './SessionActivity'
@@ -49,12 +50,14 @@ export function useLiveStatus() {
       if (!daemonSupportsLive || !messaging || !platform) return
       try {
         const fcmToken = await messaging.getToken(messaging.getMessaging())
+        const relay = await relayFor({ fcmToken, platform, ...(activityToken ? { activityToken } : {}) })
         await client.request({
           type: 'live.register',
           sessionId,
           platform,
           fcmToken,
           ...(activityToken ? { activityToken } : {}),
+          ...(relay ? { relay } : {}),
         })
       } catch (error) {
         if (error instanceof DaemonRequestError && error.code === 'unknown_type') daemonSupportsLive = false

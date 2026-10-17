@@ -201,7 +201,23 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
 
 1. In one Firebase project, create the apps you need with the id `tech.doctorx.clauderemote`: an iOS app (upload your APNs key) and/or an Android app.
 2. Put `GoogleService-Info.plist` (iOS) and/or `google-services.json` (Android) in `apps/mobile/` (both git-ignored) and run `pnpm ios` / `pnpm android` again — Firebase is only linked on a platform when its file exists.
-3. Save the Firebase service account to `~/.remote-harness/firebase-service-account.json` and restart the daemon. `remote-harness doctor` lists the phones registered for push and their platform.
+3. Choose how the daemon sends:
+   - **Push relay** (no credential on the computer): build the app with `REMOTE_HARNESS_PUSH_RELAY_URL` pointing to your relay (see below). The app gets a *grant* from the relay (its FCM token, sealed) and hands it to the daemon, which posts each notification to the relay. A daemon can only reach the phones paired with it.
+   - **Self-hosted**: save the Firebase service account to `~/.remote-harness/firebase-service-account.json` and restart the daemon. It sends to FCM directly, and wins over the relay when both exist.
+
+   `remote-harness doctor` lists the phones registered for push and their platform.
+
+**Deploying the push relay** (`apps/push-relay`, a Cloud Function in `southamerica-east1`; needs the **Blaze** plan, FCM is free and personal use stays within the free tier of Cloud Functions):
+
+```bash
+npx -y firebase-tools@15 login
+openssl rand -hex 32 | npx -y firebase-tools@15 functions:secrets:set GRANT_KEY --project <project-id> --data-file=-
+make deploy-push-relay PROJECT=<project-id>
+```
+
+The function runs with the project's default credentials, so no service account key is created. Use the URL printed by the deploy (`…/pushRelay`) as `REMOTE_HARNESS_PUSH_RELAY_URL` when building the app. Rotating `GRANT_KEY` invalidates every grant; apps fetch new ones on their next connection.
+
+**App Check** is verified on `/grant` but only logged at first (`APP_CHECK=monitor`), so the relay works before App Check is set up. After registering the apps in Firebase App Check (DeviceCheck key on iOS; Play Integrity on Android, which needs the app in the Play Console), create `apps/push-relay/.env.<project-id>` with `APP_CHECK=enforce` and deploy again: grants then require a valid App Check token. Development builds use the debug provider; register the debug token printed in the native logs.
 
 **Live status** uses the same Firebase setup. On iOS the Live Activity updates go through FCM, which needs the APNs **authentication key** (`.p8`) in Firebase, not a certificate. It starts when a session begins working while the app is open (typically after sending a prompt from the phone) and can be turned off in **Settings → Live status**. Pushes carry only the profile name, the state, the step category ("running a command"), the tool count and times.
 

@@ -6,6 +6,7 @@
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo/ui": "~57.0.25",
     "@react-native-firebase/app": "^26.4.0",
+    "@react-native-firebase/app-check": "^26.4.0",
     "@react-native-firebase/messaging": "^26.4.0",
     "@remote-harness/protocol": "workspace:*",
     "@shopify/flash-list": "2.3.3",

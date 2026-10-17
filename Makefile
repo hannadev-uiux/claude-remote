@@ -6,6 +6,7 @@
 #   CHANNEL=<name>       publish-ota channel (default: production; CI publishes development)
 #   OTA_KEY=<path>       private key that signs OTA updates
 #   IOS_LINK_DIR=<path>  folder install-ios-link serves on the tailnet (default ~/.remote-harness-builds/ios)
+#   PROJECT=<id>         Firebase project for deploy-push-relay
 #   REMOTE_HARNESS_UPDATES_TOKEN (or the older CLAUDE_REMOTE_UPDATES_TOKEN) must be in the environment for publish-ota (never stored here).
 
 SHELL := /bin/bash
@@ -26,7 +27,8 @@ CHANNEL ?= production
 .PHONY: help install check lint-fix openspec \
 	daemon-dev daemon-build \
 	start ios-dev android-dev prebuild ios-devices install-ios install-ios-link install-android \
-	publish-ota publish-ota-dry
+	publish-ota publish-ota-dry \
+	deploy-push-relay
 
 help: ## List the targets
 	@if [ -t 1 ]; then c=$$'\033[38;2;217;119;87m'; r=$$'\033[0m'; b=$$'\033[1m'; fi; \
@@ -112,3 +114,9 @@ publish-ota: ## Publish the app JavaScript over the air (CHANNEL=production, PLA
 publish-ota-dry: ## Export and sign without uploading (checks the key and the config)
 	@test -f "$(OTA_KEY)" || { echo "✗ signing key not found: $(OTA_KEY) (OTA_KEY=...)"; exit 1; }
 	REMOTE_HARNESS_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag) --dry-run
+
+## Push relay
+
+deploy-push-relay: ## Deploy the push relay Cloud Function (PROJECT=<firebase project id>; needs `firebase login`)
+	@test -n "$(PROJECT)" || { echo "✗ set PROJECT=<firebase project id>"; exit 1; }
+	npx -y firebase-tools@15 deploy --only functions:push-relay --project "$(PROJECT)"

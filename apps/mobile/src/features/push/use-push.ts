@@ -9,6 +9,7 @@ import { devicePlatform } from '@/core/platform/platform'
 import { loadMessaging } from './firebase'
 import { ACTION_ALLOW, ACTION_DENY, extractPushData, PERMISSION_CATEGORY, type PushData } from './payload'
 import { createTapDeduper, LIVE_STATUS_CHANNEL_ID, NOTIFICATION_CHANNEL_ID } from './platform'
+import { relayFor } from './push-relay'
 import { respondInBackground } from './respond-in-background'
 
 Notifications.setNotificationHandler({
@@ -137,19 +138,21 @@ export function usePush() {
     let offToken: (() => void) | undefined
     if (messaging) {
       const m = messaging.getMessaging()
+      // Daemons without a Firebase service account send through the push relay with this grant.
+      const sendToken = async (token: string) => {
+        const relay = platform ? await relayFor({ fcmToken: token, platform }) : undefined
+        client.send({ type: 'device.register', fcmToken: token, platform, ...(relay ? { relay } : {}) })
+      }
       const register = async () => {
         try {
           if (!(await requestPermission(messaging))) return
-          const token = await messaging.getToken(m)
-          client.send({ type: 'device.register', fcmToken: token, platform })
+          await sendToken(await messaging.getToken(m))
         } catch {
           // Push is optional: the app keeps working without it.
         }
       }
       const offReadyToken = client.onReady(() => void register())
-      const offRefresh = messaging.onTokenRefresh(m, (token) =>
-        client.send({ type: 'device.register', fcmToken: token, platform }),
-      )
+      const offRefresh = messaging.onTokenRefresh(m, (token) => void sendToken(token))
       offToken = () => {
         offReadyToken()
         offRefresh()

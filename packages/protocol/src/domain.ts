@@ -124,6 +124,16 @@ export type RuleScope = z.infer<typeof RuleScopeSchema>
 export const DevicePlatformSchema = z.enum(['ios', 'android'])
 export type DevicePlatform = z.infer<typeof DevicePlatformSchema>
 
+/**
+ * Where a daemon without a Firebase service account sends this phone's pushes: the push relay and
+ * the grant it issued to the app (the FCM token, sealed; only the relay can open it).
+ */
+export const PushRelaySchema = z.object({
+  url: z.url({ protocol: /^https$/ }),
+  grant: z.string().min(1).max(16_384),
+})
+export type PushRelay = z.infer<typeof PushRelaySchema>
+
 /** States of a session's live status (Live Activity / Android notification). */
 export const LiveStateSchema = z.enum(['working', 'waiting', 'done', 'closed'])
 export type LiveState = z.infer<typeof LiveStateSchema>

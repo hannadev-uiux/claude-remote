@@ -1,5 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { type DevicePlatform, LIVE_ACTIVITY_NAME, type LiveStatusProps } from '@remote-harness/protocol'
+import {
+  type DevicePlatform,
+  LIVE_ACTIVITY_NAME,
+  type LiveStatusProps,
+  type PushRelay,
+} from '@remote-harness/protocol'
 import type { Logger } from '../../core/logger.ts'
 
 export type PushMessage = {
@@ -17,6 +22,8 @@ export type LiveMessage = {
   fcmToken: string
   /** iOS Live Activity push token. */
   activityToken?: string
+  /** Relay grant (it seals the FCM and activity tokens) for daemons without a service account. */
+  relay?: PushRelay
   props: LiveStatusProps
   /** `end` closes the activity (iOS) / leaves a dismissable notification (Android). */
   event: 'update' | 'end'
@@ -28,9 +35,12 @@ export type LiveMessage = {
   staleAt?: number
 }
 
+/** A registered phone: its FCM token and, when the app has one, its push relay grant. */
+export type PushTarget = { token: string; relay?: PushRelay }
+
 export interface PushSender {
-  /** Sends to every token and returns the tokens FCM reported as invalid. */
-  send(tokens: readonly string[], message: PushMessage): Promise<{ invalidTokens: string[] }>
+  /** Sends to every phone and returns the tokens FCM reported as invalid. */
+  send(targets: readonly PushTarget[], message: PushMessage): Promise<{ invalidTokens: string[] }>
   /** Sends a live status update; `invalid` when FCM says the token is gone. */
   sendLive(message: LiveMessage): Promise<{ invalid: boolean }>
 }
@@ -120,9 +130,9 @@ export async function createFirebaseSender(
   logger: Logger,
 ): Promise<PushSender | null> {
   if (!existsSync(serviceAccountPath)) {
-    logger.warn(
+    logger.info(
       { path: serviceAccountPath },
-      'Firebase service account not found: push notifications disabled',
+      'Firebase service account not found: pushes go through the push relay of the app builds that have one',
     )
     return null
   }
@@ -134,7 +144,8 @@ export async function createFirebaseSender(
   )
   const messaging = getMessaging(app)
   return {
-    async send(tokens, message) {
+    async send(targets, message) {
+      const tokens = targets.map((t) => t.token)
       if (tokens.length === 0) return { invalidTokens: [] }
       const response = await messaging.sendEachForMulticast(buildMulticast(tokens, message))
       const invalidTokens = response.responses.flatMap((r, i) =>

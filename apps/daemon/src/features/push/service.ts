@@ -75,10 +75,10 @@ export class PushService {
     const sessionId = message.data.sessionId ?? ''
     if (this.options.hasForegroundClient()) return false
     if (this.options.isMuted(message.data.profileId || null, sessionId)) return false
-    const tokens = this.devices.list()
-    if (tokens.length === 0) return false
+    const devices = this.devices.devices()
+    if (devices.length === 0) return false
     try {
-      const { invalidTokens } = await this.sender.send(tokens, message)
+      const { invalidTokens } = await this.sender.send(devices, message)
       await this.devices.remove(invalidTokens)
       return true
     } catch (error) {

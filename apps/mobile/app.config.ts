@@ -78,6 +78,9 @@ const CUSTOM_UPDATES_URL =
   process.env.REMOTE_HARNESS_UPDATES_URL || process.env.CLAUDE_REMOTE_UPDATES_URL || undefined
 const UPDATES_URL = CUSTOM_UPDATES_URL ?? (EAS_PROJECT_ID && `https://u.expo.dev/${EAS_PROJECT_ID}`)
 const UPDATES_CERTIFICATE = './certs/certificate.pem'
+/** Push relay (Cloud Function) for daemons without a Firebase service account; absent = no relay. */
+const PUSH_RELAY_URL =
+  process.env.REMOTE_HARNESS_PUSH_RELAY_URL || process.env.CLAUDE_REMOTE_PUSH_RELAY_URL || undefined
 const signedUpdates = existsSync(UPDATES_CERTIFICATE)
 if (CUSTOM_UPDATES_URL && !signedUpdates) {
   throw new Error(`REMOTE_HARNESS_UPDATES_URL needs a code-signing certificate at ${UPDATES_CERTIFICATE}`)
@@ -214,6 +217,7 @@ const withFirebase: ConfigPlugin = (config) => {
   const next: ExportedConfig = withPlugins(config, [
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
+    '@react-native-firebase/app-check',
   ])
   for (const [platform, mods] of saved) next.mods = { ...next.mods, [platform]: mods }
   return firebase.ios ? withFirebaseCocoaPods(next) : next
@@ -354,6 +358,10 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
       },
     ],
   ],
-  extra: { firebase, ...(EAS_PROJECT_ID ? { eas: { projectId: EAS_PROJECT_ID } } : {}) },
+  extra: {
+    firebase,
+    ...(PUSH_RELAY_URL ? { pushRelay: PUSH_RELAY_URL } : {}),
+    ...(EAS_PROJECT_ID ? { eas: { projectId: EAS_PROJECT_ID } } : {}),
+  },
   experiments: { typedRoutes: true },
 })
