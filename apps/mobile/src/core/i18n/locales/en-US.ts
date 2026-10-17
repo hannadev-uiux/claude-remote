@@ -120,6 +120,22 @@ const enUS = {
       tooLarge: 'Prompt too large (max. 100 KB).',
     },
   },
+  sessionMenu: {
+    moreOptions: 'More options',
+    terminal: 'View terminal',
+    showKeys: 'Show keyboard shortcuts',
+    hideKeys: 'Hide keyboard shortcuts',
+    history: 'Conversation history',
+    readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
+  },
+  promptHistory: {
+    title: 'Conversation history',
+    hint: 'Your prompts in this session, newest first. Tap one to jump to it.',
+    empty: 'No prompts loaded yet.',
+    loadEarlier: 'Load earlier',
+    loading: 'loading…',
+    start: 'Start of the conversation',
+  },
   tools: {
     grepIn: '{{pattern}} in {{path}}',
     todoItems_one: '{{count}} item',

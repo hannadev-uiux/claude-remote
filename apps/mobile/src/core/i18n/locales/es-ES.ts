@@ -118,6 +118,22 @@ const esES = {
       tooLarge: 'Prompt demasiado grande (máx. 100 KB).',
     },
   },
+  sessionMenu: {
+    moreOptions: 'Más opciones',
+    terminal: 'Ver terminal',
+    showKeys: 'Mostrar atajos de teclado',
+    hideKeys: 'Ocultar atajos de teclado',
+    history: 'Historial de la conversación',
+    readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
+  },
+  promptHistory: {
+    title: 'Historial de la conversación',
+    hint: 'Tus prompts en esta sesión, del más reciente al más antiguo. Toca uno para ir a él.',
+    empty: 'Aún no hay prompts cargados.',
+    loadEarlier: 'Cargar anteriores',
+    loading: 'cargando…',
+    start: 'Inicio de la conversación',
+  },
   tools: {
     grepIn: '{{pattern}} en {{path}}',
     todoItems_one: '{{count}} elemento',
