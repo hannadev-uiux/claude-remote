@@ -349,6 +349,18 @@ const esES = {
     confirmBody: 'Las sesiones pueden editar los mismos archivos y cambiarse la rama entre sí.',
     confirmStart: 'Crear de todos modos',
     confirmWorktree: 'Usar un worktree',
+    browse: 'Explorar',
+    picker: {
+      title: 'Elige una carpeta',
+      up: 'Carpeta superior',
+      showHidden: 'Mostrar carpetas ocultas',
+      choose: 'Elegir esta carpeta',
+      empty: 'No hay carpetas aquí.',
+      truncated:
+        'Mostrando las primeras {{count}} carpetas. Para llegar a otra, escribe su ruta en el campo de directorio.',
+      error: 'No se pudo abrir esta carpeta.',
+      back: 'Volver',
+    },
     errors: {
       invalidCwd: 'Directorio no encontrado o fuera de tu carpeta personal.',
       profileNotFound: 'Este perfil ya no existe en el ordenador. Elige otro.',

@@ -65,6 +65,8 @@ const clientSamples: ClientMessage[] = [
   { type: 'files.search', id: '1', sessionId: 's', query: 'src', limit: 20 },
   { type: 'commands.list', id: '1', sessionId: 's' },
   { type: 'projects.list', id: '1', profileId: 'claudin' },
+  { type: 'directories.list', id: '1', path: '~', limit: 200 },
+  { type: 'directories.list', id: '1', path: '~/work', prefix: 'ap', hidden: true, limit: 20 },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'checkout.inspect', id: '1', profileId: 'claudin', cwd: '/tmp' },
@@ -178,6 +180,24 @@ const serverSamples: ServerMessage[] = [
     items: [{ name: 'clear', description: '', source: 'builtin', interactive: false }],
   },
   { type: 'projects.results', replyTo: '1', items: [{ cwd: '/tmp', lastUsedAt: 'now' }] },
+  {
+    type: 'directories.results',
+    replyTo: '1',
+    path: '/home/me/work',
+    parent: '/home/me',
+    home: '/home/me',
+    items: [{ name: 'api', path: '/home/me/work/api', git: true }],
+    truncated: false,
+  },
+  {
+    type: 'directories.results',
+    replyTo: '1',
+    path: '/home/me',
+    parent: null,
+    home: '/home/me',
+    items: [],
+    truncated: true,
+  },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
   { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
@@ -285,6 +305,17 @@ describe('client messages', () => {
   test('applies defaults', () => {
     const result = parseClientMessage({ type: 'files.search', id: '1', sessionId: 's', query: 'a' })
     expect(result).toMatchObject({ ok: true, value: { limit: 20 } })
+  })
+
+  test('caps the directory listing limit', () => {
+    expect(parseClientMessage({ type: 'directories.list', id: '1', path: '~' })).toMatchObject({
+      ok: true,
+      value: { limit: 200 },
+    })
+    expect(parseClientMessage({ type: 'directories.list', id: '1', path: '~', limit: 501 })).toMatchObject({
+      ok: false,
+      error: { code: 'bad_request' },
+    })
   })
 })
 

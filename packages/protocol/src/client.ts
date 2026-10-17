@@ -2,7 +2,9 @@ import { z } from 'zod'
 import {
   AttachmentMimeTypeSchema,
   DevicePlatformSchema,
+  DIRECTORY_LIST_LIMIT,
   MAX_ATTACHMENTS,
+  MAX_DIRECTORY_LIST_LIMIT,
   PermissionAnswerSchema,
   PushRelaySchema,
   RuleScopeSchema,
@@ -106,6 +108,16 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('commands.list'), id, sessionId }),
   z.object({ type: z.literal('projects.list'), id, profileId: z.string().min(1) }),
+  /** Subdirectories of `path` (`~`, `~/…` or absolute, inside the home folder), filtered by name `prefix`. */
+  z.object({
+    type: z.literal('directories.list'),
+    id,
+    path: z.string().min(1),
+    prefix: z.string().optional(),
+    /** Includes names starting with `.`. */
+    hidden: z.boolean().optional(),
+    limit: z.number().int().positive().max(MAX_DIRECTORY_LIST_LIMIT).default(DIRECTORY_LIST_LIMIT),
+  }),
   z.object({
     type: z.literal('session.start'),
     id,

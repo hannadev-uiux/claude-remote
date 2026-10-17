@@ -2,7 +2,6 @@ import { homedir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import type { Checkout, Profile, ProjectItem } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
-import { expandHome } from '../../core/paths.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory } from '../../infra/fs.ts'
 import { worktreeName } from '../checkout/resolver.ts'
@@ -14,7 +13,8 @@ export const START_SETTLE_MS = 1_500
 
 /** Accepts only existing directories inside the user's home. */
 export async function validateCwd(raw: string, home = homedir()): Promise<string> {
-  const cwd = resolve(expandHome(raw.trim()))
+  const trimmed = raw.trim()
+  const cwd = resolve(trimmed === '~' || trimmed.startsWith('~/') ? join(home, trimmed.slice(1)) : trimmed)
   const inside = cwd === home || cwd.startsWith(`${home}${sep}`)
   if (!inside || !(await isDirectory(cwd))) throw new DaemonError('invalid_cwd', `invalid directory: ${raw}`)
   return cwd

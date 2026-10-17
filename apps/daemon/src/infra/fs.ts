@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import { chmod, mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { access, chmod, mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 
 export async function readJsonFile(path: string): Promise<unknown | undefined> {
   let text: string
@@ -29,6 +29,29 @@ export async function writeJsonAtomic(path: string, data: unknown, mode?: number
 export async function isDirectory(path: string): Promise<boolean> {
   try {
     return (await stat(path)).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+/** Names of the subdirectories of `dir`, symlinks to directories included. Throws when `dir` is unreadable. */
+export async function readSubdirectories(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true })
+  const names = await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.isDirectory()) return entry.name
+      if (entry.isSymbolicLink() && (await isDirectory(join(dir, entry.name)))) return entry.name
+      return null
+    }),
+  )
+  return names.filter((name): name is string => name !== null)
+}
+
+/** Whether `dir` holds a `.git` directory, or a `.git` file (linked worktrees and submodules). */
+export async function hasGitMarker(dir: string): Promise<boolean> {
+  try {
+    await access(join(dir, '.git'))
+    return true
   } catch {
     return false
   }
