@@ -1,8 +1,8 @@
 /**
- * Publishes an over-the-air update of the app to a self-hosted Expo Updates server (maarkn.dev):
+ * Publishes an over-the-air update of the app to a self-hosted Expo Updates server:
  * `expo export`, one manifest per platform signed locally, content-addressed asset upload.
  *
- *   REMOTE_HARNESS_UPDATES_URL=https://maarkn.dev/api/claude-remote/updates/manifest \
+ *   REMOTE_HARNESS_UPDATES_URL=https://remoteharness.app/api/updates/manifest \
  *   REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/keys/private-key.pem \
  *   pnpm --filter @remote-harness/mobile ota:publish [--channel production|development]
  *     [--platform ios|android] [--dry-run]
@@ -10,6 +10,9 @@
  * The URL must be the one the installed builds were made with (it is part of their runtime
  * version). The private key never leaves this machine; the server only stores the signature.
  * Each REMOTE_HARNESS_UPDATES_* variable falls back to its CLAUDE_REMOTE_UPDATES_* name.
+ * REMOTE_HARNESS_UPDATES_ASSETS_URL (optional) is the prefix of the asset URLs signed into the
+ * manifests, for a server that only accepts its own address there (the files are still uploaded
+ * through the updates URL); asset URLs are per update, so changing it needs no new build.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -19,7 +22,7 @@ import { homedir, tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { buildManifest, type ExportMetadata, signatureHeader } from './update-manifest.ts'
+import { buildManifest, type ExportMetadata, signatureHeader, updatesBase } from './update-manifest.ts'
 
 const app = join(dirname(fileURLToPath(import.meta.url)), '..')
 // Same env files Expo reads for the build (existing variables win; `.env.local` over `.env`).
@@ -49,7 +52,8 @@ function fail(message: string): never {
 const updatesUrl = env('UPDATES_URL')
 if (!/^[a-z][a-z0-9-]{0,31}$/.test(channel)) fail(`invalid channel: ${channel}`)
 if (!updatesUrl) fail('REMOTE_HARNESS_UPDATES_URL is not set (the URL the builds were made with)')
-const server = new URL(updatesUrl).origin
+const base = updatesBase(updatesUrl)
+const assetsUrl = env('UPDATES_ASSETS_URL')?.replace(/\/*$/, '/') ?? `${base}/assets/`
 const keyPath = (env('UPDATES_KEY') ?? '').replace(/^~(?=\/)/, homedir())
 if (!keyPath || !existsSync(keyPath)) fail('REMOTE_HARNESS_UPDATES_KEY must point to the private key (PEM)')
 const token = env('UPDATES_TOKEN')
@@ -61,7 +65,7 @@ function run(args: string[]): string {
 }
 
 async function upload(file: { hash: string; data: Uint8Array; contentType: string }): Promise<boolean> {
-  const url = `${server}/api/claude-remote/updates/assets/${file.hash}`
+  const url = `${base}/assets/${file.hash}`
   if ((await fetch(url, { method: 'HEAD' })).ok) return false
   const res = await fetch(url, {
     method: 'PUT',
@@ -90,7 +94,7 @@ try {
       createdAt: new Date().toISOString(),
       runtimeVersion,
       channel,
-      server,
+      assetsUrl,
       bundle: { data: readFileSync(join(out, files.bundle)) },
       assets: files.assets.map((a) => ({ data: readFileSync(join(out, a.path)), ext: a.ext })),
       expoClient,
@@ -101,7 +105,7 @@ try {
 
     let sent = 0
     for (const file of uploads) if (await upload(file)) sent++
-    const res = await fetch(`${server}/api/claude-remote/updates/manifests`, {
+    const res = await fetch(`${base}/manifests`, {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       body: JSON.stringify({ platform, channel, runtimeVersion, manifest, signature }),

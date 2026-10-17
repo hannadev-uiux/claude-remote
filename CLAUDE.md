@@ -8,6 +8,7 @@ App pessoal iOS/Android (React Native + Expo) que acompanha e controla, pelo cel
 apps/daemon        Daemon Node/TS (WebSocket p/ app, HTTP p/ hooks, tmux, transcripts, push)
 apps/mobile        App Expo (Expo Router, Zustand, TanStack Query)
 apps/push-relay    Cloud Function (Firebase) que envia push por daemons sem conta de serviço, via grants
+apps/web           Worker do Cloudflare em remoteharness.app (proxy do OTA, links de instalação do iPhone no R2); deploy com `cf deploy`
 packages/protocol  Schemas Zod + tipos do protocolo WebSocket (fonte única da verdade)
 openspec/          Changes numerados (proposal, specs, design, tasks), sempre em en-US
 ```

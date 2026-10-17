@@ -1,6 +1,8 @@
 /**
  * Installs a release build on the iPhone from a Safari link over Tailscale, from any network and
- * without a cable (Make: `install-ios-link`).
+ * without a cable (Make: `install-ios-link`). With `--web` (Make: `IOS_LINK=web`) the files go to
+ * R2 behind https://remoteharness.app/ios/<token>/ instead, so the phone needs no Tailscale; the
+ * random token is kept in `<dir>/.web-token` and reused by later builds.
  * - `tsx scripts/ios-link.mts --check` prints the install page URL, or why Tailscale cannot serve it.
  * - `tsx scripts/ios-link.mts <archive> <dir>` exports the archive to an IPA in <dir>, writes the
  *   manifest and the install page next to it and publishes them on the tailnet only.
@@ -11,13 +13,15 @@
  * The IPA is development-signed, so only devices registered in the Apple team can install it.
  */
 import { execFileSync, spawn } from 'node:child_process'
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import {
   copyFileSync,
   createReadStream,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -26,7 +30,18 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { type AppInfo, buildManifest, buildPage, HINTS, servedFile, tailnetHost } from './ios-link-files.ts'
+import {
+  type AppInfo,
+  buildManifest,
+  buildPage,
+  HINTS,
+  SERVED,
+  servedFile,
+  tailnetHost,
+  WEB_BASE,
+  WEB_BUCKET,
+  WEB_TOKEN,
+} from './ios-link-files.ts'
 
 /** Path under the Mac's tailnet name, so other `tailscale serve` routes are left alone. */
 const SERVE_PATH = '/remote-harness'
@@ -185,9 +200,54 @@ async function ensureServer(dir: string): Promise<void> {
   }
 }
 
-const args = process.argv.slice(2)
+/** Token of the web link for this folder, created on first use. */
+function webToken(dir: string): string {
+  const file = join(dir, '.web-token')
+  const saved = existsSync(file) ? readFileSync(file, 'utf8').trim() : ''
+  if (WEB_TOKEN.test(saved)) return saved
+  const token = randomBytes(24).toString('base64url')
+  writeFileSync(file, `${token}\n`, { mode: 0o600 })
+  return token
+}
+
+function checkCloudflare(): void {
+  try {
+    run('cf', ['auth', 'whoami'])
+  } catch {
+    console.error('✗ the Cloudflare CLI is not logged in: install `cf` and run `cf auth login`.')
+    process.exit(1)
+  }
+}
+
+/** Uploads the three files to R2, the IPA last-but-one and the page last, so the page never links to a missing build. */
+function uploadWeb(dir: string, token: string): void {
+  for (const name of ['RemoteHarness.ipa', 'manifest.plist', 'index.html']) {
+    console.log(`▸ upload ${name}`)
+    execFileSync(
+      'cf',
+      [
+        'r2',
+        'objects',
+        'put',
+        `${token}/${name}`,
+        '--bucket-name',
+        WEB_BUCKET,
+        '--file',
+        join(dir, name),
+        '--content-type',
+        SERVED[name] ?? 'application/octet-stream',
+        '--quiet',
+      ],
+      { stdio: ['ignore', 'ignore', 'inherit'] },
+    )
+  }
+}
+
+const args = process.argv.slice(2).filter((a) => a !== '--web')
+const web = process.argv.includes('--web')
 if (args.includes('--check')) {
-  console.log(`✓ ${baseUrl()}/`)
+  if (web) checkCloudflare()
+  console.log(web ? `✓ ${WEB_BASE}/<token>/` : `✓ ${baseUrl()}/`)
   process.exit(0)
 }
 if (args[0] === '--serve' && args[1]) {
@@ -195,21 +255,28 @@ if (args[0] === '--serve' && args[1]) {
 } else {
   const [archiveArg, dirArg] = args
   if (!archiveArg || !dirArg) {
-    console.error('usage: tsx scripts/ios-link.mts --check | <archive.xcarchive> <dir>')
+    console.error('usage: tsx scripts/ios-link.mts [--web] --check | [--web] <archive.xcarchive> <dir>')
     process.exit(1)
   }
   const archive = resolve(archiveArg)
   const dir = resolve(dirArg)
-  const base = baseUrl()
+  mkdirSync(dir, { recursive: true })
+  const token = web ? webToken(dir) : ''
+  const base = web ? `${WEB_BASE}/${token}` : baseUrl()
   const app = appInfo(archive)
 
-  mkdirSync(dir, { recursive: true })
   exportIpa(archive, dir)
   // The query defeats Safari's cache between builds; the files themselves keep fixed names.
   const stamp = Date.now()
   writeFileSync(join(dir, 'manifest.plist'), buildManifest(app, `${base}/${IPA}?v=${stamp}`))
   writeFileSync(join(dir, 'index.html'), buildPage(app, `${base}/manifest.plist?v=${stamp}`, new Date(stamp)))
 
+  if (web) {
+    uploadWeb(dir, token)
+    console.log(`✓ ${app.title} ${app.version} (${app.build}) ready`)
+    console.log(`  On a registered iPhone (any network), open in Safari and tap Install:\n  ${base}/`)
+    process.exit(0)
+  }
   await ensureServer(dir)
   try {
     execFileSync('tailscale', ['serve', '--bg', '--set-path', SERVE_PATH, LOCAL], { stdio: 'ignore' })

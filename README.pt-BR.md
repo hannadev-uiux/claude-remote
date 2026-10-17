@@ -59,7 +59,7 @@ Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [R
 ## Início rápido
 
 ```bash
-curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
+curl -fsSL https://remoteharness.app/install.sh | bash
 ```
 
 O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.remote-harness/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `remote-harness setup` muda contas e aliases depois. Instalações feitas antes da mudança de nome para Remote Harness continuam usando `~/.claude-remote`, e o comando `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam funcionando.
@@ -97,10 +97,10 @@ No emulador sem Tailscale: `remote-harness start --dev`, `remote-harness pair --
 O Remote Harness controla o Claude Code pelo tmux, então no Windows ele roda dentro do **WSL2** (Linux no Windows). No PowerShell:
 
 ```powershell
-irm https://maarkn.dev/claude-remote/install.ps1 | iex
+irm https://remoteharness.app/install.ps1 | iex
 ```
 
-O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se faltar (o Windows pede permissão de administrador; reinicie se ele pedir e rode o mesmo comando de novo), ajuda a criar o usuário do Linux e roda o instalador do Linux dentro da distribuição. Opções: `& ([scriptblock]::Create((irm https://maarkn.dev/claude-remote/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se faltar (o Windows pede permissão de administrador; reinicie se ele pedir e rode o mesmo comando de novo), ajuda a criar o usuário do Linux e roda o instalador do Linux dentro da distribuição. Opções: `& ([scriptblock]::Create((irm https://remoteharness.app/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
 
 - **Node e Claude Code** precisam estar instalados **dentro do WSL** (não só no Windows); o instalador avisa o que falta.
 - **systemd**: o serviço é uma unit de usuário do systemd, e o WSL só inicia o systemd com `[boot] systemd=true` em `/etc/wsl.conf`. O assistente mostra o comando `sudo` exato, só roda se você concordar (com backup) e pede para rodar `wsl --shutdown` no PowerShell.

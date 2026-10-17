@@ -1,8 +1,19 @@
 import { createHash, generateKeyPairSync, verify } from 'node:crypto'
 import { describe, expect, test } from 'vitest'
-import { buildManifest, contentTypeFor, signatureHeader } from './update-manifest'
+import { buildManifest, contentTypeFor, signatureHeader, updatesBase } from './update-manifest'
 
 const bytes = (s: string) => new TextEncoder().encode(s)
+
+describe('updatesBase', () => {
+  test('drops the trailing /manifest of the new and the old URL', () => {
+    expect(updatesBase('https://remoteharness.app/api/updates/manifest')).toBe(
+      'https://remoteharness.app/api/updates',
+    )
+    expect(updatesBase('https://maarkn.dev/api/claude-remote/updates/manifest/')).toBe(
+      'https://maarkn.dev/api/claude-remote/updates',
+    )
+  })
+})
 
 describe('buildManifest', () => {
   const { manifest, files } = buildManifest({
@@ -10,7 +21,7 @@ describe('buildManifest', () => {
     createdAt: '2026-10-15T12:00:00.000Z',
     runtimeVersion: 'rt',
     channel: 'development',
-    server: 'https://maarkn.dev/',
+    assetsUrl: 'https://remoteharness.app/api/updates/assets/',
     bundle: { data: bytes('bundle') },
     assets: [
       { data: bytes('png'), ext: 'png' },
@@ -26,7 +37,7 @@ describe('buildManifest', () => {
       hash,
       key: createHash('md5').update('bundle').digest('hex'),
       contentType: 'application/javascript',
-      url: `https://maarkn.dev/api/claude-remote/updates/assets/${hash}`,
+      url: `https://remoteharness.app/api/updates/assets/${hash}`,
     })
     expect(parsed.assets[0]).toMatchObject({ contentType: 'image/png', fileExtension: '.png' })
     expect(parsed.extra.expoClient.name).toBe('Remote Harness')

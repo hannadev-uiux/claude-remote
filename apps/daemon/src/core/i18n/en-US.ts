@@ -240,7 +240,7 @@ export const enUS = {
   /** Windows (WSL2) texts: CLI, doctor and setup. */
   wsl: {
     windowsHint:
-      'On Windows, Remote Harness runs inside WSL2. In PowerShell: `irm https://maarkn.dev/claude-remote/install.ps1 | iex`',
+      'On Windows, Remote Harness runs inside WSL2. In PowerShell: `irm https://remoteharness.app/install.ps1 | iex`',
     detected: (distro: string) => `WSL2 (distribution ${distro})`,
     unknownDistro: 'unknown',
     systemd: 'systemd running in WSL',

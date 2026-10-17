@@ -1,7 +1,7 @@
 import type { TFunction } from '@/core/i18n/create'
 
-/** One-line installer of the computer side (served by maarkn.dev, redirecting to the repo's install.sh). */
-export const INSTALL_URL = 'https://maarkn.dev/claude-remote/install.sh'
+/** One-line installer of the computer side (remoteharness.app redirects to the install.sh on main). */
+export const INSTALL_URL = 'https://remoteharness.app/install.sh'
 export const INSTALL_COMMAND = `curl -fsSL ${INSTALL_URL} | bash`
 /** Tailscale in the store of the phone the guide runs on. */
 export const TAILSCALE_STORES = {

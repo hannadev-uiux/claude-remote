@@ -1,7 +1,7 @@
 # Remote Harness installer for Windows (WSL2).
 #
-#   irm https://maarkn.dev/claude-remote/install.ps1 | iex
-#   & ([scriptblock]::Create((irm https://maarkn.dev/claude-remote/install.ps1))) -Yes -Ref development
+#   irm https://remoteharness.app/install.ps1 | iex
+#   & ([scriptblock]::Create((irm https://remoteharness.app/install.ps1))) -Yes -Ref development
 #
 # Remote Harness drives Claude Code through tmux, so on Windows it runs inside WSL2. This script checks
 # Windows 10 2004+ (build 19041) or Windows 11, installs WSL2 with Ubuntu when it is missing (administrator
@@ -41,7 +41,7 @@ function Install-ClaudeRemote {
   $ErrorActionPreference = 'Stop'
   $PSNativeCommandUseErrorActionPreference = $false
 
-  $InstallShUrl = 'https://maarkn.dev/claude-remote/install.sh'
+  $InstallShUrl = 'https://remoteharness.app/install.sh'
   $RawUrl = 'https://raw.githubusercontent.com/maarkN/remote-harness/{0}/install.sh'
   $DefaultDistro = 'Ubuntu'
   $MinBuild = 19041
@@ -49,7 +49,7 @@ function Install-ClaudeRemote {
   $messages = @{
     'en-US' = @{
       Installer      = 'installer (Windows)'
-      NotWindows     = 'This installer is for Windows. On macOS and Linux run: curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash'
+      NotWindows     = 'This installer is for Windows. On macOS and Linux run: curl -fsSL https://remoteharness.app/install.sh | bash'
       OldWindows     = 'Windows 10 version 2004 (build 19041) or later, or Windows 11, is required (found build {0}). Update Windows and run this again.'
       InvalidValue   = 'Invalid value for -{0}: {1}'
       WslMissing     = 'WSL2 is not installed. Remote Harness runs inside WSL2 (Linux on Windows), with Ubuntu.'
@@ -82,7 +82,7 @@ function Install-ClaudeRemote {
     }
     'pt-BR' = @{
       Installer      = 'instalador (Windows)'
-      NotWindows     = 'Este instalador é para Windows. No macOS e no Linux rode: curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash'
+      NotWindows     = 'Este instalador é para Windows. No macOS e no Linux rode: curl -fsSL https://remoteharness.app/install.sh | bash'
       OldWindows     = 'É preciso o Windows 10 versão 2004 (build 19041) ou mais novo, ou o Windows 11 (encontrado build {0}). Atualize o Windows e rode de novo.'
       InvalidValue   = 'Valor inválido para -{0}: {1}'
       WslMissing     = 'O WSL2 não está instalado. O Remote Harness roda dentro do WSL2 (Linux no Windows), com Ubuntu.'
@@ -115,7 +115,7 @@ function Install-ClaudeRemote {
     }
     'es-ES' = @{
       Installer      = 'instalador (Windows)'
-      NotWindows     = 'Este instalador es para Windows. En macOS y Linux ejecuta: curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash'
+      NotWindows     = 'Este instalador es para Windows. En macOS y Linux ejecuta: curl -fsSL https://remoteharness.app/install.sh | bash'
       OldWindows     = 'Se necesita Windows 10 versión 2004 (build 19041) o posterior, o Windows 11 (encontrado build {0}). Actualiza Windows y vuelve a ejecutarlo.'
       InvalidValue   = 'Valor no válido para -{0}: {1}'
       WslMissing     = 'WSL2 no está instalado. Remote Harness funciona dentro de WSL2 (Linux en Windows), con Ubuntu.'
@@ -277,7 +277,7 @@ function Install-ClaudeRemote {
       $code = Install-Wsl $name
       if ($code -ne 0) { Write-Fail ($T.WslFailed -f $code); return }
       Write-Step $T.WslInstalled
-      Write-Host '  irm https://maarkn.dev/claude-remote/install.ps1 | iex' -ForegroundColor DarkYellow
+      Write-Host '  irm https://remoteharness.app/install.ps1 | iex' -ForegroundColor DarkYellow
       return
     }
 

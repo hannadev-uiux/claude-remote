@@ -5,7 +5,8 @@
 #   PLATFORM=ios|android publish-ota for a single platform (default: both)
 #   CHANNEL=<name>       publish-ota channel (default: production; CI publishes development)
 #   OTA_KEY=<path>       private key that signs OTA updates
-#   IOS_LINK_DIR=<path>  folder install-ios-link serves on the tailnet (default ~/.remote-harness-builds/ios)
+#   IOS_LINK=web         install-ios-link publishes on https://remoteharness.app/ios/<token>/ (R2) instead of the tailnet
+#   IOS_LINK_DIR=<path>  folder install-ios-link builds into and serves on the tailnet (default ~/.remote-harness-builds/ios)
 #   PROJECT=<id>         Firebase project for deploy-push-relay
 #   REMOTE_HARNESS_UPDATES_TOKEN (or the older CLAUDE_REMOTE_UPDATES_TOKEN) must be in the environment for publish-ota (never stored here).
 
@@ -17,11 +18,13 @@ MOBILE := apps/mobile
 IOS_APP := RemoteHarness
 DAEMON := @remote-harness/daemon
 APP := @remote-harness/mobile
-OTA_KEY ?= $(HOME)/.claude-remote-keys/private-key.pem
+# ~/.remote-harness-keys, or the folder used before the rename when only that one exists.
+OTA_KEY ?= $(if $(wildcard $(HOME)/.remote-harness-keys/private-key.pem),$(HOME)/.remote-harness-keys,$(if $(wildcard $(HOME)/.claude-remote-keys/private-key.pem),$(HOME)/.claude-remote-keys,$(HOME)/.remote-harness-keys))/private-key.pem
 IOS_LINK_DIR ?= $(HOME)/.remote-harness-builds/ios
 
 device_flag = $(if $(DEVICE),--device "$(DEVICE)",--device)
 platform_flag = $(if $(PLATFORM),--platform $(PLATFORM))
+ios_link_flag = $(if $(filter web,$(IOS_LINK)),--web)
 CHANNEL ?= production
 
 .PHONY: help install check lint-fix openspec \
@@ -89,16 +92,16 @@ install-ios: ## Release build on a connected iPhone/iPad, no Metro needed (fresh
 			ios/build/Build/Products/Release-iphoneos/$(IOS_APP).app && \
 		xcrun devicectl device process launch --device "$$udid" tech.doctorx.clauderemote
 
-install-ios-link: ## Release build the iPhone installs from a Safari link over Tailscale (any network, no cable)
+install-ios-link: ## Release build the iPhone installs from a Safari link (Tailscale, or IOS_LINK=web on remoteharness.app)
 	@# Development-signed like install-ios: the iPhone must already be registered in the team (one
 	@# `make install-ios` with the cable does it). Tailscale needs HTTPS certificates on.
-	@cd $(MOBILE) && npx tsx scripts/ios-link.mts --check && \
+	@cd $(MOBILE) && npx tsx scripts/ios-link.mts $(ios_link_flag) --check && \
 		npx expo prebuild --platform ios --clean && \
 		echo "▸ xcodebuild archive (Release)" && \
 		xcodebuild -quiet -workspace ios/$(IOS_APP).xcworkspace -scheme $(IOS_APP) \
 			-configuration Release -destination generic/platform=iOS -derivedDataPath ios/build \
 			-archivePath ios/build/$(IOS_APP).xcarchive -allowProvisioningUpdates archive && \
-		npx tsx scripts/ios-link.mts ios/build/$(IOS_APP).xcarchive "$(IOS_LINK_DIR)"
+		npx tsx scripts/ios-link.mts $(ios_link_flag) ios/build/$(IOS_APP).xcarchive "$(IOS_LINK_DIR)"
 
 install-android: ## Release build on a connected Android phone (fresh android/)
 	cd $(MOBILE) && npx expo prebuild --platform android --clean && \
