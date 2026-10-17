@@ -1,6 +1,6 @@
 ## 1. Protocol
 
-- [x] 1.1 `attachment.upload` client message, `attachment.uploaded` server message, `attachmentIds` and empty `text` in `session.input`, `unsupported_media` error code, `ATTACHMENT_MIME_TYPES` / `MAX_ATTACHMENTS` / `MAX_ATTACHMENT_BYTES` constants; samples and schema tests (66 tests green)
+- [x] 1.1 `attachment.upload` client message, `attachment.uploaded` server message, `attachmentIds` and empty `text` in `session.input`, `unsupported_media` error code, `ATTACHMENT_MIME_TYPES` / `MAX_ATTACHMENTS` / `MAX_ATTACHMENT_BYTES` constants; samples and schema tests (64 tests green)
 
 ## 2. Daemon
 
