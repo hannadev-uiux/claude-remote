@@ -130,6 +130,7 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
         ) : null
       }
       hasAttachments={prompt.attachments.length > 0}
+      voiceActive={voice.state === 'recording' || voice.state === 'transcribing'}
       attachments={
         <AttachmentChips
           images={prompt.attachments}
