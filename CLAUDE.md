@@ -27,7 +27,7 @@ openspec/          Changes numerados (proposal, specs, design, tasks), sempre em
 ## Comandos
 
 ```bash
-make                                                  # lista os atalhos (install, check, ios-dev, install-ios, publish-ota…)
+make                                                  # lista os atalhos (install, check, ios-dev, install-ios, install-ios-link, publish-ota…)
 pnpm install
 pnpm check                                            # typecheck + testes + Biome (warnings falham)
 pnpm lint:fix                                         # Biome com correções

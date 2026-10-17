@@ -5,15 +5,19 @@
 #   PLATFORM=ios|android publish-ota for a single platform (default: both)
 #   CHANNEL=<name>       publish-ota channel (default: production; CI publishes development)
 #   OTA_KEY=<path>       private key that signs OTA updates
+#   IOS_LINK_DIR=<path>  folder install-ios-link serves on the tailnet (default ~/.remote-harness-builds/ios)
 #   REMOTE_HARNESS_UPDATES_TOKEN (or the older CLAUDE_REMOTE_UPDATES_TOKEN) must be in the environment for publish-ota (never stored here).
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 MOBILE := apps/mobile
+# Xcode workspace, scheme and product; `expo prebuild` derives it from the app name in app.config.ts.
+IOS_APP := RemoteHarness
 DAEMON := @remote-harness/daemon
 APP := @remote-harness/mobile
 OTA_KEY ?= $(HOME)/.claude-remote-keys/private-key.pem
+IOS_LINK_DIR ?= $(HOME)/.remote-harness-builds/ios
 
 device_flag = $(if $(DEVICE),--device "$(DEVICE)",--device)
 platform_flag = $(if $(PLATFORM),--platform $(PLATFORM))
@@ -21,7 +25,7 @@ CHANNEL ?= production
 
 .PHONY: help install check lint-fix openspec \
 	daemon-dev daemon-build \
-	start ios-dev android-dev prebuild ios-devices install-ios install-android \
+	start ios-dev android-dev prebuild ios-devices install-ios install-ios-link install-android \
 	publish-ota publish-ota-dry
 
 help: ## List the targets
@@ -76,12 +80,23 @@ install-ios: ## Release build on a connected iPhone/iPad, no Metro needed (fresh
 	@cd $(MOBILE) && udid=$$(npx tsx scripts/ios-devices.mts --udid $(if $(DEVICE),"$(DEVICE)")) && \
 		npx expo prebuild --platform ios --clean && \
 		echo "▸ xcodebuild (Release) for $$udid" && \
-		xcodebuild -quiet -workspace ios/ClaudeRemote.xcworkspace -scheme ClaudeRemote \
+		xcodebuild -quiet -workspace ios/$(IOS_APP).xcworkspace -scheme $(IOS_APP) \
 			-configuration Release -destination "id=$$udid" -derivedDataPath ios/build \
 			-allowProvisioningUpdates -allowProvisioningDeviceRegistration build && \
 		xcrun devicectl device install app --device "$$udid" \
-			ios/build/Build/Products/Release-iphoneos/ClaudeRemote.app && \
+			ios/build/Build/Products/Release-iphoneos/$(IOS_APP).app && \
 		xcrun devicectl device process launch --device "$$udid" tech.doctorx.clauderemote
+
+install-ios-link: ## Release build the iPhone installs from a Safari link over Tailscale (any network, no cable)
+	@# Development-signed like install-ios: the iPhone must already be registered in the team (one
+	@# `make install-ios` with the cable does it). Tailscale needs HTTPS certificates on.
+	@cd $(MOBILE) && npx tsx scripts/ios-link.mts --check && \
+		npx expo prebuild --platform ios --clean && \
+		echo "▸ xcodebuild archive (Release)" && \
+		xcodebuild -quiet -workspace ios/$(IOS_APP).xcworkspace -scheme $(IOS_APP) \
+			-configuration Release -destination generic/platform=iOS -derivedDataPath ios/build \
+			-archivePath ios/build/$(IOS_APP).xcarchive -allowProvisioningUpdates archive && \
+		npx tsx scripts/ios-link.mts ios/build/$(IOS_APP).xcarchive "$(IOS_LINK_DIR)"
 
 install-android: ## Release build on a connected Android phone (fresh android/)
 	cd $(MOBILE) && npx expo prebuild --platform android --clean && \
