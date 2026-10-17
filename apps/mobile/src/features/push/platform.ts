@@ -1,5 +1,7 @@
 /** Android notification channel; the daemon sends `android.notification.channelId` with this id. */
 export const NOTIFICATION_CHANNEL_ID = 'claude-remote'
+/** Low-importance channel of the live status (`android.notification.channelId` of the daemon's live pushes). */
+export const LIVE_STATUS_CHANNEL_ID = 'live-status'
 
 /**
  * Whether this build has Firebase for `os` (`app.config.ts` puts `{ ios, android }` in `extra.firebase`

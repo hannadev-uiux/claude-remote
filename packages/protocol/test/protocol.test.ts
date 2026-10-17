@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   type ClientMessage,
   checkoutPeers,
+  LiveStatusPropsSchema,
   parseClientMessage,
   parseServerMessage,
   type ServerMessage,
@@ -42,6 +43,9 @@ const clientSamples: ClientMessage[] = [
   { type: 'device.register', id: '1', fcmToken: 'tok' },
   { type: 'device.register', id: '1', fcmToken: 'tok', platform: 'android' },
   { type: 'app.visibility', id: '1', foreground: true },
+  { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },
+  { type: 'live.register', id: '1', sessionId: 's', platform: 'android', fcmToken: 'tok' },
+  { type: 'live.unregister', id: '1', sessionId: 's' },
   { type: 'files.search', id: '1', sessionId: 's', query: 'src', limit: 20 },
   { type: 'commands.list', id: '1', sessionId: 's' },
   { type: 'projects.list', id: '1', profileId: 'claudin' },
@@ -195,6 +199,12 @@ describe('client messages', () => {
 
   test('accepts any key string (the daemon enforces the allow list)', () => {
     expect(parseClientMessage({ type: 'session.key', id: '1', sessionId: 's', key: 'C-z' }).ok).toBe(true)
+  })
+
+  test('live status props carry only the allowed fields', () => {
+    const props = { title: 'Work', state: 'working', status: 'Working', step: '', tools: '', startedAt: 1 }
+    expect(LiveStatusPropsSchema.parse({ ...props, prompt: 'secret' })).toEqual(props)
+    expect(LiveStatusPropsSchema.safeParse({ ...props, state: 'error' }).success).toBe(false)
   })
 
   test('rejects an unknown device platform', () => {

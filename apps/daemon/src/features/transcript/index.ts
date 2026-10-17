@@ -3,7 +3,7 @@ import { DaemonError } from '../../core/errors.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { oneLine } from '../sessions/transcript-meta.ts'
-import { type StreamTarget, TranscriptService } from './service.ts'
+import { type EntryListener, type StreamTarget, TranscriptService } from './service.ts'
 
 /** Resolves the transcript file for a session or one of its subagents. */
 export type TranscriptPathResolver = (sessionId: string, agentId?: string) => string | null
@@ -49,6 +49,8 @@ export function registerTranscriptFeature(ctx: DaemonContext, store: SessionStor
 
   return {
     service,
+    /** Follows a session's own transcript (not its subagents') for daemon-side listeners. */
+    follow: (sessionId: string, listener: EntryListener) => service.follow(target(sessionId), listener),
     /** Lets other features (subagents) teach the stream how to find more transcripts. */
     addResolver(resolver: TranscriptPathResolver) {
       resolvers.push(resolver)

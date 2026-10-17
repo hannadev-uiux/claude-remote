@@ -124,6 +124,30 @@ export type RuleScope = z.infer<typeof RuleScopeSchema>
 export const DevicePlatformSchema = z.enum(['ios', 'android'])
 export type DevicePlatform = z.infer<typeof DevicePlatformSchema>
 
+/** States of a session's live status (Live Activity / Android notification). */
+export const LiveStateSchema = z.enum(['working', 'waiting', 'done', 'closed'])
+export type LiveState = z.infer<typeof LiveStateSchema>
+
+/** Name the app passes to `createLiveActivity` and the daemon puts in `content-state.name`. */
+export const LIVE_ACTIVITY_NAME = 'SessionActivity'
+
+/**
+ * Props of the live status, rendered as they are by the widget (it cannot translate): texts arrive
+ * already translated. Never session content: profile name, state, step category, tool count, times.
+ */
+export const LiveStatusPropsSchema = z.object({
+  title: z.string(),
+  state: LiveStateSchema,
+  status: z.string(),
+  /** Translated step category ("running a command"), empty when none. */
+  step: z.string(),
+  /** Translated tool count ("3 tools"), empty when none. */
+  tools: z.string(),
+  /** Start of the turn, epoch milliseconds (drives the elapsed timer). */
+  startedAt: z.number(),
+})
+export type LiveStatusProps = z.infer<typeof LiveStatusPropsSchema>
+
 export const QuestionKindSchema = z.enum(['choice', 'text', 'number'])
 export type QuestionKind = z.infer<typeof QuestionKindSchema>
 

@@ -136,6 +136,14 @@ const enUS = {
     loading: 'loading…',
     start: 'Start of the conversation',
   },
+  liveStatus: {
+    states: { working: 'Working', waiting: 'Waiting for you', done: 'Done', closed: 'Session closed' },
+    title: 'Live status',
+    hint: 'While a session works, follow it on the lock screen and in the Dynamic Island (iPhone) or in a silent notification (Android). Only the state, step type and timer are shown, never the conversation.',
+    enabled: 'Show live status',
+    channelName: 'Live status',
+    channelDescription: 'Progress of sessions while they work (silent).',
+  },
   tools: {
     grepIn: '{{pattern}} in {{path}}',
     todoItems_one: '{{count}} item',
