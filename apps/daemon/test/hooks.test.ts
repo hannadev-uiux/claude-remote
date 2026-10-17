@@ -1,7 +1,7 @@
 import { execFile, execFileSync } from 'node:child_process'
 import { lstat, mkdir, readFile, stat, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Profile } from '@claude-remote/protocol'
+import type { Profile } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { EventBus } from '../src/core/event-bus.ts'
 import type { DaemonEvents } from '../src/core/events.ts'

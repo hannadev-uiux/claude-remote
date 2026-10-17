@@ -29,13 +29,13 @@ body:
   - type: textarea
     id: doctor
     attributes:
-      label: "`claude-remote doctor` output"
+      label: "`remote-harness doctor` output"
       render: text
   - type: textarea
     id: logs
     attributes:
       label: Relevant logs
-      description: From `~/.claude-remote/logs` (redacted).
+      description: From `~/.remote-harness/logs` (redacted).
       render: text
   - type: input
     id: versions

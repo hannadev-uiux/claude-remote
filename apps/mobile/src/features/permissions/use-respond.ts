@@ -1,4 +1,4 @@
-import type { PermissionAnswer, RuleScope } from '@claude-remote/protocol'
+import type { PermissionAnswer, RuleScope } from '@remote-harness/protocol'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDaemonClient } from '@/core/connection'

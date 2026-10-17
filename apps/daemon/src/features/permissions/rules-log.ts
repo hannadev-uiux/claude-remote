@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir, readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import type { RuleScope } from '@claude-remote/protocol'
+import type { RuleScope } from '@remote-harness/protocol'
 import { readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 
 export type RuleLogEntry = {

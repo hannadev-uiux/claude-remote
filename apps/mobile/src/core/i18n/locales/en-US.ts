@@ -50,12 +50,12 @@ const enUS = {
   },
   pairing: {
     title: 'Pair with your computer',
-    intro: 'On your computer, run <cmd>claude-remote pair</cmd> and point the camera at the QR code.',
+    intro: 'On your computer, run <cmd>remote-harness pair</cmd> and point the camera at the QR code.',
     guideTitle: 'First time? Set up your computer',
     guideHint: 'Tailscale, a one-line install and pairing, step by step.',
     tabQr: 'QR code',
     tabManual: 'Manual',
-    invalidQr: 'Invalid QR code. Use the one shown by `claude-remote pair`.',
+    invalidQr: 'Invalid QR code. Use the one shown by `remote-harness pair`.',
     invalidManual: 'Enter a valid host, port and token.',
     cameraRationale: 'The camera is only used to read the pairing QR code.',
     allowCamera: 'Allow camera',
@@ -88,13 +88,13 @@ const enUS = {
         action: 'Send the link to the computer',
       },
       install: {
-        title: 'Claude Remote on the computer',
+        title: 'Remote Harness on the computer',
         body: 'In a terminal on the computer, run the installer. It checks the prerequisites, asks which Claude Code accounts you want to control (or creates a new one, with login) and the command (alias) for each.',
         action: 'Send the command to the computer',
       },
       pair: {
         title: 'Pair',
-        body: 'At the end, the installer shows a QR code (or run `claude-remote pair`). Scan it with this app and you are done: open Claude Code on the computer with the alias you chose.',
+        body: 'At the end, the installer shows a QR code (or run `remote-harness pair`). Scan it with this app and you are done: open Claude Code on the computer with the alias you chose.',
         action: 'Scan the QR code',
       },
     },
@@ -358,7 +358,7 @@ const enUS = {
     error: 'Could not check for updates. Try again later.',
     disabled: 'Over-the-air updates are off in this build: install a new build to update.',
     daemonOutdated:
-      'The computer runs Claude Remote {{version}}; this app needs {{minimum}} or newer. On the computer, run claude-remote update.',
+      'The computer runs Remote Harness {{version}}; this app needs {{minimum}} or newer. On the computer, run claude-remote update.',
     dismiss: 'Dismiss',
   },
   terminal: {

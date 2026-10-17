@@ -1,18 +1,18 @@
-# Claude Remote installer for Windows (WSL2).
+# Remote Harness installer for Windows (WSL2).
 #
 #   irm https://maarkn.dev/claude-remote/install.ps1 | iex
 #   & ([scriptblock]::Create((irm https://maarkn.dev/claude-remote/install.ps1))) -Yes -Ref development
 #
-# Claude Remote drives Claude Code through tmux, so on Windows it runs inside WSL2. This script checks
+# Remote Harness drives Claude Code through tmux, so on Windows it runs inside WSL2. This script checks
 # Windows 10 2004+ (build 19041) or Windows 11, installs WSL2 with Ubuntu when it is missing (administrator
 # prompt, maybe a reboot: run it again afterwards), makes sure the distribution has a Linux user, and then
 # runs the Linux one-line installer (install.sh) inside it, which builds the daemon and opens the setup.
 #
-# Parameters: -Ref <branch|tag> (env CLAUDE_REMOTE_REF), -Yes (no questions), -NoService (no background
+# Parameters: -Ref <branch|tag> (env REMOTE_HARNESS_REF), -Yes (no questions), -NoService (no background
 # service), -Distro <name> (default: Ubuntu, or the WSL default distribution).
 # Everything lives in Install-ClaudeRemote so a partially downloaded script never runs, and nothing calls
 # `exit` (under `iex` that would close the user's PowerShell). Messages follow (Get-Culture).Name
-# (pt*, es*, else English); the language is passed on to the Linux installer as CLAUDE_REMOTE_LANG.
+# (pt*, es*, else English); the language is passed on to the Linux installer as REMOTE_HARNESS_LANG.
 # The file is UTF-8 without BOM (a BOM would end up inside the `irm | iex` string): accents are right
 # under `irm | iex` and in PowerShell 7; a saved copy run by Windows PowerShell 5.1 shows them garbled.
 
@@ -42,7 +42,7 @@ function Install-ClaudeRemote {
   $PSNativeCommandUseErrorActionPreference = $false
 
   $InstallShUrl = 'https://maarkn.dev/claude-remote/install.sh'
-  $RawUrl = 'https://raw.githubusercontent.com/maarkN/claude-remote/{0}/install.sh'
+  $RawUrl = 'https://raw.githubusercontent.com/maarkN/remote-harness/{0}/install.sh'
   $DefaultDistro = 'Ubuntu'
   $MinBuild = 19041
 
@@ -52,7 +52,7 @@ function Install-ClaudeRemote {
       NotWindows     = 'This installer is for Windows. On macOS and Linux run: curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash'
       OldWindows     = 'Windows 10 version 2004 (build 19041) or later, or Windows 11, is required (found build {0}). Update Windows and run this again.'
       InvalidValue   = 'Invalid value for -{0}: {1}'
-      WslMissing     = 'WSL2 is not installed. Claude Remote runs inside WSL2 (Linux on Windows), with Ubuntu.'
+      WslMissing     = 'WSL2 is not installed. Remote Harness runs inside WSL2 (Linux on Windows), with Ubuntu.'
       WslAdmin       = 'Installing WSL needs administrator rights: Windows will ask for permission (UAC). It downloads Ubuntu and may need a reboot.'
       AskInstallWsl  = 'Install WSL2 with Ubuntu now?'
       InstallingWsl  = 'Installing WSL2 and Ubuntu (wsl --install -d {0} --no-launch)'
@@ -64,7 +64,7 @@ function Install-ClaudeRemote {
       AskOpenDistro  = 'Open {0} now to create your Linux user?'
       DistroMissing  = 'WSL distribution {0} not found. Installed: {1}. Choose one with -Distro <name>.'
       None           = 'none'
-      Wsl1           = '{0} runs on WSL 1, and Claude Remote needs WSL 2. Convert it with: wsl --set-version {0} 2'
+      Wsl1           = '{0} runs on WSL 1, and Remote Harness needs WSL 2. Convert it with: wsl --set-version {0} 2'
       RootUser       = '{0} logs in as root: it has no Linux user yet.'
       AskCreateUser  = 'Create a Linux user in {0} now (recommended)?'
       UserName       = 'Linux user name (lowercase, e.g. {0})'
@@ -76,7 +76,7 @@ function Install-ClaudeRemote {
       Using          = 'WSL distribution: {0}'
       RunningLinux   = 'Running the Linux installer inside {0}'
       LinuxFailed    = 'The Linux installer stopped (exit code {0}). Fix what it says above and run this command again.'
-      Done           = 'Done. Claude Remote lives in {0}: open it (Start menu, or wsl -d {0}) to use your aliases.'
+      Done           = 'Done. Remote Harness lives in {0}: open it (Start menu, or wsl -d {0}) to use your aliases.'
       YesNo          = '[Y/n]'
       YesLetters     = 'y', 'yes'
     }
@@ -85,7 +85,7 @@ function Install-ClaudeRemote {
       NotWindows     = 'Este instalador é para Windows. No macOS e no Linux rode: curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash'
       OldWindows     = 'É preciso o Windows 10 versão 2004 (build 19041) ou mais novo, ou o Windows 11 (encontrado build {0}). Atualize o Windows e rode de novo.'
       InvalidValue   = 'Valor inválido para -{0}: {1}'
-      WslMissing     = 'O WSL2 não está instalado. O Claude Remote roda dentro do WSL2 (Linux no Windows), com Ubuntu.'
+      WslMissing     = 'O WSL2 não está instalado. O Remote Harness roda dentro do WSL2 (Linux no Windows), com Ubuntu.'
       WslAdmin       = 'Instalar o WSL exige permissão de administrador: o Windows vai pedir autorização (UAC). Ele baixa o Ubuntu e pode exigir reiniciar.'
       AskInstallWsl  = 'Instalar o WSL2 com Ubuntu agora?'
       InstallingWsl  = 'Instalando o WSL2 e o Ubuntu (wsl --install -d {0} --no-launch)'
@@ -97,7 +97,7 @@ function Install-ClaudeRemote {
       AskOpenDistro  = 'Abrir o {0} agora para criar seu usuário do Linux?'
       DistroMissing  = 'Distribuição {0} do WSL não encontrada. Instaladas: {1}. Escolha uma com -Distro <nome>.'
       None           = 'nenhuma'
-      Wsl1           = 'O {0} roda no WSL 1, e o Claude Remote precisa do WSL 2. Converta com: wsl --set-version {0} 2'
+      Wsl1           = 'O {0} roda no WSL 1, e o Remote Harness precisa do WSL 2. Converta com: wsl --set-version {0} 2'
       RootUser       = 'O {0} entra como root: ainda não tem usuário do Linux.'
       AskCreateUser  = 'Criar um usuário do Linux no {0} agora (recomendado)?'
       UserName       = 'Nome do usuário do Linux (minúsculas, ex.: {0})'
@@ -109,7 +109,7 @@ function Install-ClaudeRemote {
       Using          = 'Distribuição do WSL: {0}'
       RunningLinux   = 'Rodando o instalador do Linux dentro do {0}'
       LinuxFailed    = 'O instalador do Linux parou (código {0}). Corrija o que ele disse acima e rode este comando de novo.'
-      Done           = 'Pronto. O Claude Remote fica no {0}: abra-o (menu Iniciar, ou wsl -d {0}) para usar seus aliases.'
+      Done           = 'Pronto. O Remote Harness fica no {0}: abra-o (menu Iniciar, ou wsl -d {0}) para usar seus aliases.'
       YesNo          = '[S/n]'
       YesLetters     = 's', 'sim', 'y', 'yes'
     }
@@ -118,7 +118,7 @@ function Install-ClaudeRemote {
       NotWindows     = 'Este instalador es para Windows. En macOS y Linux ejecuta: curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash'
       OldWindows     = 'Se necesita Windows 10 versión 2004 (build 19041) o posterior, o Windows 11 (encontrado build {0}). Actualiza Windows y vuelve a ejecutarlo.'
       InvalidValue   = 'Valor no válido para -{0}: {1}'
-      WslMissing     = 'WSL2 no está instalado. Claude Remote funciona dentro de WSL2 (Linux en Windows), con Ubuntu.'
+      WslMissing     = 'WSL2 no está instalado. Remote Harness funciona dentro de WSL2 (Linux en Windows), con Ubuntu.'
       WslAdmin       = 'Instalar WSL requiere permisos de administrador: Windows pedirá autorización (UAC). Descarga Ubuntu y puede requerir reiniciar.'
       AskInstallWsl  = '¿Instalar WSL2 con Ubuntu ahora?'
       InstallingWsl  = 'Instalando WSL2 y Ubuntu (wsl --install -d {0} --no-launch)'
@@ -130,7 +130,7 @@ function Install-ClaudeRemote {
       AskOpenDistro  = '¿Abrir {0} ahora para crear tu usuario de Linux?'
       DistroMissing  = 'No se encontró la distribución {0} de WSL. Instaladas: {1}. Elige una con -Distro <nombre>.'
       None           = 'ninguna'
-      Wsl1           = '{0} funciona con WSL 1, y Claude Remote necesita WSL 2. Conviértela con: wsl --set-version {0} 2'
+      Wsl1           = '{0} funciona con WSL 1, y Remote Harness necesita WSL 2. Conviértela con: wsl --set-version {0} 2'
       RootUser       = '{0} entra como root: todavía no tiene usuario de Linux.'
       AskCreateUser  = '¿Crear un usuario de Linux en {0} ahora (recomendado)?'
       UserName       = 'Nombre del usuario de Linux (minúsculas, p. ej. {0})'
@@ -142,7 +142,7 @@ function Install-ClaudeRemote {
       Using          = 'Distribución de WSL: {0}'
       RunningLinux   = 'Ejecutando el instalador de Linux dentro de {0}'
       LinuxFailed    = 'El instalador de Linux se detuvo (código {0}). Corrige lo que indica arriba y vuelve a ejecutar este comando.'
-      Done           = 'Listo. Claude Remote vive en {0}: ábrela (menú Inicio, o wsl -d {0}) para usar tus alias.'
+      Done           = 'Listo. Remote Harness vive en {0}: ábrela (menú Inicio, o wsl -d {0}) para usar tus alias.'
       YesNo          = '[S/n]'
       YesLetters     = 's', 'si', 'sí', 'y', 'yes'
     }
@@ -254,7 +254,7 @@ function Install-ClaudeRemote {
   function Invoke-Main {
     Write-Host ''
     Write-Host '✻ ' -ForegroundColor DarkYellow -NoNewline
-    Write-Host 'Claude Remote' -NoNewline
+    Write-Host 'Remote Harness' -NoNewline
     Write-Host " · $($T.Installer)" -ForegroundColor DarkGray
     Write-Host ''
 
@@ -262,6 +262,7 @@ function Install-ClaudeRemote {
     $build = [Environment]::OSVersion.Version.Build
     if ($build -lt $MinBuild) { Write-Fail ($T.OldWindows -f $build); return }
 
+    if ($Ref -eq '' -and $env:REMOTE_HARNESS_REF) { $Ref = $env:REMOTE_HARNESS_REF }
     if ($Ref -eq '' -and $env:CLAUDE_REMOTE_REF) { $Ref = $env:CLAUDE_REMOTE_REF }
     if ($Ref -ne '' -and $Ref -notmatch '^[A-Za-z0-9._/-]+$') { Write-Fail ($T.InvalidValue -f 'Ref', $Ref); return }
     if ($Distro -ne '' -and $Distro -notmatch '^[A-Za-z0-9._-]+$') { Write-Fail ($T.InvalidValue -f 'Distro', $Distro); return }
@@ -319,8 +320,8 @@ function Install-ClaudeRemote {
 
     # install.sh reads the terminal for the setup; flags and the language go through bash.
     if ($Ref -ne '') { $url = $RawUrl -f $Ref } else { $url = $InstallShUrl }
-    $envs = "CLAUDE_REMOTE_LANG=$lang"
-    if ($Ref -ne '') { $envs += " CLAUDE_REMOTE_REF=$Ref" }
+    $envs = "REMOTE_HARNESS_LANG=$lang"
+    if ($Ref -ne '') { $envs += " REMOTE_HARNESS_REF=$Ref" }
     $flags = @()
     if ($Yes) { $flags += '--yes' }
     if ($NoService) { $flags += '--no-service' }

@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Must be the URL the installed builds were made with: it is part of their runtime version.
-      CLAUDE_REMOTE_UPDATES_URL: https://maarkn.dev/api/claude-remote/updates/manifest
+      REMOTE_HARNESS_UPDATES_URL: https://maarkn.dev/api/claude-remote/updates/manifest
       # Part of the runtime version too (ios.appleTeamId): the team the local builds are signed with.
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
     steps:
@@ -70,10 +70,10 @@ jobs:
       - name: Publish
         if: steps.secrets.outputs.ready == 'true'
         env:
-          CLAUDE_REMOTE_UPDATES_KEY: ${{ runner.temp }}/ota-signing-key.pem
+          REMOTE_HARNESS_UPDATES_KEY: ${{ runner.temp }}/ota-signing-key.pem
           # Development-only token: the server refuses it for any other channel.
-          CLAUDE_REMOTE_UPDATES_TOKEN: ${{ secrets.OTA_DEV_TOKEN }}
-        run: pnpm --filter @claude-remote/mobile ota:publish --channel development
+          REMOTE_HARNESS_UPDATES_TOKEN: ${{ secrets.OTA_DEV_TOKEN }}
+        run: pnpm --filter @remote-harness/mobile ota:publish --channel development
 
       - name: Remove the signing key
         if: always()

@@ -1,4 +1,4 @@
-import type { Key } from '@claude-remote/protocol'
+import type { Key } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'

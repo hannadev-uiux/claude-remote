@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Profile } from '@claude-remote/protocol'
+import type { Profile } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { messagesFor } from '../src/core/i18n/index.ts'
 import {
@@ -56,7 +56,7 @@ describe('setup profiles', () => {
     expect(validateAlias('trabalho', [], pt)).toBe(true)
     expect(validateAlias('cc-2', [], pt)).toBe(true)
     expect(validateAlias('claude', [], pt)).toContain('reservado')
-    expect(validateAlias('claude-remote', [], pt)).toContain('reservado')
+    expect(validateAlias('remote-harness', [], pt)).toContain('reservado')
     expect(validateAlias('Trabalho', [], pt)).toContain('minúsculas')
     expect(validateAlias('1x', [], pt)).toContain('minúsculas')
     expect(validateAlias('a b', [], pt)).toContain('minúsculas')

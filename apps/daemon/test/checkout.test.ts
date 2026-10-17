@@ -1,6 +1,6 @@
 import { mkdir, realpath } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Checkout, ServerMessage } from '@claude-remote/protocol'
+import type { Checkout, ServerMessage } from '@remote-harness/protocol'
 import { describe, expect, test, vi } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import { registerCheckoutFeature } from '../src/features/checkout/index.ts'

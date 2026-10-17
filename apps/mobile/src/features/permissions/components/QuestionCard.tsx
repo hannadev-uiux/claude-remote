@@ -1,4 +1,4 @@
-import type { PermissionAnswer, Question } from '@claude-remote/protocol'
+import type { PermissionAnswer, Question } from '@remote-harness/protocol'
 import { Check, MessageCircleQuestionMark } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'

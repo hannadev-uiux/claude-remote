@@ -1,4 +1,4 @@
-import type { Checkout } from '@claude-remote/protocol'
+import type { Checkout } from '@remote-harness/protocol'
 import type { GitClient } from '../../infra/git.ts'
 
 export const CHECKOUT_CACHE_MS = 15_000

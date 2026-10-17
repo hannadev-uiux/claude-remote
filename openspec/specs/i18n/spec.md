@@ -17,7 +17,7 @@ The daemon, the CLI, `install.sh` and the app SHALL show every user-facing text 
 - **THEN** texts are shown in `en-US`
 
 ### Requirement: Language choice in the setup
-`claude-remote setup` SHALL ask the language as its first question, defaulting to the saved language or the system one, and MUST save the choice as `language` in `config.json`, keeping the other keys.
+`remote-harness setup` SHALL ask the language as its first question, defaulting to the saved language or the system one, and MUST save the choice as `language` in `config.json`, keeping the other keys.
 
 #### Scenario: Choosing Spanish
 - **WHEN** the user picks `Español` in the first question

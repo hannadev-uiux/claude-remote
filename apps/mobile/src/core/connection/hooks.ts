@@ -1,4 +1,4 @@
-import type { ServerMessageOf, ServerMessageType } from '@claude-remote/protocol'
+import type { ServerMessageOf, ServerMessageType } from '@remote-harness/protocol'
 import { useEffect, useRef } from 'react'
 import { useConnectionStore } from './connection-store'
 

@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION } from '@claude-remote/protocol'
+import { PROTOCOL_VERSION } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import type { SocketLike } from '@/core/connection/daemon-client'
 import { testConnection } from './test-connection'

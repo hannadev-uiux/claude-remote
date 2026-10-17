@@ -1,4 +1,4 @@
-import type { MuteState } from '@claude-remote/protocol'
+import type { MuteState } from '@remote-harness/protocol'
 import { create } from 'zustand'
 import type { DaemonClient } from '@/core/connection/daemon-client'
 

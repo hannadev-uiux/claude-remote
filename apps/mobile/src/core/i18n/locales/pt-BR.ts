@@ -48,12 +48,12 @@ const ptBR = {
   },
   pairing: {
     title: 'Parear com o computador',
-    intro: 'No computador, rode <cmd>claude-remote pair</cmd> e aponte a câmera para o QR code.',
+    intro: 'No computador, rode <cmd>remote-harness pair</cmd> e aponte a câmera para o QR code.',
     guideTitle: 'Primeira vez? Configure o computador',
     guideHint: 'Tailscale, instalação em uma linha e pareamento, passo a passo.',
     tabQr: 'QR code',
     tabManual: 'Manual',
-    invalidQr: 'QR inválido. Use o QR exibido por `claude-remote pair`.',
+    invalidQr: 'QR inválido. Use o QR exibido por `remote-harness pair`.',
     invalidManual: 'Preencha host, porta e token válidos.',
     cameraRationale: 'A câmera é usada só para ler o QR de pareamento.',
     allowCamera: 'Permitir câmera',
@@ -86,13 +86,13 @@ const ptBR = {
         action: 'Enviar o link para o computador',
       },
       install: {
-        title: 'Claude Remote no computador',
+        title: 'Remote Harness no computador',
         body: 'Num terminal do computador, rode o instalador. Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
         action: 'Enviar o comando para o computador',
       },
       pair: {
         title: 'Parear',
-        body: 'No fim, o instalador mostra um QR code (ou rode `claude-remote pair`). Escaneie com este app e pronto: abra o Claude Code no computador pelo alias que você escolheu.',
+        body: 'No fim, o instalador mostra um QR code (ou rode `remote-harness pair`). Escaneie com este app e pronto: abra o Claude Code no computador pelo alias que você escolheu.',
         action: 'Escanear o QR code',
       },
     },
@@ -355,7 +355,7 @@ const ptBR = {
     error: 'Não consegui procurar atualizações. Tente mais tarde.',
     disabled: 'As atualizações pelo ar estão desligadas neste build: instale um build novo para atualizar.',
     daemonOutdated:
-      'O computador roda o Claude Remote {{version}}; este app precisa da {{minimum}} ou mais nova. No computador, rode claude-remote update.',
+      'O computador roda o Remote Harness {{version}}; este app precisa da {{minimum}} ou mais nova. No computador, rode claude-remote update.',
     dismiss: 'Dispensar',
   },
   terminal: {

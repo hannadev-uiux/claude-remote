@@ -1,4 +1,4 @@
-import type { CommandItem, Profile } from '@claude-remote/protocol'
+import type { CommandItem, Profile } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { SessionStore } from '../sessions/store.ts'

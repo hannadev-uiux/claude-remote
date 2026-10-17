@@ -1,4 +1,4 @@
-import type { Session } from '@claude-remote/protocol'
+import type { Session } from '@remote-harness/protocol'
 
 /** Daemon-side session: the wire `Session` plus fields the app never sees. */
 export type SessionRecord = Session & { transcriptPath: string | null }

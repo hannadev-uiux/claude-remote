@@ -11,7 +11,7 @@ export class UnsupportedPlatformError extends Error {
   override name = 'UnsupportedPlatformError'
   constructor(readonly platform: string) {
     super(
-      `Unsupported system: ${platform}. Claude Remote runs on ${SUPPORTED_PLATFORMS.map((p) => PLATFORM_NAMES[p]).join(' and ')}.`,
+      `Unsupported system: ${platform}. Remote Harness runs on ${SUPPORTED_PLATFORMS.map((p) => PLATFORM_NAMES[p]).join(' and ')}.`,
     )
   }
 }

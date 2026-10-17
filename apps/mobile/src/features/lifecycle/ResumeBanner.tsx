@@ -1,4 +1,4 @@
-import type { Session } from '@claude-remote/protocol'
+import type { Session } from '@remote-harness/protocol'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'

@@ -1,5 +1,5 @@
 import { open } from 'node:fs/promises'
-import { type PermissionMode, PermissionModeSchema } from '@claude-remote/protocol'
+import { type PermissionMode, PermissionModeSchema } from '@remote-harness/protocol'
 
 export type TranscriptMeta = {
   title: string | null

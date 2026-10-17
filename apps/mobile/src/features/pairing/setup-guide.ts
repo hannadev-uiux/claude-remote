@@ -13,7 +13,7 @@ export const TAILSCALE_STORES = {
 } as const
 /** Download page that picks the right installer for macOS, Linux or Windows. */
 export const TAILSCALE_DOWNLOAD_URL = 'https://tailscale.com/download'
-export const REPO_URL = 'https://github.com/maarkN/claude-remote'
+export const REPO_URL = 'https://github.com/maarkN/remote-harness'
 
 export type GuideAction =
   | { kind: 'link'; label: string; url: string }

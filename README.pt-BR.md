@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="apps/mobile/assets/icon.png" width="112" alt="Ícone do Claude Remote" />
+<img src="apps/mobile/assets/icon.png" width="112" alt="Ícone do Remote Harness" />
 
-# Claude Remote
+# Remote Harness
 
 **Acompanhe e controle pelo celular (iPhone ou Android) as sessões do Claude Code que estão rodando no seu Mac, Linux ou Windows (WSL).**
 
@@ -31,14 +31,14 @@ O controle remoto nativo (`/rc`) ajuda, mas não atendia um uso real:
 - **Trabalha com uma conta por vez.** Muita gente usa dois logins do Claude Code no mesmo Mac (pessoal e trabalho, via `CLAUDE_CONFIG_DIR`) e quer ver os dois juntos.
 - **Não existe API pública para se anexar a uma sessão interativa** a partir de outro processo.
 
-O Claude Remote resolve isso com ferramentas em que você já confia: as sessões rodam no **tmux**, o Claude Code avisa o que acontece pelos **hooks HTTP** nativos e um **daemon** local liga tudo ao celular pelo **Tailscale**.
+O Remote Harness resolve isso com ferramentas em que você já confia: as sessões rodam no **tmux**, o Claude Code avisa o que acontece pelos **hooks HTTP** nativos e um **daemon** local liga tudo ao celular pelo **Tailscale**.
 
 ## O que ele faz
 
 - **Uma lista, todos os perfis** — sessões de todos os perfis, agrupadas por projeto, com estado ao vivo.
 - **Conversa em tempo real** — markdown, raciocínio, tool calls, diffs e resultados, paginados.
 - **Enviar prompts** — para o mesmo processo aberto no computador, com `Esc` e `Ctrl+C`.
-- **Aprovar permissões** — permitir, negar ou **permitir sempre** (a regra é gravada pelo próprio Claude Code e pode ser desfeita com `claude-remote rules undo`).
+- **Aprovar permissões** — permitir, negar ou **permitir sempre** (a regra é gravada pelo próprio Claude Code e pode ser desfeita com `remote-harness rules undo`).
 - **Trocar o modo de permissão** — padrão, aceitar edições, plano, auto. O `bypassPermissions` nunca é oferecido.
 - **Autocomplete** — `@arquivos` e `/comandos` (projeto, perfil, plugins e nativos).
 - **Terminal bruto** — xterm.js com o painel do tmux para menus da TUI.
@@ -61,11 +61,11 @@ Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [R
 curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
 ```
 
-O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.claude-remote/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `claude-remote setup` muda contas e aliases depois.
+O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.remote-harness/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `remote-harness setup` muda contas e aliases depois. Instalações feitas antes da mudança de nome para Remote Harness continuam usando `~/.claude-remote`, e o comando `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam funcionando.
 
 No celular, instale o app e o Tailscale (App Store ou Google Play, mesma conta do computador). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o computador.
 
-Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo); o instalador cuida do Node 24+, baixando um Node privado em `~/.claude-remote/node` se faltar, e de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê. Também: Claude Code; Tailscale no computador e no celular.
+Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo); o instalador cuida do Node 24+, baixando um Node privado em `~/.remote-harness/node` se faltar, e de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê. Também: Claude Code; Tailscale no computador e no celular.
 
 ### Android
 
@@ -77,21 +77,21 @@ pnpm android         # expo run:android — emulador ou celular conectado
 pnpm build:android   # APK de release local (o eas.json também tem os perfis development/preview/production)
 ```
 
-Push (opcional): no mesmo projeto do Firebase, crie um app Android com o id `tech.doctorx.clauderemote`, coloque o `google-services.json` em `apps/mobile/` (fora do git, como o `GoogleService-Info.plist` do iOS) e rode `pnpm android` de novo; sem o arquivo o app compila sem Firebase. O daemon precisa da conta de serviço em `~/.claude-remote/firebase-service-account.json`. No Android 13+ o app pede a permissão de notificações; elas usam o canal `claude-remote` (alta prioridade) e, como no iOS, levam só o evento e o perfil. Os botões Permitir/Negar não aparecem na notificação do Android: toque nela para responder no app. `claude-remote doctor` lista os celulares registrados e a plataforma de cada um.
+Push (opcional): no mesmo projeto do Firebase, crie um app Android com o id `tech.doctorx.clauderemote`, coloque o `google-services.json` em `apps/mobile/` (fora do git, como o `GoogleService-Info.plist` do iOS) e rode `pnpm android` de novo; sem o arquivo o app compila sem Firebase. O daemon precisa da conta de serviço em `~/.remote-harness/firebase-service-account.json`. No Android 13+ o app pede a permissão de notificações; elas usam o canal `claude-remote` (alta prioridade) e, como no iOS, levam só o evento e o perfil. Os botões Permitir/Negar não aparecem na notificação do Android: toque nela para responder no app. `remote-harness doctor` lista os celulares registrados e a plataforma de cada um.
 
-No emulador sem Tailscale: `claude-remote start --dev`, `claude-remote pair --dev` e `adb reverse tcp:7337 tcp:7337`.
+No emulador sem Tailscale: `remote-harness start --dev`, `remote-harness pair --dev` e `adb reverse tcp:7337 tcp:7337`.
 
 ### Linux
 
-- **Serviço**: uma unit de usuário do systemd, `~/.config/systemd/user/claude-remote.service` (reinicia se cair, logs em `~/.claude-remote/logs`). Veja com `claude-remote service status` ou `systemctl --user status claude-remote`.
+- **Serviço**: uma unit de usuário do systemd, `~/.config/systemd/user/claude-remote.service` (reinicia se cair, logs em `~/.remote-harness/logs`). Veja com `remote-harness service status` ou `systemctl --user status claude-remote`.
 - **Lingering**: serviços de usuário param no logout. O assistente pergunta antes de rodar `loginctl enable-linger $USER`, que mantém o daemon rodando após o logout e o inicia no boot (necessário em servidores acessados por SSH).
-- **Sem systemd** (containers, alguns WSL): o assistente avisa; rode `claude-remote start` você mesmo, por exemplo numa janela do tmux.
-- **Token**: fica no Secret Service (GNOME Keyring, KWallet…) via `secret-tool` quando disponível; senão em `~/.claude-remote/token` (modo `0600`), caso dos servidores sem interface gráfica. `claude-remote doctor` mostra qual; `CLAUDE_REMOTE_TOKEN_STORE=secret-tool|file` força um deles.
+- **Sem systemd** (containers, alguns WSL): o assistente avisa; rode `remote-harness start` você mesmo, por exemplo numa janela do tmux.
+- **Token**: fica no Secret Service (GNOME Keyring, KWallet…) via `secret-tool` quando disponível; senão em `~/.remote-harness/token` (modo `0600`), caso dos servidores sem interface gráfica. `remote-harness doctor` mostra qual; `REMOTE_HARNESS_TOKEN_STORE=secret-tool|file` força um deles.
 - **Shell**: o `PATH` vai para `~/.bashrc` e/ou `~/.zshrc`; os launchers rodam com `zsh`.
 
 ### Windows (WSL2)
 
-O Claude Remote controla o Claude Code pelo tmux, então no Windows ele roda dentro do **WSL2** (Linux no Windows). No PowerShell:
+O Remote Harness controla o Claude Code pelo tmux, então no Windows ele roda dentro do **WSL2** (Linux no Windows). No PowerShell:
 
 ```powershell
 irm https://maarkn.dev/claude-remote/install.ps1 | iex
@@ -101,12 +101,12 @@ O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se
 
 - **Node e Claude Code** precisam estar instalados **dentro do WSL** (não só no Windows); o instalador avisa o que falta.
 - **systemd**: o serviço é uma unit de usuário do systemd, e o WSL só inicia o systemd com `[boot] systemd=true` em `/etc/wsl.conf`. O assistente mostra o comando `sudo` exato, só roda se você concordar (com backup) e pede para rodar `wsl --shutdown` no PowerShell.
-- **Iniciar no logon**: o WSL só fica de pé enquanto algo o usa. O assistente pode criar uma Tarefa Agendada do Windows, "Claude Remote", que inicia a distribuição no logon (`wsl.exe -d <distro> --exec /bin/true`); `claude-remote service uninstall` a remove. Se o WSL ainda parar por ociosidade, aumente `vmIdleTimeout` em `[wsl2]` no `%UserProfile%\.wslconfig`.
+- **Iniciar no logon**: o WSL só fica de pé enquanto algo o usa. O assistente pode criar uma Tarefa Agendada do Windows, "Remote Harness", que inicia a distribuição no logon (`wsl.exe -d <distro> --exec /bin/true`); `remote-harness service uninstall` a remove. Se o WSL ainda parar por ociosidade, aumente `vmIdleTimeout` em `[wsl2]` no `%UserProfile%\.wslconfig`.
 - **Tailscale**: o WSL2 usa NAT por padrão, então um Tailscale no Windows não aparece dentro do WSL. Rode o Tailscale **dentro do WSL** (`curl -fsSL https://tailscale.com/install.sh | sh` e `sudo tailscale up`; funciona em qualquer Windows) ou mantenha-o no Windows e ative a **rede espelhada** (Windows 11 22H2+): o assistente pode adicionar `networkingMode=mirrored` em `[wsl2]` no `%UserProfile%\.wslconfig` (com backup); depois rode `wsl --shutdown`.
-- `claude-remote doctor` mostra a distribuição, o modo de rede, o systemd e a tarefa de logon.
+- `remote-harness doctor` mostra a distribuição, o modo de rede, o systemd e a tarefa de logon.
 
 ## Licença
 
 [MIT](LICENSE) © Marco Filho
 
-<sub>O Claude Remote é um projeto independente, sem afiliação, endosso ou patrocínio da Anthropic. "Claude" e "Claude Code" são marcas da Anthropic, PBC.</sub>
+<sub>O Remote Harness é um projeto independente, sem afiliação, endosso ou patrocínio da Anthropic. "Claude" e "Claude Code" são marcas da Anthropic, PBC.</sub>

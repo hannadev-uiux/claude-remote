@@ -1,4 +1,4 @@
-import type { TranscriptEntry } from '@claude-remote/protocol'
+import type { TranscriptEntry } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
 import { diffForTool } from './diff'

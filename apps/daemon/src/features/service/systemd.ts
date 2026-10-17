@@ -39,7 +39,7 @@ export type UnitOptions = {
 export function renderSystemdUnit(o: UnitOptions): string {
   const log = (name: string) => join(o.logsDir, name).replaceAll('%', '%%')
   return `[Unit]
-Description=Claude Remote daemon
+Description=Remote Harness daemon
 StartLimitIntervalSec=0
 
 [Service]

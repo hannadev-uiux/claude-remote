@@ -1,5 +1,5 @@
-import type { MuteState } from '@claude-remote/protocol'
-import { MuteStateSchema } from '@claude-remote/protocol'
+import type { MuteState } from '@remote-harness/protocol'
+import { MuteStateSchema } from '@remote-harness/protocol'
 import { readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 
 /** Profiles and sessions whose events must not generate push notifications. */

@@ -1,4 +1,4 @@
-import type { SessionState } from '@claude-remote/protocol'
+import type { SessionState } from '@remote-harness/protocol'
 import { useTranslation } from 'react-i18next'
 import { Badge, type BadgeTone } from '@/ui'
 

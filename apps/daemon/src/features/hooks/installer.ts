@@ -1,6 +1,6 @@
 import { chmod, copyFile, mkdir, readFile, realpath, rm, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import type { Profile } from '@claude-remote/protocol'
+import type { Profile } from '@remote-harness/protocol'
 import { readJsonFile, writeFileAtomic, writeJsonAtomic } from '../../infra/fs.ts'
 import { removePathBlock, renderLauncher, upsertPathBlock } from './launcher.ts'
 import { type HookInstallOptions, mergeOurHooks, removeOurHooks } from './settings-hooks.ts'

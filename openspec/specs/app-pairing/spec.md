@@ -6,7 +6,7 @@ Links the app to a specific daemon securely, reading the address and token from 
 ## Requirements
 
 ### Requirement: QR pairing
-The app SHALL read the QR shown by `claude-remote pair`, extract host, port and token, test the connection and, on `auth.ok`, save the credentials and open the session list.
+The app SHALL read the QR shown by `remote-harness pair`, extract host, port and token, test the connection and, on `auth.ok`, save the credentials and open the session list.
 
 #### Scenario: Valid QR
 - **WHEN** the user points the camera at the daemon's QR

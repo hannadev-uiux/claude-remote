@@ -1,4 +1,4 @@
-import { type PermissionMode, SelectableModeSchema } from '@claude-remote/protocol'
+import { type PermissionMode, SelectableModeSchema } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { KeyedMutex } from '../../core/keyed-mutex.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'

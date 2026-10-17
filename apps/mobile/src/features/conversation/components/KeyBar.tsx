@@ -1,4 +1,4 @@
-import type { Key } from '@claude-remote/protocol'
+import type { Key } from '@remote-harness/protocol'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native'

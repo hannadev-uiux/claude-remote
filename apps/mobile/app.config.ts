@@ -38,7 +38,7 @@ const SYSTEM_PROMPTS = {
       'The camera is used to read the pairing QR code shown by the daemon on your computer and to take photos for the prompt.',
     NSPhotoLibraryUsageDescription:
       'Photos you pick are sent with the prompt to Claude Code on your computer.',
-    NSLocalNetworkUsageDescription: 'Claude Remote connects to the daemon on your computer.',
+    NSLocalNetworkUsageDescription: 'Remote Harness connects to the daemon on your computer.',
     NSMicrophoneUsageDescription: 'The microphone is used to record voice messages for the prompt.',
     NSSpeechRecognitionUsageDescription:
       'Speech recognition turns your voice messages into text, on this device.',
@@ -48,7 +48,7 @@ const SYSTEM_PROMPTS = {
       'A câmera é usada para ler o QR code de pareamento exibido pelo daemon no computador e para tirar fotos para o prompt.',
     NSPhotoLibraryUsageDescription:
       'As fotos escolhidas são enviadas com o prompt ao Claude Code no seu computador.',
-    NSLocalNetworkUsageDescription: 'O Claude Remote se conecta ao daemon no seu computador.',
+    NSLocalNetworkUsageDescription: 'O Remote Harness se conecta ao daemon no seu computador.',
     NSMicrophoneUsageDescription: 'O microfone é usado para gravar mensagens de voz do prompt.',
     NSSpeechRecognitionUsageDescription:
       'O reconhecimento de voz transforma suas mensagens de voz em texto, neste aparelho.',
@@ -58,7 +58,7 @@ const SYSTEM_PROMPTS = {
       'La cámara se usa para leer el código QR de vinculación que muestra el daemon en el ordenador y para hacer fotos para el mensaje.',
     NSPhotoLibraryUsageDescription:
       'Las fotos que elijas se envían con el mensaje a Claude Code en tu ordenador.',
-    NSLocalNetworkUsageDescription: 'Claude Remote se conecta al daemon de tu ordenador.',
+    NSLocalNetworkUsageDescription: 'Remote Harness se conecta al daemon de tu ordenador.',
     NSMicrophoneUsageDescription: 'El micrófono se usa para grabar mensajes de voz del mensaje.',
     NSSpeechRecognitionUsageDescription:
       'El reconocimiento de voz convierte tus mensajes de voz en texto, en este dispositivo.',
@@ -68,17 +68,19 @@ const SYSTEM_PROMPTS = {
 const APP_LOCALIZATIONS = Object.keys(SYSTEM_PROMPTS)
 
 /**
- * Over-the-air updates (expo-updates): any Expo Updates server (`CLAUDE_REMOTE_UPDATES_URL`) or EAS
+ * Over-the-air updates (expo-updates): any Expo Updates server (`REMOTE_HARNESS_UPDATES_URL`,
+ * or `CLAUDE_REMOTE_UPDATES_URL` from before the rename) or EAS
  * Update (`EAS_PROJECT_ID`). Without either, updates are off. Manifests are verified against the
  * certificate when it exists; a self-hosted server must have one.
  */
 const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID || undefined
-const CUSTOM_UPDATES_URL = process.env.CLAUDE_REMOTE_UPDATES_URL || undefined
+const CUSTOM_UPDATES_URL =
+  process.env.REMOTE_HARNESS_UPDATES_URL || process.env.CLAUDE_REMOTE_UPDATES_URL || undefined
 const UPDATES_URL = CUSTOM_UPDATES_URL ?? (EAS_PROJECT_ID && `https://u.expo.dev/${EAS_PROJECT_ID}`)
 const UPDATES_CERTIFICATE = './certs/certificate.pem'
 const signedUpdates = existsSync(UPDATES_CERTIFICATE)
 if (CUSTOM_UPDATES_URL && !signedUpdates) {
-  throw new Error(`CLAUDE_REMOTE_UPDATES_URL needs a code-signing certificate at ${UPDATES_CERTIFICATE}`)
+  throw new Error(`REMOTE_HARNESS_UPDATES_URL needs a code-signing certificate at ${UPDATES_CERTIFICATE}`)
 }
 
 /** Camera for the pairing QR, notifications (Android 13+), network for the daemon, haptics. */
@@ -226,7 +228,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
 const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
-  name: 'Claude Remote',
+  name: 'Remote Harness',
   slug: 'claude-remote',
   version: '0.6.0',
   scheme: 'claude-remote',

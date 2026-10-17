@@ -4,7 +4,7 @@ import {
   PermissionModeSchema,
   type Profile,
   type SessionState,
-} from '@claude-remote/protocol'
+} from '@remote-harness/protocol'
 import type { Logger } from '../../core/logger.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
 import type { HookEvent } from '../hooks/payloads.ts'

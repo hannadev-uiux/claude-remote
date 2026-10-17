@@ -1,4 +1,4 @@
-import type { Session } from '@claude-remote/protocol'
+import type { Session } from '@remote-harness/protocol'
 import { router } from 'expo-router'
 import { ChevronRight, GitBranch } from 'lucide-react-native'
 import { memo, useState } from 'react'

@@ -1,4 +1,4 @@
-# Claude Remote
+# Remote Harness
 
 App pessoal iOS/Android (React Native + Expo) que acompanha e controla, pelo celular, sessões do Claude Code rodando no tmux do computador (macOS, Linux ou WSL), por meio de um daemon local. PRD em `.docs/claude-remote-app.md`.
 
@@ -31,17 +31,17 @@ make                                                  # lista os atalhos (instal
 pnpm install
 pnpm check                                            # typecheck + testes + Biome (warnings falham)
 pnpm lint:fix                                         # Biome com correções
-pnpm --filter @claude-remote/daemon dev start --dev   # daemon do código-fonte em 127.0.0.1
-pnpm --filter @claude-remote/daemon build             # dist/cli.js (usado pelo launchd e pelo atalho)
-pnpm --filter @claude-remote/mobile ios               # development build iOS
-pnpm --filter @claude-remote/mobile start             # Metro (dev client)
+pnpm --filter @remote-harness/daemon dev start --dev   # daemon do código-fonte em 127.0.0.1
+pnpm --filter @remote-harness/daemon build             # dist/cli.js (usado pelo launchd e pelo atalho)
+pnpm --filter @remote-harness/mobile ios               # development build iOS
+pnpm --filter @remote-harness/mobile start             # Metro (dev client)
 cd apps/mobile && npx expo export --platform ios      # valida o bundle sem simulador
 ```
 
 ## Convenções
 
 - TypeScript estrito em tudo (`noUncheckedIndexedAccess`). Sem `any`; use `unknown` + Zod nas bordas.
-- Toda mensagem WS é validada com `@claude-remote/protocol`. Ao adicionar mensagem: schema no pacote → handler no daemon → uso no app.
+- Toda mensagem WS é validada com `@remote-harness/protocol`. Ao adicionar mensagem: schema no pacote → handler no daemon → uso no app.
 - Lógica pura (parsers, seletores, detectores) em funções separadas e com testes Vitest. Efeitos colaterais ficam em `infra/` (daemon) e `core/` (app) e são injetados.
 - O formato do `.jsonl` do Claude Code é interno: só `features/transcript/parser.ts` o conhece.
 - Rótulos da TUI (modo de permissão etc.) ficam em uma tabela única com testes.

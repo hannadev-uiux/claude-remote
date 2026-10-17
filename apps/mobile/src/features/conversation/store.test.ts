@@ -1,4 +1,4 @@
-import type { ServerMessage, TranscriptEntry } from '@claude-remote/protocol'
+import type { ServerMessage, TranscriptEntry } from '@remote-harness/protocol'
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { DaemonClient } from '@/core/connection/daemon-client'
 import { loadOlder, selectStream, subscribeTranscript, useTranscriptStore } from './store'

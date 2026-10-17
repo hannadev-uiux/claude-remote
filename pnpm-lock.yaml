@@ -181,12 +181,12 @@ importers:
 
   apps/daemon:
     dependencies:
-      '@claude-remote/protocol':
-        specifier: workspace:*
-        version: link:../../packages/protocol
       '@inquirer/prompts':
         specifier: ^8.7.3
         version: 8.7.3(@types/node@24.19.2)
+      '@remote-harness/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
       chokidar:
         specifier: ^5.0.0
         version: 5.0.0
@@ -245,9 +245,6 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@claude-remote/protocol':
-        specifier: workspace:*
-        version: link:../../packages/protocol
       '@expo-google-fonts/jetbrains-mono':
         specifier: ^0.4.1
         version: 0.4.1
@@ -257,6 +254,9 @@ importers:
       '@react-native-firebase/messaging':
         specifier: ^26.4.0
         version: 26.4.0(@react-native-firebase/app@26.4.0(expo@57.0.29)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3))(expo@57.0.29)
+      '@remote-harness/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
       '@shopify/flash-list':
         specifier: 2.3.3
         version: 2.3.3(@babel/runtime@7.29.10)(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)

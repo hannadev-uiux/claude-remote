@@ -14,7 +14,7 @@ On receiving `PermissionRequest`, the daemon SHALL create a request with a `requ
 
 #### Scenario: Denial
 - **WHEN** the app replies `deny`
-- **THEN** the hook receives `behavior: "deny"` with the message "Denied by Claude Remote"
+- **THEN** the hook receives `behavior: "deny"` with the message "Denied by Remote Harness"
 
 ### Requirement: Timeout without decision
 If no response arrives before the configured limit (lower than the hook timeout), the daemon SHALL answer the hook without a decision, and the request MUST be marked as expired for the clients.
@@ -38,7 +38,7 @@ With `always { rule, scope }`, the daemon SHALL approve the request and persist 
 - **THEN** the project's `.claude/settings.local.json` now contains the rule and the next `pnpm test` does not ask for permission
 
 #### Scenario: Undo
-- **WHEN** the user runs `claude-remote rules undo <id>`
+- **WHEN** the user runs `remote-harness rules undo <id>`
 - **THEN** the rule is removed from the file it was written to
 
 ### Requirement: Request closed by the TUI

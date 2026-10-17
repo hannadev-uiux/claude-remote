@@ -1,4 +1,4 @@
-import { isLiveSession, type Session } from '@claude-remote/protocol'
+import { isLiveSession, type Session } from '@remote-harness/protocol'
 
 /**
  * For each live session, how many other live sessions work in the same git checkout (only ids with

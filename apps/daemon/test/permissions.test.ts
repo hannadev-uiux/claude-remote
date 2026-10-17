@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { PROTOCOL_VERSION, type ServerMessage } from '@claude-remote/protocol'
+import { PROTOCOL_VERSION, type ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import WebSocket from 'ws'
 import { silentLogger } from '../src/core/logger.ts'
@@ -9,7 +9,7 @@ import { FileTokenStore } from '../src/core/secrets.ts'
 import { buildHookOutput, PermissionBroker } from '../src/features/permissions/broker.ts'
 import { parseInteraction } from '../src/features/permissions/interaction.ts'
 
-const DENY = 'Denied by Claude Remote'
+const DENY = 'Denied by Remote Harness'
 const KEEP_PLANNING = 'Keep planning'
 
 import { bashPrefixRule, parseRule, suggestRule } from '../src/features/permissions/rules.ts'

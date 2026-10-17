@@ -1,4 +1,4 @@
-import type { Locale } from '@claude-remote/protocol'
+import type { Locale } from '@remote-harness/protocol'
 import { getLocales } from 'expo-localization'
 import { initReactI18next } from 'react-i18next'
 import { AppState } from 'react-native'

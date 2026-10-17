@@ -1,4 +1,4 @@
-import type { ServerMessage } from '@claude-remote/protocol'
+import type { ServerMessage } from '@remote-harness/protocol'
 
 /** Per-connection view handed to message handlers. */
 export interface Connection {

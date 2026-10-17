@@ -17,7 +17,7 @@ export function parseCredentials(input: {
   return parsed.success ? parsed.data : null
 }
 
-/** Parses `claude-remote://pair?host=…&port=…&token=…` as printed by `claude-remote pair`. */
+/** Parses `claude-remote://pair?host=…&port=…&token=…` as printed by `remote-harness pair`. */
 export function parsePairingUrl(raw: string): Credentials | null {
   const text = raw.trim()
   const match = /^claude-remote:\/\/pair\/?\?(.*)$/i.exec(text)

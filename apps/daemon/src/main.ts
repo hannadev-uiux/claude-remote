@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type Profile } from '@claude-remote/protocol'
+import { PROTOCOL_VERSION, type Profile } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
 import { type Config, loadConfig, resolveProfiles } from './core/config.ts'

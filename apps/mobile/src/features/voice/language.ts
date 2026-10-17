@@ -1,4 +1,4 @@
-import { LOCALES, type Locale } from '@claude-remote/protocol'
+import { LOCALES, type Locale } from '@remote-harness/protocol'
 
 /** `'app'` follows the app's current UI language; otherwise a fixed transcription language. */
 export type VoiceLanguage = 'app' | Locale

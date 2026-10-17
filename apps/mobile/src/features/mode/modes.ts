@@ -1,4 +1,4 @@
-import type { SelectableMode } from '@claude-remote/protocol'
+import type { SelectableMode } from '@remote-harness/protocol'
 
 // Labels and hints live in the catalogs: `mode.labels.<mode>` and `mode.hints.<mode>`.
 

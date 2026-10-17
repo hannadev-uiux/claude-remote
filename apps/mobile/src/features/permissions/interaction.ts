@@ -1,4 +1,4 @@
-import type { Question } from '@claude-remote/protocol'
+import type { Question } from '@remote-harness/protocol'
 
 /** What the user picked for one question: option labels plus the free-text "Other". */
 export type Selection = { picked: string[]; other: string }

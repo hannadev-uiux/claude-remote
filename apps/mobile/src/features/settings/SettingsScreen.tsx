@@ -89,7 +89,7 @@ export function SettingsScreen({ children }: { children?: React.ReactNode }) {
 
         <Button label={t('settings.forgetButton')} variant="danger" onPress={forget} />
         <Text size="xs" color="textDim" style={styles.center}>
-          Claude Remote {Constants.expoConfig?.version ?? ''}
+          Remote Harness {Constants.expoConfig?.version ?? ''}
         </Text>
       </ScrollView>
     </Screen>

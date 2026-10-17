@@ -1,4 +1,4 @@
-import type { CommandItem, FileItem } from '@claude-remote/protocol'
+import type { CommandItem, FileItem } from '@remote-harness/protocol'
 
 export type Trigger = { kind: 'file' | 'command'; query: string; start: number; end: number }
 

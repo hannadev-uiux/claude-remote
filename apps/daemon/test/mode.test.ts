@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import type { PermissionMode } from '@claude-remote/protocol'
+import type { PermissionMode } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { KeyedMutex } from '../src/core/keyed-mutex.ts'
 import { silentLogger } from '../src/core/logger.ts'
