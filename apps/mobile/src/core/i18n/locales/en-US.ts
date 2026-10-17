@@ -268,6 +268,11 @@ const enUS = {
     confirmBody: 'The sessions may edit the same files and switch the branch under each other.',
     confirmStart: 'Start anyway',
     confirmWorktree: 'Use a worktree',
+    errors: {
+      invalidCwd: 'Directory not found or outside your home folder.',
+      profileNotFound: 'This profile no longer exists on the computer. Pick another one.',
+      launchFailed: 'Could not open Claude Code in tmux: {{reason}}',
+    },
   },
   resume: {
     title: 'Read-only session',
