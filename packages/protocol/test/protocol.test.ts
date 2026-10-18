@@ -93,6 +93,7 @@ const serverSamples: ServerMessage[] = [
     type: 'auth.ok',
     protocolVersion: 1,
     daemonVersion: '0.1.0',
+    host: 'mac',
     profiles: [],
     defaultRuleScope: 'project',
     muted: { profiles: [], sessions: [] },
@@ -218,8 +219,32 @@ describe('client messages', () => {
 
   test('live status props carry only the allowed fields', () => {
     const props = { title: 'Work', state: 'working', status: 'Working', step: '', tools: '', startedAt: 1 }
-    expect(LiveStatusPropsSchema.parse({ ...props, prompt: 'secret' })).toEqual(props)
+    const full = {
+      ...props,
+      host: 'mac',
+      session: 'Fix login',
+      path: '~/app',
+      recent: ['Bash · running a command'],
+      ago: '{time} ago',
+      changedAt: 2,
+      endedAt: 3,
+    }
+    expect(LiveStatusPropsSchema.parse({ ...full, prompt: 'secret' })).toEqual(full)
     expect(LiveStatusPropsSchema.safeParse({ ...props, state: 'error' }).success).toBe(false)
+  })
+
+  test('live status props from older daemons get defaults', () => {
+    const props = { title: 'Work', state: 'done', status: 'Done', step: '', tools: '', startedAt: 1 }
+    expect(LiveStatusPropsSchema.parse(props)).toEqual({
+      ...props,
+      host: '',
+      session: '',
+      path: '',
+      recent: [],
+      ago: '',
+      changedAt: 0,
+      endedAt: null,
+    })
   })
 
   test('relay URLs must be HTTPS', () => {

@@ -11,23 +11,26 @@ import { useMuteStore } from '../mute/store'
 import { loadMessaging } from '../push/firebase'
 import { relayFor } from '../push/push-relay'
 import { useSessionsStore } from '../sessions/store'
-import { DONE_DISMISS_MS, isMutedSession, localLiveProps, sessionsToStart } from './logic'
+import { DONE_DISMISS_MS, isMutedSession, type LocalLiveInfo, localLiveProps, sessionsToStart } from './logic'
 import { SessionActivity } from './SessionActivity'
 import { useLiveStatusSettings } from './settings-store'
 
-type Tracked = {
+type Tracked = LocalLiveInfo & {
   /** iOS Live Activity; null on Android, where the daemon owns the notification. */
   instance: LiveActivity<LiveStatusProps> | null
-  title: string
-  startedAt: number
   state: SessionState
+  /**
+   * The daemon accepted the registration and keeps the activity updated: local updates would wipe
+   * what only it knows (the latest steps), so the app leaves the activity alone.
+   */
+  remote: boolean
   subscription: { remove(): void } | null
 }
 
 /**
  * Starts the live status of sessions that begin working while the app is open, registers it with
  * the daemon (which keeps it updated through FCM) and, on iOS, updates or ends the activity locally
- * while the app is active.
+ * while the app is active and the daemon does not.
  */
 export function useLiveStatus() {
   const client = useConnectionStore((s) => s.client)
@@ -59,16 +62,21 @@ export function useLiveStatus() {
           ...(activityToken ? { activityToken } : {}),
           ...(relay ? { relay } : {}),
         })
+        const entry = tracked.get(sessionId)
+        // Only an activity token lets the daemon update an iOS activity.
+        if (entry && (activityToken || !entry.instance)) entry.remote = true
       } catch (error) {
         if (error instanceof DaemonRequestError && error.code === 'unknown_type') daemonSupportsLive = false
       }
     }
 
-    const stop = (sessionId: string, props?: LiveStatusProps) => {
+    /** Stops tracking a session; ends its activity unless the daemon is the one ending it. */
+    const stop = (sessionId: string, props?: LiveStatusProps, { leaveToDaemon = false } = {}) => {
       const entry = tracked.get(sessionId)
       if (!entry) return
       tracked.delete(sessionId)
       entry.subscription?.remove()
+      if (leaveToDaemon && entry.remote) return
       const policy = props?.state === 'done' ? after(new Date(Date.now() + DONE_DISMISS_MS)) : 'immediate'
       void entry.instance?.end(policy, props).catch(() => undefined)
     }
@@ -80,13 +88,22 @@ export function useLiveStatus() {
 
     const start = (session: Session) => {
       stop(session.id)
-      const title = profileName(session.profileId)
-      const startedAt = Date.now()
-      const entry: Tracked = { instance: null, title, startedAt, state: session.state, subscription: null }
+      const now = Date.now()
+      const entry: Tracked = {
+        instance: null,
+        title: profileName(session.profileId),
+        host: client.hello?.host ?? '',
+        startedAt: now,
+        changedAt: now,
+        endedAt: null,
+        state: session.state,
+        remote: false,
+        subscription: null,
+      }
       if (Platform.OS === 'ios') {
         try {
           const instance = SessionActivity.start(
-            localLiveProps(session, title, startedAt, tRef.current),
+            localLiveProps(session, entry, tRef.current),
             `claude-remote://session/${session.id}`,
           )
           entry.instance = instance
@@ -116,10 +133,16 @@ export function useLiveStatus() {
           continue
         }
         if (session.state === entry.state) continue
+        const now = Date.now()
         entry.state = session.state
-        const props = localLiveProps(session, entry.title, entry.startedAt, tRef.current)
-        if (props.state === 'done' || props.state === 'closed') stop(id, props)
-        else void entry.instance?.update(props).catch(() => undefined)
+        entry.changedAt = now
+        const props = localLiveProps(session, entry, tRef.current)
+        if (props.state === 'done' || props.state === 'closed') {
+          entry.endedAt = now
+          stop(id, { ...props, endedAt: now }, { leaveToDaemon: true })
+        } else if (!entry.remote) {
+          void entry.instance?.update(props).catch(() => undefined)
+        }
       }
       if (AppState.currentState !== 'active') return
       for (const id of sessionsToStart(previous, current, { enabled, muted })) {

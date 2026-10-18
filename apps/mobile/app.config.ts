@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ConfigContext, ExpoConfig } from 'expo/config'
 import {
@@ -9,6 +9,7 @@ import {
   withInfoPlist,
   withPlugins,
   withPodfile,
+  withXcodeProject,
 } from 'expo/config-plugins'
 
 const BACKGROUND = '#0D0D0D'
@@ -205,6 +206,56 @@ const withKeyCommandAppDelegate: ConfigPlugin = (config) =>
     return delegate
   })
 
+/** Target `expo-widgets` creates (and recreates on every prebuild) for the Live Activity. */
+const WIDGET_TARGET = 'ExpoWidgetsTarget'
+/** Asset the Live Activity layout loads with `Image assetName` (see `SessionActivity.tsx`). */
+const LIVE_ACTIVITY_ICON_ASSET = 'LiveActivityIcon'
+const LIVE_ACTIVITY_ICON = './assets/live-activity-icon.png'
+
+/**
+ * The widget extension is its own bundle, without the app's asset catalog: give it one holding the
+ * app icon for the Live Activity header. Applied before the `plugins` list, so its mods run after
+ * the `expo-widgets` ones that recreate the target directory and add the target.
+ */
+const withLiveActivityIcon: ConfigPlugin = (config) => {
+  const withCatalog = withDangerousMod(config, [
+    'ios',
+    (config) => {
+      const catalog = join(config.modRequest.platformProjectRoot, WIDGET_TARGET, 'Assets.xcassets')
+      const imageSet = join(catalog, `${LIVE_ACTIVITY_ICON_ASSET}.imageset`)
+      const info = { author: 'xcode', version: 1 }
+      mkdirSync(imageSet, { recursive: true })
+      writeFileSync(join(catalog, 'Contents.json'), JSON.stringify({ info }, null, 2))
+      copyFileSync(join(config.modRequest.projectRoot, LIVE_ACTIVITY_ICON), join(imageSet, 'icon.png'))
+      writeFileSync(
+        join(imageSet, 'Contents.json'),
+        JSON.stringify({ images: [{ filename: 'icon.png', idiom: 'universal' }], info }, null, 2),
+      )
+      return config
+    },
+  ])
+  return withXcodeProject(withCatalog, (config) => {
+    const project = config.modResults
+    const target = project.findTargetKey(WIDGET_TARGET)
+    const group = project.findPBXGroupKey({ name: WIDGET_TARGET })
+    if (!target || !group)
+      throw new Error(`withLiveActivityIcon: ${WIDGET_TARGET} not found; check expo-widgets`)
+    // `addResourceFile` needs a "Resources" group the project does not have: wire the file by hand.
+    const file = project.addFile('Assets.xcassets', group, { lastKnownFileType: 'folder.assetcatalog' })
+    if (!file) return config
+    file.uuid = project.generateUuid()
+    file.target = target
+    project.addToPbxBuildFileSection(file)
+    // Without a Resources phase of its own, `pbxResourcesBuildPhaseObj` falls back to the app's.
+    const phases: { comment?: string }[] = project.pbxNativeTargetSection()[target]?.buildPhases ?? []
+    if (!phases.some((phase) => phase.comment === 'Resources')) {
+      project.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', target)
+    }
+    project.addToPbxResourcesBuildPhase(file)
+    return config
+  })
+}
+
 /**
  * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
  * drop the native mods of the platforms that have no file.
@@ -224,8 +275,10 @@ const withFirebase: ConfigPlugin = (config) => {
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const expo = withKeyCommandAppDelegate(
-    withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+  const expo = withLiveActivityIcon(
+    withKeyCommandAppDelegate(
+      withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+    ),
   )
   return firebase.ios || firebase.android ? withFirebase(expo) : expo
 }

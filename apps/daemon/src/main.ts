@@ -6,6 +6,7 @@ import { EventBus } from './core/event-bus.ts'
 import type { DaemonEvents } from './core/events.ts'
 import { KeyedMutex } from './core/keyed-mutex.ts'
 import type { Logger } from './core/logger.ts'
+import { hostName } from './core/paths.ts'
 import { ensureHookSecret, ensureToken, type TokenStore } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import { registerAttachmentsFeature } from './features/attachments/index.ts'
@@ -183,6 +184,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     hello: () => ({
       protocolVersion: PROTOCOL_VERSION,
       daemonVersion: DAEMON_VERSION,
+      host: hostName(),
       profiles,
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),

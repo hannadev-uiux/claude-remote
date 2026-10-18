@@ -21,11 +21,23 @@ The app SHALL start a live status for a session when it sees the session change 
 - **THEN** no live status starts and the existing ones end
 
 ### Requirement: Live status content
-The live status SHALL show the profile name, the state (working, waiting for you, done, session closed), the current step category, the tool count and the elapsed time since the turn started, and tapping it MUST open the session. Push payloads for the live status MUST NOT contain session content: only the profile name, the state, a step category from a fixed table derived from the tool name, the tool count and timestamps. Texts SHALL be translated (pt-BR, en-US, es-ES).
+The live status SHALL show, on the iOS lock screen: the app icon; the daemon name (the computer's host name, falling back to the profile name) with the elapsed time of the turn; the session name; the session folder (with the home directory shortened to `~`); and the latest steps of the turn (at most 3, newest first, consecutive repeats collapsed into one line with a count). The state MUST be signaled by a colored border around the banner (working, waiting for you, done, session closed) and by a footer with the state name and a live counter of the time since the state last changed. When the turn is done or the session closed, the elapsed time MUST stop at the turn's duration. Tapping it MUST open the session. Push payloads for the live status MAY contain the session title and its working directory, and MUST NOT contain any other session content: only the profile and host names, the state, step categories from a fixed table derived from the tool name (with the tool name), the tool count and timestamps. Texts SHALL be translated (pt-BR, en-US, es-ES).
 
 #### Scenario: Running a command
 - **WHEN** Claude Code calls the Bash tool with any command
-- **THEN** the live status shows "running a command" and the tool count increases, and the command itself is never sent
+- **THEN** the live status lists "Bash · running a command" among the latest steps and the tool count increases, and the command itself is never sent
+
+#### Scenario: Waiting for a while
+- **WHEN** a session has been waiting for permission for 10 minutes
+- **THEN** the border has the waiting color and the footer shows the waiting state with a 10 minute counter
+
+#### Scenario: Turn finished
+- **WHEN** a turn that started 4 minutes ago finishes
+- **THEN** the elapsed time shows 4 minutes and stops counting, and the border turns to the done color
+
+#### Scenario: Older payload
+- **WHEN** the widget receives props without the new fields (older daemon)
+- **THEN** it renders with the profile name as header and no session, folder or steps
 
 ### Requirement: Live status updates
 The daemon SHALL keep registered live statuses up to date through FCM while the session is registered: `UserPromptSubmit` → working (new start time), a permission request or a waiting notification → waiting for you, the permission resolution → working, transcript tool/thinking/text entries → step and tool count, `Stop` → done, `SessionEnd` → closed. State changes MUST be sent immediately; step and count changes at most every 15 seconds. On `Stop` it MUST end the activity with a dismissal 15 minutes later (Android: a final, non-persistent notification), and on `SessionEnd` it MUST end it right away. On iOS the update uses the activity push token; on Android a notification with a per-session tag on the low-importance "Live status" channel.

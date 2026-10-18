@@ -334,6 +334,7 @@ export const ptBR = {
       permission: 'permissão pendente',
     },
     tools: (count: number) => (count === 1 ? '1 ferramenta' : `${count} ferramentas`),
+    ago: 'há {time}',
   },
   push: {
     sessionDone: 'Sessão concluída',

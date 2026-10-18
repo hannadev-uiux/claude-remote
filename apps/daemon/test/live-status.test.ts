@@ -2,6 +2,7 @@ import type { TranscriptEntry } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { messagesFor } from '../src/core/i18n/index.ts'
 import { silentLogger } from '../src/core/logger.ts'
+import { hostName, shortenHome } from '../src/core/paths.ts'
 import { LiveStatusService } from '../src/features/live-status/service.ts'
 import {
   DONE_DISMISS_MS,
@@ -37,11 +38,11 @@ describe('live status reducer', () => {
       name: 'Bash',
       input: { command: 'rm -rf x' },
     }
-    expect(stepForEntry(use)).toEqual({ type: 'step', step: 'command', tool: true })
+    expect(stepForEntry(use)).toEqual({ type: 'step', step: 'command', tool: 'Bash' })
     expect(stepForEntry({ ...base, kind: 'thinking', text: 'secret' })).toEqual({
       type: 'step',
       step: 'thinking',
-      tool: false,
+      tool: null,
     })
     expect(stepForEntry({ ...use, isSidechain: true })).toBeNull()
     expect(stepForEntry({ ...base, kind: 'user', text: 'prompt' })).toBeNull()
@@ -49,32 +50,49 @@ describe('live status reducer', () => {
 
   test('a turn goes working → waiting → working → done, and stays done until a new prompt', () => {
     const events: LiveEvent[] = [
-      { type: 'step', step: 'command', tool: true },
+      { type: 'step', step: 'command', tool: 'Bash' },
       { type: 'waiting', permission: true },
       { type: 'resumed' },
-      { type: 'step', step: 'editing', tool: true },
+      { type: 'step', step: 'editing', tool: 'Edit' },
       { type: 'stop' },
-      { type: 'step', step: 'reading', tool: true },
+      { type: 'step', step: 'reading', tool: 'Read' },
     ]
     let status = initialLiveStatus(0)
-    const states = events.map((event) => {
-      status = reduceLiveStatus(status, event)
+    const states = events.map((event, i) => {
+      status = reduceLiveStatus(status, event, (i + 1) * 10)
       return status
     })
-    expect(states.map((s) => [s.state, s.step, s.toolCount])).toEqual([
-      ['working', 'command', 1],
-      ['waiting', 'permission', 1],
-      ['working', null, 1],
-      ['working', 'editing', 2],
-      ['done', null, 2],
-      ['done', null, 2],
+    expect(states.map((s) => [s.state, s.step, s.toolCount, s.changedAt, s.endedAt])).toEqual([
+      ['working', 'command', 1, 0, null],
+      ['waiting', 'permission', 1, 20, null],
+      ['working', null, 1, 30, null],
+      ['working', 'editing', 2, 30, null],
+      ['done', null, 2, 50, 50],
+      ['done', null, 2, 50, 50],
     ])
-    expect(reduceLiveStatus(states[4]!, { type: 'prompt', at: 50 })).toEqual(initialLiveStatus(50))
+    expect(reduceLiveStatus(states[4]!, { type: 'prompt' }, 70)).toEqual(initialLiveStatus(70))
+  })
+
+  test('latest steps: newest first, repeats merged, at most three', () => {
+    let status = initialLiveStatus(0)
+    const steps: LiveEvent[] = [
+      { type: 'step', step: 'thinking', tool: null },
+      { type: 'step', step: 'reading', tool: 'Read' },
+      { type: 'step', step: 'reading', tool: 'Read' },
+      { type: 'step', step: 'searching', tool: 'Grep' },
+      { type: 'step', step: 'command', tool: 'Bash' },
+    ]
+    for (const event of steps) status = reduceLiveStatus(status, event, 1)
+    expect(status.recent).toEqual([
+      { step: 'command', tool: 'Bash', count: 1 },
+      { step: 'searching', tool: 'Grep', count: 1 },
+      { step: 'reading', tool: 'Read', count: 2 },
+    ])
   })
 
   test('state changes go now, step changes are throttled', () => {
     const working = initialLiveStatus(0)
-    const step = reduceLiveStatus(working, { type: 'step', step: 'command', tool: true })
+    const step = reduceLiveStatus(working, { type: 'step', step: 'command', tool: 'Bash' }, 0)
     expect(planSend(null, working, null, 0)).toEqual({ when: 'now' })
     expect(planSend(working, step, 1_000, 5_000)).toEqual({
       when: 'later',
@@ -82,29 +100,58 @@ describe('live status reducer', () => {
     })
     expect(planSend(working, step, 0, STEP_INTERVAL_MS)).toEqual({ when: 'now' })
     expect(planSend(step, step, 0, 1)).toEqual({ when: 'never' })
-    expect(planSend(step, reduceLiveStatus(step, { type: 'stop' }), 0, 1)).toEqual({ when: 'now' })
+    expect(planSend(step, reduceLiveStatus(step, { type: 'stop' }, 1), 0, 1)).toEqual({ when: 'now' })
+    const thinking = reduceLiveStatus(initialLiveStatus(0), { type: 'step', step: 'thinking', tool: null }, 0)
+    const again = reduceLiveStatus(thinking, { type: 'step', step: 'thinking', tool: null }, 0)
+    expect(planSend(thinking, again, 0, 1)).toEqual({ when: 'later', delayMs: STEP_INTERVAL_MS - 1 })
   })
 
-  test('props are translated and carry no content', () => {
-    const status = reduceLiveStatus(initialLiveStatus(7), { type: 'step', step: 'command', tool: true })
-    expect(liveProps(status, 'Work', en)).toEqual({
+  test('props are translated and carry only the session title and folder', () => {
+    const info = { title: 'Work', host: 'mac', session: 'Fix login', path: '~/app' }
+    let status = reduceLiveStatus(initialLiveStatus(7), { type: 'step', step: 'command', tool: 'Bash' }, 8)
+    status = reduceLiveStatus(status, { type: 'step', step: 'tool', tool: 'mcp__github__create_issue' }, 9)
+    status = reduceLiveStatus(status, { type: 'step', step: 'thinking', tool: null }, 9)
+    status = reduceLiveStatus(status, { type: 'step', step: 'thinking', tool: null }, 9)
+    expect(liveProps(status, info, en)).toEqual({
       title: 'Work',
       state: 'working',
       status: 'Working',
-      step: 'running a command',
-      tools: '1 tool',
+      step: 'thinking',
+      tools: '2 tools',
       startedAt: 7,
+      host: 'mac',
+      session: 'Fix login',
+      path: '~/app',
+      recent: ['Thinking ×2', 'create_issue · using a tool', 'Bash · running a command'],
+      ago: '{time} ago',
+      changedAt: 7,
+      endedAt: null,
     })
-    expect(liveProps({ ...status, toolCount: 3 }, 'Work', pt)).toMatchObject({
+    expect(liveProps({ ...status, toolCount: 3 }, info, pt)).toMatchObject({
       status: 'Trabalhando',
-      step: 'executando um comando',
+      step: 'pensando',
       tools: '3 ferramentas',
+      recent: ['Pensando ×2', 'create_issue · usando uma ferramenta', 'Bash · executando um comando'],
+      ago: 'há {time}',
     })
+  })
+
+  test('folder and host names', () => {
+    expect(shortenHome('/Users/me/app', '/Users/me')).toBe('~/app')
+    expect(shortenHome('/Users/me', '/Users/me')).toBe('~')
+    expect(shortenHome('/Users/meow/app', '/Users/me')).toBe('/Users/meow/app')
+    expect(shortenHome('/srv/app', '/')).toBe('/srv/app')
+    expect(hostName('MacBook-Pro.local')).toBe('MacBook-Pro')
+    expect(hostName('devbox')).toBe('devbox')
   })
 })
 
 describe('buildLiveMessage', () => {
-  const props = liveProps(initialLiveStatus(1_000_000), 'Work', en)
+  const props = liveProps(
+    initialLiveStatus(1_000_000),
+    { title: 'Work', host: 'mac', session: '', path: '~/app' },
+    en,
+  )
   const message: LiveMessage = {
     sessionId: 's1',
     platform: 'ios',
@@ -156,6 +203,8 @@ describe('buildLiveMessage', () => {
     expect(
       buildLiveMessage({ ...message, platform: 'android', event: 'end' }).android?.notification.sticky,
     ).toBe(false)
+    const named = { ...message, platform: 'android' as const, props: { ...props, session: 'Fix login' } }
+    expect(buildLiveMessage(named).android?.notification.title).toBe('Fix login · Working')
   })
 })
 
@@ -181,7 +230,7 @@ describe('LiveStatusService', () => {
     const service = new LiveStatusService(sender, silentLogger, {
       messages: en,
       profileOf: () => 'p1',
-      profileName: () => 'Work',
+      info: () => ({ title: 'Work', host: 'mac', session: 'Fix login', path: '~/app' }),
       isMuted: () => opts.muted ?? false,
       follow: async (_sessionId, listener) => {
         onEvent = listener
@@ -209,8 +258,8 @@ describe('LiveStatusService', () => {
     await service.register(register)
     expect(sent.map((m) => [m.event, m.props.state])).toEqual([['update', 'working']])
 
-    emit({ type: 'step', step: 'command', tool: true })
-    emit({ type: 'step', step: 'editing', tool: true })
+    emit({ type: 'step', step: 'command', tool: 'Bash' })
+    emit({ type: 'step', step: 'editing', tool: 'Edit' })
     expect(sent).toHaveLength(1)
     advance(STEP_INTERVAL_MS)
     expect(sent.at(-1)?.props).toMatchObject({ step: 'editing files', tools: '2 tools' })
@@ -253,7 +302,7 @@ describe('LiveStatusService', () => {
   test('a new registration during a turn keeps its status and the latest tokens', async () => {
     const { service, sent, emit } = setup()
     await service.register(register)
-    emit({ type: 'step', step: 'command', tool: true })
+    emit({ type: 'step', step: 'command', tool: 'Bash' })
     await service.register({ ...register, activityToken: 'act2' })
     expect(sent.at(-1)).toMatchObject({ activityToken: 'act2', props: { tools: '1 tool' } })
   })

@@ -7,6 +7,7 @@ import {
   initialLiveStatus,
   isFinal,
   type LiveEvent,
+  type LiveSessionInfo,
   type LiveStatus,
   liveProps,
   planSend,
@@ -33,9 +34,10 @@ type Entry = LiveRegistration & {
 
 export type LiveStatusOptions = {
   messages: Messages['live']
-  /** Profile of a session (for mute and the title), null when unknown. */
+  /** Profile of a session (for mute), null when unknown. */
   profileOf: (sessionId: string) => string | null
-  profileName: (profileId: string | null) => string
+  /** Names and folder shown with the status. */
+  info: (sessionId: string, profileId: string | null) => LiveSessionInfo
   isMuted: (profileId: string | null, sessionId: string) => boolean
   /** Starts following the session's transcript; resolves with the function that stops it. */
   follow: (sessionId: string, onEvent: (event: LiveEvent) => void) => Promise<() => void>
@@ -99,7 +101,7 @@ export class LiveStatusService {
   handle(sessionId: string, event: LiveEvent): void {
     const entry = this.entries.get(sessionId)
     if (!entry) return
-    entry.status = reduceLiveStatus(entry.status, event)
+    entry.status = reduceLiveStatus(entry.status, event, this.now())
     const plan = planSend(entry.sent, entry.status, entry.lastSentAt, this.now())
     if (plan.when === 'now') {
       void this.flush(entry)
@@ -140,7 +142,7 @@ export class LiveStatusService {
         fcmToken: entry.fcmToken,
         ...(entry.activityToken ? { activityToken: entry.activityToken } : {}),
         ...(entry.relay ? { relay: entry.relay } : {}),
-        props: liveProps(entry.status, this.options.profileName(profileId), this.options.messages),
+        props: liveProps(entry.status, this.options.info(entry.sessionId, profileId), this.options.messages),
         event: final ? 'end' : 'update',
         at: now,
         staleAt: now + STALE_AFTER_MS,

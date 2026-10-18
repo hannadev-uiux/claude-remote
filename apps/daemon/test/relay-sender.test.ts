@@ -1,3 +1,4 @@
+import { LiveStatusPropsSchema } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import { createRelaySender, type RelayFetch, relaySendUrl } from '../src/features/push/relay-sender.ts'
@@ -62,7 +63,14 @@ describe('relay sender', () => {
       sessionId: 's',
       platform: 'ios' as const,
       fcmToken: 'fcm',
-      props: { title: 'W', state: 'working' as const, status: 'Working', step: '', tools: '', startedAt: 1 },
+      props: LiveStatusPropsSchema.parse({
+        title: 'W',
+        state: 'working',
+        status: 'Working',
+        step: '',
+        tools: '',
+        startedAt: 1,
+      }),
       event: 'update' as const,
       at: 1000,
     }
