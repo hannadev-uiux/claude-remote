@@ -84,6 +84,18 @@ describe('SubagentTracker', () => {
     expect(tracker!.transcriptPath('sess', 'zz')).toBeNull()
   })
 
+  test('discovers transcripts created while the folder watcher starts', async () => {
+    const { store, add, dir } = setup()
+    add()
+    await mkdir(dir, { recursive: true })
+    const ids = Array.from({ length: 20 }, (_, i) => `b${i}`)
+    for (const id of ids) {
+      await writeFile(join(dir, `agent-${id}.jsonl`), '{}\n')
+      await new Promise((r) => setTimeout(r, 5))
+    }
+    await waitFor(() => (store.get('sess')?.subagents.length ?? 0) === ids.length)
+  })
+
   test('SubagentStop marks done and Stop records background tasks', async () => {
     const { store, add } = setup()
     add()

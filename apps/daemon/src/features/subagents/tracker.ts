@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { SubagentInfo } from '@remote-harness/protocol'
 import { type FSWatcher, watch } from 'chokidar'
@@ -72,10 +72,20 @@ export class SubagentTracker {
     }
     watcher.on('add', onFile)
     watcher.on('change', onFile)
+    // chokidar lists the folder before watching it: files created in between are only caught by a rescan.
+    watcher.on('ready', () => void this.rescan(sessionId, tracked))
     watcher.on('error', (error) =>
       this.logger.debug({ err: error, dir: tracked.dir }, 'subagent watcher error'),
     )
     tracked.watcher = watcher
+  }
+
+  private async rescan(sessionId: string, tracked: Tracked): Promise<void> {
+    const files = await readdir(tracked.dir).catch(() => [] as string[])
+    for (const file of files) {
+      const agentId = AGENT_FILE.exec(file)?.[1]
+      if (agentId && !tracked.lastActivity.has(agentId)) void this.touch(sessionId, agentId, tracked)
+    }
   }
 
   private attachPending(): void {
