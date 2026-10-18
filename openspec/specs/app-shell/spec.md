@@ -5,13 +5,6 @@ Provides the foundation of the mobile app: terminal visual identity, navigation 
 
 ## Requirements
 
-### Requirement: Dark terminal theme
-The app SHALL use only a dark theme with a monospaced font and Claude orange as the accent, regardless of the system theme.
-
-#### Scenario: iPhone in light mode
-- **WHEN** the system is in light mode
-- **THEN** the app keeps the dark theme
-
 ### Requirement: App icon
 The app SHALL have an icon with the Claude Code symbol in the foreground over a terminal with `>_` in the background.
 
@@ -43,3 +36,36 @@ Requests SHALL be correlated by `id` and fail with an error after 15 s without a
 #### Scenario: Daemon does not respond
 - **WHEN** a request goes 15 s without a response
 - **THEN** the promise is rejected with a timeout error
+
+### Requirement: Theme tokens
+The app SHALL define its colors as semantic tokens with the same names in every theme: `background`, `surface`, `surfaceRaised`, `border`, `borderStrong`, `text`, `textMuted`, `textDim`, `accent`, `accentText`, `accentInk`, `accentSoft`, `success`, `successSoft`, `warning`, `warningSoft`, `danger`, `dangerSoft`, `info`, `infoSoft`, `diffAdd`, `diffRemove`, `scrim`, `backdrop` and the 16 ANSI colors of the raw terminal. Every component, screen, the markdown renderer, the raw terminal, the status bar, the navigation header, menus and sheets MUST read colors from the current theme at render time; a hex color literal MUST NOT appear in the app source outside the theme module (generated files, tests and the Live Activity layout's fallbacks excepted). Text and icons in the accent color SHALL use `accentText`; fills, borders and dots SHALL use `accent`; text over an accent fill SHALL use `accentInk`.
+
+#### Scenario: Default dark theme
+- **WHEN** the app starts with no saved preference
+- **THEN** it renders the dark theme: background `#0D0D0D`, text `#E8E6E3`, accent `#E8A33D`, warning `#F3DC7A`, monospaced font
+
+#### Scenario: Palette parity
+- **WHEN** a token is added to the theme type
+- **THEN** every theme must define it with a valid `#RRGGBB` or `#RRGGBBAA` color, or the typecheck and the palette test fail
+
+#### Scenario: Literal color outside the theme
+- **WHEN** a component under `apps/mobile/src` uses a hex color literal outside `core/theme`
+- **THEN** the color guard test fails
+
+### Requirement: Theme preference
+The app SHALL keep a theme preference on the device (`system` or a theme name, `system` by default) and resolve it with the system color scheme into one of the available themes. Changing the preference or the system scheme SHALL re-render every screen without restarting the app. The status bar style, the action sheet appearance, the markdown color scheme and the terminal theme SHALL follow the resolved theme.
+
+#### Scenario: Only dark available
+- **WHEN** the preference is `system` and the phone is in light mode but no light theme exists
+- **THEN** the app renders the dark theme
+
+#### Scenario: Live switch
+- **WHEN** the resolved theme changes while a conversation and its terminal are open
+- **THEN** both re-render with the new palette, including the xterm.js colors, without reopening them
+
+### Requirement: Agent colors
+The app SHALL define fixed colors for the agents, independent of the theme: Claude Code `#D97757`, Codex `#2FBF8F`, Kimi `#5B9BF5`, Qwen `#8C6CF5`. Model providers (OpenRouter) SHALL be shown with a neutral outline and MUST NOT get a color of their own.
+
+#### Scenario: Agent color across themes
+- **WHEN** the theme changes
+- **THEN** the color that identifies Claude Code stays `#D97757`
