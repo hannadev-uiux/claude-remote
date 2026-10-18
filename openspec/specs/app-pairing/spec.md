@@ -35,8 +35,8 @@ The token MUST be stored only in SecureStore (the iOS Keychain).
 - **THEN** it connects automatically with the saved credentials
 
 ### Requirement: Forget daemon
-The settings screen SHALL allow erasing the credentials and returning to pairing.
+The settings screen SHALL allow erasing the credentials and returning to pairing through `Forget this machine` in the Machine card, after a confirmation.
 
 #### Scenario: Forget
-- **WHEN** the user confirms "Forget daemon"
+- **WHEN** the user confirms "Forget this machine"
 - **THEN** the credentials are erased, the connection closes and the pairing screen appears
