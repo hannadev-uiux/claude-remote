@@ -275,6 +275,15 @@ const ptBR = {
     pending_one: '{{count}} permissão',
     pending_other: '{{count}} permissões',
     alreadyResolved: 'Este pedido já foi resolvido (no computador ou por tempo esgotado).',
+    strip: {
+      title: 'Esperando você',
+      more_one: '+{{count}} outro',
+      more_other: '+{{count}} outros',
+      question: 'tem uma pergunta',
+      plan: 'plano pronto para revisão',
+      waiting: 'esperando você',
+      open: 'Abrir',
+    },
     detail: {
       command: 'comando',
       file: 'arquivo',

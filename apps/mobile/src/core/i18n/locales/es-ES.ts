@@ -275,6 +275,15 @@ const esES = {
     pending_one: '{{count}} permiso',
     pending_other: '{{count}} permisos',
     alreadyResolved: 'Esta solicitud ya se ha resuelto (en el ordenador o por tiempo agotado).',
+    strip: {
+      title: 'Esperando por ti',
+      more_one: '+{{count}} más',
+      more_other: '+{{count}} más',
+      question: 'tiene una pregunta',
+      plan: 'plan listo para revisar',
+      waiting: 'esperando por ti',
+      open: 'Abrir',
+    },
     detail: {
       command: 'comando',
       file: 'archivo',
