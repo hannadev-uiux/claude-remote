@@ -1,8 +1,19 @@
-import type { ServerMessageOf, TranscriptEntry } from '@remote-harness/protocol'
+import {
+  MAX_TRANSCRIPT_IMAGE_BYTES,
+  type ServerMessageOf,
+  type TranscriptEntry,
+} from '@remote-harness/protocol'
 import { type FSWatcher, watch } from 'chokidar'
+import { DaemonError } from '../../core/errors.ts'
 import type { Logger } from '../../core/logger.ts'
 import type { Connection } from '../../transport/connection.ts'
-import { parseMetaLine, parseTranscriptLine, type TranscriptMetaUpdate } from './parser.ts'
+import {
+  findImage,
+  parseImageId,
+  parseMetaLine,
+  parseTranscriptLine,
+  type TranscriptMetaUpdate,
+} from './parser.ts'
 import { TranscriptFile } from './transcript-file.ts'
 
 export const DEFAULT_PAGE_SIZE = 50
@@ -139,11 +150,39 @@ export class TranscriptService {
     this.closeIfUnused(stream)
   }
 
+  /**
+   * Indexes lines appended since the last read. `TranscriptFile.sync` returns new lines only once,
+   * so when a stream follows the file they go through its pump (and reach its subscribers) instead
+   * of being read and dropped here.
+   */
+  private async catchUp(file: TranscriptFile): Promise<void> {
+    const stream = [...this.streams.values()].find((s) => s.file === file)
+    if (stream) await this.pump(stream)
+    else await file.sync()
+  }
+
   async history(target: StreamTarget, before: number, limit: number) {
     const file = this.fileFor(target.path)
-    await file.sync()
+    await this.catchUp(file)
     const page = await file.page(before, limit)
     return { sessionId: target.sessionId, agentId: target.agentId, ...page, lineCount: file.lineCount }
+  }
+
+  /** Data of an image ref (`parseImageId`), read again from its transcript line. */
+  async image(
+    target: StreamTarget,
+    imageId: string,
+  ): Promise<Omit<ServerMessageOf<'transcript.image'>, 'type' | 'replyTo'>> {
+    const at = parseImageId(imageId)
+    const file = this.fileFor(target.path)
+    // Refs come from lines already read; only a new file object (daemon restart) needs indexing.
+    if (at && at.cursor >= file.lineCount) await this.catchUp(file)
+    const [line] = at ? await file.readLines(at.cursor, at.cursor + 1) : []
+    const image = line && at ? findImage(line.text, at.index) : null
+    if (!image) throw new DaemonError('not_found', `image ${imageId} not found`)
+    if (image.bytes > MAX_TRANSCRIPT_IMAGE_BYTES)
+      throw new DaemonError('too_large', `image ${imageId} has ${image.bytes} bytes`)
+    return { imageId, mediaType: image.mediaType, data: image.data }
   }
 
   /** Reads newly appended lines and pushes their entries to subscribers. */

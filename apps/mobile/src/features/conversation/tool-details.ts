@@ -167,7 +167,13 @@ export function toolCallJson(use: Use | null, result: Result | null): string {
     {
       ...(use ? { name: use.name, input: use.input } : {}),
       result: result
-        ? { content: result.content, isError: result.isError, truncated: result.truncated }
+        ? {
+            content: result.content,
+            isError: result.isError,
+            truncated: result.truncated,
+            // Refs only: the image data is fetched separately.
+            ...(result.images.length > 0 ? { images: result.images } : {}),
+          }
         : null,
     },
     null,

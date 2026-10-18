@@ -8,6 +8,7 @@ import { errorMessage } from '@/core/connection/error-message'
 import { keyboardBehavior } from '@/core/platform/platform'
 import { colors, maxContentWidth, radius, space } from '@/core/theme'
 import { ConnectionBanner, Screen, Text } from '@/ui'
+import { TranscriptImagesContext } from '../images/use-transcript-image'
 import { useSessionsStore } from '../sessions/store'
 import { KeyBar } from './components/KeyBar'
 import { AssistantMessage, SystemLine, ThinkingBlock, UnknownEntry, UserMessage } from './components/Messages'
@@ -23,7 +24,7 @@ import { useFollowScroll } from './use-follow-scroll'
 function renderItem({ item }: { item: TimelineItem }) {
   switch (item.type) {
     case 'user':
-      return <UserMessage text={item.text} />
+      return <UserMessage text={item.text} images={item.images} />
     case 'assistant':
       return <AssistantMessage text={item.text} />
     case 'thinking':
@@ -71,6 +72,7 @@ export function ConversationScreen({
   const items = useMemo(() => buildTimeline(stream.entries), [stream.entries])
   const follow = useFollowStore((s) => s.follow)
   const listRef = useRef<FlashListRef<TimelineItem>>(null)
+  const imageSource = useMemo(() => ({ sessionId, agentId }), [sessionId, agentId])
   const { unseen, scrollProps, jumpToEnd, leaveEnd } = useFollowScroll({
     listRef,
     itemCount: items.length,
@@ -98,60 +100,62 @@ export function ConversationScreen({
   }
 
   return (
-    <Screen>
-      <ConnectionBanner />
-      {header}
-      <KeyboardAvoidingView
-        behavior={keyboardBehavior(Platform.OS)}
-        keyboardVerticalOffset={90}
-        style={styles.flex}
-      >
-        <View style={styles.flex}>
-          <FlashList
-            ref={listRef}
-            data={items}
-            keyExtractor={(item) => item.key}
-            getItemType={(item) => item.type}
-            renderItem={renderItem}
-            // Anchoring stays on (older pages do not move the viewport); following the end is done
-            // here instead of FlashList's autoscroll, whose sticky "near the bottom" flag could pull
-            // the user back while they start scrolling up (#38).
-            maintainVisibleContentPosition={{ startRenderingFromBottom: true }}
-            onStartReached={loadEarlier}
-            onStartReachedThreshold={0.5}
-            {...scrollProps}
-            // Fixed header: swapping it for the spinner would shift the content (anchoring ignores it).
-            ListHeaderComponent={<View style={styles.top} />}
-            ListEmptyComponent={
-              <Text color="textMuted" style={styles.empty}>
-                {stream.error != null ? errorMessage(stream.error, t) : t('conversation.loading')}
-              </Text>
-            }
-            contentContainerStyle={styles.content}
+    <TranscriptImagesContext.Provider value={imageSource}>
+      <Screen>
+        <ConnectionBanner />
+        {header}
+        <KeyboardAvoidingView
+          behavior={keyboardBehavior(Platform.OS)}
+          keyboardVerticalOffset={90}
+          style={styles.flex}
+        >
+          <View style={styles.flex}>
+            <FlashList
+              ref={listRef}
+              data={items}
+              keyExtractor={(item) => item.key}
+              getItemType={(item) => item.type}
+              renderItem={renderItem}
+              // Anchoring stays on (older pages do not move the viewport); following the end is done
+              // here instead of FlashList's autoscroll, whose sticky "near the bottom" flag could pull
+              // the user back while they start scrolling up (#38).
+              maintainVisibleContentPosition={{ startRenderingFromBottom: true }}
+              onStartReached={loadEarlier}
+              onStartReachedThreshold={0.5}
+              {...scrollProps}
+              // Fixed header: swapping it for the spinner would shift the content (anchoring ignores it).
+              ListHeaderComponent={<View style={styles.top} />}
+              ListEmptyComponent={
+                <Text color="textMuted" style={styles.empty}>
+                  {stream.error != null ? errorMessage(stream.error, t) : t('conversation.loading')}
+                </Text>
+              }
+              contentContainerStyle={styles.content}
+            />
+            {stream.loadingOlder ? <ActivityIndicator color={colors.accent} style={styles.loader} /> : null}
+            {unseen ? (
+              <Pressable accessibilityRole="button" onPress={jumpToEnd} style={styles.unseen}>
+                <Text size="xs" weight="bold" color="background">
+                  {t('conversation.newMessages')}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {footer}
+          {onKey && keyBarVisible ? <KeyBar onKey={onKey} disabled={!controllable} /> : null}
+          {composer}
+        </KeyboardAvoidingView>
+        {onHistoryClose ? (
+          <PromptHistorySheet
+            visible={historyOpen}
+            stream={stream}
+            onPick={jumpToPrompt}
+            onLoadEarlier={loadEarlier}
+            onClose={onHistoryClose}
           />
-          {stream.loadingOlder ? <ActivityIndicator color={colors.accent} style={styles.loader} /> : null}
-          {unseen ? (
-            <Pressable accessibilityRole="button" onPress={jumpToEnd} style={styles.unseen}>
-              <Text size="xs" weight="bold" color="background">
-                {t('conversation.newMessages')}
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
-        {footer}
-        {onKey && keyBarVisible ? <KeyBar onKey={onKey} disabled={!controllable} /> : null}
-        {composer}
-      </KeyboardAvoidingView>
-      {onHistoryClose ? (
-        <PromptHistorySheet
-          visible={historyOpen}
-          stream={stream}
-          onPick={jumpToPrompt}
-          onLoadEarlier={loadEarlier}
-          onClose={onHistoryClose}
-        />
-      ) : null}
-    </Screen>
+        ) : null}
+      </Screen>
+    </TranscriptImagesContext.Provider>
   )
 }
 

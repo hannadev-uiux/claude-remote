@@ -45,7 +45,7 @@ describe('live status reducer', () => {
       tool: null,
     })
     expect(stepForEntry({ ...use, isSidechain: true })).toBeNull()
-    expect(stepForEntry({ ...base, kind: 'user', text: 'prompt' })).toBeNull()
+    expect(stepForEntry({ ...base, kind: 'user', text: 'prompt', images: [] })).toBeNull()
   })
 
   test('a turn goes working → waiting → working → done, and stays done until a new prompt', () => {

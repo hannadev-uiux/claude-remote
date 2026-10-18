@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
+import { ImageStrip } from '../../images/ImageStrip'
 import { diffForTool } from '../diff'
 import { summarizeTool } from '../summarize-tool'
 import { cutText, TOOL_TABS, type ToolTab, tabFor, toolCallJson, toolInputFields } from '../tool-details'
@@ -31,6 +32,9 @@ export const ToolCallCard = memo(function ToolCallCard({
   const Icon = open ? ChevronDown : ChevronRight
   const dotColor = status === 'running' ? 'warning' : status === 'error' ? 'danger' : 'success'
   const firstLine = result?.content.split('\n').find((l) => l.trim()) ?? ''
+  const images = result?.images ?? []
+  const emptyText =
+    images.length > 0 ? t('images.count', { count: images.length }) : t('conversation.noOutput')
 
   return (
     <View style={styles.wrap}>
@@ -50,8 +54,13 @@ export const ToolCallCard = memo(function ToolCallCard({
           numberOfLines={1}
           style={styles.preview}
         >
-          ⎿ {firstLine || t('conversation.noOutput')}
+          ⎿ {firstLine || emptyText}
         </Text>
+      ) : null}
+      {!open && images.length > 0 ? (
+        <View style={styles.images}>
+          <ImageStrip images={images} />
+        </View>
       ) : null}
       {!open && diff ? <DiffView lines={diff.slice(0, 12)} /> : null}
       {open ? <ToolDetails use={use} result={result} diff={diff} /> : null}
@@ -104,13 +113,18 @@ function ToolDetails({
         <>
           {diff ? <DiffView lines={diff} /> : null}
           {result ? (
-            <LongText
-              text={result.content || t('conversation.noOutput')}
-              color={result.isError ? 'danger' : 'text'}
-              truncated={result.truncated}
-              showAll={showAll}
-              onShowAll={() => setShowAll(true)}
-            />
+            <>
+              {result.content || result.images.length === 0 ? (
+                <LongText
+                  text={result.content || t('conversation.noOutput')}
+                  color={result.isError ? 'danger' : 'text'}
+                  truncated={result.truncated}
+                  showAll={showAll}
+                  onShowAll={() => setShowAll(true)}
+                />
+              ) : null}
+              <ImageStrip images={result.images} />
+            </>
           ) : (
             <Text size="xs" color="warning">
               {t('conversation.running')}
@@ -211,6 +225,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   flex: { flex: 1 },
   preview: { marginTop: space.xs, marginLeft: space.lg },
+  images: { marginLeft: space.lg },
   body: { marginTop: space.sm, gap: space.sm },
   tabs: { flexDirection: 'row', gap: space.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   tab: {

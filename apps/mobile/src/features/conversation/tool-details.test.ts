@@ -24,6 +24,7 @@ const result = (content: string, isError = false) =>
     content,
     isError,
     truncated: false,
+    images: [],
   }) satisfies TranscriptEntry
 
 describe('toolInputFields', () => {
@@ -132,6 +133,11 @@ describe('toolCallJson', () => {
       input: { command: 'ls' },
       result: { content: 'a\nb', isError: false, truncated: false },
     })
+  })
+
+  test('lists image refs of the result, not their data', () => {
+    const ref = { id: '2.0', mediaType: 'image/jpeg', bytes: 100 }
+    expect(JSON.parse(toolCallJson(null, { ...result(''), images: [ref] })).result.images).toEqual([ref])
   })
 
   test('works without a result or without the call', () => {
