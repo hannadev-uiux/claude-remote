@@ -36,13 +36,45 @@ export function sessionsToStart(
     .map((s) => s.id)
 }
 
-/** Props for an update made by the app itself (no step: only the daemon follows the transcript). */
+/**
+ * The session folder with the user's home shortened to `~`. The app does not know the computer's
+ * home, so it recognizes the usual ones (macOS `/Users/<name>`, Linux and WSL `/home/<name>`).
+ */
+export function shortenHome(path: string): string {
+  return path.replace(/^\/(?:Users|home)\/[^/]+(?=\/|$)/, '~')
+}
+
+/** What the app knows about a live status besides the session itself. */
+export type LocalLiveInfo = {
+  /** Profile name. */
+  title: string
+  /** Daemon computer name, empty when the daemon does not send it. */
+  host: string
+  startedAt: number
+  changedAt: number
+  endedAt: number | null
+}
+
+/** Props for an update made by the app itself (no steps: only the daemon follows the transcript). */
 export function localLiveProps(
-  session: Pick<Session, 'state'>,
-  title: string,
-  startedAt: number,
+  session: Pick<Session, 'state' | 'title' | 'cwd'>,
+  info: LocalLiveInfo,
   t: TFunction,
 ): LiveStatusProps {
   const state = liveStateFor(session.state)
-  return { title, state, status: t(`liveStatus.states.${state}`), step: '', tools: '', startedAt }
+  return {
+    title: info.title,
+    state,
+    status: t(`liveStatus.states.${state}`),
+    step: '',
+    tools: '',
+    startedAt: info.startedAt,
+    host: info.host,
+    session: session.title,
+    path: shortenHome(session.cwd),
+    recent: [],
+    ago: t('liveStatus.ago'),
+    changedAt: info.changedAt,
+    endedAt: info.endedAt,
+  }
 }

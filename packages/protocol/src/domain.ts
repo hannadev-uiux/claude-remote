@@ -143,9 +143,12 @@ export const LIVE_ACTIVITY_NAME = 'SessionActivity'
 
 /**
  * Props of the live status, rendered as they are by the widget (it cannot translate): texts arrive
- * already translated. Never session content: profile name, state, step category, tool count, times.
+ * already translated. Besides the session title and folder, never session content: names, state,
+ * step categories with tool names, tool count, times. Fields after `startedAt` have defaults because
+ * older daemons do not send them.
  */
 export const LiveStatusPropsSchema = z.object({
+  /** Profile name. */
   title: z.string(),
   state: LiveStateSchema,
   status: z.string(),
@@ -155,6 +158,20 @@ export const LiveStatusPropsSchema = z.object({
   tools: z.string(),
   /** Start of the turn, epoch milliseconds (drives the elapsed timer). */
   startedAt: z.number(),
+  /** Name of the daemon's computer, empty when unknown. */
+  host: z.string().default(''),
+  /** Session title. */
+  session: z.string().default(''),
+  /** Session folder, home shortened to `~`. */
+  path: z.string().default(''),
+  /** Latest steps of the turn, newest first, translated ("Bash · running a command"). */
+  recent: z.array(z.string()).default([]),
+  /** Translated "time ago" template with a `{time}` placeholder ("{time} ago"). */
+  ago: z.string().default(''),
+  /** When the state last changed, epoch milliseconds (0 when unknown). */
+  changedAt: z.number().default(0),
+  /** End of the turn (done or closed), epoch milliseconds: the elapsed timer stops there. */
+  endedAt: z.number().nullable().default(null),
 })
 export type LiveStatusProps = z.infer<typeof LiveStatusPropsSchema>
 

@@ -331,6 +331,8 @@ export const enUS = {
       permission: 'permission pending',
     },
     tools: (count: number) => (count === 1 ? '1 tool' : `${count} tools`),
+    /** Time since the state changed; the widget puts a live counter in `{time}`. */
+    ago: '{time} ago',
   },
   push: {
     sessionDone: 'Session finished',

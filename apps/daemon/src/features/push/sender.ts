@@ -90,7 +90,7 @@ export function buildLiveMessage(message: LiveMessage) {
       notification: {
         tag: `live-${message.sessionId}`,
         channelId: ANDROID_LIVE_CHANNEL_ID,
-        title: `${props.title} · ${props.status}`,
+        title: `${props.session || props.title} · ${props.status}`,
         body: details || props.status,
         sticky: message.event === 'update',
         notificationPriority: 'PRIORITY_LOW' as const,

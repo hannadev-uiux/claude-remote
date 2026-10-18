@@ -333,6 +333,7 @@ export const esES = {
       permission: 'permiso pendiente',
     },
     tools: (count: number) => (count === 1 ? '1 herramienta' : `${count} herramientas`),
+    ago: 'hace {time}',
   },
   push: {
     sessionDone: 'Sesión terminada',
