@@ -9,6 +9,7 @@ import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/conn
 import { makeStyles, space, useTheme } from '@/core/theme'
 import { Button, Chip, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
 import { useMuteStore } from '../mute/store'
+import { WaitingStrip } from '../permissions/components/WaitingStrip'
 import { NestedSubagents } from '../subagents/SubagentList'
 import { sharedCheckoutCounts } from './checkout'
 import { MachineLine } from './components/MachineLine'
@@ -141,6 +142,9 @@ export function SessionsScreen({
         />
       </ScrollView>
       <SessionSearch value={filter.query} onChange={(query) => changeFilter({ query })} />
+      <View style={styles.strip}>
+        <WaitingStrip />
+      </View>
       <FlashList<Session>
         ref={listRef}
         data={items}
@@ -204,6 +208,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.border,
     marginHorizontal: space.xs,
   },
+  strip: { paddingTop: space.sm },
   list: { paddingTop: space.sm, paddingBottom: space.xxl },
   code: { backgroundColor: theme.colors.surface, padding: space.md, borderRadius: 8, gap: space.xs },
 }))

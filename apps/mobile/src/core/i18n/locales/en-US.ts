@@ -275,6 +275,15 @@ const enUS = {
     pending_one: '{{count}} permission',
     pending_other: '{{count}} permissions',
     alreadyResolved: 'This request was already resolved (on the computer or it timed out).',
+    strip: {
+      title: 'Waiting for you',
+      more_one: '+{{count}} more',
+      more_other: '+{{count}} more',
+      question: 'has a question',
+      plan: 'plan ready for review',
+      waiting: 'waiting for you',
+      open: 'Open',
+    },
     detail: {
       command: 'command',
       file: 'file',
