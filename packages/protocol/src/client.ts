@@ -29,6 +29,14 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     sinceCursor: z.number().int().nonnegative().optional(),
   }),
   z.object({ type: z.literal('session.unsubscribe'), id, sessionId, agentId: z.string().optional() }),
+  /** Data of an image ref from a transcript entry; answered with `transcript.image`. */
+  z.object({
+    type: z.literal('transcript.image'),
+    id,
+    sessionId,
+    agentId: z.string().optional(),
+    imageId: z.string().min(1),
+  }),
   z.object({
     type: z.literal('session.history'),
     id,

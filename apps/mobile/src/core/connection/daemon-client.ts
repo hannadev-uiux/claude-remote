@@ -149,12 +149,15 @@ export class DaemonClient {
     return () => this.readyListeners.delete(listener)
   }
 
-  /** Sends a request and resolves with the correlated reply; `error` replies reject. */
-  request(message: ClientRequest): Promise<ServerMessage> {
+  /**
+   * Sends a request and resolves with the correlated reply; `error` replies reject. `timeoutMs`
+   * overrides the default for replies that take long to arrive (large images).
+   */
+  request(message: ClientRequest, options: { timeoutMs?: number } = {}): Promise<ServerMessage> {
     if (!this.socket || this.socket.readyState !== OPEN || this._status !== 'open') {
       return Promise.reject(new DaemonRequestError('disconnected', 'not connected to the daemon'))
     }
-    return this.sendRequest(message)
+    return this.sendRequest(message, options.timeoutMs)
   }
 
   /** Fire-and-forget variant that ignores the reply. */
@@ -177,13 +180,16 @@ export class DaemonClient {
     return `${Date.now().toString(36)}-${this.seq}`
   }
 
-  private sendRequest(message: ClientRequest): Promise<ServerMessage> {
+  private sendRequest(message: ClientRequest, timeoutMs?: number): Promise<ServerMessage> {
     const id = this.nextId()
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id)
-        reject(new DaemonRequestError('timeout', `no reply to ${message.type}`))
-      }, this.options.requestTimeoutMs ?? 15_000)
+      const timer = setTimeout(
+        () => {
+          this.pending.delete(id)
+          reject(new DaemonRequestError('timeout', `no reply to ${message.type}`))
+        },
+        timeoutMs ?? this.options.requestTimeoutMs ?? 15_000,
+      )
       this.pending.set(id, { resolve, reject, timer })
       this.socket?.send(JSON.stringify({ ...message, id }))
     })

@@ -45,6 +45,11 @@ export function registerTranscriptFeature(ctx: DaemonContext, store: SessionStor
     ...(await service.history(target(msg.sessionId, msg.agentId), msg.before, msg.limit)),
   }))
 
+  ctx.router.register('transcript.image', async (msg) => ({
+    type: 'transcript.image',
+    ...(await service.image(target(msg.sessionId, msg.agentId), msg.imageId)),
+  }))
+
   ctx.onStop(() => service.dispose())
 
   return {
