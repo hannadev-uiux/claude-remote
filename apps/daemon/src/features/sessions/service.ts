@@ -54,6 +54,7 @@ export class SessionService {
       subagents: [],
       backgroundTasks: 0,
       checkout: null,
+      status: null,
       transcriptPath: hook.payload.transcript_path ?? null,
     }
   }
@@ -177,6 +178,7 @@ export class SessionService {
         subagents: [],
         backgroundTasks: 0,
         checkout: null,
+        status: null,
         transcriptPath: link.transcriptPath,
       }))
     }
@@ -208,6 +210,7 @@ export class SessionService {
         subagents: [],
         backgroundTasks: 0,
         checkout: null,
+        status: null,
         transcriptPath: file.path,
       }))
     }

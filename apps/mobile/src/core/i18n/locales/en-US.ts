@@ -135,6 +135,21 @@ const enUS = {
     stopFollowing: 'Stop following output',
     readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
   },
+  sessionStatus: {
+    title: 'Session status',
+    open: 'Session status: {{summary}}',
+    openHint: 'Shows the tokens in use and when the limits reset',
+    short: { context: 'ctx', fiveHour: '5h', sevenDay: 'week' },
+    labels: {
+      model: 'Model',
+      effort: 'Effort',
+      context: 'Context',
+      fiveHour: '5-hour limit',
+      sevenDay: 'Weekly limit',
+    },
+    contextValue: '{{used}} / {{size}} tokens ({{percent}})',
+    limitValue: '{{percent}} · resets {{time}}',
+  },
   sessionDetails: {
     title: 'Session details',
     open: 'Session details: {{title}}',

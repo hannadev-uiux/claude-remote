@@ -38,6 +38,38 @@ export type SubagentInfo = z.infer<typeof SubagentInfoSchema>
 export const CheckoutSchema = z.object({ root: z.string(), branch: z.string().nullable() })
 export type Checkout = z.infer<typeof CheckoutSchema>
 
+/** Context window usage reported by Claude Code's status line. */
+export const ContextUsageSchema = z.object({
+  usedTokens: z.number().int().nonnegative(),
+  size: z.number().int().positive(),
+  /** 0-100. */
+  percent: z.number().min(0),
+})
+export type ContextUsage = z.infer<typeof ContextUsageSchema>
+
+/** What Claude Code's status line reports for a session; unknown items are `null`, never zero. */
+export const SessionStatusSchema = z.object({
+  /** Display name ("Opus 5.5"). */
+  model: z.string().nullable(),
+  /** Reasoning effort level ("high"), only for models that support it. */
+  effort: z.string().nullable(),
+  context: ContextUsageSchema.nullable(),
+})
+export type SessionStatus = z.infer<typeof SessionStatusSchema>
+
+/** A usage limit window of the account: percentage used and when it resets (epoch milliseconds). */
+export const UsageWindowSchema = z.object({ percent: z.number().min(0), resetsAt: z.number() })
+export type UsageWindow = z.infer<typeof UsageWindowSchema>
+
+/** Usage limits of a profile's Claude account (subscribers only); `null` windows are unknown. */
+export const AccountLimitsSchema = z.object({
+  profileId: z.string().min(1),
+  fiveHour: UsageWindowSchema.nullable(),
+  sevenDay: UsageWindowSchema.nullable(),
+  updatedAt: z.string(),
+})
+export type AccountLimits = z.infer<typeof AccountLimitsSchema>
+
 export const SessionSchema = z.object({
   id: z.string(),
   profileId: z.string(),
@@ -52,6 +84,8 @@ export const SessionSchema = z.object({
   backgroundTasks: z.number().int().nonnegative().default(0),
   /** `null` outside git (and from older daemons). */
   checkout: CheckoutSchema.nullable().default(null),
+  /** `null` until the session's status line reports (and from older daemons). */
+  status: SessionStatusSchema.nullable().default(null),
 })
 export type Session = z.infer<typeof SessionSchema>
 

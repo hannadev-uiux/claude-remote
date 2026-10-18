@@ -16,6 +16,7 @@ function s(id: string, root: string | null, patch: Partial<Session> = {}): Sessi
     subagents: [],
     backgroundTasks: 0,
     checkout: root ? { root, branch: 'main' } : null,
+    status: null,
     ...patch,
   }
 }

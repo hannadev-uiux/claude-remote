@@ -133,6 +133,8 @@ export const esES = {
     hooksIn: (path: string) => `hooks en ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} eliminado`,
     hooksRemovedFrom: (path: string) => `hooks eliminados de ${path}`,
+    statusLineIn: (path: string) => `status line en ${path}`,
+    statusLineRestored: (path: string) => `status line restaurada en ${path}`,
   },
   setup: {
     languageQuestion: 'Idioma',

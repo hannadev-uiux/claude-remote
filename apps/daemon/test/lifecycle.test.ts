@@ -23,6 +23,7 @@ function record(id: string, patch: Partial<SessionRecord>): SessionRecord {
     subagents: [],
     backgroundTasks: 0,
     checkout: null,
+    status: null,
     transcriptPath: null,
     ...patch,
   }

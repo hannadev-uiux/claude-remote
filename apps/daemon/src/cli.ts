@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { existsSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { homedir, userInfo } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LOCALES, type Locale, LocaleSchema } from '@remote-harness/protocol'
 import { Command, InvalidArgumentError, Option } from 'commander'
@@ -26,6 +28,7 @@ import {
   uninstallHooks,
   uninstallLaunchers,
   uninstallShellPath,
+  uninstallStatusLine,
 } from './features/hooks/installer.ts'
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
@@ -43,6 +46,7 @@ import {
 } from './features/setup/install.ts'
 import { tildify } from './features/setup/profiles.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
+import { STATUS_LINE_SCRIPT } from './features/status-line/wrapper.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
 import { WslHost } from './features/wsl/host.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
@@ -377,7 +381,11 @@ program
       console.log(
         `${(await uninstallHooks(profile)) ? '✓' : '·'} ${m.cli.uninstall.hooksRemoved(settingsPath(profile))}`,
       )
+      console.log(
+        `${(await uninstallStatusLine(profile)) ? '✓' : '·'} ${m.install.statusLineRestored(settingsPath(profile))}`,
+      )
     }
+    await rm(join(paths.bin(), STATUS_LINE_SCRIPT), { force: true })
   })
 
 const service = program.command('service').description(m.cli.service.description)

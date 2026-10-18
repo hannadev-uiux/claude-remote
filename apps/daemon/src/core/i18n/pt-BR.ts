@@ -131,6 +131,8 @@ export const ptBR = {
     hooksIn: (path: string) => `hooks em ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} removido`,
     hooksRemovedFrom: (path: string) => `hooks removidos de ${path}`,
+    statusLineIn: (path: string) => `status line em ${path}`,
+    statusLineRestored: (path: string) => `status line restaurada em ${path}`,
   },
   setup: {
     languageQuestion: 'Idioma',

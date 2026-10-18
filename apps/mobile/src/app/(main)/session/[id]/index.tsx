@@ -16,6 +16,7 @@ import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
 import { ModeSelector } from '@/features/mode/ModeSelector'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
 import { SessionPermissions } from '@/features/permissions/components/SessionPermissions'
+import { StatusBar } from '@/features/session-status/StatusBar'
 import { SessionDetailsSheet } from '@/features/sessions/components/SessionDetailsSheet'
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
@@ -124,6 +125,7 @@ export default function SessionRoute() {
                 </View>
                 <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
               </View>
+              <StatusBar status={session.status} profileId={session.profileId} />
               <SubagentStrip sessionId={id} subagents={session.subagents} />
             </>
           ) : null

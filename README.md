@@ -75,7 +75,7 @@ Remote Harness solves this with tools you already trust: sessions run inside **t
 ```
 
 1. You start Claude Code with a tiny launcher (one per account, named by you, e.g. `pessoal`, `trabalho`) that runs it inside a tmux window.
-2. Claude Code's HTTP hooks tell the daemon when a session starts, stops, needs permission or gets a prompt.
+2. Claude Code's HTTP hooks tell the daemon when a session starts, stops, needs permission or gets a prompt. A small status line wrapper also forwards the model, effort, context usage and usage limits — and then runs your own status line, so the terminal looks the same.
 3. The daemon tails the session transcript, reads the tmux pane, and serves everything to the app over an authenticated WebSocket bound **only** to the Tailscale interface.
 4. Prompts and keys go back through tmux; permission answers go back through the pending hook request.
 

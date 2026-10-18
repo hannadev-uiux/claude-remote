@@ -24,6 +24,7 @@ import { registerPermissionsFeature } from './features/permissions/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
 import { registerSessionsFeature } from './features/sessions/index.ts'
+import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
 import type { Executor } from './infra/exec.ts'
@@ -217,6 +218,7 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
   const transcript = registerTranscriptFeature(ctx, sessions.store)
   registerSubagentsFeature(ctx, sessions.store, transcript.addResolver)
+  registerStatusLineFeature(ctx, sessions.store)
   const sessionLock = new KeyedMutex()
   const attachments = registerAttachmentsFeature(ctx, sessions.store)
   registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
