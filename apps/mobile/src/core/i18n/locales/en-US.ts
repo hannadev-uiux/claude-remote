@@ -570,6 +570,22 @@ const enUS = {
       ended: 'ended',
     },
   },
+  queue: {
+    count: 'QUEUED · {{count}}',
+    sendAll: 'Send all now',
+    sendNow: 'Send now',
+    edit: 'Edit',
+    remove: 'Remove',
+    editTitle: 'Edit queued message',
+    save: 'Save',
+    /** Shown over Send while the message would wait for the turn to end. */
+    holdHint: 'Hold: send now · ⌘⏎',
+    queueLabel: 'Queue message',
+    failed: "Couldn't deliver",
+    actionFailed: "Couldn't update the queue",
+    withPhotos_one: '+{{count}} photo',
+    withPhotos_other: '+{{count}} photos',
+  },
   subagents: {
     title: 'Subagents',
     summary_one: '{{count}} subagent',

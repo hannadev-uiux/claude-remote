@@ -373,6 +373,26 @@ export const AttachmentMimeTypeSchema = z.enum(ATTACHMENT_MIME_TYPES)
 export type AttachmentMimeType = z.infer<typeof AttachmentMimeTypeSchema>
 /** Images per prompt. */
 export const MAX_ATTACHMENTS = 4
+
+/** How `session.input` is delivered: right away, held in the queue, or held only while the session is busy. */
+export const InputModeSchema = z.enum(['now', 'queue', 'auto'])
+export type InputMode = z.infer<typeof InputModeSchema>
+export const InputDeliverySchema = z.enum(['sent', 'queued'])
+export type InputDelivery = z.infer<typeof InputDeliverySchema>
+
+/** A prompt waiting for the session to be free; delivered in order once the turn ends. */
+export const QueuedMessageSchema = z.object({
+  id: z.string(),
+  sessionId: z.string(),
+  text: z.string(),
+  attachmentIds: z.array(z.string()).default([]),
+  createdAt: z.string(),
+  /** Why the last delivery failed; the prompt then waits for the user (edit, send now, remove). */
+  error: z.string().nullable().default(null),
+})
+export type QueuedMessage = z.infer<typeof QueuedMessageSchema>
+/** Queued prompts per session. */
+export const MAX_QUEUE = 20
 /** Decoded bytes per image (the Claude API limit). */
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024
 

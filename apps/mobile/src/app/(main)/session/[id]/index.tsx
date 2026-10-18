@@ -16,6 +16,7 @@ import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
 import { ModeSelector } from '@/features/mode/ModeSelector'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
 import { SessionPermissions } from '@/features/permissions/components/SessionPermissions'
+import { QueueCard } from '@/features/queue/components/QueueCard'
 import { StatusBar } from '@/features/session-status/StatusBar'
 import { sessionAgent } from '@/features/sessions/agent'
 import { CloseSessionSheet } from '@/features/sessions/components/CloseSessionSheet'
@@ -171,6 +172,7 @@ export default function SessionRoute() {
           session ? (
             <>
               <SessionPermissions sessionId={id} cwd={session.cwd} profileId={session.profileId} />
+              <QueueCard sessionId={id} />
               <ResumeBanner session={session} />
             </>
           ) : null

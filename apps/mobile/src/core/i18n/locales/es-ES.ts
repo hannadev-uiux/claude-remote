@@ -570,6 +570,22 @@ const esES = {
       ended: 'terminada',
     },
   },
+  queue: {
+    count: 'EN COLA · {{count}}',
+    sendAll: 'Enviar todo ahora',
+    sendNow: 'Enviar ahora',
+    edit: 'Editar',
+    remove: 'Quitar',
+    editTitle: 'Editar mensaje en cola',
+    save: 'Guardar',
+    /** Aparece sobre Enviar mientras el mensaje esperaría al final del turno. */
+    holdHint: 'Mantén pulsado: enviar ahora · ⌘⏎',
+    queueLabel: 'Poner en cola',
+    failed: 'No se pudo entregar',
+    actionFailed: 'No se pudo actualizar la cola',
+    withPhotos_one: '+{{count}} foto',
+    withPhotos_other: '+{{count}} fotos',
+  },
   subagents: {
     title: 'Subagentes',
     summary_one: '{{count}} subagente',

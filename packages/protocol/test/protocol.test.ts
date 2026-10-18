@@ -16,8 +16,8 @@ const clientSamples: ClientMessage[] = [
   { type: 'session.subscribe', id: '1', sessionId: 's', sinceCursor: 3 },
   { type: 'session.unsubscribe', id: '1', sessionId: 's' },
   { type: 'session.history', id: '1', sessionId: 's', before: 50, limit: 50 },
-  { type: 'session.input', id: '1', sessionId: 's', text: 'oi\nlinha 2 @src/a.ts' },
-  { type: 'session.input', id: '1', sessionId: 's', text: '', attachmentIds: ['a1', 'a2'] },
+  { type: 'session.input', id: '1', sessionId: 's', text: 'oi\nlinha 2 @src/a.ts', mode: 'now' },
+  { type: 'session.input', id: '1', sessionId: 's', text: '', attachmentIds: ['a1', 'a2'], mode: 'now' },
   { type: 'attachment.upload', id: '1', sessionId: 's', mimeType: 'image/png', data: 'iVBORw0KGgo=' },
   { type: 'transcript.image', id: '1', sessionId: 's', agentId: 'a', imageId: '12.0' },
   { type: 'session.key', id: '1', sessionId: 's', key: 'Escape' },
@@ -52,6 +52,11 @@ const clientSamples: ClientMessage[] = [
   { type: 'session.close', id: '1', sessionId: 's', worktree: 'push-delete' },
   { type: 'worktree.inspect', id: '1', sessionId: 's' },
   { type: 'worktree.cleanup', id: '1', sessionId: 's', action: 'delete' },
+  { type: 'session.input', id: '1', sessionId: 's', text: 'later', mode: 'auto' },
+  { type: 'queue.update', id: '1', sessionId: 's', itemId: 'q1', text: 'edited' },
+  { type: 'queue.remove', id: '1', sessionId: 's', itemId: 'q1' },
+  { type: 'queue.sendNow', id: '1', sessionId: 's', itemId: 'q1' },
+  { type: 'queue.flush', id: '1', sessionId: 's' },
   {
     type: 'device.register',
     id: '1',
@@ -278,6 +283,14 @@ describe('client messages', () => {
 
   test('accepts any key string (the daemon enforces the allow list)', () => {
     expect(parseClientMessage({ type: 'session.key', id: '1', sessionId: 's', key: 'C-z' }).ok).toBe(true)
+  })
+
+  test('session.input defaults to immediate delivery and refuses unknown modes', () => {
+    const parsed = parseClientMessage({ type: 'session.input', id: '1', sessionId: 's', text: 'hi' })
+    expect(parsed.ok && parsed.value.type === 'session.input' ? parsed.value.mode : null).toBe('now')
+    expect(
+      parseClientMessage({ type: 'session.input', id: '1', sessionId: 's', text: 'hi', mode: 'later' }).ok,
+    ).toBe(false)
   })
 
   test('worktree actions are a closed set', () => {

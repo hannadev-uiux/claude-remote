@@ -23,6 +23,7 @@ import { registerPaneFeature } from './features/pane/index.ts'
 import { registerPermissionsFeature } from './features/permissions/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
+import { registerQueueFeature } from './features/queue/index.ts'
 import { registerSessionsFeature } from './features/sessions/index.ts'
 import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
@@ -230,9 +231,11 @@ async function registerFeatures(
   registerStatusLineFeature(ctx, sessions.store)
   const sessionLock = new KeyedMutex()
   const attachments = registerAttachmentsFeature(ctx, sessions.store)
-  registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
   const permissions = registerPermissionsFeature(ctx)
-  registerModeFeature(ctx, sessions.store, sessionLock, (id) => permissions.broker.hasPending(id))
+  const hasPendingPermission = (id: string) => permissions.broker.hasPending(id)
+  const input = registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
+  const queue = registerQueueFeature(ctx, sessions.store, input.service, hasPendingPermission)
+  registerModeFeature(ctx, sessions.store, sessionLock, hasPendingPermission)
   registerAutocompleteFeature(ctx, sessions.store)
   registerPaneFeature(ctx, sessions.store)
   const checkout = registerCheckoutFeature(ctx, sessions.store)
@@ -257,5 +260,7 @@ async function registerFeatures(
     })
   }
   await sessions.start()
+  // After the sessions, so prompts queued for sessions that ended meanwhile are dropped.
+  await queue.service.load().catch((error) => ctx.logger.warn({ err: error }, 'queue restore failed'))
   return { mute: mute.store, pushMode: push.mode }
 }

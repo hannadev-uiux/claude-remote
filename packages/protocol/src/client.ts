@@ -3,6 +3,7 @@ import {
   AttachmentMimeTypeSchema,
   DevicePlatformSchema,
   DIRECTORY_LIST_LIMIT,
+  InputModeSchema,
   LivePaletteSchema,
   MAX_ATTACHMENTS,
   MAX_DIRECTORY_LIST_LIMIT,
@@ -56,6 +57,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     // May be empty when the prompt only carries images (the daemon rejects an empty prompt).
     text: z.string(),
     attachmentIds: z.array(z.string().min(1)).min(1).max(MAX_ATTACHMENTS).optional(),
+    /** `now` pastes right away (default); `queue` holds it; `auto` holds it only while the session is busy. */
+    mode: InputModeSchema.default('now'),
   }),
   /** One image per message; answered with `attachment.uploaded`. Size and bytes are checked by the daemon. */
   z.object({
@@ -67,6 +70,11 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   // Validated by the daemon against ALLOWED_KEYS so it can answer `invalid_key`.
   z.object({ type: z.literal('session.key'), id, sessionId, key: z.string().min(1) }),
+  /** Queued prompts: edit the text (clears a delivery error), drop one, deliver one now, deliver all now. */
+  z.object({ type: z.literal('queue.update'), id, sessionId, itemId: z.string().min(1), text: z.string() }),
+  z.object({ type: z.literal('queue.remove'), id, sessionId, itemId: z.string().min(1) }),
+  z.object({ type: z.literal('queue.sendNow'), id, sessionId, itemId: z.string().min(1) }),
+  z.object({ type: z.literal('queue.flush'), id, sessionId }),
   z.object({ type: z.literal('session.setMode'), id, sessionId, mode: z.string() }),
   z.object({
     type: z.literal('permission.respond'),

@@ -570,6 +570,22 @@ const ptBR = {
       ended: 'encerrada',
     },
   },
+  queue: {
+    count: 'NA FILA · {{count}}',
+    sendAll: 'Enviar tudo agora',
+    sendNow: 'Enviar agora',
+    edit: 'Editar',
+    remove: 'Remover',
+    editTitle: 'Editar mensagem na fila',
+    save: 'Salvar',
+    /** Aparece sobre Enviar enquanto a mensagem esperaria o fim do turno. */
+    holdHint: 'Segure: enviar agora · ⌘⏎',
+    queueLabel: 'Pôr na fila',
+    failed: 'Não foi possível entregar',
+    actionFailed: 'Não foi possível atualizar a fila',
+    withPhotos_one: '+{{count}} foto',
+    withPhotos_other: '+{{count}} fotos',
+  },
   subagents: {
     title: 'Subagentes',
     summary_one: '{{count}} subagente',
