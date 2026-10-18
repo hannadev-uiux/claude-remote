@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useDaemonClient } from '@/core/connection'
 import { bindMute } from '@/features/mute/store'
 import { bindPermissions } from '@/features/permissions/store'
+import { bindQueue } from '@/features/queue/store'
 import { bindLimits } from '@/features/session-status/limits-store'
 import { bindSessions } from '@/features/sessions/store'
 
@@ -15,6 +16,7 @@ export function useDaemonSync() {
       bindSessions(client),
       bindMute(client),
       bindLimits(client),
+      bindQueue(client),
       bindPermissions(client, () => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
     ]
     return () => {

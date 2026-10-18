@@ -51,6 +51,7 @@ export const paths = {
   rulesLog: () => join(dataHome(), 'rules-log.jsonl'),
   devices: () => join(dataHome(), 'devices.json'),
   mute: () => join(dataHome(), 'mute.json'),
+  queue: () => join(dataHome(), 'queue.json'),
   firebaseServiceAccount: () => join(dataHome(), 'firebase-service-account.json'),
   /** Images uploaded from the app (0700), pruned after a day. */
   attachments: () => join(dataHome(), 'attachments'),

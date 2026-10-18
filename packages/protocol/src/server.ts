@@ -15,6 +15,7 @@ import {
   ProjectItemSchema,
   PushModeSchema,
   PushTestResultSchema,
+  QueuedMessageSchema,
   RuleScopeSchema,
   SessionSchema,
   SessionStateSchema,
@@ -83,6 +84,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     outcome: PermissionOutcomeSchema,
   }),
   z.object({ type: z.literal('subagent.updated'), sessionId: z.string(), subagent: SubagentInfoSchema }),
+  /** A session's queued prompts, in delivery order; sent on every change and replayed on connect. */
+  z.object({ type: z.literal('session.queue'), sessionId: z.string(), items: z.array(QueuedMessageSchema) }),
   z.object({ type: z.literal('attachment.uploaded'), replyTo, attachmentId: z.string().min(1) }),
   z.object({
     type: z.literal('transcript.image'),

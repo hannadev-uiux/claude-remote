@@ -1,4 +1,5 @@
 import type { Key } from '@remote-harness/protocol'
+import * as Haptics from 'expo-haptics'
 import { ArrowUp } from 'lucide-react-native'
 import { forwardRef, type ReactNode, useLayoutEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -40,6 +41,10 @@ type Props = {
   keysDisabled?: boolean
   /** The session's agent, named in the placeholder when known. */
   agent?: AgentId | null
+  /** Long press on Send: paste mid-turn instead of queueing (Claude Code's Ctrl+Enter). */
+  onSendNow?: () => void
+  /** Shown over the send button while the prompt would be queued (`Hold: send now · ⌘⏎`). */
+  hint?: string | null
 }
 
 // Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
@@ -84,6 +89,11 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
         </Text>
       ) : null}
       {props.attachments}
+      {props.hint && hasText ? (
+        <Text size="xs" color="textDim" style={styles.hint}>
+          {props.hint}
+        </Text>
+      ) : null}
       <View style={styles.row}>
         <Text color="accentText" weight="bold" style={styles.prompt}>
           {'>'}
@@ -120,11 +130,21 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
             <Animated.View key="send" entering={entering} exiting={exiting}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('common.send')}
+                accessibilityLabel={props.hint ? t('queue.queueLabel') : t('common.send')}
+                accessibilityHint={props.hint ?? undefined}
                 accessibilityState={{ disabled: !canSend, busy: props.sending }}
                 hitSlop={6}
                 disabled={!canSend}
                 onPress={props.onSend}
+                onLongPress={
+                  props.onSendNow
+                    ? () => {
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                        props.onSendNow?.()
+                      }
+                    : undefined
+                }
+                delayLongPress={400}
                 style={[styles.send, { backgroundColor: canSend ? colors.accent : colors.surfaceRaised }]}
               >
                 {props.sending ? (
@@ -172,4 +192,5 @@ const useStyles = makeStyles((theme) => ({
   },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   error: { paddingHorizontal: space.md, paddingTop: space.xs },
+  hint: { alignSelf: 'flex-end', paddingHorizontal: space.md, paddingTop: space.xs },
 }))
