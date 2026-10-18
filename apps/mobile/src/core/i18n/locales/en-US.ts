@@ -210,6 +210,8 @@ const enUS = {
   },
   sessionStatus: {
     title: 'Session status',
+    /** Provider chip on the second context line, once the protocol carries it (#109). */
+    provider: 'via {{provider}}',
     open: 'Session status: {{summary}}',
     openHint: 'Shows the tokens in use and when the limits reset',
     short: { context: 'ctx', fiveHour: '5h', sevenDay: 'week' },

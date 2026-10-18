@@ -12,6 +12,8 @@ import { remainingSlots } from '../attachments/limits'
 import { type ImageSource, useImagePicker } from '../attachments/use-image-picker'
 import { PromptComposer } from '../conversation/components/PromptComposer'
 import type { usePrompt } from '../conversation/use-prompt'
+import { sessionAgent } from '../sessions/agent'
+import { useSessionsStore } from '../sessions/store'
 import { RecordingOverlay } from '../voice/components/RecordingOverlay'
 import { VoiceButton } from '../voice/components/VoiceButton'
 import { insertTranscriptAtCursor } from '../voice/insert-at-cursor'
@@ -40,6 +42,10 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
     if (!found) setDismissed(null)
   }, [found])
   useBackHandler(trigger !== null, () => setDismissed(triggerKey(trigger)))
+  const agent = useSessionsStore((s) => {
+    const session = s.sessions[sessionId]
+    return session ? sessionAgent(session) : null
+  })
   const suggestions = useSuggestions(sessionId, trigger)
   const commands = useCommands(sessionId)
 
@@ -111,6 +117,7 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
       sending={prompt.sending}
       disabled={disabled}
       error={prompt.error}
+      agent={agent}
       onKey={prompt.sendKey}
       keysDisabled={disabled}
       accessory={

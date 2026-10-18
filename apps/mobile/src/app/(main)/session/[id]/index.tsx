@@ -1,5 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { ChevronDown, EllipsisVertical } from 'lucide-react-native'
+import { ChevronDown, EllipsisVertical, Terminal } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native'
@@ -17,13 +17,14 @@ import { ModeSelector } from '@/features/mode/ModeSelector'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
 import { SessionPermissions } from '@/features/permissions/components/SessionPermissions'
 import { StatusBar } from '@/features/session-status/StatusBar'
+import { sessionAgent } from '@/features/sessions/agent'
 import { CloseSessionSheet } from '@/features/sessions/components/CloseSessionSheet'
 import { SessionDetailsSheet } from '@/features/sessions/components/SessionDetailsSheet'
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
 import { SubagentsSheet } from '@/features/subagents/SubagentsSheet'
 import { subagentCounts } from '@/features/subagents/sort'
-import { ActionMenu, headerActions, Text } from '@/ui'
+import { ActionMenu, AgentBadge, headerActions, IconButton, ProfileTag, Text } from '@/ui'
 
 export default function SessionRoute() {
   const { t } = useTranslation()
@@ -41,6 +42,7 @@ export default function SessionRoute() {
   const [closeOpen, setCloseOpen] = useState(false)
   const [subagentsOpen, setSubagentsOpen] = useState(false)
   const subagentStats = subagentCounts(session?.subagents ?? [])
+  const agent = session ? sessionAgent(session) : null
   const title = session?.title || t('common.session')
   // A focused composer would keep the keyboard over the sheet's lower rows.
   const openDetails = () => {
@@ -71,6 +73,12 @@ export default function SessionRoute() {
             session ? (
               <View style={styles.actions}>
                 <SessionMuteButton sessionId={id} />
+                <IconButton
+                  icon={Terminal}
+                  label={t('sessionMenu.terminal')}
+                  disabled={!controllable}
+                  onPress={actions.terminal}
+                />
                 <ActionMenu
                   icon={EllipsisVertical}
                   label={t('sessionMenu.moreOptions')}
@@ -133,9 +141,8 @@ export default function SessionRoute() {
               {/* Session details live below the header: on iOS 26+ the bar has no room for them. */}
               <View style={styles.info}>
                 <View style={styles.meta}>
-                  <Text size="xs" style={{ color: profile?.color }}>
-                    {profile?.name ?? session.profileId}
-                  </Text>
+                  {agent ? <AgentBadge agent={agent} size={18} /> : null}
+                  <ProfileTag profile={profile ?? { name: session.profileId, color: '' }} />
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('sessionDetails.openFolder', { folder: shortPath(session.cwd) })}
@@ -152,7 +159,11 @@ export default function SessionRoute() {
                 </View>
                 <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
               </View>
-              <StatusBar status={session.status} profileId={session.profileId} />
+              <StatusBar
+                status={session.status}
+                profileId={session.profileId}
+                branch={session.checkout?.branch ?? null}
+              />
             </>
           ) : null
         }
