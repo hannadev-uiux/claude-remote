@@ -21,6 +21,7 @@ import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
 import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
+import { restoreSessionSort } from '@/features/sessions/sort-store'
 import { restoreMachineAlias, useMachineNameSync } from '@/features/settings/machine-store'
 import { stackScreenOptions } from '@/ui'
 
@@ -44,6 +45,7 @@ export default function RootLayout() {
   useEffect(() => {
     void restoreThemePreference()
     void restoreMachineAlias()
+    void restoreSessionSort()
     void restoreKeyBar()
     void restoreKeyboardToolbar()
     void restoreFollow()

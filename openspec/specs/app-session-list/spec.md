@@ -38,7 +38,7 @@ Each session row SHALL show the branch of its checkout next to the directory, an
 - **THEN** the warning disappears from the other
 
 ### Requirement: Flat list with filter chips
-The list SHALL show every session that matches the current filter in one flat list, ordered waiting first, then running, idle and ended, and by descending `updatedAt` within each state (until the recency sort replaces it). Above the list the app SHALL show filter chips: `all` and one chip per profile (only when there is more than one profile), then `active` and `ended`; the selected chip is filled with the accent. A search box SHALL still filter by title and folder.
+The list SHALL show every session that matches the current filter in one flat list, ordered by the chosen sort: **Recent** (default; newest `updatedAt` first, regardless of state) or **By state** (waiting first, then running, idle and ended, newest first inside each state). The sort SHALL be a ghost chip at the end of the filter row ("Recent ▾" / "By state ▾") that toggles on tap and is remembered on the device. Above the list the app SHALL show filter chips: `all` and one chip per profile (only when there is more than one profile), then `active` and `ended`; the selected chip is filled with the accent. A search box SHALL still filter by title and folder.
 
 #### Scenario: Profile chip
 - **WHEN** the user taps the "Work" chip
@@ -47,6 +47,14 @@ The list SHALL show every session that matches the current filter in one flat li
 #### Scenario: Single profile
 - **WHEN** the daemon lists one profile
 - **THEN** no profile chips are shown, only `active` and `ended`
+
+#### Scenario: Recency by default
+- **WHEN** an idle session was updated after a waiting one
+- **THEN** the idle session is listed first and the waiting one keeps its warning border below it
+
+#### Scenario: Back to the state order
+- **WHEN** the user taps the sort chip
+- **THEN** the list reorders waiting first and the chip reads "By state ▾", also after relaunching the app
 
 ### Requirement: Header and machine line
 The list screen header SHALL show the product mark (22 pt, accent) followed by "Sessions", with the new-session and settings actions on the right, both in the compact stack header and in the sidebar header on wide screens. Under it a machine line SHALL show a connection dot (success when connected, danger when the token was rejected, warning otherwise), the machine name, the number of sessions in the list and, when at least one is known, the number of distinct agents.
@@ -65,3 +73,10 @@ Each row SHALL show: the agent badge (20 pt rounded square in the agent's fixed 
 #### Scenario: Muted session with subagents
 - **WHEN** a muted session has two subagents
 - **THEN** the third line shows the muted glyph and "+2 subagents"
+
+### Requirement: Relative time
+Every session row and the recent-directories list SHALL show a compact relative time of the last activity: "now" under 45 seconds, then minutes ("2 min"), hours ("2 h"), "yesterday" for one day and days ("3 d"), translated.
+
+#### Scenario: Yesterday
+- **WHEN** a session's last activity was 26 hours ago
+- **THEN** its row shows "yesterday" (pt-BR "ontem", es-ES "ayer")

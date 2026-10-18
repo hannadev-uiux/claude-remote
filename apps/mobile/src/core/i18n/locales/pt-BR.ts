@@ -50,9 +50,10 @@ const ptBR = {
   },
   time: {
     now: 'agora',
-    minutesAgo: 'há {{count}} min',
-    hoursAgo: 'há {{count}} h',
-    daysAgo: 'há {{count}} d',
+    minutes: '{{count}} min',
+    hours: '{{count}} h',
+    yesterday: 'ontem',
+    days: '{{count}} d',
   },
   pairing: {
     title: 'Parear com o computador',
@@ -473,6 +474,7 @@ const ptBR = {
     subagents_one: '+{{count}} subagente',
     subagents_other: '+{{count}} subagentes',
     muted: 'silenciada',
+    sort: { recent: 'Recentes', state: 'Por estado', label: 'Ordenar' },
     all: 'todos',
     active: 'ativas',
     ended: 'encerradas',
