@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="apps/mobile/assets/icon.png" width="112" alt="Remote Harness icon" />
+<img src="docs/brand/og.png" width="720" alt="Remote Harness: follow and drive your coding agents from your phone" />
 
 # Remote Harness
 

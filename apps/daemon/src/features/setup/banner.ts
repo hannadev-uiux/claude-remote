@@ -3,7 +3,7 @@ import type { Messages } from '../../core/i18n/index.ts'
 
 /** Terminal styling for the setup wizard, in the colors of the app (see apps/mobile/src/core/theme). */
 export const palette = {
-  accent: '#D97757',
+  accent: '#E8A33D',
   text: '#E8E6E3',
   muted: '#8A8784',
   frame: '#4A4744',
@@ -29,58 +29,22 @@ export function colorEnabled(stream: { isTTY?: boolean } = process.stdout): bool
   return Boolean(stream.isTTY) && !process.env.NO_COLOR
 }
 
-// The app icon: a terminal window with `>_` and the Claude spark. Segments are [color, text].
+// The mark ("the Tether"): three terminal nodes (muted) whose reins meet in one ring (accent).
+// Segments are [color, text]; one row per line of the words next to it.
 type Segment = [keyof typeof palette, string]
 const ICON: Segment[][] = [
-  [['frame', '╭────────────────────╮']],
-  [
-    ['frame', '│ '],
-    ['muted', '●  ●  ●'],
-    ['frame', '            │'],
-  ],
-  [['frame', '├────────────────────┤']],
-  [['frame', '│                    │']],
-  [
-    ['frame', '│  '],
-    ['muted', '▀▄'],
-    ['frame', '                │'],
-  ],
-  [
-    ['frame', '│    '],
-    ['muted', '▀▄'],
-    ['frame', '              │'],
-  ],
-  [
-    ['frame', '│    '],
-    ['muted', '▄▀ ▄▄▄'],
-    ['frame', '  '],
-    ['accent', '▚ █ ▞'],
-    ['frame', '   │'],
-  ],
-  [
-    ['frame', '│  '],
-    ['muted', '▄▀'],
-    ['frame', '       '],
-    ['accent', '▄▄███▄▄'],
-    ['frame', '  │'],
-  ],
-  [
-    ['frame', '│            '],
-    ['accent', '▞ █ ▚'],
-    ['frame', '   │'],
-  ],
-  [['frame', '│                    │']],
-  [['frame', '╰────────────────────╯']],
-  [['frame', '']],
-]
-
-const CLAUDE = [
-  ' ██████╗██╗      █████╗ ██╗   ██╗██████╗ ███████╗',
-  '██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗██╔════╝',
-  '██║     ██║     ███████║██║   ██║██║  ██║█████╗  ',
-  '██║     ██║     ██╔══██║██║   ██║██║  ██║██╔══╝  ',
-  '╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝███████╗',
-  ' ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝',
+  [['muted', '  ▄▄   ▄▄   ▄▄']],
+  [['muted', '  ██   ██   ██']],
+  [['accent', '   ▀▄  ██  ▄▀']],
+  [['accent', '    ▀▄ ██ ▄▀']],
+  [['accent', '     ▀▄██▄▀']],
+  [['accent', '       ██']],
+  [['accent', '      ▄██▄']],
+  [['accent', '     █▀  ▀█']],
+  [['accent', '     █    █']],
+  [['accent', '     ▀▄▄▄▄▀']],
+  [['accent', '']],
+  [['accent', '']],
 ]
 
 const REMOTE = [
@@ -92,13 +56,23 @@ const REMOTE = [
   '╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝    ╚═╝   ╚══════╝',
 ]
 
-const ICON_WIDTH = 22
-/** Icon + gap + the widest word. */
-export const BANNER_WIDTH = ICON_WIDTH + 2 + REMOTE[0]!.length
+const HARNESS = [
+  '██╗  ██╗ █████╗ ██████╗ ███╗   ██╗███████╗███████╗███████╗',
+  '██║  ██║██╔══██╗██╔══██╗████╗  ██║██╔════╝██╔════╝██╔════╝',
+  '███████║███████║██████╔╝██╔██╗ ██║█████╗  ███████╗███████╗',
+  '██╔══██║██╔══██║██╔══██╗██║╚██╗██║██╔══╝  ╚════██║╚════██║',
+  '██║  ██║██║  ██║██║  ██║██║ ╚████║███████╗███████║███████║',
+  '╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝╚══════╝',
+]
 
 function width(text: string): number {
   return [...text].length
 }
+
+/** The art is 14 columns; the column keeps the width the welcome texts were written for. */
+const ICON_WIDTH = 17
+/** Icon + gap + the widest word (77 columns, so the logo still fits an 80-column terminal). */
+export const BANNER_WIDTH = ICON_WIDTH + 2 + Math.max(...REMOTE.map(width), ...HARNESS.map(width))
 
 /** Rounded box like Claude Code's welcome panel. */
 export function box(lines: readonly string[], paint: Paint, inner = BANNER_WIDTH - 4): string {
@@ -113,10 +87,10 @@ export function box(lines: readonly string[], paint: Paint, inner = BANNER_WIDTH
   return out.join('\n')
 }
 
-/** Logo (icon + CLAUDE/REMOTE), language-neutral; empty on narrow terminals. */
+/** Logo (the mark + REMOTE/HARNESS), language-neutral; empty on narrow terminals. */
 export function renderLogo(paint: Paint, columns = 80): string {
   if (columns < BANNER_WIDTH) return ''
-  const words = [...CLAUDE.map((l) => paint('text', l)), ...REMOTE.map((l) => paint('accent', l))]
+  const words = [...REMOTE.map((l) => paint('text', l)), ...HARNESS.map((l) => paint('accent', l))]
   const logo = ICON.map((segments, i) => {
     const icon = segments.map(([color, text]) => paint(color, text)).join('')
     const pad = ' '.repeat(ICON_WIDTH - width(segments.map(([, t]) => t).join('')))
@@ -134,7 +108,7 @@ export function renderWelcome(
 ): string {
   return box(
     [
-      `${paint('accent', '✻')} ${paint('bold', m.title)}`,
+      `${paint('accent', '◎')} ${paint('bold', m.title)}`,
       '',
       paint('muted', m.intro1(machine)),
       paint('muted', m.intro2),

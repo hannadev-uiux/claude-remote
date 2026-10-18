@@ -53,6 +53,7 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "@xterm/xterm": "^6.0.0",
+    "opentype.js": "^2.0.0",
     "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
