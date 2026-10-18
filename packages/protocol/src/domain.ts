@@ -351,7 +351,13 @@ export type CommandItem = z.infer<typeof CommandItemSchema>
 export const FileItemSchema = z.object({ path: z.string(), kind: z.enum(['file', 'dir']) })
 export type FileItem = z.infer<typeof FileItemSchema>
 
-export const ProjectItemSchema = z.object({ cwd: z.string(), lastUsedAt: z.string() })
+/** A recent directory of a profile, with the branch of its latest session and the sessions used there this week. */
+export const ProjectItemSchema = z.object({
+  cwd: z.string(),
+  lastUsedAt: z.string(),
+  branch: z.string().nullable().default(null),
+  sessions: z.number().int().nonnegative().default(0),
+})
 export type ProjectItem = z.infer<typeof ProjectItemSchema>
 
 /** A subdirectory listed by `directories.list`; `git` when it holds a `.git` directory or file. */

@@ -215,7 +215,11 @@ const serverSamples: ServerMessage[] = [
     replyTo: '1',
     items: [{ name: 'clear', description: '', source: 'builtin', interactive: false }],
   },
-  { type: 'projects.results', replyTo: '1', items: [{ cwd: '/tmp', lastUsedAt: 'now' }] },
+  {
+    type: 'projects.results',
+    replyTo: '1',
+    items: [{ cwd: '/tmp', lastUsedAt: 'now', branch: 'main', sessions: 2 }],
+  },
   {
     type: 'directories.results',
     replyTo: '1',
