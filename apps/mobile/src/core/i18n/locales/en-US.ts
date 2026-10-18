@@ -10,6 +10,11 @@ const enUS = {
     session: 'Session',
     readOnly: 'read-only',
   },
+  agents: {
+    /** How copy names the agent of a session when it is not known. */
+    generic: 'the agent',
+    genericSentence: 'The agent',
+  },
   nav: {
     pair: 'Pair',
     setupGuide: 'First-time setup',
@@ -74,7 +79,7 @@ const enUS = {
   setupGuide: {
     title: 'Set up your computer',
     intro:
-      "Four steps, about 5 minutes. You'll need the computer where Claude Code runs (macOS, Linux or Windows with WSL).",
+      "Four steps, about 5 minutes. You'll need the computer where your coding agent runs (macOS, Linux or Windows with WSL).",
     help: 'Questions or problems: {{url}}',
     steps: {
       tailscalePhone: {
@@ -112,7 +117,7 @@ const enUS = {
     running: 'running…',
     showMore: 'Show more',
     tabs: { output: 'Output', input: 'Input', json: 'JSON' },
-    placeholder: 'message Claude… (@ files, / commands)',
+    placeholder: 'message {{agent}}… (@ files, / commands)',
     placeholderReadOnly: 'read-only session',
     confirmCtrlC: 'Send Ctrl+C to the session?',
     showSpecialKeys: 'Show special keys',
@@ -282,7 +287,7 @@ const enUS = {
       confirm: 'Save and allow',
     },
     question: {
-      title: 'Claude has a question',
+      title: '{{agent}} has a question',
       multi: 'Pick one or more',
       other: 'Other…',
       answer: 'Your answer…',
@@ -410,7 +415,7 @@ const enUS = {
     errors: {
       invalidCwd: 'Directory not found or outside your home folder.',
       profileNotFound: 'This profile no longer exists on the computer. Pick another one.',
-      launchFailed: 'Could not open Claude Code in tmux: {{reason}}',
+      launchFailed: 'Could not open {{agent}} in tmux: {{reason}}',
     },
   },
   resume: {
@@ -427,7 +432,7 @@ const enUS = {
     changeFailed: "Couldn't change the mode",
     autoConfirmTitle: 'Turn on auto mode?',
     autoConfirmBody:
-      'Claude will decide on its own which actions to run, without asking for approval, while nobody is watching the computer.',
+      '{{agent}} will decide on its own which actions to run, without asking for approval, while nobody is watching the computer.',
     autoConfirm: 'Turn on auto',
     labels: {
       default: 'default',

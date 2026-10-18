@@ -4,7 +4,7 @@
 
 # Remote Harness
 
-**Acompanhe e controle pelo celular (iPhone ou Android) as sessões do Claude Code que estão rodando no seu Mac, Linux ou Windows (WSL).**
+**Acompanhe e conduza pelo celular (iPhone ou Android) os seus agentes de código — Claude Code hoje, outros em breve — que rodam no seu Mac, Linux ou Windows (WSL).**
 
 Auto-hospedado: um daemon pequeno no computador, um app nativo no celular e um link privado do Tailscale entre os dois.<br/>Sem relay na nuvem, sem notificação para a conta inteira, todos os perfis do Claude Code numa lista só.
 

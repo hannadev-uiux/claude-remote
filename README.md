@@ -4,7 +4,7 @@
 
 # Remote Harness
 
-**Follow and drive the Claude Code sessions running on your Mac, Linux or Windows (WSL) machine — from your iPhone or Android phone.**
+**Follow and drive your coding agents — Claude Code today, more to come — running on your Mac, Linux or Windows (WSL) machine, from your iPhone or Android phone.**
 
 Self-hosted: a small daemon on your computer, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every Claude Code profile in one list.
 

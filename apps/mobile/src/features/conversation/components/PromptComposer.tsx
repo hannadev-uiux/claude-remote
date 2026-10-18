@@ -6,6 +6,7 @@ import { ActivityIndicator, Platform, Pressable, TextInput, type TextInputProps,
 import Animated, { LayoutAnimationConfig, ReduceMotion, ZoomIn, ZoomOut } from 'react-native-reanimated'
 import { useKeyboardHeight } from '@/core/platform/use-keyboard-height'
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
+import { agentLabel } from '@/features/sessions/agent'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
 import { keyboardToolbar } from '../keyboard-toolbar'
@@ -94,7 +95,11 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           onBlur={() => setFocused(false)}
           editable={!props.disabled}
           multiline
-          placeholder={props.disabled ? t('conversation.placeholderReadOnly') : t('conversation.placeholder')}
+          placeholder={
+            props.disabled
+              ? t('conversation.placeholderReadOnly')
+              : t('conversation.placeholder', { agent: agentLabel(null, t) })
+          }
           placeholderTextColor={colors.textDim}
           autoCapitalize="none"
           autoCorrect={false}
