@@ -18,6 +18,7 @@ import '@/core/i18n'
 import { colors, fonts } from '@/core/theme'
 import { useBackgroundUpdates } from '@/core/updates'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
+import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
 
 void SplashScreen.preventAutoHideAsync()
@@ -40,6 +41,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void restoreKeyBar()
+    void restoreToolTabs()
     void restoreLiveStatusSetting()
   }, [])
 
