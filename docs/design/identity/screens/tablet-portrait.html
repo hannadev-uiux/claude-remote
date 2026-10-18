@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Harness · iPad portrait: list over the conversation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .tablet .side .ah { padding: 10px 14px 4px; }
+  .tablet .side .scroll { padding: 0 12px; gap: 8px; }
+  .tablet .side .srow { padding: 9px 11px; }
+  .tablet .detail .ah { padding: 8px 16px 4px; border-bottom: 1px solid var(--a-border); }
+  .tablet .detail .ah .title { text-align: left; }
+  .tablet .detail .scroll { padding: 14px 24px 0; }
+  .tablet .detail .composer { padding: 10px 24px 16px; }
+  .tablet .detail .composer .in { min-height: 56px; }
+  .tablet .detail .queue { margin: 0 24px; }
+  .tablet .keybar { padding: 6px 24px 2px; }
+  .insp .ah { padding: 8px 12px 4px; }
+  .insp .scroll { padding: 10px 12px; gap: 8px; }
+  .insp .mi { padding: 9px 2px; font-size: 12.5px; }
+  .overlay-side { position: absolute; top: 30px; left: 0; bottom: 0; width: 360px; background: var(--a-bg); border-right: 1px solid var(--a-border); box-shadow: 20px 0 60px rgba(0,0,0,.5); z-index: 5; display: flex; flex-direction: column; }
+  .bp { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .bp .card b { font-size: 20px; letter-spacing: -0.02em; }
+</style>
+<style>
+  body { padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .proto-h { font-size: 12px; color: var(--muted); }
+  .proto-h b { color: var(--fg); }
+  .proto-h a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="proto-h"><b>Remote Harness</b> · prototype · iPad portrait: list over the conversation · <a href="../index.html">identity hub</a></div>
+<div class="frame z50">
+        <div class="tablet portrait t-dark">
+          <div class="tsb"><span>9:41 · Sat 18 Oct</span><span>⌔ ▮▮▮ 100%</span></div>
+          <div class="cols">
+            <div class="detail" style="--agent-color:var(--codex)">
+              <div class="ah"><div class="ib">☰</div><div class="title">Migrate landing to Tailwind 4</div><div class="ib">🔔</div><div class="ib">▣</div><div class="ib">⋯<span class="badge"></span></div></div>
+              <div class="mline" style="padding:6px 24px 0"><span class="agent codex">cx</span><span class="ptag" style="color:#56b6c2">Personal</span><span>~/projects/landing</span><span class="sp"></span><span class="pill running">running</span><span class="pill plain" style="border:1px solid var(--a-accent-fg);color:var(--a-accent-fg);background:transparent">on-request</span></div>
+              <div class="scroll"><div class="conv-wide">
+                <div class="umsg">Upgrade the landing to Tailwind 4 with the official codemod and make sure the build passes</div>
+                <div class="amsg">I'll run the upgrade tool first, then fix what it can't migrate.</div>
+                <div class="tool"><div class="n">exec(pnpm dlx @tailwindcss/upgrade)<span class="chev">›</span></div><div class="r">└ ✓ 14 files migrated, 2 need review</div></div>
+                <div class="tool"><div class="n">apply_patch(tailwind.config.ts → src/app.css)<span class="chev">›</span></div><div class="r">└ ok</div></div>
+                <div class="tool"><div class="n run">exec(pnpm build)<span class="chev">›</span></div><div class="r">└ running… 0:42</div></div>
+              </div></div>
+              <div class="composer" style="max-width:808px;margin:0 auto;width:100%"><span class="gt">&gt;</span><div class="in">message the agent… (@ files, / commands)</div><div class="send">↑</div></div>
+            </div>
+          </div>
+          <div class="dimmer" style="top:30px"></div>
+          <div class="overlay-side">
+            <div class="ah" style="padding:10px 14px 4px"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+            <div class="mline"><span class="dot" style="background:var(--a-success);margin:0"></span><span class="host">MacBook Pro</span><span>· 7 sessions</span></div>
+            <div class="chips" style="padding:2px 12px 8px"><span class="chip on">all</span><span class="chip">Personal</span><span class="chip">Work</span><span class="chip">Codex</span></div>
+            <div class="scroll" style="padding:0 12px;gap:8px">
+              <div class="srow sel" style="border-color:var(--a-accent-fg)"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span></div><div class="m"><span class="pill running">running</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+              <div class="srow waiting"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span></div><div class="m"><span class="pill waiting">waiting</span><span class="ptag" style="color:#61afef">Work</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Fix crash on onboarding</span><span class="ago">12 min</span></div><div class="p"><span>~/projects/acme-mobile</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#61afef">Work</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Write post about tmux + agents</span><span class="ago">40 min</span></div><div class="p"><span>~/projects/blog</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Review deploy pipeline</span><span class="ago">2 h</span></div><div class="p"><span>~/projects/acme-infra</span></div><div class="m"><span class="pill">ended</span><span class="ptag" style="color:#2fbf8f">Codex</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+<script src="../shared.js"></script>
+</body>
+</html>

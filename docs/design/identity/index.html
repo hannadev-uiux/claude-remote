@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Remote Harness Identity</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .hero .mark-big { display: grid; place-items: center; }
+  .hero .mark-big svg { width: 260px; height: 260px; color: var(--accent); filter: drop-shadow(0 0 40px rgba(232,163,61,.25)); }
+  .pages { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .pages a { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--fg); min-width: 0; }
+  .pages a:hover { border-color: var(--accent); text-decoration: none; }
+  .pages a b { font-size: 15px; }
+  .pages a span { color: var(--muted); font-size: 12.5px; }
+  .pages a .iss { display: flex; gap: 4px; flex-wrap: wrap; }
+  .type { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .spec { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .spec .l { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .spec .d1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .spec .d2 { font-size: 20px; font-weight: 700; }
+  .spec .b { font-family: var(--sans); font-size: 16px; line-height: 1.55; color: var(--fg); }
+  .spec .u { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .spec .n { font-variant-numeric: tabular-nums; }
+  .tok { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tok th, .tok td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .tok th { color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .tok i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(255,255,255,.08); }
+  .tbl-wrap { overflow-x: auto; }
+  .map { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .map th, .map td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .map th { color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .map td:first-child { white-space: nowrap; }
+  .map td:nth-child(2) { color: var(--fg); }
+  .map td:nth-child(3), .map td:nth-child(4) { color: var(--muted); }
+  .order { display: grid; gap: 10px; counter-reset: o; }
+  .order div { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; color: var(--muted); }
+  .order div::before { counter-increment: o; content: counter(o, decimal-leading-zero); flex: none; color: var(--accent); font-weight: 700; font-size: 13px; }
+  .order b { color: var(--fg); }
+  .browser { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  .browser .bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+  .browser .bar i { width: 10px; height: 10px; border-radius: 5px; background: var(--border-strong); display: inline-block; }
+  .browser .bar span { flex: 1; text-align: center; background: var(--raised); border-radius: 6px; padding: 3px 10px; }
+  .browser iframe { width: 100%; height: 640px; border: 0; display: block; background: #0d0d0d; }
+  .voice { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .voice .card dl { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 12.5px; }
+  .voice .card dt { color: var(--danger); text-decoration: line-through; text-decoration-color: rgba(224,108,117,.6); }
+  .voice .card dd { margin: 0; color: var(--success); }
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in">
+  <a class="brand" href="index.html"><svg><use href="#rh-mark"/></svg>Remote Harness <small>· identidade</small></a>
+  <div class="links">
+    <a class="cur" href="index.html">Visão geral</a><a href="icons.html">Ícones</a><a href="mobile.html">Mobile</a><a href="tablet.html">Tablet</a><a href="live.html">Live status</a><a href="tray.html">Tray</a><a href="landing.html">Landing</a>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="sec-head">
+      <span class="eyebrow">Nova identidade · outubro 2026</span>
+      <h1>Remote Harness: o que segura todos os agentes</h1>
+      <p class="lead">Proposta de identidade visual e de produto para a fase multi-agente, cobrindo as issues #84, #87, #94, #104, #106, #107, #108, #109, #110, #111, #135 e #136. Sete páginas: esta visão geral, ícones, app mobile, tablet, live status, tray e landing. Tudo em HTML estático, em <code>.annotations/identity/</code>, fora do git.</p>
+      <div class="pages">
+        <a href="icons.html"><b>Ícones e marca</b><span>O Tether, pesos, cores, iOS, Android, macOS, favicon, splash, banner do instalador, OG.</span><span class="iss"><span class="issue">#84</span></span></a>
+        <a href="mobile.html"><b>App mobile</b><span>Lista, swipe, fechar com worktree, temas, conversa com fila, permissões, nova sessão, modelo, ajustes, pareamento.</span><span class="iss"><span class="issue">#94</span><span class="issue">#104</span><span class="issue">#106</span><span class="issue">#107</span><span class="issue">#108</span><span class="issue">#109</span><span class="issue">#110</span><span class="issue">#111</span></span></a>
+        <a href="tablet.html"><b>App para tablet</b><span>Três colunas com inspetor, retrato com lista sobreposta, teclado físico.</span><span class="iss"><span class="issue">#110</span></span></a>
+        <a href="live.html"><b>Live status</b><span>Live Activity, Dynamic Island nos três tamanhos, notificação Android, quatro estados.</span></a>
+        <a href="tray.html"><b>System tray</b><span>Glifo com estado, popover com permissão respondível, pareamento, preferências, Linux e Windows.</span></a>
+        <a href="landing.html"><b>Landing page</b><span>remoteharness.app: hero, como funciona, features, segurança, instalação, FAQ. Escuro e claro.</span><span class="iss"><span class="issue">#135</span><span class="issue">#136</span></span></a>
+      </div>
+    </div>
+    <div class="mark-big"><svg><use href="#rh-mark"/></svg></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">A ideia</span><h2>Nome, símbolo e cor dizem a mesma coisa</h2></div>
+    <div class="grid">
+      <div class="card"><h3>Nome</h3><p><b>Remote</b>: você está longe da mesa. <b>Harness</b>: o arreio que prende e conduz; em IA, o "harness" é o que envolve o modelo e o deixa agir. O produto é literalmente um harness remoto sobre vários agentes.</p></div>
+      <div class="card"><h3>Símbolo: o Tether</h3><p>Três rédeas saem de três terminais e se encontram num anel. Lê-se de cima para baixo (agentes → sua mão) e de baixo para cima (um controle → muitos). Funciona como antena, também: sinal, remoto. Sem spark, sem rosto, sem mascote.</p></div>
+      <div class="card"><h3>Cor: âmbar</h3><p>O fósforo P3 dos monitores âmbar. Mantém o calor do tema atual sem ser a cor de nenhum agente. O laranja <code>#D97757</code> passa a identificar o Claude Code, ao lado do verde do Codex, azul do Kimi, roxo do Qwen.</p></div>
+      <div class="card"><h3>Tipo: mono para tudo que é UI</h3><p>JetBrains Mono segue sendo a voz do app, do CLI e dos títulos da landing. Só o texto corrido da landing e dos docs usa IBM Plex Sans, para parágrafos longos não cansarem.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Sistema</span><h2>Tokens</h2><p>Nomes semânticos, iguais em todos os temas (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/111">#111</a>). Dark é o padrão e muda só o acento e a cor de aviso em relação a hoje; Light é novo; Dracula e Catppuccin usam as paletas oficiais, com o acento do tema.</p></div>
+    <div class="tbl-wrap"><table class="tok">
+      <tr><th>Token</th><th>Dark (padrão)</th><th>Light</th><th>Dracula</th><th>Catppuccin Mocha</th><th>Catppuccin Latte</th></tr>
+      <tr><td>background</td><td><i style="background:#0d0d0d"></i>#0D0D0D</td><td><i style="background:#f3f3f1"></i>#F3F3F1</td><td><i style="background:#282a36"></i>#282A36</td><td><i style="background:#1e1e2e"></i>#1E1E2E</td><td><i style="background:#e6e9ef"></i>#E6E9EF</td></tr>
+      <tr><td>surface</td><td><i style="background:#161616"></i>#161616</td><td><i style="background:#fff"></i>#FFFFFF</td><td><i style="background:#21222c"></i>#21222C</td><td><i style="background:#181825"></i>#181825</td><td><i style="background:#eff1f5"></i>#EFF1F5</td></tr>
+      <tr><td>surfaceRaised</td><td><i style="background:#1e1d1c"></i>#1E1D1C</td><td><i style="background:#f8f8f6"></i>#F8F8F6</td><td><i style="background:#343746"></i>#343746</td><td><i style="background:#313244"></i>#313244</td><td><i style="background:#fff"></i>#FFFFFF</td></tr>
+      <tr><td>border / borderStrong</td><td><i style="background:#2a2a2a"></i>#2A2A2A / #3A3836</td><td><i style="background:#e1e0dc"></i>#E1E0DC / #CBC9C4</td><td><i style="background:#44475a"></i>#44475A / #6272A4</td><td><i style="background:#313244"></i>#313244 / #45475A</td><td><i style="background:#ccd0da"></i>#CCD0DA / #BCC0CC</td></tr>
+      <tr><td>text</td><td><i style="background:#e8e6e3"></i>#E8E6E3</td><td><i style="background:#1b1a19"></i>#1B1A19</td><td><i style="background:#f8f8f2"></i>#F8F8F2</td><td><i style="background:#cdd6f4"></i>#CDD6F4</td><td><i style="background:#4c4f69"></i>#4C4F69</td></tr>
+      <tr><td>textMuted / textDim</td><td><i style="background:#8a8784"></i>#8A8784 / #5E5A56</td><td><i style="background:#66635f"></i>#66635F / #9B9893</td><td><i style="background:#a4a8c2"></i>#A4A8C2 / #6272A4</td><td><i style="background:#a6adc8"></i>#A6ADC8 / #6C7086</td><td><i style="background:#6c6f85"></i>#6C6F85 / #9CA0B0</td></tr>
+      <tr><td><b>accent</b> (fill)</td><td><i style="background:#e8a33d"></i><b>#E8A33D</b></td><td><i style="background:#e8a33d"></i>#E8A33D</td><td><i style="background:#bd93f9"></i>#BD93F9</td><td><i style="background:#fab387"></i>#FAB387</td><td><i style="background:#fe640b"></i>#FE640B</td></tr>
+      <tr><td><b>accentText</b> (novo)</td><td><i style="background:#e8a33d"></i>#E8A33D</td><td><i style="background:#a0640a"></i>#A0640A</td><td><i style="background:#bd93f9"></i>#BD93F9</td><td><i style="background:#fab387"></i>#FAB387</td><td><i style="background:#d14f00"></i>#D14F00</td></tr>
+      <tr><td>success</td><td><i style="background:#7fb069"></i>#7FB069</td><td><i style="background:#3f8a3a"></i>#3F8A3A</td><td><i style="background:#50fa7b"></i>#50FA7B</td><td><i style="background:#a6e3a1"></i>#A6E3A1</td><td><i style="background:#40a02b"></i>#40A02B</td></tr>
+      <tr><td>warning</td><td><i style="background:#f3dc7a"></i>#F3DC7A</td><td><i style="background:#b88a0e"></i>#B88A0E</td><td><i style="background:#f1fa8c"></i>#F1FA8C</td><td><i style="background:#f9e2af"></i>#F9E2AF</td><td><i style="background:#df8e1d"></i>#DF8E1D</td></tr>
+      <tr><td>danger</td><td><i style="background:#e06c75"></i>#E06C75</td><td><i style="background:#c0392b"></i>#C0392B</td><td><i style="background:#ff5555"></i>#FF5555</td><td><i style="background:#f38ba8"></i>#F38BA8</td><td><i style="background:#d20f39"></i>#D20F39</td></tr>
+      <tr><td>info</td><td><i style="background:#61afef"></i>#61AFEF</td><td><i style="background:#2b6fd6"></i>#2B6FD6</td><td><i style="background:#8be9fd"></i>#8BE9FD</td><td><i style="background:#89b4fa"></i>#89B4FA</td><td><i style="background:#1e66f5"></i>#1E66F5</td></tr>
+      <tr><td>agent.claude / codex / kimi / qwen</td><td colspan="5"><i style="background:#d97757"></i>#D97757 · <i style="background:#2fbf8f"></i>#2FBF8F · <i style="background:#5b9bf5"></i>#5B9BF5 · <i style="background:#8c6cf5"></i>#8C6CF5 — fixos em todos os temas; provedor OpenRouter em outline neutro</td></tr>
+    </table></div>
+    <div class="type">
+      <div class="spec"><span class="l">Display · JetBrains Mono 700</span><span class="d1">Waiting for you</span><span class="d2">Add rate limit on login</span><span class="u">Sessions · 7 · 2 running</span></div>
+      <div class="spec"><span class="l">Corpo (landing/docs) · IBM Plex Sans 400</span><span class="b">Claude Code and Codex run in tmux on your own machine. Remote Harness streams the conversation to your phone over your Tailscale network.</span></div>
+      <div class="spec"><span class="l">UI · JetBrains Mono 400/500 · escala 11 12 14 16 20 26</span><span style="font-size:14px">message the agent… (@ files, / commands)</span><span style="font-size:12px;color:var(--muted)">~/projects/acme-api · ⎇ feat/rate-limit</span><span class="n" style="font-size:12px;color:var(--dim)">2 min · 12 min · 40 min · 2 h · yesterday</span></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Voz · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/87">#87</a> <a class="issue" href="https://github.com/maarkN/remote-harness/issues/94">#94</a></span><h2>Como o produto fala</h2></div>
+    <div class="voice">
+      <div class="card"><h3>Máquina, não daemon</h3><p>O usuário pensa "meu computador". O daemon aparece pelo nome do host; "daemon" sobrevive só na documentação técnica e nos identificadores.</p><dl><dt>connecting to the daemon…</dt><dd>connecting to MacBook Pro…</dd><dt>Forget daemon</dt><dd>Forget this machine</dd><dt>The daemon on your computer can't receive photos.</dt><dd>MacBook Pro can't receive photos yet. On it, run remote-harness update.</dd></dl></div>
+      <div class="card"><h3>O agente, não o Claude</h3><p>"Claude" só onde é mesmo o Claude Code (perfis, hooks, transcripts). Nas mensagens genéricas, "the agent"; quando a sessão tem agente conhecido, o nome dele.</p><dl><dt>message Claude…</dt><dd>message the agent…</dd><dt>Claude has a question</dt><dd>Codex has a question</dd><dt>control Claude Code sessions in tmux from your phone</dt><dd>follow and drive your coding agents from your phone</dd></dl></div>
+      <div class="card"><h3>Direto, sem pedir desculpa</h3><p>Erros dizem o que houve e o que fazer. Comandos continuam como comandos, explicados em palavras simples. Sem "ops", sem "parece que". Três catálogos em paridade: pt-BR, en-US, es-ES.</p><dl><dt>Could not connect to the daemon.</dt><dd>Can't reach MacBook Pro. Is it awake and on Tailscale?</dd><dt>Token rejected by the daemon.</dt><dd>MacBook Pro rejected the pairing. Pair again.</dd></dl></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Mapa</span><h2>Onde cada issue aparece</h2></div>
+    <div class="tbl-wrap"><table class="map">
+      <tr><th>Issue</th><th>Decisão de design</th><th>Página</th><th>Impacto no código</th></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/84">#84</a></td><td>Marca "Tether", âmbar como acento, laranja vira cor do Claude; ícones iOS/Android/macOS, splash, banner, OG.</td><td><a href="icons.html">Ícones</a></td><td><code>icons.mts</code>, <code>tokens.ts</code>, <code>app.config.ts</code>, README, instalador</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/87">#87</a></td><td>Copy agent-neutral; nome do agente quando conhecido.</td><td><a href="mobile.html">Mobile</a>, <a href="landing.html">Landing</a></td><td>catálogos i18n, CLI, store metadata</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/94">#94</a></td><td>"Machine" pelo nome do host; seção Machine em Settings; banners e erros nomeados.</td><td><a href="mobile.html">Mobile</a></td><td>catálogos i18n (chaves <code>daemon*</code> → <code>machine*</code>), hostname no handshake</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/104">#104</a></td><td>Ordem global por atividade, "Recent ▾" / "By state", tempo relativo por linha, faixa "Waiting for you".</td><td><a href="mobile.html">Mobile</a>, <a href="tablet.html">Tablet</a></td><td><code>grouping.ts</code>, <code>updatedAt</code> real no daemon</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/106">#106</a></td><td>Swipe esquerda Close/More, direita Mute/Pin; sheet de ações; fechar com limpeza de worktree em três saídas.</td><td><a href="mobile.html">Mobile</a></td><td><code>session.close</code> no protocolo, <code>features/lifecycle</code>, git em <code>infra/</code></td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/107">#107</a></td><td>Faixa de subagentes removida; "Subagents (N · running)" no menu ⋯ com ponto âmbar; sheet de lista.</td><td><a href="mobile.html">Mobile</a>, <a href="tablet.html">Tablet</a> (aba do inspetor)</td><td><code>session-menu.ts</code>, <code>SubagentList.tsx</code></td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/108">#108</a></td><td>Badge de agente (20 px, sigla) em linhas, perfis e cabeçalho; cor do agente no ponto da mensagem; modos do Codex como chip.</td><td><a href="mobile.html">Mobile</a>, <a href="icons.html">Ícones</a></td><td><code>agent</code> no protocolo, adapter em <code>features/agents</code></td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/109">#109</a></td><td>Perfil OpenRouter com chip tracejado neutro; modelo no cabeçalho; seletor com contexto, preço e avisos; saldo em Settings.</td><td><a href="mobile.html">Mobile</a></td><td><code>provider</code> no protocolo, <code>models.list</code>, keychain</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/110">#110</a></td><td>Fila acima do composer com editar/remover/send now; segurar o botão ou ⌘⏎ envia já; dica de atalhos no iPad.</td><td><a href="mobile.html">Mobile</a>, <a href="tablet.html">Tablet</a></td><td><code>queue.*</code> no protocolo, <code>features/queue</code> no daemon</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/111">#111</a></td><td>Tokens semânticos com <code>accentText</code>; Appearance com System/Dark/Light/Dracula/Mocha/Latte; mesma tela nos cinco.</td><td><a href="mobile.html">Mobile</a></td><td><code>useTheme()</code>, <code>makeStyles</code>, xterm, markdown, Live Activity</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/135">#135</a></td><td>Landing em dark e light, hero com o app, diagrama de três nós, instalação por SO com copiar, FAQ, i18n, OG.</td><td><a href="landing.html">Landing</a></td><td><code>apps/web</code> (Worker + estáticos)</td></tr>
+      <tr><td><a class="issue" href="https://github.com/maarkN/remote-harness/issues/136">#136</a></td><td>Docs linkados da landing, do app (Settings → Documentation) e do tray; mesmo tema.</td><td><a href="landing.html">Landing</a>, <a href="mobile.html">Mobile</a>, <a href="tray.html">Tray</a></td><td><code>docs/</code> + Starlight/VitePress</td></tr>
+      <tr><td>novo</td><td>App de system tray: glifo com estado, popover, permissão respondível, pareamento, preferências.</td><td><a href="tray.html">Tray</a></td><td>cliente WS local do daemon; abrir issue</td></tr>
+      <tr><td>—</td><td>Live Activity, Dynamic Island e notificação Android com o novo ícone, cor = estado, Allow/Deny na tela bloqueada.</td><td><a href="live.html">Live status</a></td><td>widget target, <code>LiveStatusProps.pending</code></td></tr>
+    </table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Sequência</span><h2>Ordem sugerida de implementação (changes OpenSpec)</h2><p>A ordem é a de dependência: tokens antes de telas, protocolo antes de app.</p></div>
+    <div class="order">
+      <div><span><b>Theme infra + marca.</b> Tokens semânticos, <code>useTheme()</code>, paridade Dark; novo <code>icons.mts</code>, splash, <code>app.config.ts</code>, banner do instalador, README. (#84, #111 parte 1)</span></div>
+      <div><span><b>Copy.</b> "Machine" com hostname no handshake; agent-neutral nos três catálogos; CLI e store metadata. (#87, #94)</span></div>
+      <div><span><b>Lista.</b> <code>updatedAt</code> real, ordenação, faixa "Waiting for you", swipe e sheet de ações, Subagents no menu. (#104, #107, #106 parte 1)</span></div>
+      <div><span><b>Fechar sessão e worktree.</b> <code>session.close</code>, inspeção git, três saídas. (#106 parte 2)</span></div>
+      <div><span><b>Fila.</b> <code>features/queue</code> no daemon, chips no app, send now, atalhos de teclado físico. (#110)</span></div>
+      <div><span><b>Agentes e provedores.</b> Adapter abstraction (refactor), badges, Codex read-only → controle; perfis OpenRouter e seletor de modelo. (#108, #109)</span></div>
+      <div><span><b>Temas extra.</b> Light, Dracula, Catppuccin; xterm, markdown, Live Activity por tema. (#111 parte 2)</span></div>
+      <div><span><b>Web.</b> Landing e docs no Worker, i18n por Accept-Language, OG. (#135, #136)</span></div>
+      <div><span><b>Tray.</b> Issue nova; depende do protocolo estável e do <code>session.close</code>.</span></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Prévia</span><h2>Landing page</h2><p>A página completa, responsiva, em <a href="landing.html">landing.html</a>. Troque o tema do sistema para ver a versão clara.</p></div>
+    <div class="browser"><div class="bar"><i></i><i></i><i></i><span>remoteharness.app</span></div><iframe src="landing.html" title="Landing page preview"></iframe></div>
+  </section>
+</div>
+<script src="shared.js"></script>
+</body>
+</html>

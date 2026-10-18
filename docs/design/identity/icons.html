@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Remote Harness Icons</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .big-mark { display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+  .big-mark svg { width: 220px; height: 220px; }
+  .construct { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: grid; place-items: center; }
+  .construct svg { width: 256px; height: 256px; }
+  .lockup { display: flex; align-items: center; gap: 14px; padding: 22px 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); min-width: 0; overflow: hidden; }
+  .lockup svg { width: 44px; height: 44px; color: var(--accent); flex: none; }
+  .lockup .w { font-size: clamp(18px, 2vw, 24px); font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .lockup .w small { display: block; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .lockup.cli { font-size: 20px; }
+  .lockup.cli .w { font-size: 17px; }
+  .lockup.cli .w b { color: var(--accent); font-weight: 500; }
+  .lockup.light { background: #f3f3f1; color: #1b1a19; border-color: #e1e0dc; }
+  .lockup.light svg { color: #a0640a; }
+  .lockup.light .w small { color: #66635f; }
+  .iconrow { display: flex; gap: 22px; align-items: flex-end; flex-wrap: wrap; }
+  .iconrow figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .iconrow figcaption { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .homescreen { background: linear-gradient(160deg, #22262f, #0b0c10 70%); border-radius: 18px; padding: 22px; display: grid; grid-template-columns: repeat(4, 60px); gap: 22px 18px; justify-content: center; width: max-content; }
+  .homescreen figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; font: 500 10px/1 -apple-system, system-ui, sans-serif; color: #fff; }
+  .homescreen .app { width: 60px; height: 60px; border-radius: 22.37%; display: grid; place-items: center; font-size: 26px; }
+  .masks { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; }
+  .masks figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+  .circle { border-radius: 50%; }
+  .rsq { border-radius: 20%; }
+  .statusbar { background: #1f2229; border-radius: 10px; padding: 8px 14px; display: flex; align-items: center; gap: 10px; font: 500 12px/1 Roboto, system-ui, sans-serif; color: #fff; width: 300px; }
+  .statusbar .sp { flex: 1; }
+  .statusbar svg { width: 16px; height: 16px; color: #fff; }
+  .menubar { border-radius: 8px; padding: 0 12px; height: 26px; display: flex; align-items: center; gap: 16px; font: 500 12px/1 -apple-system, system-ui, sans-serif; width: 100%; }
+  .menubar.light { background: #e9e7e3; color: #222; }
+  .menubar.dark { background: #2a2a2e; color: #eee; }
+  .menubar .sp { flex: 1; }
+  .menubar .g { position: relative; width: 18px; height: 18px; display: grid; place-items: center; }
+  .menubar .g svg { width: 16px; height: 16px; color: currentColor; }
+  .menubar .g.off { opacity: 0.4; }
+  .menubar .g.wait::after { content: ""; position: absolute; top: -1px; right: -2px; width: 7px; height: 7px; border-radius: 4px; background: #e8a33d; border: 1.5px solid currentColor; }
+  .menubar .lbl { font-size: 10px; opacity: 0.6; }
+  .fav { display: flex; gap: 16px; align-items: flex-end; }
+  .fav figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .fav .tab { background: #2b2b2e; border-radius: 8px 8px 0 0; padding: 7px 12px; display: flex; align-items: center; gap: 8px; font: 500 12px/1 system-ui, sans-serif; color: #ddd; }
+  .fav .tab svg { width: 16px; height: 16px; }
+  .fav .tab .sq { width: 16px; height: 16px; border-radius: 3px; background: #0d0d0d; display: grid; place-items: center; }
+  .splash { width: 220px; height: 476px; border-radius: 30px; display: grid; place-items: center; border: 1px solid var(--border); }
+  .splash svg { width: 96px; height: 96px; }
+  .banner { background: linear-gradient(180deg, #1c1a17, #0d0d0d); border: 1px solid var(--border); border-radius: 14px; padding: 36px 40px; display: flex; align-items: center; gap: 28px; }
+  .banner svg { width: 88px; height: 88px; color: var(--accent); flex: none; }
+  .banner .t { display: flex; flex-direction: column; gap: 8px; }
+  .banner .t b { font-size: 30px; letter-spacing: -0.02em; }
+  .banner .t p { color: var(--muted); font-size: 14px; }
+  .banner .t .ag { display: flex; gap: 8px; margin-top: 6px; }
+  .agchip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 3px 9px 3px 5px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--muted); }
+  .agchip .agent { width: 16px; height: 16px; border-radius: 4px; font-size: 8px; }
+  .specs { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .specs th, .specs td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .specs th { color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .specs td:first-child { white-space: nowrap; }
+  .tbl-wrap { overflow-x: auto; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in">
+  <a class="brand" href="index.html"><svg><use href="#rh-mark"/></svg>Remote Harness <small>· identidade</small></a>
+  <div class="links">
+    <a href="index.html">Visão geral</a><a class="cur" href="icons.html">Ícones</a><a href="mobile.html">Mobile</a><a href="tablet.html">Tablet</a><a href="live.html">Live status</a><a href="tray.html">Tray</a><a href="landing.html">Landing</a>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="sec-head">
+      <span class="eyebrow">Ícones e marca · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/84">#84</a></span>
+      <h1>O Tether: três rédeas, um anel</h1>
+      <p class="lead">Um <em>harness</em> é o que prende e conduz. A marca é literal: três rédeas que saem de três terminais (os agentes) e se encontram num anel (a sua mão, o telefone). Nada do spark do Claude: o laranja vira a cor do agente Claude Code, e a marca ganha o seu próprio acento, o âmbar dos monitores de fósforo.</p>
+    </div>
+    <div class="big-mark"><svg class="mark"><use href="#rh-mark"/></svg></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Construção</span><h2>Um símbolo, dois pesos, três nós</h2>
+      <p>Desenhado numa grade de 256. O peso regular serve do ícone do app ao README; o peso bold existe para menu bar, notificação e favicon, onde 24 px de traço viraria fiapo.</p></div>
+    <div class="grid">
+      <div class="construct">
+        <svg viewBox="0 0 256 256" aria-label="grade de construção">
+          <defs><pattern id="gr" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M16 0H0V16" fill="none" stroke="#2a2a2a" stroke-width="1"/></pattern></defs>
+          <rect width="256" height="256" fill="url(#gr)"/>
+          <circle cx="128" cy="184" r="46" fill="none" stroke="#3a3836" stroke-dasharray="3 3"/>
+          <circle cx="128" cy="184" r="22" fill="none" stroke="#3a3836" stroke-dasharray="3 3"/>
+          <line x1="128" y1="0" x2="128" y2="256" stroke="#3a3836" stroke-dasharray="3 3"/>
+          <use href="#rh-mark" width="256" height="256" color="#e8a33d"/>
+          <g font-family="JetBrains Mono, monospace" font-size="9" fill="#8a8784">
+            <text x="176" y="188">r 34 · traço 24</text>
+            <text x="150" y="44">36 × 36 · rx 9</text>
+            <text x="6" y="250">ø 256 · óptico 128,132</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card">
+        <h3>Regular <span class="tiny">stroke 24</span></h3>
+        <div class="iconrow">
+          <figure><svg width="96" height="96" style="color:var(--accent)"><use href="#rh-mark"/></svg><figcaption>96</figcaption></figure>
+          <figure><svg width="48" height="48" style="color:var(--accent)"><use href="#rh-mark"/></svg><figcaption>48</figcaption></figure>
+          <figure><svg width="24" height="24" style="color:var(--accent)"><use href="#rh-mark"/></svg><figcaption>24</figcaption></figure>
+        </div>
+        <h3 style="margin-top:14px">Bold <span class="tiny">stroke 34</span></h3>
+        <div class="iconrow">
+          <figure><svg width="48" height="48" style="color:var(--accent)"><use href="#rh-mark-bold"/></svg><figcaption>48</figcaption></figure>
+          <figure><svg width="24" height="24" style="color:var(--accent)"><use href="#rh-mark-bold"/></svg><figcaption>24</figcaption></figure>
+          <figure><svg width="16" height="16" style="color:var(--accent)"><use href="#rh-mark-bold"/></svg><figcaption>16</figcaption></figure>
+        </div>
+        <p>Abaixo de 24 px, use sempre o bold. O anel e os três nós continuam legíveis a 16 px; as curvas viram quase retas e tudo bem.</p>
+      </div>
+      <div class="card">
+        <h3>Os nós contam a história</h3>
+        <div class="iconrow">
+          <figure><svg width="96" height="96" style="color:var(--fg);--n-l:var(--claude);--n-c:var(--codex);--n-r:var(--qwen)"><use href="#rh-mark"/></svg><figcaption>multi-agente</figcaption></figure>
+          <figure><svg width="96" height="96" style="color:var(--fg);--n-l:var(--claude);--n-c:var(--claude);--n-r:var(--claude)"><use href="#rh-mark"/></svg><figcaption>só Claude Code</figcaption></figure>
+          <figure><svg width="96" height="96" style="color:var(--accent);--ring:var(--accent)"><use href="#rh-mark"/></svg><figcaption>anel cheio = trabalhando</figcaption></figure>
+        </div>
+        <p>No ícone do app o símbolo é monocromático (âmbar). Nos nós, a landing e o README podem pintar cada terminal com a cor do seu agente; o tray enche o anel quando alguma sessão está rodando.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Cor · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/84">#84</a> <a class="issue" href="https://github.com/maarkN/remote-harness/issues/108">#108</a></span><h2>Âmbar é a marca; laranja é o Claude</h2>
+      <p>Decisão para a pergunta aberta na #84: o acento <code>#D97757</code> deixa de ser a cor do produto e passa a identificar o agente Claude Code em badges, bolinhas de mensagem e perfis. O produto ganha o âmbar <code>#E8A33D</code>, que fica no mesmo clima quente do tema atual, mas não é a cor de nenhum agente nem de nenhum estado semântico.</p></div>
+    <div class="swatches">
+      <div class="swatch"><i style="background:#e8a33d"></i><div><b>Âmbar · marca</b><span>#E8A33D</span></div></div>
+      <div class="swatch"><i style="background:#0d0d0d;border-bottom:1px solid #2a2a2a"></i><div><b>Fundo</b><span>#0D0D0D</span></div></div>
+      <div class="swatch"><i style="background:#161616;border-bottom:1px solid #2a2a2a"></i><div><b>Superfície</b><span>#161616</span></div></div>
+      <div class="swatch"><i style="background:#e8e6e3"></i><div><b>Texto</b><span>#E8E6E3</span></div></div>
+      <div class="swatch"><i style="background:#f3dc7a"></i><div><b>Atenção (waiting)</b><span>#F3DC7A · antes #E5C07B</span></div></div>
+    </div>
+    <div class="swatches">
+      <div class="swatch"><i style="background:#d97757"></i><div><b>Claude Code</b><span>#D97757 · agente</span></div></div>
+      <div class="swatch"><i style="background:#2fbf8f"></i><div><b>Codex</b><span>#2FBF8F · agente</span></div></div>
+      <div class="swatch"><i style="background:#5b9bf5"></i><div><b>Kimi</b><span>#5B9BF5 · agente</span></div></div>
+      <div class="swatch"><i style="background:#8c6cf5"></i><div><b>Qwen</b><span>#8C6CF5 · agente</span></div></div>
+      <div class="swatch"><i style="background:#a7b0bf"></i><div><b>OpenRouter</b><span>#A7B0BF · provedor (outline)</span></div></div>
+    </div>
+    <div class="notes">
+      <div class="note"><span class="n">1</span><div><b>Por que não manter o laranja.</b> Com Codex, Kimi e Qwen na mesma lista, um app laranja parece "o app do Claude". A nota de marca registrada no rodapé do README pede essa distância.</div></div>
+      <div class="note"><span class="n">2</span><div><b>Por que âmbar e não outra família.</b> Mantém o calor do tema, os usuários atuais reconhecem o app, e é a cor histórica dos terminais de fósforo (P3). A cor de aviso sai do dourado <code>#E5C07B</code> para um amarelo-limão mais claro, para não concorrer com o âmbar.</div></div>
+      <div class="note"><span class="n">3</span><div><b>Regra de uso.</b> Âmbar em: marca, botão primário, chip selecionado, estado "running", anel do tray. Cores de agente só em badges de 20 px, no ponto da mensagem do assistente e na cor sugerida de perfil. Nunca âmbar em texto corrido sobre fundo claro: no tema claro, o token de texto do acento é <code>#A0640A</code>.</div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Lockups</span><h2>Wordmark</h2>
+      <p>JetBrains Mono Bold, tracking −2%. Em contextos de CLI (instalador, <code>doctor</code>, README), o nome aparece como o comando: <code>remote-harness</code>.</p></div>
+    <div class="grid">
+      <div class="lockup"><svg><use href="#rh-mark"/></svg><div class="w">Remote Harness</div></div>
+      <div class="lockup"><svg><use href="#rh-mark"/></svg><div class="w"><small>app · daemon · relay</small>Remote Harness</div></div>
+      <div class="lockup cli"><svg><use href="#rh-mark-bold"/></svg><div class="w"><b>$</b> remote-harness <span style="color:var(--muted)">setup</span></div></div>
+      <div class="lockup light"><svg><use href="#rh-mark"/></svg><div class="w">Remote Harness</div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">iOS</span><h2>Ícone do app</h2>
+      <p>Fundo escuro com um brilho âmbar atrás do anel; o símbolo ocupa 62% do canvas. A variante B (âmbar sólido) fica guardada para o tema claro e para o ícone alternativo em Ajustes, se um dia existir.</p></div>
+    <div class="iconrow">
+      <figure>
+        <svg viewBox="0 0 1024 1024" class="ios-icon" width="180" height="180" aria-label="ícone iOS, variante A">
+          <defs>
+            <linearGradient id="bgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c1a17"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
+            <radialGradient id="glowA" cx="0.5" cy="0.68" r="0.5"><stop offset="0" stop-color="#e8a33d" stop-opacity="0.34"/><stop offset="1" stop-color="#e8a33d" stop-opacity="0"/></radialGradient>
+          </defs>
+          <rect width="1024" height="1024" fill="url(#bgA)"/>
+          <rect width="1024" height="1024" fill="url(#glowA)"/>
+          <use href="#rh-mark" x="192" y="182" width="640" height="640" color="#e8a33d"/>
+        </svg>
+        <figcaption>A · 1024 → 180 pt (recomendado)</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 1024 1024" class="ios-icon" width="120" height="120"><rect width="1024" height="1024" fill="url(#bgA)"/><rect width="1024" height="1024" fill="url(#glowA)"/><use href="#rh-mark" x="192" y="182" width="640" height="640" color="#e8a33d"/></svg>
+        <figcaption>120</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 1024 1024" class="ios-icon" width="60" height="60"><rect width="1024" height="1024" fill="url(#bgA)"/><rect width="1024" height="1024" fill="url(#glowA)"/><use href="#rh-mark" x="192" y="182" width="640" height="640" color="#e8a33d"/></svg>
+        <figcaption>60</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 1024 1024" class="ios-icon" width="40" height="40"><rect width="1024" height="1024" fill="url(#bgA)"/><use href="#rh-mark-bold" x="192" y="182" width="640" height="640" color="#e8a33d"/></svg>
+        <figcaption>40 (bold)</figcaption>
+      </figure>
+      <figure style="margin-left:18px">
+        <svg viewBox="0 0 1024 1024" class="ios-icon" width="180" height="180" aria-label="ícone iOS, variante B">
+          <defs><linearGradient id="bgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0b352"/><stop offset="1" stop-color="#e09a2f"/></linearGradient></defs>
+          <rect width="1024" height="1024" fill="url(#bgB)"/>
+          <use href="#rh-mark" x="192" y="182" width="640" height="640" color="#1a1206"/>
+        </svg>
+        <figcaption>B · âmbar sólido (alternativo)</figcaption>
+      </figure>
+    </div>
+    <div class="homescreen">
+      <figure><div class="app" style="background:#1d1d1f">🗂️</div>Files</figure>
+      <figure><div class="app" style="background:linear-gradient(#5ac8fa,#007aff)">💬</div>Messages</figure>
+      <figure><svg viewBox="0 0 1024 1024" class="app" width="60" height="60"><rect width="1024" height="1024" fill="url(#bgA)"/><rect width="1024" height="1024" fill="url(#glowA)"/><use href="#rh-mark" x="192" y="182" width="640" height="640" color="#e8a33d"/></svg>Remote Harness</figure>
+      <figure><div class="app" style="background:#111">⌁</div>Tailscale</figure>
+      <figure><div class="app" style="background:linear-gradient(#34c759,#248a3d)">📞</div>Phone</figure>
+      <figure><div class="app" style="background:#fff">📷</div>Camera</figure>
+      <figure><div class="app" style="background:#1c1c1e">⚙️</div>Settings</figure>
+      <figure><div class="app" style="background:linear-gradient(#ff9500,#ff6a00)">📓</div>Notes</figure>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Android</span><h2>Adaptive, monocromático e notificação</h2>
+      <p>Foreground na zona segura de 66% sobre fundo sólido <code>#0D0D0D</code>; a mesma arte sobrevive a qualquer máscara. O ícone temático (Material You) é o símbolo bold em branco; o sistema aplica o tom do papel de parede. A notificação usa o bold em 24 dp.</p></div>
+    <div class="masks">
+      <figure><svg viewBox="0 0 108 108" width="96" height="96" class="circle"><rect width="108" height="108" fill="#0d0d0d"/><use href="#rh-mark" x="18" y="18" width="72" height="72" color="#e8a33d"/></svg>círculo</figure>
+      <figure><svg viewBox="0 0 108 108" width="96" height="96" class="rsq"><rect width="108" height="108" fill="#0d0d0d"/><use href="#rh-mark" x="18" y="18" width="72" height="72" color="#e8a33d"/></svg>rounded square</figure>
+      <figure><svg viewBox="0 0 108 108" width="96" height="96" class="squircle"><rect width="108" height="108" fill="#0d0d0d"/><use href="#rh-mark" x="18" y="18" width="72" height="72" color="#e8a33d"/></svg>squircle</figure>
+      <figure><svg viewBox="0 0 108 108" width="96" height="96" class="circle"><rect width="108" height="108" fill="#0d0d0d"/><rect x="18" y="18" width="72" height="72" fill="none" stroke="#f3dc7a" stroke-dasharray="2 2" stroke-width="0.8"/><use href="#rh-mark" x="18" y="18" width="72" height="72" color="#e8a33d"/></svg>zona segura 66 dp</figure>
+      <figure style="margin-left:14px"><svg viewBox="0 0 108 108" width="96" height="96" class="circle"><rect width="108" height="108" fill="#e9ddc8"/><use href="#rh-mark-bold" x="24" y="24" width="60" height="60" color="#4a3a1e"/></svg>temático · claro</figure>
+      <figure><svg viewBox="0 0 108 108" width="96" height="96" class="circle"><rect width="108" height="108" fill="#3b3327"/><use href="#rh-mark-bold" x="24" y="24" width="60" height="60" color="#f0dcbc"/></svg>temático · escuro</figure>
+    </div>
+    <div class="statusbar"><span>9:41</span><svg><use href="#rh-mark-bold"/></svg><span style="opacity:.6">▪</span><span class="sp"></span><span>▲ ▮▮▮ 🔋</span></div>
+    <p class="tiny">Barra de status Android com o ícone de notificação (`notification-icon.png`, 96 px = 24 dp @4x, branco sobre transparente).</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">macOS</span><h2>Bundle do daemon e menu bar</h2>
+      <p>O app bundle (Itens de Login) usa a mesma arte do iOS num retângulo arredondado. Na menu bar, o glifo é um <em>template image</em> (preto, com alfa) para o sistema tingir; os estados vêm do anel e de um ponto âmbar, não de cor. Detalhes no <a href="tray.html">design do tray</a>.</p></div>
+    <div class="iconrow">
+      <figure>
+        <svg viewBox="0 0 1024 1024" width="128" height="128" style="border-radius:22%;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)">
+          <rect width="1024" height="1024" fill="url(#bgA)"/><rect width="1024" height="1024" fill="url(#glowA)"/>
+          <rect x="6" y="6" width="1012" height="1012" rx="220" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="12"/>
+          <use href="#rh-mark" x="192" y="182" width="640" height="640" color="#e8a33d"/>
+        </svg>
+        <figcaption>Remote Harness.app · 1024 (.icns)</figcaption>
+      </figure>
+      <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:10px">
+        <div class="menubar light"><span class="sp"></span><span class="g"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">idle</span><span class="g" style="--ring:currentColor"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">working</span><span class="g wait"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">waiting</span><span class="g off"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">offline</span><span>⌁</span><span>🔊</span><span>Seg 09:41</span></div>
+        <div class="menubar dark"><span class="sp"></span><span class="g"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">idle</span><span class="g" style="--ring:currentColor"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">working</span><span class="g wait"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">waiting</span><span class="g off"><svg><use href="#rh-mark-bold"/></svg></span><span class="lbl">offline</span><span>⌁</span><span>🔊</span><span>Seg 09:41</span></div>
+        <p class="tiny">Template 16 pt (@1x/@2x): `MenuBarIcon.pdf`. O ponto âmbar de "waiting" é a única cor permitida na menu bar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Web</span><h2>Favicon e Open Graph</h2></div>
+    <div class="fav">
+      <figure><div class="tab"><div class="sq"><svg width="12" height="12" style="color:#e8a33d"><use href="#rh-mark-bold"/></svg></div>Remote Harness</div><span>16 · aba do navegador</span></figure>
+      <figure><svg viewBox="0 0 64 64" width="32" height="32" style="border-radius:7px"><rect width="64" height="64" fill="#0d0d0d"/><use href="#rh-mark-bold" x="8" y="8" width="48" height="48" color="#e8a33d"/></svg><span>32</span></figure>
+      <figure><svg viewBox="0 0 64 64" width="48" height="48" style="border-radius:10px"><rect width="64" height="64" fill="#0d0d0d"/><use href="#rh-mark" x="8" y="8" width="48" height="48" color="#e8a33d"/></svg><span>48 · `favicon.png`</span></figure>
+      <figure><svg viewBox="0 0 64 64" width="48" height="48" style="border-radius:10px"><rect width="64" height="64" fill="#0d0d0d"/><use href="#rh-mark" x="8" y="8" width="48" height="48" color="#e8a33d"/></svg><span>180 · apple-touch-icon</span></figure>
+    </div>
+    <div class="banner" style="max-width:720px;aspect-ratio:1200/630;align-items:center">
+      <svg><use href="#rh-mark"/></svg>
+      <div class="t"><b>Remote Harness</b><p>Follow and drive your coding agents from your phone.</p>
+        <div class="ag"><span class="agchip"><span class="agent claude">cl</span>Claude Code</span><span class="agchip"><span class="agent codex">cx</span>Codex</span><span class="agchip" style="border-style:dashed">+ soon</span></div></div>
+    </div>
+    <p class="tiny">Imagem OG/Twitter 1200×630 gerada do mesmo SVG: marca, nome, tagline e os agentes suportados. O mesmo arquivo serve de cabeçalho do README.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Splash</span><h2>Abertura</h2><p>Só o símbolo, sem texto: o nome já está embaixo do ícone na tela inicial. Fundo segue o tema (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/111">#111</a>), âmbar escurecido no claro.</p></div>
+    <div class="iconrow">
+      <figure><div class="splash" style="background:#0d0d0d"><svg style="color:#e8a33d"><use href="#rh-mark"/></svg></div><figcaption>escuro · `splash-icon.png` 1024 sobre #0D0D0D</figcaption></figure>
+      <figure><div class="splash" style="background:#f3f3f1"><svg style="color:#c98a2a"><use href="#rh-mark"/></svg></div><figcaption>claro · sobre #F3F3F1</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Terminal</span><h2>Banner do instalador e do setup</h2><p>A marca em caracteres de caixa, cinco linhas. Aparece no <code>install.sh</code>, no <code>remote-harness setup</code> e no <code>doctor</code>. "Machine", não "daemon" (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/94">#94</a>).</p></div>
+    <pre style="font-size:13px;line-height:1.35;background:#000;color:#d6d3cf"><span style="color:#e8a33d">    ▪   ▪   ▪
+     ╲  │  ╱
+      ╲ │ ╱
+       ╲│╱
+        ◯</span>      <b style="color:#e8e6e3">remote-harness</b> <span style="color:#8a8784">0.11.0</span>
+               <span style="color:#8a8784">Follow and drive your coding agents from your phone.</span>
+
+  <span style="color:#7fb069">✓</span> machine    MacBook Pro · macOS 26.0 · tailscale 100.101.1.7
+  <span style="color:#7fb069">✓</span> agents     claude 2.1.0 · codex 0.48.0
+  <span style="color:#f3dc7a">!</span> profiles   personal (claude) · work (claude) · codex <span style="color:#8a8784">— 1 new, confirm below</span>
+  <span style="color:#7fb069">✓</span> service    launchd · running since 09:12
+  <span style="color:#7fb069">✓</span> phones     iPhone (paired 3 d ago)
+
+  <span style="color:#8a8784">Next:</span> scan the QR code with the app, or run <span style="color:#e8a33d">remote-harness pair</span> later.</pre>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Entrega</span><h2>Arquivos a gerar</h2><p>Tudo sai de um único SVG em <code>apps/mobile/scripts/icons.mts</code>, como hoje. O bundle macOS e o glifo da menu bar entram no mesmo script com um novo destino.</p></div>
+    <div class="tbl-wrap"><table class="specs">
+      <tr><th>Arquivo</th><th>Tamanho</th><th>Arte</th><th>Fundo</th></tr>
+      <tr><td><code>icon.png</code> / <code>icon/icon.svg</code></td><td>1024</td><td>regular, 640 px, âmbar, brilho radial</td><td>gradiente #1C1A17 → #0D0D0D</td></tr>
+      <tr><td><code>adaptive-icon.png</code></td><td>1024 (108 dp)</td><td>regular, 66% centrado</td><td>transparente; <code>backgroundColor</code> #0D0D0D</td></tr>
+      <tr><td><code>adaptive-icon-monochrome.png</code></td><td>1024</td><td>bold, branco, 56%</td><td>transparente</td></tr>
+      <tr><td><code>notification-icon.png</code></td><td>96 (24 dp @4x)</td><td>bold, branco, 80%</td><td>transparente</td></tr>
+      <tr><td><code>splash-icon.png</code></td><td>1024</td><td>regular, 200 pt, âmbar</td><td>transparente; tema define a cor</td></tr>
+      <tr><td><code>live-activity-icon.png</code></td><td>144 (48 pt @3x)</td><td>igual ao ícone, bold</td><td>#0D0D0D</td></tr>
+      <tr><td><code>favicon.png</code> + <code>favicon.svg</code></td><td>48 / vetor</td><td>regular (48), bold (16–32)</td><td>#0D0D0D, raio 20%</td></tr>
+      <tr><td><code>apps/daemon/assets/RemoteHarness.icns</code></td><td>16 → 1024</td><td>igual ao iOS, borda interna 8% alfa</td><td>idem</td></tr>
+      <tr><td><code>apps/daemon/assets/MenuBarIcon.pdf</code></td><td>16 pt template</td><td>bold, preto, alfa</td><td>transparente</td></tr>
+      <tr><td><code>apps/web/public/og.png</code></td><td>1200×630</td><td>banner: marca + wordmark + tagline + agentes</td><td>gradiente escuro</td></tr>
+    </table></div>
+    <pre>&lt;!-- rh-mark · viewBox 0 0 256 256 · regular --&gt;
+&lt;g fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"&gt;
+  &lt;circle cx="128" cy="184" r="34"/&gt;
+  &lt;path d="M128 150V66"/&gt;
+  &lt;path d="M111 154C104 120 88 100 60 80"/&gt;
+  &lt;path d="M145 154C152 120 168 100 196 80"/&gt;
+&lt;/g&gt;
+&lt;rect x="110" y="34" width="36" height="36" rx="9"/&gt;
+&lt;rect x="36"  y="52" width="36" height="36" rx="9"/&gt;
+&lt;rect x="184" y="52" width="36" height="36" rx="9"/&gt;
+
+&lt;!-- bold: stroke 34 · circle r 36 cy 186 · rects 48×48 rx 12 em (104,24) (28,46) (180,46) --&gt;</pre>
+  </section>
+</div>
+<script src="shared.js"></script>
+</body>
+</html>

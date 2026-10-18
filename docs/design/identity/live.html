@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Remote Harness Live Status</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Lock screen */
+  .lock { width: 390px; height: 844px; border-radius: 58px; border: 12px solid #151515; box-shadow: 0 0 0 2px #2c2c2c, 0 30px 70px rgba(0,0,0,.65); overflow: hidden; position: relative; flex: none;
+    background: radial-gradient(120% 80% at 30% 10%, #3b2a1a 0%, #141210 45%, #0a0a0c 100%); color: #fff; font-family: -apple-system, system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; }
+  .lock::before { content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 122px; height: 36px; border-radius: 20px; background: #000; z-index: 6; }
+  .lock .date { margin-top: 74px; font-size: 20px; font-weight: 500; opacity: .9; }
+  .lock .time { font-size: 84px; font-weight: 600; letter-spacing: -0.04em; line-height: 1; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .lock .la { margin-top: 36px; }
+  .lock .bottom { position: absolute; bottom: 36px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 44px; }
+  .lock .bottom span { width: 50px; height: 50px; border-radius: 25px; background: rgba(255,255,255,.18); display: grid; place-items: center; font-size: 20px; }
+  .lock .home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #fff; opacity: .85; }
+
+  /* Live Activity banner */
+  .la { width: 358px; border-radius: 26px; background: rgba(13,13,13,.86); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.08); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-family: var(--mono); color: #e8e6e3; --st: var(--accent); }
+  .la .top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .la .ic { width: 40px; height: 40px; border-radius: 11px; background: #1b1a17; display: grid; place-items: center; flex: none; }
+  .la .ic svg { width: 26px; height: 26px; color: var(--accent); }
+  .la .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .la .tx .who { font-size: 11px; color: #8a8784; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .la .tx .ttl { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .la .tx .path { font-size: 11px; color: #8a8784; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .la .tm { text-align: right; flex: none; }
+  .la .tm b { display: block; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--st); line-height: 1; }
+  .la .tm small { font-size: 10px; color: #8a8784; }
+  .la .row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8a8784; min-width: 0; }
+  .la .st { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--st) 16%, transparent); color: var(--st); font-weight: 600; white-space: nowrap; }
+  .la .st::before { content: ""; width: 6px; height: 6px; border-radius: 3px; background: currentColor; }
+  .la .step { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e8e6e3; }
+  .la .tools { white-space: nowrap; }
+  .la .recent { display: flex; gap: 4px; }
+  .la .recent i { width: 22px; height: 22px; border-radius: 6px; background: #1e1d1c; display: grid; place-items: center; font-style: normal; font-size: 11px; color: #8a8784; }
+  .la .recent i.now { color: var(--st); background: color-mix(in srgb, var(--st) 16%, transparent); }
+  .la .bar { height: 3px; border-radius: 2px; background: #2a2a2a; overflow: hidden; }
+  .la .bar i { display: block; height: 100%; width: 38%; background: var(--st); border-radius: 2px; animation: slide 1.8s ease-in-out infinite alternate; }
+  @keyframes slide { from { transform: translateX(-10%); } to { transform: translateX(170%); } }
+  @media (prefers-reduced-motion: reduce) { .la .bar i { animation: none; width: 100%; opacity: .5; } }
+  .la.waiting { --st: var(--warning); border-color: rgba(243,220,122,.35); }
+  .la.done { --st: var(--success); }
+  .la.closed { --st: #8a8784; }
+  .la .ans { display: flex; gap: 8px; }
+  .la .ans span { flex: 1; text-align: center; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 600; border: 1px solid #3a3836; }
+  .la .ans .ok { border-color: var(--success); color: var(--success); }
+  .la .ans .no { border-color: var(--danger); color: var(--danger); }
+
+  /* Dynamic Island */
+  .di { background: #000; color: #e8e6e3; font-family: var(--mono); display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.6); --st: var(--accent); }
+  .di svg { color: var(--accent); flex: none; }
+  .di.compact { width: 220px; height: 37px; border-radius: 20px; padding: 0 12px 0 14px; justify-content: space-between; }
+  .di.compact svg { width: 18px; height: 18px; }
+  .di.compact b { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--st); }
+  .di.minimal { width: 37px; height: 37px; border-radius: 20px; justify-content: center; position: relative; }
+  .di.minimal svg { width: 18px; height: 18px; }
+  .di.minimal::after { content: ""; position: absolute; top: 7px; right: 6px; width: 7px; height: 7px; border-radius: 4px; background: var(--st); border: 1.5px solid #000; }
+  .di.expanded { width: 366px; border-radius: 40px; padding: 14px 18px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .di.waiting { --st: var(--warning); }
+  .di.done { --st: var(--success); }
+  .di .top { display: flex; align-items: center; gap: 12px; }
+  .di .top svg { width: 30px; height: 30px; }
+  .di .top .tx { flex: 1; min-width: 0; }
+  .di .top .who { font-size: 11px; color: #8a8784; }
+  .di .top .ttl { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .di .top b { font-size: 24px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--st); }
+  .di .row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8a8784; }
+  .di .row .step { flex: 1; color: #e8e6e3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .di .st { color: var(--st); font-weight: 600; }
+  .di .recent { display: flex; gap: 4px; }
+  .di .recent i { width: 22px; height: 22px; border-radius: 6px; background: #1e1d1c; display: grid; place-items: center; font-style: normal; font-size: 11px; color: #8a8784; }
+  .di .recent i.now { color: var(--st); background: color-mix(in srgb, var(--st) 16%, transparent); }
+  .topbar { width: 390px; height: 60px; display: flex; align-items: center; justify-content: center; position: relative; background: #141210; border-radius: 16px; font: 600 15px -apple-system, system-ui, sans-serif; color: #fff; }
+  .topbar .l { position: absolute; left: 30px; }
+  .topbar .r { position: absolute; right: 30px; font-size: 12px; }
+  .stack { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+
+  /* Android */
+  .shade { width: 390px; border-radius: 28px; background: #1b1b1f; padding: 16px 14px; display: flex; flex-direction: column; gap: 10px; font-family: Roboto, system-ui, sans-serif; color: #e3e3e8; }
+  .shade .hdr { display: flex; justify-content: space-between; font-size: 13px; opacity: .8; padding: 0 6px 4px; }
+  .anotif { background: #2a2a2e; border-radius: 22px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; --st: var(--accent); }
+  .anotif.waiting { --st: var(--warning); }
+  .anotif.done { --st: var(--success); }
+  .anotif .h { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #aaa; }
+  .anotif .h svg { width: 16px; height: 16px; color: var(--accent); }
+  .anotif .h b { color: #e3e3e8; font-weight: 500; }
+  .anotif .h .sil { margin-left: auto; font-size: 10px; border: 1px solid #555; border-radius: 4px; padding: 0 5px; }
+  .anotif .t { font-size: 15px; font-weight: 500; font-family: var(--mono); }
+  .anotif .x { font-size: 13px; color: #c9c9cf; font-family: var(--mono); }
+  .anotif .x b { color: var(--st); font-weight: 600; }
+  .anotif .bar { height: 4px; border-radius: 2px; background: #3a3a40; overflow: hidden; }
+  .anotif .bar i { display: block; height: 100%; width: 36%; background: var(--st); border-radius: 2px; animation: slide 1.8s ease-in-out infinite alternate; }
+  .anotif .acts { display: flex; gap: 18px; padding-top: 4px; font-size: 13px; font-weight: 500; color: #9ec1ff; }
+  .anotif .acts .ok { color: var(--success); } .anotif .acts .no { color: var(--danger); }
+  .other { background: #2a2a2e; border-radius: 22px; padding: 12px 16px; font-size: 13px; opacity: .55; display: flex; gap: 10px; align-items: center; }
+  .other i { width: 16px; height: 16px; border-radius: 4px; background: #666; display: inline-block; }
+  .states { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in">
+  <a class="brand" href="index.html"><svg><use href="#rh-mark"/></svg>Remote Harness <small>· identidade</small></a>
+  <div class="links">
+    <a href="index.html">Visão geral</a><a href="icons.html">Ícones</a><a href="mobile.html">Mobile</a><a href="tablet.html">Tablet</a><a class="cur" href="live.html">Live status</a><a href="tray.html">Tray</a><a href="landing.html">Landing</a>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="sec-head">
+      <span class="eyebrow">Live status · Live Activity, Dynamic Island, notificação Android</span>
+      <h1>O que a sessão está fazendo, sem dizer o que ela diz</h1>
+      <p class="lead">O status ao vivo continua carregando só o que o push já carrega hoje: máquina, perfil, nome e pasta da sessão, estado, categoria do passo, contagem de ferramentas e tempos. Nunca a conversa. O redesenho troca o ícone, usa a cor de estado como o único acento e faz a permissão pendente respondível direto da tela bloqueada.</p>
+    </div>
+    <div class="notes" style="grid-template-columns:1fr">
+      <div class="note"><span class="n">1</span><div><b>Cor = estado.</b> Working âmbar, Waiting for you amarelo-limão, Done verde, Closed cinza. O ícone fica sempre âmbar sobre o quadrado escuro; é a marca, não o estado.</div></div>
+      <div class="note"><span class="n">2</span><div><b>Categorias de passo</b> viram glifos na fileira "recent": <code>⌘</code> comando, <code>✎</code> edição, <code>⌕</code> busca, <code>⇄</code> rede, <code>⌥</code> subagente, <code>?</code> pergunta. O atual fica na cor do estado.</div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">iOS · tela bloqueada</span><h2>Live Activity</h2></div>
+    <div class="frames">
+      <div class="frame z85">
+        <div class="lock">
+          <div class="date">Saturday, 18 October</div>
+          <div class="time">9:41</div>
+          <div class="la">
+            <div class="top"><div class="ic"><svg><use href="#rh-mark-bold"/></svg></div><div class="tx"><span class="who">Work · MacBook Pro</span><span class="ttl">Add rate limit on login</span><span class="path">~/projects/acme-api</span></div><div class="tm"><b>4:36</b><small>working</small></div></div>
+            <div class="row"><span class="st">Working</span><span class="step">running a command</span><span class="tools">6 tools</span></div>
+            <div class="recent"><i>⌕</i><i>✎</i><i>✎</i><i>⌘</i><i class="now">⌘</i></div>
+            <div class="bar"><i></i></div>
+          </div>
+          <div class="bottom"><span>🔦</span><span>📷</span></div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Working.</b> Timer grande e tabular na cor do estado; a fileira "recent" mostra os últimos cinco passos; barra indeterminada enquanto roda.</p>
+      </div>
+      <div class="stack">
+        <div class="la waiting">
+          <div class="top"><div class="ic"><svg><use href="#rh-mark-bold"/></svg></div><div class="tx"><span class="who">Work · MacBook Pro</span><span class="ttl">Add rate limit on login</span><span class="path">~/projects/acme-api</span></div><div class="tm"><b>0:52</b><small>waiting</small></div></div>
+          <div class="row"><span class="st">Waiting for you</span><span class="step">permission · Bash</span><span class="tools">6 tools</span></div>
+          <div class="ans"><span class="no">Deny</span><span class="ok">Allow</span></div>
+        </div>
+        <div class="la done">
+          <div class="top"><div class="ic"><svg><use href="#rh-mark-bold"/></svg></div><div class="tx"><span class="who">Personal · MacBook Pro</span><span class="ttl">Migrate landing to Tailwind 4</span><span class="path">~/projects/landing</span></div><div class="tm"><b>6:12</b><small>total</small></div></div>
+          <div class="row"><span class="st">Done</span><span class="step">14 files changed · build passed</span><span class="tools">11 tools</span></div>
+        </div>
+        <div class="la closed">
+          <div class="top"><div class="ic"><svg><use href="#rh-mark-bold"/></svg></div><div class="tx"><span class="who">Codex · MacBook Pro</span><span class="ttl">Review deploy pipeline</span><span class="path">~/projects/acme-infra</span></div><div class="tm"><b>2 h</b><small>ago</small></div></div>
+          <div class="row"><span class="st">Session closed</span><span class="step">transcript kept · resume from the app</span></div>
+        </div>
+        <p class="cap"><b>Waiting / Done / Closed.</b> Em "waiting" os botões Deny/Allow respondem pela intent da Live Activity (hoje só o iOS oferece; no Android a notificação abre o app). "Done" fica 15 min e some (<code>DONE_DISMISS_MS</code>).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">iOS · Dynamic Island</span><h2>Compacta, mínima e expandida</h2></div>
+    <div class="frames">
+      <div class="stack">
+        <div class="topbar"><span class="l">9:41</span><div class="di compact"><svg><use href="#rh-mark-bold"/></svg><b>4:36</b></div><span class="r">⌔ ▮▮▮</span></div>
+        <div class="topbar"><span class="l">9:41</span><div class="di compact waiting"><svg><use href="#rh-mark-bold"/></svg><b>⛨ Bash</b></div><span class="r">⌔ ▮▮▮</span></div>
+        <div class="topbar"><span class="l">9:41</span><div class="di compact done"><svg><use href="#rh-mark-bold"/></svg><b>✓ 6:12</b></div><span class="r">⌔ ▮▮▮</span></div>
+        <div class="topbar"><span class="l">9:41</span><div style="display:flex;gap:6px"><div class="di compact" style="width:150px"><span style="font-size:11px">🎵 Now playing</span></div><div class="di minimal"><svg><use href="#rh-mark-bold"/></svg></div></div><span class="r">⌔ ▮▮▮</span></div>
+        <p class="cap"><b>Compacta</b>: marca à esquerda, timer ou ícone do passo à direita, na cor do estado. <b>Mínima</b> (quando outra atividade ocupa a ilha): só a marca com um ponto de estado.</p>
+      </div>
+      <div class="stack">
+        <div class="di expanded">
+          <div class="top"><svg><use href="#rh-mark-bold"/></svg><div class="tx"><div class="who">Work · MacBook Pro</div><div class="ttl">Add rate limit on login</div></div><b>4:36</b></div>
+          <div class="row"><span class="st">Working</span><span class="step">running a command · pnpm vitest run</span><span>6 tools</span></div>
+          <div class="recent"><i>⌕</i><i>✎</i><i>✎</i><i>⌘</i><i class="now">⌘</i></div>
+        </div>
+        <div class="di expanded waiting">
+          <div class="top"><svg><use href="#rh-mark-bold"/></svg><div class="tx"><div class="who">Work · MacBook Pro</div><div class="ttl">Add rate limit on login</div></div><b>0:52</b></div>
+          <div class="row"><span class="st">Waiting for you</span><span class="step">permission · Bash</span></div>
+          <div class="la waiting" style="width:auto;padding:0;background:transparent;border:0"><div class="ans"><span class="no">Deny</span><span class="ok">Allow</span></div></div>
+        </div>
+        <p class="cap"><b>Expandida</b> (toque e segure): tudo que a tela bloqueada mostra. O passo atual só diz a categoria e o nome da ferramenta, nunca o argumento completo; "pnpm vitest run" aparece porque é a descrição curta que o daemon já envia como <code>step</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Android · notificação contínua</span><h2>Canal "Live status", silencioso</h2></div>
+    <div class="frames">
+      <div class="shade">
+        <div class="hdr"><span>Sat 18 Oct</span><span>⚙ ✕</span></div>
+        <div class="anotif">
+          <div class="h"><svg><use href="#rh-mark-bold"/></svg><b>Remote Harness</b> · Work · MacBook Pro · now <span class="sil">Silent</span></div>
+          <div class="t">Add rate limit on login</div>
+          <div class="x"><b>Working</b> · running a command · 6 tools · 4:36</div>
+          <div class="bar"><i></i></div>
+        </div>
+        <div class="anotif waiting">
+          <div class="h"><svg><use href="#rh-mark-bold"/></svg><b>Remote Harness</b> · Work · MacBook Pro · 52 s</div>
+          <div class="t">Add rate limit on login</div>
+          <div class="x"><b>Waiting for you</b> · permission · Bash</div>
+          <div class="acts"><span class="no">Deny</span><span class="ok">Allow</span><span>Open</span></div>
+        </div>
+        <div class="anotif done">
+          <div class="h"><svg><use href="#rh-mark-bold"/></svg><b>Remote Harness</b> · Personal · MacBook Pro · 2 min</div>
+          <div class="t">Migrate landing to Tailwind 4</div>
+          <div class="x"><b>Done</b> · 11 tools · 6:12</div>
+        </div>
+        <div class="other"><i></i>Tailscale · Connected</div>
+      </div>
+      <div class="notes" style="max-width:420px;grid-template-columns:1fr">
+        <div class="note"><span class="n">1</span><div><b>Ícone pequeno</b> é o <code>notification-icon.png</code> (bold, branco); o Android pinta com a cor do app (âmbar).</div></div>
+        <div class="note"><span class="n">2</span><div><b>Progresso indeterminado</b> enquanto "Working"; some em "Done". Notificação silenciosa, não dispensável enquanto roda, dispensável depois.</div></div>
+        <div class="note"><span class="n">3</span><div><b>Allow/Deny no Android</b> depende de a notificação de permissão (canal "Sessions") carregar ações; hoje ela abre o app. O design já reserva o lugar.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Conteúdo</span><h2>O que cada campo carrega</h2></div>
+    <div class="tbl-wrap"><table class="specs" style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <tr><th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase">Campo</th><th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase">Exemplo</th><th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase">Origem</th></tr>
+      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border)"><code>title</code> + <code>host</code></td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">Work · MacBook Pro</td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">perfil + hostname do daemon</td></tr>
+      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border)"><code>session</code>, <code>path</code></td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">Add rate limit on login · ~/projects/acme-api</td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">a única exceção de conteúdo, já prevista no CLAUDE.md</td></tr>
+      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border)"><code>state</code>, <code>status</code></td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">working · "Working"</td><td style="padding:8px 10px;border-bottom:1px solid var(--border)"><code>liveStateFor</code> + i18n</td></tr>
+      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border)"><code>step</code>, <code>tools</code>, <code>recent[]</code></td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">running a command · 6 tools · ⌕ ✎ ✎ ⌘ ⌘</td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">categoria traduzida pelo daemon; nunca argumentos</td></tr>
+      <tr><td style="padding:8px 10px;border-bottom:1px solid var(--border)"><code>startedAt</code>, <code>changedAt</code>, <code>endedAt</code></td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">4:36 · "2 min ago"</td><td style="padding:8px 10px;border-bottom:1px solid var(--border)">timer do widget (<code>{time}</code>)</td></tr>
+      <tr><td style="padding:8px 10px"><code>pending</code> (novo)</td><td style="padding:8px 10px">permission · Bash · request id</td><td style="padding:8px 10px">só a ferramenta e o id, para os botões Allow/Deny</td></tr>
+    </table></div>
+  </section>
+</div>
+<script src="shared.js"></script>
+</body>
+</html>
