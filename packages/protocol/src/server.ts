@@ -26,6 +26,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     replyTo,
     protocolVersion: z.number().int(),
     daemonVersion: z.string(),
+    /** Name of the daemon's computer (absent in older daemons). */
+    host: z.string().optional(),
     profiles: z.array(ProfileSchema),
     defaultRuleScope: RuleScopeSchema,
     muted: MuteStateSchema,

@@ -2,7 +2,8 @@
  * Generates the app icon and splash from code so the artwork stays reviewable and reproducible.
  * Foreground: the Claude spark in Claude orange. Background: a terminal window with a `>_` prompt.
  * Android also gets an adaptive icon (the artwork inside the 66% safe zone over a solid background),
- * a monochrome themed icon and the white status bar notification icon.
+ * a monochrome themed icon and the white status bar notification icon; the iOS Live Activity gets a
+ * small copy of the icon.
  * Run: pnpm --filter @remote-harness/mobile icons
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -109,6 +110,8 @@ writeFileSync(join(root, 'icon', 'splash.svg'), splashSvg())
 await render(iconSvg(), 'icon.png', 1024, BG)
 await render(splashSvg(), 'splash-icon.png', 1024)
 await render(iconSvg(), 'favicon.png', 48, BG)
+// Live Activity header (48 pt @3x); small, since ActivityKit refuses large images.
+await render(iconSvg(), 'live-activity-icon.png', 144, BG)
 await render(adaptiveForegroundSvg(), 'adaptive-icon.png', 1024)
 await render(monochromeSvg(300), 'adaptive-icon-monochrome.png', 1024)
 await render(monochromeSvg(440), 'notification-icon.png', 96)

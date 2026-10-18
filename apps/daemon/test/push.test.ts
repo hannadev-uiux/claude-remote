@@ -18,8 +18,8 @@ useTempHome()
 function fakeSender(invalid: string[] = []) {
   const sent: { tokens: readonly string[]; message: PushMessage }[] = []
   const sender: PushSender = {
-    async send(tokens, message) {
-      sent.push({ tokens, message })
+    async send(targets, message) {
+      sent.push({ tokens: targets.map((t) => t.token), message })
       return { invalidTokens: invalid }
     },
     async sendLive() {
@@ -217,6 +217,14 @@ describe('PushService', () => {
       messages: en,
     })
     expect(await disabled.notify(msg)).toBe(false)
+  })
+
+  test('keeps the relay grant the app sent with its token', async () => {
+    const devices = new DeviceRegistry(paths.devices())
+    await devices.register('tok', 'ios', { url: 'https://relay.example/r', grant: 'g' })
+    const reloaded = new DeviceRegistry(paths.devices())
+    await reloaded.load()
+    expect(reloaded.devices()).toMatchObject([{ token: 'tok', relay: { grant: 'g' } }])
   })
 
   test('drops tokens FCM reports as invalid', async () => {

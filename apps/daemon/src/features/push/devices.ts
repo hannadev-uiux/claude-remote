@@ -1,4 +1,9 @@
-import { type DevicePlatform, DevicePlatformSchema } from '@remote-harness/protocol'
+import {
+  type DevicePlatform,
+  DevicePlatformSchema,
+  type PushRelay,
+  PushRelaySchema,
+} from '@remote-harness/protocol'
 import { z } from 'zod'
 import { readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 
@@ -6,6 +11,8 @@ const DeviceSchema = z.object({
   token: z.string(),
   // Missing in files written before Android support (those phones are iPhones).
   platform: DevicePlatformSchema.optional(),
+  /** Push relay grant, used when the daemon has no Firebase service account. */
+  relay: PushRelaySchema.optional(),
   registeredAt: z.string(),
 })
 const DevicesSchema = z.object({ tokens: z.array(DeviceSchema) })
@@ -46,9 +53,14 @@ export class DeviceRegistry {
     return this.tokens
   }
 
-  async register(token: string, platform?: DevicePlatform): Promise<void> {
+  async register(token: string, platform?: DevicePlatform, relay?: PushRelay): Promise<void> {
     this.tokens = [
-      { token, ...(platform ? { platform } : {}), registeredAt: new Date().toISOString() },
+      {
+        token,
+        ...(platform ? { platform } : {}),
+        ...(relay ? { relay } : {}),
+        registeredAt: new Date().toISOString(),
+      },
       ...this.tokens.filter((t) => t.token !== token),
     ].slice(0, MAX_DEVICES)
     await writeJsonAtomic(this.path, { tokens: this.tokens }, 0o600)

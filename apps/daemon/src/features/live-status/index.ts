@@ -1,5 +1,6 @@
 import { effectiveLocale } from '../../core/config.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
+import { hostName, shortenHome } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { PushSender } from '../push/sender.ts'
 import type { SessionStore } from '../sessions/store.ts'
@@ -19,10 +20,19 @@ export function registerLiveStatusFeature(
     follow: (sessionId: string, listener: EntryListener) => Promise<() => void>
   },
 ) {
+  const host = hostName()
   const service = new LiveStatusService(options.sender, ctx.logger, {
     messages: messagesFor(effectiveLocale(ctx.config)).live,
     profileOf: (sessionId) => options.store.get(sessionId)?.profileId ?? null,
-    profileName: (profileId) => ctx.profiles.find((p) => p.id === profileId)?.name ?? profileId ?? 'Claude',
+    info: (sessionId, profileId) => {
+      const session = options.store.get(sessionId)
+      return {
+        title: ctx.profiles.find((p) => p.id === profileId)?.name ?? profileId ?? 'Claude',
+        host,
+        session: session?.title ?? '',
+        path: session ? shortenHome(session.cwd) : '',
+      }
+    },
     isMuted: options.isMuted,
     follow: (sessionId, onEvent) =>
       options.follow(sessionId, (_id, entry) => {
@@ -37,6 +47,7 @@ export function registerLiveStatusFeature(
       platform: msg.platform,
       fcmToken: msg.fcmToken,
       ...(msg.activityToken ? { activityToken: msg.activityToken } : {}),
+      ...(msg.relay ? { relay: msg.relay } : {}),
     })
     return undefined
   })
@@ -49,7 +60,7 @@ export function registerLiveStatusFeature(
     const sessionId = hook.payload.session_id
     switch (hook.event) {
       case 'UserPromptSubmit':
-        return service.handle(sessionId, { type: 'prompt', at: Date.now() })
+        return service.handle(sessionId, { type: 'prompt' })
       case 'Notification': {
         const type = hook.payload.notification_type
         if (typeof type === 'string' && NOT_WAITING.has(type)) return

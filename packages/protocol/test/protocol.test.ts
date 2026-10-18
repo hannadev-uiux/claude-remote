@@ -46,6 +46,21 @@ const clientSamples: ClientMessage[] = [
   { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'android', fcmToken: 'tok' },
   { type: 'live.unregister', id: '1', sessionId: 's' },
+  {
+    type: 'device.register',
+    id: '1',
+    fcmToken: 'tok',
+    platform: 'ios',
+    relay: { url: 'https://relay.example/r', grant: 'g' },
+  },
+  {
+    type: 'live.register',
+    id: '1',
+    sessionId: 's',
+    platform: 'ios',
+    fcmToken: 'tok',
+    relay: { url: 'https://relay.example/r', grant: 'g' },
+  },
   { type: 'files.search', id: '1', sessionId: 's', query: 'src', limit: 20 },
   { type: 'commands.list', id: '1', sessionId: 's' },
   { type: 'projects.list', id: '1', profileId: 'claudin' },
@@ -78,6 +93,7 @@ const serverSamples: ServerMessage[] = [
     type: 'auth.ok',
     protocolVersion: 1,
     daemonVersion: '0.1.0',
+    host: 'mac',
     profiles: [],
     defaultRuleScope: 'project',
     muted: { profiles: [], sessions: [] },
@@ -203,8 +219,42 @@ describe('client messages', () => {
 
   test('live status props carry only the allowed fields', () => {
     const props = { title: 'Work', state: 'working', status: 'Working', step: '', tools: '', startedAt: 1 }
-    expect(LiveStatusPropsSchema.parse({ ...props, prompt: 'secret' })).toEqual(props)
+    const full = {
+      ...props,
+      host: 'mac',
+      session: 'Fix login',
+      path: '~/app',
+      recent: ['Bash · running a command'],
+      ago: '{time} ago',
+      changedAt: 2,
+      endedAt: 3,
+    }
+    expect(LiveStatusPropsSchema.parse({ ...full, prompt: 'secret' })).toEqual(full)
     expect(LiveStatusPropsSchema.safeParse({ ...props, state: 'error' }).success).toBe(false)
+  })
+
+  test('live status props from older daemons get defaults', () => {
+    const props = { title: 'Work', state: 'done', status: 'Done', step: '', tools: '', startedAt: 1 }
+    expect(LiveStatusPropsSchema.parse(props)).toEqual({
+      ...props,
+      host: '',
+      session: '',
+      path: '',
+      recent: [],
+      ago: '',
+      changedAt: 0,
+      endedAt: null,
+    })
+  })
+
+  test('relay URLs must be HTTPS', () => {
+    const msg = {
+      type: 'device.register',
+      id: '1',
+      fcmToken: 't',
+      relay: { url: 'http://relay.example', grant: 'g' },
+    }
+    expect(parseClientMessage(msg).ok).toBe(false)
   })
 
   test('rejects an unknown device platform', () => {

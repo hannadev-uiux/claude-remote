@@ -79,7 +79,7 @@ describe('catalogs', () => {
 
   test.each(LOCALES)('%s explains the WSL steps with the exact commands', (locale) => {
     const w = messagesFor(locale).wsl
-    expect(w.windowsHint).toContain('irm https://maarkn.dev/claude-remote/install.ps1 | iex')
+    expect(w.windowsHint).toContain('irm https://remoteharness.app/install.ps1 | iex')
     expect(w.restart).toContain('wsl --shutdown')
     expect(w.serviceNoSystemd).toContain('wsl --shutdown')
     expect(w.systemdIntro).toContain('[boot] systemd=true')

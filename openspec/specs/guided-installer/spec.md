@@ -9,7 +9,7 @@ Installs and configures Remote Harness on the Mac with a single command and a gu
 `install.sh` SHALL install or update the code in `~/.remote-harness/src`, build the daemon and open the wizard, failing with a clear message on unsupported systems or without git. Missing `tmux` and `ripgrep` MUST be installed via Homebrew when available. When Node 24+ is missing, it SHALL download the latest Node 24 from nodejs.org into `~/.remote-harness/node`, verify its SHA-256 against the official `SHASUMS256.txt`, and use it only for Remote Harness, without changing the user's shell or system Node.
 
 #### Scenario: First installation
-- **WHEN** the user runs `curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash`
+- **WHEN** the user runs `curl -fsSL https://remoteharness.app/install.sh | bash`
 - **THEN** the code is downloaded and built, and the wizard starts
 
 #### Scenario: Update
@@ -52,10 +52,10 @@ Installs and configures Remote Harness on the Mac with a single command and a gu
 - **THEN** its launcher and hooks are removed
 
 ### Requirement: Installer redirect
-`https://maarkn.dev/claude-remote/install.sh` SHALL temporarily redirect to the `install.sh` on the `main` branch on GitHub.
+`https://remoteharness.app/install.sh` SHALL temporarily redirect to the `install.sh` on the `main` branch on GitHub.
 
 #### Scenario: curl
-- **WHEN** `curl -fsSL https://maarkn.dev/claude-remote/install.sh` is run
+- **WHEN** `curl -fsSL https://remoteharness.app/install.sh` is run
 - **THEN** the script content is downloaded
 
 ### Requirement: Tutorial in the app
@@ -81,5 +81,5 @@ The pairing screen SHALL offer a step-by-step guide for those who installed the 
 - **THEN** it refuses and suggests `git pull` and a build
 
 #### Scenario: Installer only
-- **WHEN** the user runs `curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash -s -- --update`
+- **WHEN** the user runs `curl -fsSL https://remoteharness.app/install.sh | bash -s -- --update`
 - **THEN** the update runs the same way, without the wizard

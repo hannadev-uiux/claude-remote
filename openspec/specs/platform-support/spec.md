@@ -17,7 +17,7 @@ The daemon, the CLI and `install.sh` SHALL run on macOS and Linux with the same 
 - **THEN** it exits with a message listing the supported systems
 
 #### Scenario: Windows without WSL
-- **WHEN** the user runs `irm https://maarkn.dev/claude-remote/install.ps1 | iex` on Windows 11 without WSL
+- **WHEN** the user runs `irm https://remoteharness.app/install.ps1 | iex` on Windows 11 without WSL
 - **THEN** WSL2 with Ubuntu is installed, the user is told to reboot if required, and running the command again continues with the Linux installer inside WSL
 
 ### Requirement: Secret storage per platform

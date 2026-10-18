@@ -9,5 +9,9 @@ const disabled = { platforms: { ios: null, android: null } }
 module.exports = {
   dependencies: firebaseEnabled
     ? {}
-    : { '@react-native-firebase/app': disabled, '@react-native-firebase/messaging': disabled },
+    : {
+        '@react-native-firebase/app': disabled,
+        '@react-native-firebase/messaging': disabled,
+        '@react-native-firebase/app-check': disabled,
+      },
 }

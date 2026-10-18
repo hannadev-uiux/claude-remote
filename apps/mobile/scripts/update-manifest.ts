@@ -4,7 +4,14 @@
  */
 import { createHash, type KeyObject, sign } from 'node:crypto'
 
-export const ASSETS_PATH = '/api/claude-remote/updates/assets/'
+/**
+ * Base of the updates API, from the manifest URL the builds use (`<base>/manifest`): assets are
+ * `<base>/assets/<hash>` and manifests are published to `<base>/manifests`.
+ */
+export function updatesBase(updatesUrl: string): string {
+  const url = new URL(updatesUrl)
+  return `${url.origin}${url.pathname.replace(/\/+$/, '').replace(/\/manifest$/, '')}`
+}
 
 const CONTENT_TYPES: Record<string, string> = {
   png: 'image/png',
@@ -58,12 +65,13 @@ export function buildManifest(o: {
   runtimeVersion: string
   /** Signed into `metadata.channel`; the server's manifest filters use it when the app switches. */
   channel: string
-  server: string
+  /** Prefix of the asset URLs in the manifest, ending with `/` (`<updatesBase>/assets/` by default). */
+  assetsUrl: string
   bundle: { data: Uint8Array }
   assets: Array<{ data: Uint8Array; ext: string }>
   expoClient: unknown
 }): { manifest: string; files: UpdateFile[] } {
-  const base = `${o.server.replace(/\/+$/, '')}${ASSETS_PATH}`
+  const base = o.assetsUrl
   const files: UpdateFile[] = []
   const entry = (data: Uint8Array, contentType: string, ext?: string): ManifestAsset => {
     const hash = sha256(data)

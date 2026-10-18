@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { homedir, hostname } from 'node:os'
 import { join } from 'node:path'
 import { envVar } from './env.ts'
 
@@ -7,6 +7,18 @@ export function expandHome(p: string): string {
   if (p === '~') return homedir()
   if (p.startsWith('~/')) return join(homedir(), p.slice(2))
   return p
+}
+
+/** The reverse of `expandHome`: `path` with the home directory shortened to `~`. */
+export function shortenHome(path: string, home = homedir()): string {
+  if (!home || home === '/') return path
+  if (path === home) return '~'
+  return path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path
+}
+
+/** The computer's name, without the `.local` suffix macOS adds. */
+export function hostName(raw = hostname()): string {
+  return raw.replace(/\.local$/i, '')
 }
 
 export const DATA_DIR = '.remote-harness'

@@ -59,7 +59,7 @@ Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [R
 ## Início rápido
 
 ```bash
-curl -fsSL https://maarkn.dev/claude-remote/install.sh | bash
+curl -fsSL https://remoteharness.app/install.sh | bash
 ```
 
 O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.remote-harness/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar; `remote-harness setup` muda contas e aliases depois. Instalações feitas antes da mudança de nome para Remote Harness continuam usando `~/.claude-remote`, e o comando `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam funcionando.
@@ -78,7 +78,7 @@ pnpm android         # expo run:android — emulador ou celular conectado
 pnpm build:android   # APK de release local (o eas.json também tem os perfis development/preview/production)
 ```
 
-Push (opcional): no mesmo projeto do Firebase, crie um app Android com o id `tech.doctorx.clauderemote`, coloque o `google-services.json` em `apps/mobile/` (fora do git, como o `GoogleService-Info.plist` do iOS) e rode `pnpm android` de novo; sem o arquivo o app compila sem Firebase. O daemon precisa da conta de serviço em `~/.remote-harness/firebase-service-account.json`. No Android 13+ o app pede a permissão de notificações; elas usam o canal `claude-remote` (alta prioridade) e, como no iOS, levam só o evento e o perfil. Os botões Permitir/Negar não aparecem na notificação do Android: toque nela para responder no app. `remote-harness doctor` lista os celulares registrados e a plataforma de cada um.
+Push (opcional): no mesmo projeto do Firebase, crie um app Android com o id `tech.doctorx.clauderemote`, coloque o `google-services.json` em `apps/mobile/` (fora do git, como o `GoogleService-Info.plist` do iOS) e rode `pnpm android` de novo; sem o arquivo o app compila sem Firebase. O daemon envia de dois jeitos: pelo **relay de push** (uma Cloud Function, sem nenhuma credencial no computador; o app precisa ser compilado com `REMOTE_HARNESS_PUSH_RELAY_URL`, pede um *grant* ao relay e o entrega ao daemon) ou com a conta de serviço em `~/.remote-harness/firebase-service-account.json` (Firebase próprio, que tem prioridade). Para publicar o relay (plano Blaze): `npx -y firebase-tools@15 login`, `openssl rand -hex 32 | npx -y firebase-tools@15 functions:secrets:set GRANT_KEY --project <id> --data-file=-` e `make deploy-push-relay PROJECT=<id>`; o App Check começa só registrando (`APP_CHECK=monitor`) e passa a bloquear com `APP_CHECK=enforce` em `apps/push-relay/.env.<id>` depois de registrar os apps no Firebase App Check. No Android 13+ o app pede a permissão de notificações; elas usam o canal `claude-remote` (alta prioridade) e, como no iOS, levam só o evento e o perfil. Os botões Permitir/Negar não aparecem na notificação do Android: toque nela para responder no app. `remote-harness doctor` lista os celulares registrados e a plataforma de cada um.
 
 O **status ao vivo** usa a mesma configuração do Firebase. No iOS as atualizações da Live Activity passam pelo FCM, que exige a **chave de autenticação** APNs (`.p8`) no Firebase, não um certificado. Ele começa quando uma sessão passa a trabalhar com o app aberto (normalmente depois de enviar um prompt pelo celular) e pode ser desligado em **Configurações → Status ao vivo**. O push leva só o nome do perfil, o estado, a categoria da etapa ("executando um comando"), a contagem de ferramentas e horários.
 
@@ -97,10 +97,10 @@ No emulador sem Tailscale: `remote-harness start --dev`, `remote-harness pair --
 O Remote Harness controla o Claude Code pelo tmux, então no Windows ele roda dentro do **WSL2** (Linux no Windows). No PowerShell:
 
 ```powershell
-irm https://maarkn.dev/claude-remote/install.ps1 | iex
+irm https://remoteharness.app/install.ps1 | iex
 ```
 
-O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se faltar (o Windows pede permissão de administrador; reinicie se ele pedir e rode o mesmo comando de novo), ajuda a criar o usuário do Linux e roda o instalador do Linux dentro da distribuição. Opções: `& ([scriptblock]::Create((irm https://maarkn.dev/claude-remote/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se faltar (o Windows pede permissão de administrador; reinicie se ele pedir e rode o mesmo comando de novo), ajuda a criar o usuário do Linux e roda o instalador do Linux dentro da distribuição. Opções: `& ([scriptblock]::Create((irm https://remoteharness.app/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
 
 - **Node e Claude Code** precisam estar instalados **dentro do WSL** (não só no Windows); o instalador avisa o que falta.
 - **systemd**: o serviço é uma unit de usuário do systemd, e o WSL só inicia o systemd com `[boot] systemd=true` em `/etc/wsl.conf`. O assistente mostra o comando `sudo` exato, só roda se você concordar (com backup) e pede para rodar `wsl --shutdown` no PowerShell.

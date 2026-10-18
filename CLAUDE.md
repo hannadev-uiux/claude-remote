@@ -7,6 +7,8 @@ App pessoal iOS/Android (React Native + Expo) que acompanha e controla, pelo cel
 ```
 apps/daemon        Daemon Node/TS (WebSocket p/ app, HTTP p/ hooks, tmux, transcripts, push)
 apps/mobile        App Expo (Expo Router, Zustand, TanStack Query)
+apps/push-relay    Cloud Function (Firebase) que envia push por daemons sem conta de serviço, via grants
+apps/web           Worker do Cloudflare em remoteharness.app (proxy do OTA, links de instalação do iPhone no R2); deploy com `cf deploy`
 packages/protocol  Schemas Zod + tipos do protocolo WebSocket (fonte única da verdade)
 openspec/          Changes numerados (proposal, specs, design, tasks), sempre em en-US
 ```
@@ -52,7 +54,7 @@ cd apps/mobile && npx expo export --platform ios      # valida o bundle sem simu
 - App: dependências nativas sempre com `npx expo install` (ver `apps/mobile/AGENTS.md`); só código sem `react-native` é testado com Vitest (`*.test.ts`).
 - pnpm com instalação isolada (padrão): cada pacote declara as próprias dependências. Scripts de build de dependências são liberados/negados em `allowBuilds` no `pnpm-workspace.yaml`.
 - Arquivos gerados: `*.generated.ts` (xterm) e `assets/*.png` (ícone) — regenere com os scripts, não edite à mão.
-- Segurança: WS só na interface Tailscale (ou 127.0.0.1 com `--dev`), token obrigatório (Keychain no Mac, SecureStore no app); hooks só em 127.0.0.1 com segredo. Push nunca carrega conteúdo da sessão. `bypassPermissions` nunca é oferecido pelo app.
+- Segurança: WS só na interface Tailscale (ou 127.0.0.1 com `--dev`), token obrigatório (Keychain no Mac, SecureStore no app); hooks só em 127.0.0.1 com segredo. Push nunca carrega conteúdo da sessão (exceção: o status ao vivo leva o título e a pasta da sessão). `bypassPermissions` nunca é oferecido pelo app.
 
 ## Tema visual
 
