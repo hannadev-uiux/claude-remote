@@ -3,10 +3,9 @@ import { THEME_NAMES } from './palettes'
 import { isThemePreference, resolveThemeName, THEME_PREFERENCES } from './resolve'
 
 describe('resolveThemeName', () => {
-  test('system follows the phone when a theme exists for its scheme, dark otherwise', () => {
+  test('system follows the phone: dark mode gets dark, light mode gets light', () => {
     expect(resolveThemeName('system', 'dark')).toBe('dark')
-    // No light theme yet: a phone in light mode still gets dark.
-    expect(resolveThemeName('system', 'light')).toBe('dark')
+    expect(resolveThemeName('system', 'light')).toBe('light')
   })
 
   test.each(THEME_NAMES)('an explicit %s ignores the system scheme', (name) => {

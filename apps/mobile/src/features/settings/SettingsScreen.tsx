@@ -6,6 +6,7 @@ import { useConnectionStore } from '@/core/connection'
 import { credentialsStorage } from '@/core/storage/credentials'
 import { space, useTheme } from '@/core/theme'
 import { Badge, Button, Card, Screen, Text } from '@/ui'
+import { AppearanceCard } from './AppearanceCard'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -64,6 +65,8 @@ export function SettingsScreen({ children }: { children?: React.ReactNode }) {
             <Row label={t('settings.protocol')} value={hello ? String(hello.protocolVersion) : '—'} />
           </View>
         </Card>
+
+        <AppearanceCard />
 
         <Card>
           <View style={styles.gap}>
