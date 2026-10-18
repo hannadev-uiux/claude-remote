@@ -47,6 +47,11 @@ export async function registerPushFeature(
     await devices.register(msg.fcmToken, msg.platform, msg.relay)
     return undefined
   })
+  // The phone turned push off: it is no longer counted or targeted.
+  ctx.router.register('device.unregister', async (msg) => {
+    await devices.remove([msg.fcmToken])
+    return undefined
+  })
   ctx.router.register('app.visibility', (msg, connection) => {
     connection.foreground = msg.foreground
     return undefined

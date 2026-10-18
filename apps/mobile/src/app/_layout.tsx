@@ -21,6 +21,7 @@ import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
 import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
+import { restorePushSettings } from '@/features/push/push-settings-store'
 import { restoreSessionPrefs } from '@/features/sessions/prefs-store'
 import { restoreSessionSort } from '@/features/sessions/sort-store'
 import { restoreMachineAlias, useMachineNameSync } from '@/features/settings/machine-store'
@@ -48,6 +49,7 @@ export default function RootLayout() {
     void restoreMachineAlias()
     void restoreSessionSort()
     void restoreSessionPrefs()
+    void restorePushSettings()
     void restoreKeyBar()
     void restoreKeyboardToolbar()
     void restoreFollow()
