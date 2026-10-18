@@ -17,6 +17,7 @@ import { ConnectionProvider, useConnectionStore } from '@/core/connection'
 import '@/core/i18n'
 import { colors, fonts } from '@/core/theme'
 import { useBackgroundUpdates } from '@/core/updates'
+import { restoreFollow } from '@/features/conversation/follow-store'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
@@ -41,6 +42,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void restoreKeyBar()
+    void restoreFollow()
     void restoreToolTabs()
     void restoreLiveStatusSetting()
   }, [])

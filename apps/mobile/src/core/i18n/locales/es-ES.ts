@@ -126,6 +126,8 @@ const esES = {
     showKeys: 'Mostrar atajos de teclado',
     hideKeys: 'Ocultar atajos de teclado',
     history: 'Historial de la conversación',
+    follow: 'Seguir la salida',
+    stopFollowing: 'Dejar de seguir la salida',
     readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
   },
   sessionDetails: {

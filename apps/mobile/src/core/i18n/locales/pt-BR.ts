@@ -126,6 +126,8 @@ const ptBR = {
     showKeys: 'Mostrar atalhos de teclado',
     hideKeys: 'Ocultar atalhos de teclado',
     history: 'Histórico da conversa',
+    follow: 'Acompanhar a saída',
+    stopFollowing: 'Parar de acompanhar a saída',
     readOnly: 'Sessão somente leitura (sem painel tmux): o terminal e os atalhos não estão disponíveis.',
   },
   sessionDetails: {

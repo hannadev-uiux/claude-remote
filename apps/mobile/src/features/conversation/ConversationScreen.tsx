@@ -1,6 +1,6 @@
 import type { Key } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useDaemonClient } from '@/core/connection'
@@ -13,10 +13,12 @@ import { KeyBar } from './components/KeyBar'
 import { AssistantMessage, SystemLine, ThinkingBlock, UnknownEntry, UserMessage } from './components/Messages'
 import { PromptHistorySheet } from './components/PromptHistorySheet'
 import { ToolCallCard } from './components/ToolCallCard'
+import { useFollowStore } from './follow-store'
 import { useKeyBarStore } from './key-bar-store'
 import type { PromptHistoryItem } from './prompt-history'
 import { loadOlder, selectStream, streamKey, subscribeTranscript, useTranscriptStore } from './store'
 import { buildTimeline, type TimelineItem } from './timeline'
+import { useFollowScroll } from './use-follow-scroll'
 
 function renderItem({ item }: { item: TimelineItem }) {
   switch (item.type) {
@@ -67,20 +69,20 @@ export function ConversationScreen({
   const controllable = useSessionsStore((s) => s.sessions[sessionId]?.controllable ?? false)
   const keyBarVisible = useKeyBarStore((s) => s.visible)
   const items = useMemo(() => buildTimeline(stream.entries), [stream.entries])
+  const follow = useFollowStore((s) => s.follow)
   const listRef = useRef<FlashListRef<TimelineItem>>(null)
-  const atBottom = useRef(true)
-  const seenCount = useRef(0)
-  const [unseen, setUnseen] = useState(false)
+  const { unseen, scrollProps, jumpToEnd, leaveEnd } = useFollowScroll({
+    listRef,
+    itemCount: items.length,
+    lastKey: items[items.length - 1]?.key ?? null,
+    streamKey: key,
+    follow,
+  })
 
   useEffect(() => {
     if (!client) return
     return subscribeTranscript(client, sessionId, agentId)
   }, [client, sessionId, agentId])
-
-  useEffect(() => {
-    if (items.length > seenCount.current && !atBottom.current && seenCount.current > 0) setUnseen(true)
-    seenCount.current = items.length
-  }, [items.length])
 
   const loadEarlier = () => {
     if (client) void loadOlder(client, sessionId, agentId).catch(() => undefined)
@@ -89,12 +91,10 @@ export function ConversationScreen({
   const jumpToPrompt = (prompt: PromptHistoryItem) => {
     onHistoryClose?.()
     const item = items.find((i) => i.key === prompt.key)
-    if (item) listRef.current?.scrollToItem({ item, animated: true, viewPosition: 0 })
-  }
-
-  const jumpToEnd = () => {
-    listRef.current?.scrollToEnd({ animated: true })
-    setUnseen(false)
+    if (!item) return
+    // Leaving the end: content arriving during the animation must not pull the list back.
+    leaveEnd()
+    listRef.current?.scrollToItem({ item, animated: true, viewPosition: 0 })
   }
 
   return (
@@ -113,28 +113,15 @@ export function ConversationScreen({
             keyExtractor={(item) => item.key}
             getItemType={(item) => item.type}
             renderItem={renderItem}
-            maintainVisibleContentPosition={{
-              startRenderingFromBottom: true,
-              autoscrollToBottomThreshold: 0.2,
-            }}
+            // Anchoring stays on (older pages do not move the viewport); following the end is done
+            // here instead of FlashList's autoscroll, whose sticky "near the bottom" flag could pull
+            // the user back while they start scrolling up (#38).
+            maintainVisibleContentPosition={{ startRenderingFromBottom: true }}
             onStartReached={loadEarlier}
             onStartReachedThreshold={0.5}
-            onScroll={({ nativeEvent }) => {
-              const distance =
-                nativeEvent.contentSize.height -
-                nativeEvent.layoutMeasurement.height -
-                nativeEvent.contentOffset.y
-              atBottom.current = distance < 80
-              if (atBottom.current) setUnseen(false)
-            }}
-            scrollEventThrottle={100}
-            ListHeaderComponent={
-              stream.loadingOlder ? (
-                <ActivityIndicator color={colors.accent} style={styles.loader} />
-              ) : (
-                <View style={styles.top} />
-              )
-            }
+            {...scrollProps}
+            // Fixed header: swapping it for the spinner would shift the content (anchoring ignores it).
+            ListHeaderComponent={<View style={styles.top} />}
             ListEmptyComponent={
               <Text color="textMuted" style={styles.empty}>
                 {stream.error != null ? errorMessage(stream.error, t) : t('conversation.loading')}
@@ -142,8 +129,9 @@ export function ConversationScreen({
             }
             contentContainerStyle={styles.content}
           />
+          {stream.loadingOlder ? <ActivityIndicator color={colors.accent} style={styles.loader} /> : null}
           {unseen ? (
-            <Pressable onPress={jumpToEnd} style={styles.unseen}>
+            <Pressable accessibilityRole="button" onPress={jumpToEnd} style={styles.unseen}>
               <Text size="xs" weight="bold" color="background">
                 {t('conversation.newMessages')}
               </Text>
@@ -172,7 +160,7 @@ const styles = StyleSheet.create({
   // In wide panes (iPad) the content is centered in a column; in narrow panes `maxWidth` is never
   // reached and the column takes up 100% of the width, same as before.
   content: { paddingBottom: space.lg, width: '100%', maxWidth: maxContentWidth, alignSelf: 'center' },
-  loader: { padding: space.md },
+  loader: { position: 'absolute', top: space.sm, alignSelf: 'center', pointerEvents: 'none' },
   top: { height: space.sm },
   empty: { padding: space.xl, textAlign: 'center' },
   unseen: {

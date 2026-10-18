@@ -8,6 +8,7 @@ import { colors, space } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
 import { SmartComposer } from '@/features/autocomplete/SmartComposer'
 import { ConversationScreen } from '@/features/conversation/ConversationScreen'
+import { setFollow, useFollowStore } from '@/features/conversation/follow-store'
 import { setKeyBarVisible, useKeyBarStore } from '@/features/conversation/key-bar-store'
 import { type SessionMenuAction, sessionMenu } from '@/features/conversation/session-menu'
 import { usePrompt } from '@/features/conversation/use-prompt'
@@ -29,6 +30,7 @@ export default function SessionRoute() {
   const prompt = usePrompt(id)
   const controllable = session?.controllable ?? false
   const keyBarVisible = useKeyBarStore((s) => s.visible)
+  const following = useFollowStore((s) => s.follow)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const title = session?.title || t('common.session')
@@ -37,11 +39,12 @@ export default function SessionRoute() {
     Keyboard.dismiss()
     setDetailsOpen(true)
   }
-  const menu = sessionMenu({ controllable, keyBarVisible }, t)
+  const menu = sessionMenu({ controllable, keyBarVisible, following }, t)
   const actions: Record<SessionMenuAction, () => void> = {
     terminal: () => router.push({ pathname: '/session/[id]/terminal', params: { id } }),
     toggleKeyBar: () => void setKeyBarVisible(!keyBarVisible),
     history: () => setHistoryOpen(true),
+    toggleFollow: () => void setFollow(!following),
   }
 
   return (
