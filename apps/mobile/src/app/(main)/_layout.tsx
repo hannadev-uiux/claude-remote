@@ -11,10 +11,11 @@ import { useLiveStatus } from '@/features/live-status/use-live-status'
 import { selectPendingCounts, usePermissionsStore } from '@/features/permissions/store'
 import { usePush } from '@/features/push/use-push'
 import { extractSessionIdFromPathname } from '@/features/sessions/active-session'
+import { ListTitle } from '@/features/sessions/components/ListTitle'
 import { SessionListActions } from '@/features/sessions/components/SessionListActions'
 import { SessionsScreen } from '@/features/sessions/SessionsScreen'
 import { useDaemonSync } from '@/features/sync/use-daemon-sync'
-import { MasterDetailLayout, stackScreenOptions, Text } from '@/ui'
+import { MasterDetailLayout, stackScreenOptions } from '@/ui'
 
 /** Cmd+N, Cmd+, and Esc outside a text field (closes the detail pane). */
 function useShellKeyCommands(widthClass: WidthClass) {
@@ -63,9 +64,7 @@ export default function MainLayout() {
         widthClass === 'regular' ? (
           <>
             <View style={styles.sidebarHeader}>
-              <Text weight="bold" size="lg">
-                Remote Harness
-              </Text>
+              <ListTitle />
               <SessionListActions />
             </View>
             <SessionsScreen pendingBySession={pending} selectedSessionId={selectedSessionId} interactive />
@@ -74,7 +73,7 @@ export default function MainLayout() {
       }
     >
       <Stack screenOptions={stackScreenOptions(theme)}>
-        <Stack.Screen name="index" options={{ title: 'Remote Harness' }} />
+        <Stack.Screen name="index" options={{ headerTitle: () => <ListTitle /> }} />
         <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
         <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
         <Stack.Screen name="session/[id]/index" options={{ title: '' }} />
