@@ -1,6 +1,6 @@
 {
   "name": "@remote-harness/mobile",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
