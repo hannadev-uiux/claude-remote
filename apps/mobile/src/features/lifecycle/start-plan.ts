@@ -1,6 +1,7 @@
 import { DaemonRequestError } from '../../core/connection/daemon-client'
 import { errorMessage } from '../../core/connection/error-message'
 import type { TFunction } from '../../core/i18n/create'
+import { agentLabel } from '../sessions/agent'
 
 export type StartPlan = { action: 'launch'; worktree: boolean } | { action: 'confirm' }
 
@@ -48,7 +49,12 @@ export function startErrorMessage(error: unknown, t: TFunction): string {
     invalid_cwd: t('newSession.errors.invalidCwd'),
     not_found: t('newSession.errors.profileNotFound'),
     ...(error instanceof DaemonRequestError
-      ? { internal: t('newSession.errors.launchFailed', { reason: error.message }) }
+      ? {
+          internal: t('newSession.errors.launchFailed', {
+            agent: agentLabel(null, t),
+            reason: error.message,
+          }),
+        }
       : {}),
   })
 }

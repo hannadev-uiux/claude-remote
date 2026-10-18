@@ -59,7 +59,7 @@ describe('startErrorMessage', () => {
     expect(startErrorMessage(new DaemonRequestError('invalid_cwd', 'x'), en)).toMatch(/outside your home/)
     expect(startErrorMessage(new DaemonRequestError('not_found', 'x'), en)).toMatch(/profile/)
     expect(startErrorMessage(new DaemonRequestError('internal', 'Claude Code exited'), en)).toBe(
-      'Could not open Claude Code in tmux: Claude Code exited',
+      'Could not open the agent in tmux: Claude Code exited',
     )
     expect(startErrorMessage(new DaemonRequestError('timeout', 'x'), en)).toBe('The daemon did not respond.')
   })

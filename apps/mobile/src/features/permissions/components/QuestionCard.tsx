@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, ScrollView, TextInput, View } from 'react-native'
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
+import { agentLabel } from '@/features/sessions/agent'
 import { Button, Text } from '@/ui'
 import {
   buildAnswers,
@@ -36,7 +37,7 @@ export function QuestionCard({ questions, title, busy, onAnswer, onDecline }: Pr
       <View style={styles.header}>
         <MessageCircleQuestionMark size={16} color={colors.accentText} />
         <Text weight="bold" color="accentText" style={styles.flex} numberOfLines={2}>
-          {title ?? t('permissions.question.title')}
+          {title ?? t('permissions.question.title', { agent: agentLabel(null, t, { sentence: true }) })}
         </Text>
       </View>
       <ScrollView style={styles.body} nestedScrollEnabled keyboardShouldPersistTaps="handled">

@@ -6,6 +6,7 @@ import { Alert, Modal, Pressable, View } from 'react-native'
 import { useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
 import { makeStyles, radius, space, useTheme } from '@/core/theme'
+import { agentLabel } from '@/features/sessions/agent'
 import { Button, Text } from '@/ui'
 import { SELECTABLE_MODES } from './modes'
 
@@ -46,7 +47,8 @@ export function ModeSelector({
   const choose = (target: SelectableMode) => {
     if (target === mode) return setOpen(false)
     if (target !== 'auto') return void apply(target)
-    Alert.alert(t('mode.autoConfirmTitle'), t('mode.autoConfirmBody'), [
+    const agent = agentLabel(null, t, { sentence: true })
+    Alert.alert(t('mode.autoConfirmTitle'), t('mode.autoConfirmBody', { agent }), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('mode.autoConfirm'), style: 'destructive', onPress: () => void apply('auto') },
     ])

@@ -12,3 +12,11 @@ export const AGENT_COLORS: Record<AgentId, string> = {
   kimi: '#5B9BF5',
   qwen: '#8C6CF5',
 }
+
+/** Display names (product names, not translated). */
+export const AGENT_NAMES: Record<AgentId, string> = {
+  claude: 'Claude Code',
+  codex: 'Codex',
+  kimi: 'Kimi',
+  qwen: 'Qwen',
+}

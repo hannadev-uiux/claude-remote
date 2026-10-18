@@ -5,7 +5,7 @@
  */
 export const enUS = {
   cli: {
-    description: 'Remote Harness daemon: control Claude Code sessions in tmux from your phone',
+    description: 'Remote Harness daemon: follow and drive your coding agents from your phone',
     help: 'display help for command',
     version: 'output the version number',
     buildMissing: 'Build not found: run `pnpm --filter @remote-harness/daemon build`.',
@@ -197,7 +197,7 @@ export const enUS = {
     welcome: {
       title: 'Welcome to Remote Harness!',
       intro1: (machine: string) => `Let's get this ${machine} ready so you can follow and control`,
-      intro2: 'Claude Code from your phone. It takes about 2 minutes.',
+      intro2: 'your coding agents from your phone. It takes about 2 minutes.',
       footer: (version: string) => `v${version} · ↑/↓ to choose · Enter to confirm · Ctrl+C to quit`,
     },
     steps: {
@@ -412,7 +412,7 @@ export const enUS = {
     sessionDone: 'Session finished',
     sessionWaiting: 'Session waiting for you',
     permissionPending: 'Permission pending',
-    questionPending: 'Claude is waiting for your answer',
+    questionPending: 'The agent is waiting for your answer',
     planPending: 'Plan ready for review',
     testTitle: 'Test notification',
     testBody: (host: string) => `Notifications from ${host} are working`,

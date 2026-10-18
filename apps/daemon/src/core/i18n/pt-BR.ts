@@ -2,7 +2,7 @@ import type { Messages } from './en-US.ts'
 
 export const ptBR = {
   cli: {
-    description: 'Daemon do Remote Harness: controla sessões do Claude Code no tmux pelo celular',
+    description: 'Daemon do Remote Harness: acompanhe e conduza seus agentes de código pelo celular',
     help: 'mostra a ajuda do comando',
     version: 'mostra a versão',
     buildMissing: 'Build não encontrado: rode `pnpm --filter @remote-harness/daemon build`.',
@@ -199,7 +199,7 @@ export const ptBR = {
     welcome: {
       title: 'Boas-vindas ao Remote Harness!',
       intro1: (machine: string) => `Vamos preparar este ${machine} para você acompanhar e controlar`,
-      intro2: 'o Claude Code pelo celular. Leva uns 2 minutos.',
+      intro2: 'seus agentes de código pelo celular. Leva uns 2 minutos.',
       footer: (version: string) => `v${version} · ↑/↓ para escolher · Enter para confirmar · Ctrl+C sai`,
     },
     steps: {
@@ -417,7 +417,7 @@ export const ptBR = {
     sessionDone: 'Sessão concluída',
     sessionWaiting: 'Sessão aguardando você',
     permissionPending: 'Permissão pendente',
-    questionPending: 'O Claude está esperando sua resposta',
+    questionPending: 'O agente está esperando sua resposta',
     planPending: 'Plano pronto para revisão',
     testTitle: 'Notificação de teste',
     testBody: (host: string) => `As notificações de ${host} estão funcionando`,

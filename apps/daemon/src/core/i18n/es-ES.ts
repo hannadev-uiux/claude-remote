@@ -2,7 +2,7 @@ import type { Messages } from './en-US.ts'
 
 export const esES = {
   cli: {
-    description: 'Daemon de Remote Harness: controla las sesiones de Claude Code en tmux desde el móvil',
+    description: 'Daemon de Remote Harness: sigue y dirige tus agentes de código desde el móvil',
     help: 'muestra la ayuda del comando',
     version: 'muestra la versión',
     buildMissing: 'No se encontró el build: ejecuta `pnpm --filter @remote-harness/daemon build`.',
@@ -200,7 +200,7 @@ export const esES = {
     welcome: {
       title: '¡Te damos la bienvenida a Remote Harness!',
       intro1: (machine: string) => `Vamos a preparar este ${machine} para que sigas y controles`,
-      intro2: 'Claude Code desde el móvil. Tarda unos 2 minutos.',
+      intro2: 'tus agentes de código desde el móvil. Tarda unos 2 minutos.',
       footer: (version: string) => `v${version} · ↑/↓ para elegir · Enter para confirmar · Ctrl+C sale`,
     },
     steps: {
@@ -416,7 +416,7 @@ export const esES = {
     sessionDone: 'Sesión terminada',
     sessionWaiting: 'Sesión esperándote',
     permissionPending: 'Permiso pendiente',
-    questionPending: 'Claude está esperando tu respuesta',
+    questionPending: 'El agente está esperando tu respuesta',
     planPending: 'Plan listo para revisar',
     testTitle: 'Notificación de prueba',
     testBody: (host: string) => `Las notificaciones de ${host} funcionan`,

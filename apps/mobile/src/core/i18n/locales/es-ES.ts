@@ -8,6 +8,10 @@ const esES = {
     session: 'Sesión',
     readOnly: 'solo lectura',
   },
+  agents: {
+    generic: 'el agente',
+    genericSentence: 'El agente',
+  },
   nav: {
     pair: 'Vincular',
     setupGuide: 'Primera configuración',
@@ -72,7 +76,7 @@ const esES = {
   setupGuide: {
     title: 'Configurar el ordenador',
     intro:
-      'Cuatro pasos, unos 5 minutos. Necesitarás el ordenador en el que se ejecuta Claude Code (macOS, Linux o Windows con WSL).',
+      'Cuatro pasos, unos 5 minutos. Necesitarás el ordenador en el que se ejecuta tu agente de código (macOS, Linux o Windows con WSL).',
     help: 'Dudas o problemas: {{url}}',
     steps: {
       tailscalePhone: {
@@ -110,7 +114,7 @@ const esES = {
     running: 'ejecutando…',
     showMore: 'Mostrar más',
     tabs: { output: 'Salida', input: 'Entrada', json: 'JSON' },
-    placeholder: 'mensaje para Claude… (@ archivos, / comandos)',
+    placeholder: 'mensaje para {{agent}}… (@ archivos, / comandos)',
     placeholderReadOnly: 'sesión de solo lectura',
     confirmCtrlC: '¿Enviar Ctrl+C a la sesión?',
     showSpecialKeys: 'Mostrar teclas especiales',
@@ -284,7 +288,7 @@ const esES = {
       confirm: 'Guardar y permitir',
     },
     question: {
-      title: 'Claude tiene una pregunta',
+      title: '{{agent}} tiene una pregunta',
       multi: 'Elige una o más',
       other: 'Otra…',
       answer: 'Tu respuesta…',
@@ -412,7 +416,7 @@ const esES = {
     errors: {
       invalidCwd: 'Directorio no encontrado o fuera de tu carpeta personal.',
       profileNotFound: 'Este perfil ya no existe en el ordenador. Elige otro.',
-      launchFailed: 'No se pudo abrir Claude Code en tmux: {{reason}}',
+      launchFailed: 'No se pudo abrir {{agent}} en tmux: {{reason}}',
     },
   },
   resume: {
@@ -429,7 +433,7 @@ const esES = {
     changeFailed: 'No se ha podido cambiar el modo',
     autoConfirmTitle: '¿Activar el modo auto?',
     autoConfirmBody:
-      'Claude decidirá por su cuenta qué acciones ejecutar, sin pedir aprobación, mientras nadie mira el ordenador.',
+      '{{agent}} decidirá por su cuenta qué acciones ejecutar, sin pedir aprobación, mientras nadie mira el ordenador.',
     autoConfirm: 'Activar auto',
     labels: {
       default: 'predeterminado',
