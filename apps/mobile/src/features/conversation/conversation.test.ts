@@ -14,6 +14,7 @@ const e = {
     ...base,
     kind: 'user',
     text,
+    images: [],
     cursor: c,
     index: 0,
     uuid: `u${c}`,
@@ -37,6 +38,7 @@ const e = {
     content: 'ok',
     isError: false,
     truncated: false,
+    images: [],
     cursor: c,
     index: 0,
     uuid: `r${c}`,
@@ -45,6 +47,12 @@ const e = {
 }
 
 describe('timeline', () => {
+  test('user items carry their images', () => {
+    const ref = { id: '0.0', mediaType: 'image/png', bytes: 70 }
+    const user = { ...e.user(0, ''), images: [ref] } as TranscriptEntry
+    expect(buildTimeline([user])).toEqual([{ type: 'user', key: 'u0:0', text: '', images: [ref] }])
+  })
+
   test('pairs tool calls with results', () => {
     const items = buildTimeline([e.user(0, 'oi'), e.use(1, 'a'), e.result(2, 'a'), e.result(3, 'orphan')])
     expect(items.map((i) => i.type)).toEqual(['user', 'tool', 'tool'])

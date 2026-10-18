@@ -1,10 +1,13 @@
 import { appendFile, copyFile, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { ServerMessage } from '@remote-harness/protocol'
+import { MAX_TRANSCRIPT_IMAGE_BYTES, type ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import {
+  base64Bytes,
+  findImage,
   MAX_TOOL_RESULT_CHARS,
+  parseImageId,
   parseMetaLine,
   parseTranscriptLine,
 } from '../src/features/transcript/parser.ts'
@@ -14,6 +17,7 @@ import { fakeConnection, useTempHome } from './helpers.ts'
 
 const home = useTempHome()
 const fixture = join(import.meta.dirname, 'fixtures', 'session.jsonl')
+const imagesFixture = join(import.meta.dirname, 'fixtures', 'images.jsonl')
 
 async function fixtureLines(): Promise<string[]> {
   return (await readFile(fixture, 'utf8')).split('\n').filter(Boolean)
@@ -42,6 +46,7 @@ describe('parser', () => {
     expect(parseTranscriptLine(lines[3]!, 3)[0]).toEqual({
       kind: 'user',
       text: 'Leia @src/app.ts e rode os testes',
+      images: [],
       cursor: 3,
       index: 0,
       uuid: 'u1',
@@ -94,6 +99,60 @@ describe('parser', () => {
     })
     expect(parseMetaLine('{"type":"custom-title","customTitle":"T"}')).toEqual({ customTitle: 'T' })
     expect(parseMetaLine('{"type":"user"}')).toBeNull()
+  })
+})
+
+describe('images', () => {
+  async function imageLines(): Promise<string[]> {
+    return (await readFile(imagesFixture, 'utf8')).split('\n').filter(Boolean)
+  }
+
+  test('prompt images go with the prompt text, tool images with the result, no placeholder text', async () => {
+    const lines = await imageLines()
+    const entries = lines.flatMap((line, i) => parseTranscriptLine(line, i))
+    expect(entries.map((e) => e.kind)).toEqual(['user', 'tool_use', 'tool_result', 'user', 'user'])
+    expect(entries[0]).toMatchObject({
+      kind: 'user',
+      text: 'what is wrong here?',
+      images: [{ id: '0.0', mediaType: 'image/png', bytes: 70 }],
+    })
+    expect(entries[2]).toMatchObject({
+      kind: 'tool_result',
+      toolUseId: 't1',
+      content: 'Read image (1x1)',
+      images: [{ id: '2.0', mediaType: 'image/jpeg' }],
+    })
+    // Image-only prompt: empty text.
+    expect(entries[3]).toMatchObject({ kind: 'user', text: '', images: [{ id: '3.0' }] })
+    // A `url` image keeps its number (4.0) but has no ref.
+    expect(entries[4]).toMatchObject({ kind: 'user', text: 'two images', images: [{ id: '4.1' }] })
+    expect(JSON.stringify(entries)).not.toContain('[imagem]')
+  })
+
+  test('entries without images have an empty list', async () => {
+    const entries = (await fixtureLines()).flatMap((line, i) => parseTranscriptLine(line, i))
+    for (const e of entries) if (e.kind === 'user' || e.kind === 'tool_result') expect(e.images).toEqual([])
+  })
+
+  test('findImage walks the same order as the refs', async () => {
+    const lines = await imageLines()
+    expect(findImage(lines[0]!, 0)).toMatchObject({ mediaType: 'image/png', bytes: 70 })
+    expect(findImage(lines[2]!, 0)).toMatchObject({ mediaType: 'image/jpeg' })
+    expect(findImage(lines[4]!, 0)).toBeNull()
+    expect(findImage(lines[4]!, 1)?.mediaType).toBe('image/png')
+    expect(findImage(lines[0]!, 1)).toBeNull()
+    expect(findImage(lines[1]!, 0)).toBeNull()
+    expect(findImage('not json', 0)).toBeNull()
+  })
+
+  test('image ids and sizes', () => {
+    expect(parseImageId('12.3')).toEqual({ cursor: 12, index: 3 })
+    expect(parseImageId('12')).toBeNull()
+    expect(parseImageId('a.1')).toBeNull()
+    expect(parseImageId('-1.0')).toBeNull()
+    expect(base64Bytes('AAAA')).toBe(3)
+    expect(base64Bytes('AAA=')).toBe(2)
+    expect(base64Bytes('AA==')).toBe(1)
   })
 })
 
@@ -199,6 +258,79 @@ describe('TranscriptService', () => {
     await waitFor(() => seen.length > 0)
     expect(seen).toEqual(['s:thinking'])
     again()
+  })
+
+  test('serves an image of the transcript and rejects unknown ones', async () => {
+    service = new TranscriptService(silentLogger)
+    const target = { sessionId: 's', path: imagesFixture }
+    const image = await service.image(target, '3.0')
+    expect(image).toMatchObject({ imageId: '3.0', mediaType: 'image/png' })
+    expect(base64Bytes(image.data)).toBe(70)
+    await expect(service.image(target, '3.1')).rejects.toMatchObject({ code: 'not_found' })
+    await expect(service.image(target, '99.0')).rejects.toMatchObject({ code: 'not_found' })
+    await expect(service.image(target, 'nope')).rejects.toMatchObject({ code: 'not_found' })
+  })
+
+  test('serving an image does not swallow lines a live stream has not pumped yet', async () => {
+    const path = join(home.dir(), 'live.jsonl')
+    await copyFile(imagesFixture, path)
+    service = new TranscriptService(silentLogger)
+    const conn = fakeConnection()
+    await service.subscribe({ sessionId: 's', path }, conn)
+    await appendFile(
+      path,
+      `${JSON.stringify({ type: 'assistant', uuid: 'n', message: { content: [{ type: 'text', text: 'new' }] } })}\n`,
+    )
+    await service.image({ sessionId: 's', path }, '3.0')
+    await service.history({ sessionId: 's', path }, 5, 2)
+    await waitFor(() => conn.sent.some((m) => m.type === 'transcript.entry'))
+    expect(conn.sent).toContainEqual(
+      expect.objectContaining({
+        type: 'transcript.entry',
+        cursor: 5,
+        entry: expect.objectContaining({ text: 'new' }),
+      }),
+    )
+  })
+
+  test('tool images next to a result without prompt text go to the result', () => {
+    const png = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'AAAA' } }
+    const line = {
+      type: 'user',
+      uuid: 'x',
+      message: { content: [{ type: 'tool_result', tool_use_id: 't', content: 'done' }, png] },
+    }
+    expect(parseTranscriptLine(JSON.stringify(line), 7)).toMatchObject([
+      { kind: 'tool_result', content: 'done', images: [{ id: '7.0' }] },
+    ])
+  })
+
+  test('a tool result nested in a tool result is not numbered (same walk as findImage)', () => {
+    const png = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'AAAA' } }
+    const nested = { type: 'tool_result', tool_use_id: 'n', content: [png] }
+    const line = JSON.stringify({
+      type: 'user',
+      uuid: 'y',
+      message: { content: [{ type: 'tool_result', tool_use_id: 't', content: [nested, png] }] },
+    })
+    expect(parseTranscriptLine(line, 1)).toMatchObject([{ kind: 'tool_result', images: [{ id: '1.0' }] }])
+    expect(findImage(line, 0)).toMatchObject({ mediaType: 'image/png' })
+    expect(findImage(line, 1)).toBeNull()
+  })
+
+  test('refuses images over the size limit', async () => {
+    const path = join(home.dir(), 'big.jsonl')
+    const data = 'A'.repeat(Math.ceil((MAX_TRANSCRIPT_IMAGE_BYTES + 3) / 3) * 4)
+    const line = {
+      type: 'user',
+      uuid: 'b',
+      message: { content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data } }] },
+    }
+    await writeFile(path, `${JSON.stringify(line)}\n`)
+    service = new TranscriptService(silentLogger)
+    const [entry] = parseTranscriptLine(JSON.stringify(line), 0)
+    expect(entry?.kind === 'user' && entry.images[0]?.bytes).toBeGreaterThan(MAX_TRANSCRIPT_IMAGE_BYTES)
+    await expect(service.image({ sessionId: 's', path }, '0.0')).rejects.toMatchObject({ code: 'too_large' })
   })
 
   test('history works without a subscription', async () => {

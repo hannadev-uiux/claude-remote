@@ -73,6 +73,23 @@ export function checkoutPeers<T extends Pick<Session, 'id' | 'controllable' | 's
 export const CheckoutPeerSchema = z.object({ id: z.string(), title: z.string() })
 export type CheckoutPeer = z.infer<typeof CheckoutPeerSchema>
 
+/**
+ * An image in the transcript, without its data (fetched with `transcript.image`). `id` locates it in
+ * the transcript (opaque to the app); `bytes` is the decoded size, so oversized images can be skipped.
+ */
+export const ImageRefSchema = z.object({
+  id: z.string().min(1),
+  mediaType: z.string(),
+  bytes: z.number().int().nonnegative(),
+})
+export type ImageRef = z.infer<typeof ImageRefSchema>
+
+/** Largest transcript image the daemon sends to the app (decoded bytes; the Claude API limit). */
+export const MAX_TRANSCRIPT_IMAGE_BYTES = 5 * 1024 * 1024
+
+/** Absent in older daemons. */
+const images = z.array(ImageRefSchema).default([])
+
 const entryBase = {
   /** Stable unique key: `<uuid>:<index>`. */
   key: z.string(),
@@ -86,7 +103,8 @@ const entryBase = {
 }
 
 export const TranscriptEntrySchema = z.discriminatedUnion('kind', [
-  z.object({ ...entryBase, kind: z.literal('user'), text: z.string() }),
+  /** `text` is empty when the prompt only has images. */
+  z.object({ ...entryBase, kind: z.literal('user'), text: z.string(), images }),
   z.object({ ...entryBase, kind: z.literal('assistant_text'), text: z.string() }),
   z.object({ ...entryBase, kind: z.literal('thinking'), text: z.string() }),
   z.object({
@@ -103,6 +121,7 @@ export const TranscriptEntrySchema = z.discriminatedUnion('kind', [
     content: z.string(),
     isError: z.boolean(),
     truncated: z.boolean(),
+    images,
   }),
   z.object({
     ...entryBase,
@@ -238,6 +257,13 @@ export type FileItem = z.infer<typeof FileItemSchema>
 
 export const ProjectItemSchema = z.object({ cwd: z.string(), lastUsedAt: z.string() })
 export type ProjectItem = z.infer<typeof ProjectItemSchema>
+
+/** A subdirectory listed by `directories.list`; `git` when it holds a `.git` directory or file. */
+export const DirectoryItemSchema = z.object({ name: z.string(), path: z.string(), git: z.boolean() })
+export type DirectoryItem = z.infer<typeof DirectoryItemSchema>
+/** Default and maximum number of items in `directories.results`. */
+export const DIRECTORY_LIST_LIMIT = 200
+export const MAX_DIRECTORY_LIST_LIMIT = 500
 
 export const MuteStateSchema = z.object({
   profiles: z.array(z.string()).default([]),

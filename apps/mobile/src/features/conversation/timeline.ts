@@ -1,10 +1,10 @@
-import type { TranscriptEntry } from '@remote-harness/protocol'
+import type { ImageRef, TranscriptEntry } from '@remote-harness/protocol'
 import type { TFunction } from '../../core/i18n/create'
 
 type Of<K extends TranscriptEntry['kind']> = Extract<TranscriptEntry, { kind: K }>
 
 export type TimelineItem =
-  | { type: 'user'; key: string; text: string }
+  | { type: 'user'; key: string; text: string; images: ImageRef[] }
   | { type: 'assistant'; key: string; text: string }
   | { type: 'thinking'; key: string; text: string }
   | { type: 'tool'; key: string; use: Of<'tool_use'> | null; result: Of<'tool_result'> | null }
@@ -23,7 +23,7 @@ export function buildTimeline(entries: readonly TranscriptEntry[]): TimelineItem
   for (const entry of entries) {
     switch (entry.kind) {
       case 'user':
-        items.push({ type: 'user', key: entry.key, text: entry.text })
+        items.push({ type: 'user', key: entry.key, text: entry.text, images: entry.images })
         break
       case 'assistant_text':
         items.push({ type: 'assistant', key: entry.key, text: entry.text })

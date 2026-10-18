@@ -115,6 +115,9 @@ const enUS = {
     placeholder: 'message Claude… (@ files, / commands)',
     placeholderReadOnly: 'read-only session',
     confirmCtrlC: 'Send Ctrl+C to the session?',
+    showSpecialKeys: 'Show special keys',
+    hideSpecialKeys: 'Hide special keys',
+    hideKeyboard: 'Hide keyboard',
     moreLines_one: '… +{{count}} line',
     moreLines_other: '… +{{count}} lines',
     errors: {
@@ -128,6 +131,8 @@ const enUS = {
     showKeys: 'Show keyboard shortcuts',
     hideKeys: 'Hide keyboard shortcuts',
     history: 'Conversation history',
+    follow: 'Follow output',
+    stopFollowing: 'Stop following output',
     readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
   },
   sessionDetails: {
@@ -281,6 +286,19 @@ const enUS = {
       plugin: 'plugin',
     },
   },
+  images: {
+    loading: 'loading image…',
+    failed: "Couldn't load the image",
+    retry: "Couldn't load the image. Tap to try again",
+    tooLarge: 'Image too large to preview ({{size}})',
+    tooLargeShort: 'Image too large to preview',
+    open: 'Image {{index}} of {{count}}. Opens full screen',
+    viewer: 'Image {{index}} of {{count}}',
+    zoomHint: 'Pinch or double tap to zoom',
+    close: 'Close image',
+    count_one: '{{count}} image',
+    count_other: '{{count}} images',
+  },
   attachments: {
     attach: 'Attach photos',
     chooseTitle: 'Attach photos',
@@ -330,6 +348,18 @@ const enUS = {
     confirmBody: 'The sessions may edit the same files and switch the branch under each other.',
     confirmStart: 'Start anyway',
     confirmWorktree: 'Use a worktree',
+    browse: 'Browse',
+    picker: {
+      title: 'Choose a folder',
+      up: 'Parent folder',
+      showHidden: 'Show hidden folders',
+      choose: 'Choose this folder',
+      empty: 'No folders here.',
+      truncated:
+        'Showing the first {{count}} folders. To reach another one, type its path in the directory field.',
+      error: 'Could not open this folder.',
+      back: 'Go back',
+    },
     errors: {
       invalidCwd: 'Directory not found or outside your home folder.',
       profileNotFound: 'This profile no longer exists on the computer. Pick another one.',

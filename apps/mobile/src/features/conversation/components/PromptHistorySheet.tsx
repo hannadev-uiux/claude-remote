@@ -23,7 +23,10 @@ export function PromptHistorySheet({
 }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
-  const prompts = useMemo(() => promptHistory(stream.entries), [stream.entries])
+  const prompts = useMemo(
+    () => promptHistory(stream.entries, (count) => t('images.count', { count })),
+    [stream.entries, t],
+  )
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>

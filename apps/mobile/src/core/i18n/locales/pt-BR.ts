@@ -113,6 +113,9 @@ const ptBR = {
     placeholder: 'mensagem para o Claude… (@ arquivos, / comandos)',
     placeholderReadOnly: 'sessão somente leitura',
     confirmCtrlC: 'Enviar Ctrl+C para a sessão?',
+    showSpecialKeys: 'Mostrar teclas especiais',
+    hideSpecialKeys: 'Ocultar teclas especiais',
+    hideKeyboard: 'Ocultar teclado',
     moreLines_one: '… +{{count}} linha',
     moreLines_other: '… +{{count}} linhas',
     errors: {
@@ -126,6 +129,8 @@ const ptBR = {
     showKeys: 'Mostrar atalhos de teclado',
     hideKeys: 'Ocultar atalhos de teclado',
     history: 'Histórico da conversa',
+    follow: 'Acompanhar a saída',
+    stopFollowing: 'Parar de acompanhar a saída',
     readOnly: 'Sessão somente leitura (sem painel tmux): o terminal e os atalhos não estão disponíveis.',
   },
   sessionDetails: {
@@ -283,6 +288,19 @@ const ptBR = {
       plugin: 'plugin',
     },
   },
+  images: {
+    loading: 'carregando imagem…',
+    failed: 'Não foi possível carregar a imagem',
+    retry: 'Não foi possível carregar a imagem. Toque para tentar de novo',
+    tooLarge: 'Imagem grande demais para pré-visualizar ({{size}})',
+    tooLargeShort: 'Imagem grande demais para pré-visualizar',
+    open: 'Imagem {{index}} de {{count}}. Abre em tela cheia',
+    viewer: 'Imagem {{index}} de {{count}}',
+    zoomHint: 'Faça pinça ou toque duas vezes para ampliar',
+    close: 'Fechar imagem',
+    count_one: '{{count}} imagem',
+    count_other: '{{count}} imagens',
+  },
   attachments: {
     attach: 'Anexar fotos',
     chooseTitle: 'Anexar fotos',
@@ -331,6 +349,18 @@ const ptBR = {
     confirmBody: 'As sessões podem editar os mesmos arquivos e trocar a branch uma da outra.',
     confirmStart: 'Iniciar mesmo assim',
     confirmWorktree: 'Usar uma worktree',
+    browse: 'Procurar',
+    picker: {
+      title: 'Escolha uma pasta',
+      up: 'Pasta acima',
+      showHidden: 'Mostrar pastas ocultas',
+      choose: 'Escolher esta pasta',
+      empty: 'Nenhuma pasta aqui.',
+      truncated:
+        'Mostrando as primeiras {{count}} pastas. Para chegar a outra, digite o caminho no campo de diretório.',
+      error: 'Não foi possível abrir esta pasta.',
+      back: 'Voltar',
+    },
     errors: {
       invalidCwd: 'Diretório não encontrado ou fora da sua pasta pessoal.',
       profileNotFound: 'Este perfil não existe mais no computador. Escolha outro.',

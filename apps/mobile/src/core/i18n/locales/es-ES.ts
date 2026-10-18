@@ -113,6 +113,9 @@ const esES = {
     placeholder: 'mensaje para Claude… (@ archivos, / comandos)',
     placeholderReadOnly: 'sesión de solo lectura',
     confirmCtrlC: '¿Enviar Ctrl+C a la sesión?',
+    showSpecialKeys: 'Mostrar teclas especiales',
+    hideSpecialKeys: 'Ocultar teclas especiales',
+    hideKeyboard: 'Ocultar teclado',
     moreLines_one: '… +{{count}} línea',
     moreLines_other: '… +{{count}} líneas',
     errors: {
@@ -126,6 +129,8 @@ const esES = {
     showKeys: 'Mostrar atajos de teclado',
     hideKeys: 'Ocultar atajos de teclado',
     history: 'Historial de la conversación',
+    follow: 'Seguir la salida',
+    stopFollowing: 'Dejar de seguir la salida',
     readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
   },
   sessionDetails: {
@@ -282,6 +287,19 @@ const esES = {
       plugin: 'plugin',
     },
   },
+  images: {
+    loading: 'cargando imagen…',
+    failed: 'No se pudo cargar la imagen',
+    retry: 'No se pudo cargar la imagen. Toca para intentarlo de nuevo',
+    tooLarge: 'Imagen demasiado grande para la vista previa ({{size}})',
+    tooLargeShort: 'Imagen demasiado grande para la vista previa',
+    open: 'Imagen {{index}} de {{count}}. Se abre a pantalla completa',
+    viewer: 'Imagen {{index}} de {{count}}',
+    zoomHint: 'Pellizca o toca dos veces para ampliar',
+    close: 'Cerrar imagen',
+    count_one: '{{count}} imagen',
+    count_other: '{{count}} imágenes',
+  },
   attachments: {
     attach: 'Adjuntar fotos',
     chooseTitle: 'Adjuntar fotos',
@@ -331,6 +349,18 @@ const esES = {
     confirmBody: 'Las sesiones pueden editar los mismos archivos y cambiarse la rama entre sí.',
     confirmStart: 'Crear de todos modos',
     confirmWorktree: 'Usar un worktree',
+    browse: 'Explorar',
+    picker: {
+      title: 'Elige una carpeta',
+      up: 'Carpeta superior',
+      showHidden: 'Mostrar carpetas ocultas',
+      choose: 'Elegir esta carpeta',
+      empty: 'No hay carpetas aquí.',
+      truncated:
+        'Mostrando las primeras {{count}} carpetas. Para llegar a otra, escribe su ruta en el campo de directorio.',
+      error: 'No se pudo abrir esta carpeta.',
+      back: 'Volver',
+    },
     errors: {
       invalidCwd: 'Directorio no encontrado o fuera de tu carpeta personal.',
       profileNotFound: 'Este perfil ya no existe en el ordenador. Elige otro.',

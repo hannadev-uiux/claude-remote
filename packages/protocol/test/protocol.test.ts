@@ -19,6 +19,7 @@ const clientSamples: ClientMessage[] = [
   { type: 'session.input', id: '1', sessionId: 's', text: 'oi\nlinha 2 @src/a.ts' },
   { type: 'session.input', id: '1', sessionId: 's', text: '', attachmentIds: ['a1', 'a2'] },
   { type: 'attachment.upload', id: '1', sessionId: 's', mimeType: 'image/png', data: 'iVBORw0KGgo=' },
+  { type: 'transcript.image', id: '1', sessionId: 's', agentId: 'a', imageId: '12.0' },
   { type: 'session.key', id: '1', sessionId: 's', key: 'Escape' },
   { type: 'session.setMode', id: '1', sessionId: 's', mode: 'plan' },
   {
@@ -64,6 +65,8 @@ const clientSamples: ClientMessage[] = [
   { type: 'files.search', id: '1', sessionId: 's', query: 'src', limit: 20 },
   { type: 'commands.list', id: '1', sessionId: 's' },
   { type: 'projects.list', id: '1', profileId: 'claudin' },
+  { type: 'directories.list', id: '1', path: '~', limit: 200 },
+  { type: 'directories.list', id: '1', path: '~/work', prefix: 'ap', hidden: true, limit: 20 },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'checkout.inspect', id: '1', profileId: 'claudin', cwd: '/tmp' },
@@ -118,6 +121,7 @@ const serverSamples: ServerMessage[] = [
       isSidechain: false,
       kind: 'user',
       text: 'oi',
+      images: [],
     },
   },
   { type: 'transcript.page', replyTo: '1', sessionId: 's', entries: [], hasMore: false, lineCount: 0 },
@@ -176,10 +180,29 @@ const serverSamples: ServerMessage[] = [
     items: [{ name: 'clear', description: '', source: 'builtin', interactive: false }],
   },
   { type: 'projects.results', replyTo: '1', items: [{ cwd: '/tmp', lastUsedAt: 'now' }] },
+  {
+    type: 'directories.results',
+    replyTo: '1',
+    path: '/home/me/work',
+    parent: '/home/me',
+    home: '/home/me',
+    items: [{ name: 'api', path: '/home/me/work/api', git: true }],
+    truncated: false,
+  },
+  {
+    type: 'directories.results',
+    replyTo: '1',
+    path: '/home/me',
+    parent: null,
+    home: '/home/me',
+    items: [],
+    truncated: true,
+  },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
   { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
   { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
+  { type: 'transcript.image', replyTo: '1', imageId: '12.0', mediaType: 'image/png', data: 'iVBORw0KGgo=' },
 ]
 
 describe('client messages', () => {
@@ -283,12 +306,75 @@ describe('client messages', () => {
     const result = parseClientMessage({ type: 'files.search', id: '1', sessionId: 's', query: 'a' })
     expect(result).toMatchObject({ ok: true, value: { limit: 20 } })
   })
+
+  test('caps the directory listing limit', () => {
+    expect(parseClientMessage({ type: 'directories.list', id: '1', path: '~' })).toMatchObject({
+      ok: true,
+      value: { limit: 200 },
+    })
+    expect(parseClientMessage({ type: 'directories.list', id: '1', path: '~', limit: 501 })).toMatchObject({
+      ok: false,
+      error: { code: 'bad_request' },
+    })
+  })
 })
 
 describe('server messages', () => {
   test.each(serverSamples)('parses $type', (msg) => {
     const result = parseServerMessage(JSON.stringify(msg))
     expect(result.ok).toBe(true)
+  })
+
+  test('transcript entries without images (older daemons) get an empty list', () => {
+    const base = { cursor: 1, index: 0, uuid: 'u', key: 'u:0', timestamp: null, isSidechain: false }
+    const result = parseServerMessage({
+      type: 'transcript.page',
+      sessionId: 's',
+      entries: [
+        { ...base, kind: 'user', text: 'hi' },
+        {
+          ...base,
+          index: 1,
+          key: 'u:1',
+          kind: 'tool_result',
+          toolUseId: 't',
+          content: '',
+          isError: false,
+          truncated: false,
+        },
+      ],
+      hasMore: false,
+      lineCount: 2,
+    })
+    expect(result.ok && result.value.type === 'transcript.page' && result.value.entries).toMatchObject([
+      { kind: 'user', images: [] },
+      { kind: 'tool_result', images: [] },
+    ])
+  })
+
+  test('keeps image refs on prompts and tool results', () => {
+    const ref = { id: '3.0', mediaType: 'image/png', bytes: 1024 }
+    const result = parseServerMessage({
+      type: 'transcript.entry',
+      sessionId: 's',
+      cursor: 3,
+      entry: {
+        cursor: 3,
+        index: 0,
+        uuid: 'u',
+        key: 'u:0',
+        timestamp: null,
+        isSidechain: false,
+        kind: 'user',
+        text: '',
+        images: [ref],
+      },
+    })
+    expect(result).toMatchObject({ ok: true, value: { entry: { images: [ref] } } })
+    expect(
+      parseServerMessage({ type: 'transcript.image', replyTo: '1', imageId: '3.0', mediaType: 'image/png' })
+        .ok,
+    ).toBe(false)
   })
 
   test('correlates replies by replyTo', () => {

@@ -1,21 +1,30 @@
+import type { ImageRef } from '@remote-harness/protocol'
 import { ChevronDown, ChevronRight } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { colors, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
+import { ImageStrip } from '../../images/ImageStrip'
 import { systemText } from '../timeline'
 import { Markdown } from './Markdown'
 
-export const UserMessage = memo(function UserMessage({ text }: { text: string }) {
+export const UserMessage = memo(function UserMessage({
+  text,
+  images,
+}: {
+  text: string
+  images: readonly ImageRef[]
+}) {
   return (
     <View style={styles.user}>
       <Text color="accent" weight="bold">
         {'> '}
       </Text>
-      <Text style={styles.flex} selectable>
-        {text}
-      </Text>
+      <View style={styles.flex}>
+        {text ? <Text selectable>{text}</Text> : null}
+        <ImageStrip images={images} />
+      </View>
     </View>
   )
 })

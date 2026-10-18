@@ -7,6 +7,7 @@ function entry(cursor: number): TranscriptEntry {
   return {
     kind: 'user',
     text: `m${cursor}`,
+    images: [],
     cursor,
     index: 0,
     uuid: `u${cursor}`,

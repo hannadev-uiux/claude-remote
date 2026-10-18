@@ -20,6 +20,8 @@ export const colors = {
   infoMuted: '#61AFEF26',
   diffAdd: '#7FB06922',
   diffRemove: '#E06C7522',
+  /** Behind full-screen media. */
+  scrim: '#000000F2',
 } as const
 
 export const fonts = {

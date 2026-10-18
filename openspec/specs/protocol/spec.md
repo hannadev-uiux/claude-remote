@@ -28,7 +28,7 @@ The parser SHALL reject malformed messages by returning an error result, without
 - **THEN** the message is accepted and the extra field is discarded
 
 ### Requirement: Message catalog
-The protocol SHALL define the client messages `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input`, `session.key`, `session.setMode`, `attachment.upload`, `permission.respond`, `permission.answer`, `device.register`, `files.search`, `commands.list`, `projects.list`, `session.start`, `session.resume`, `pane.subscribe`, `pane.unsubscribe`, `settings.mute`, `app.visibility` and `ping`; and the server messages `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `attachment.uploaded`, `ack`, `error` and `pong`.
+The protocol SHALL define the client messages `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input`, `session.key`, `session.setMode`, `attachment.upload`, `permission.respond`, `permission.answer`, `device.register`, `files.search`, `commands.list`, `projects.list`, `directories.list`, `session.start`, `session.resume`, `pane.subscribe`, `pane.unsubscribe`, `settings.mute`, `app.visibility` and `ping`; and the server messages `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `directories.results`, `attachment.uploaded`, `ack`, `error` and `pong`.
 
 #### Scenario: Unknown type
 - **WHEN** a message arrives with a `type` outside the catalog
@@ -55,3 +55,14 @@ The `auth` handshake SHALL include `protocolVersion`; the daemon MUST reject ver
 #### Scenario: Too many attachments
 - **WHEN** `session.input` carries 5 attachment ids
 - **THEN** the parser returns a `bad_request` error
+
+### Requirement: Transcript image messages
+`user` and `tool_result` transcript entries SHALL carry `images`, a list of image refs with `id`, `mediaType` and `bytes`, defaulting to an empty list when absent. The client SHALL be able to send `transcript.image` with `sessionId`, an optional `agentId` and `imageId`, answered with `transcript.image` carrying `imageId`, `mediaType` and base64 `data`. Images larger than `MAX_TRANSCRIPT_IMAGE_BYTES` (5 MB) MUST be answered with `too_large`.
+
+#### Scenario: Entry without images
+- **WHEN** a `transcript.entry` with a `user` entry and no `images` field is validated
+- **THEN** it is valid and `images` is an empty list
+
+#### Scenario: Image request
+- **WHEN** the client sends `transcript.image` with `sessionId` "s1" and `imageId` "12.0"
+- **THEN** the message is valid and the daemon answers `transcript.image` with the image's media type and data
