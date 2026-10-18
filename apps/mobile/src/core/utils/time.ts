@@ -15,6 +15,15 @@ export function relativeTime(iso: string, t: TFunction, now: number = Date.now()
   return t('time.days', { count: days })
 }
 
+/** Elapsed time as `m:ss`, or `h:mm:ss` from one hour on; never negative (live counters). */
+export function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = String(total % 60).padStart(2, '0')
+  return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`
+}
+
 /** `~/workspaces/api` instead of `/Users/me/workspaces/api` when the home prefix is known. */
 export function shortPath(path: string): string {
   return path.replace(/^\/Users\/[^/]+/, '~')

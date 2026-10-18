@@ -21,7 +21,8 @@ import { CloseSessionSheet } from '@/features/sessions/components/CloseSessionSh
 import { SessionDetailsSheet } from '@/features/sessions/components/SessionDetailsSheet'
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
-import { SubagentStrip } from '@/features/subagents/SubagentList'
+import { SubagentsSheet } from '@/features/subagents/SubagentsSheet'
+import { subagentCounts } from '@/features/subagents/sort'
 import { ActionMenu, headerActions, Text } from '@/ui'
 
 export default function SessionRoute() {
@@ -38,15 +39,21 @@ export default function SessionRoute() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
+  const [subagentsOpen, setSubagentsOpen] = useState(false)
+  const subagentStats = subagentCounts(session?.subagents ?? [])
   const title = session?.title || t('common.session')
   // A focused composer would keep the keyboard over the sheet's lower rows.
   const openDetails = () => {
     Keyboard.dismiss()
     setDetailsOpen(true)
   }
-  const menu = sessionMenu({ controllable, keyBarVisible, following }, t)
+  const menu = sessionMenu({ controllable, keyBarVisible, following, subagents: subagentStats }, t)
   const actions: Record<SessionMenuAction, () => void> = {
     terminal: () => router.push({ pathname: '/session/[id]/terminal', params: { id } }),
+    subagents: () => {
+      Keyboard.dismiss()
+      setSubagentsOpen(true)
+    },
     toggleKeyBar: () => void setKeyBarVisible(!keyBarVisible),
     history: () => setHistoryOpen(true),
     toggleFollow: () => void setFollow(!following),
@@ -69,6 +76,7 @@ export default function SessionRoute() {
                   label={t('sessionMenu.moreOptions')}
                   items={menu.items.map((item) => ({ ...item, onPress: actions[item.key] }))}
                   disabledReason={menu.disabledReason}
+                  attention={subagentStats.running > 0}
                 />
               </View>
             ) : null,
@@ -106,6 +114,14 @@ export default function SessionRoute() {
       {session && closeOpen ? (
         <CloseSessionSheet session={session} mode="close" onDone={() => setCloseOpen(false)} />
       ) : null}
+      {session ? (
+        <SubagentsSheet
+          sessionId={id}
+          subagents={session.subagents}
+          visible={subagentsOpen}
+          onClose={() => setSubagentsOpen(false)}
+        />
+      ) : null}
       <ConversationScreen
         sessionId={id}
         onKey={prompt.sendKey}
@@ -137,7 +153,6 @@ export default function SessionRoute() {
                 <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
               </View>
               <StatusBar status={session.status} profileId={session.profileId} />
-              <SubagentStrip sessionId={id} subagents={session.subagents} />
             </>
           ) : null
         }

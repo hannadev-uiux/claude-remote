@@ -84,6 +84,18 @@ describe('sessionMenu', () => {
     expect(menu.disabledReason).toMatch(/read-only/i)
   })
 
+  test('subagents appear after the terminal only when the session has some, with their counts', () => {
+    const base = { controllable: true, keyBarVisible: false, following: false }
+    expect(sessionMenu(base, en).items.map((i) => i.key)).not.toContain('subagents')
+    const quiet = sessionMenu({ ...base, subagents: { count: 3, running: 0 } }, en).items
+    expect(quiet[1]).toEqual({ key: 'subagents', label: 'Subagents (3)', disabled: false })
+    const busy = sessionMenu({ ...base, subagents: { count: 5, running: 2 } }, en).items
+    expect(busy[1]?.label).toBe('Subagents (5 · 2 running)')
+    // Read-only sessions can still browse their subagents.
+    const readOnly = sessionMenu({ ...base, controllable: false, subagents: { count: 1, running: 0 } }, en)
+    expect(readOnly.items.find((i) => i.key === 'subagents')?.disabled).toBe(false)
+  })
+
   test('close is the last item and reads "Close session"', () => {
     const menu = sessionMenu({ controllable: true, keyBarVisible: false, following: false }, en)
     expect(menu.items.at(-1)).toEqual({ key: 'close', label: 'Close session', disabled: false })

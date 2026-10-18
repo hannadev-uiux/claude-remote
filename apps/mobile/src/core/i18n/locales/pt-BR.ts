@@ -142,6 +142,9 @@ const ptBR = {
     stopFollowing: 'Parar de acompanhar a saída',
     readOnly: 'Sessão somente leitura (sem painel tmux): o terminal e os atalhos não estão disponíveis.',
     close: 'Encerrar sessão',
+    /** `n` é um número simples entre parênteses, sem plural. */
+    subagents: 'Subagentes ({{n}})',
+    subagentsRunning: 'Subagentes ({{n}} · {{running}} rodando)',
   },
   sessionActions: {
     close: 'Encerrar sessão',
@@ -566,6 +569,14 @@ const ptBR = {
     },
   },
   subagents: {
+    title: 'Subagentes',
+    summary_one: '{{count}} subagente',
+    summary_other: '{{count}} subagentes',
+    summaryRunning_one: '{{count}} subagente · {{running}} rodando',
+    summaryRunning_other: '{{count}} subagentes · {{running}} rodando',
+    tools_one: '{{count}} ferramenta',
+    tools_other: '{{count}} ferramentas',
+    state: { running: 'rodando', done: 'concluído' },
     running: '· rodando',
     done: '· concluído',
     more_one: '+{{count}} subagente ({{running}} rodando)',

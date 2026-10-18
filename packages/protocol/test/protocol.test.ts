@@ -194,7 +194,15 @@ const serverSamples: ServerMessage[] = [
   {
     type: 'subagent.updated',
     sessionId: 's',
-    subagent: { agentId: 'a', agentType: null, description: null, state: 'running', updatedAt: 'now' },
+    subagent: {
+      agentId: 'a',
+      agentType: null,
+      description: null,
+      state: 'running',
+      updatedAt: 'now',
+      startedAt: null,
+      toolCount: 0,
+    },
   },
   { type: 'files.results', replyTo: '1', query: 'q', items: [{ path: 'src/', kind: 'dir' }] },
   {

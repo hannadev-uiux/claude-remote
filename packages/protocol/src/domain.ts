@@ -31,6 +31,10 @@ export const SubagentInfoSchema = z.object({
   description: z.string().nullable().default(null),
   state: z.enum(['running', 'done']),
   updatedAt: z.string(),
+  /** When the subagent was first seen (`null` from older daemons). */
+  startedAt: z.string().nullable().default(null),
+  /** Tool uses in its transcript so far. */
+  toolCount: z.number().int().nonnegative().default(0),
 })
 export type SubagentInfo = z.infer<typeof SubagentInfoSchema>
 

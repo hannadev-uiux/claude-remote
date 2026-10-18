@@ -142,6 +142,9 @@ const esES = {
     stopFollowing: 'Dejar de seguir la salida',
     readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
     close: 'Cerrar sesión',
+    /** `n` es un número simple entre paréntesis, sin plural. */
+    subagents: 'Subagentes ({{n}})',
+    subagentsRunning: 'Subagentes ({{n}} · {{running}} en marcha)',
   },
   sessionActions: {
     close: 'Cerrar sesión',
@@ -566,6 +569,14 @@ const esES = {
     },
   },
   subagents: {
+    title: 'Subagentes',
+    summary_one: '{{count}} subagente',
+    summary_other: '{{count}} subagentes',
+    summaryRunning_one: '{{count}} subagente · {{running}} en marcha',
+    summaryRunning_other: '{{count}} subagentes · {{running}} en marcha',
+    tools_one: '{{count}} herramienta',
+    tools_other: '{{count}} herramientas',
+    state: { running: 'en marcha', done: 'terminado' },
     running: '· en marcha',
     done: '· terminado',
     more_one: '+{{count}} subagente ({{running}} en marcha)',
