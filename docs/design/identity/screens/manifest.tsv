@@ -1,0 +1,35 @@
+sessions-list	Session list	440	820
+theme-light	Theme: Light	440	820
+theme-dracula	Theme: Dracula	440	820
+theme-mocha	Theme: Catppuccin Mocha	440	820
+theme-latte	Theme: Catppuccin Latte	440	820
+sessions-swipe-actions	Session list: swipe actions and action sheet	440	820
+close-session-worktree	Close session with worktree cleanup	440	820
+conversation-queue	Conversation: Codex session with message queue	440	820
+conversation-permission	Conversation: permission request (agent-neutral)	440	820
+more-options-menu	More options menu with Subagents	440	820
+subagents-sheet	Subagents list	440	820
+new-session	New session: agent, profile, model, directory	440	820
+model-picker	Model picker (OpenRouter profiles)	440	820
+settings	Settings: Machine, Appearance, Profiles	440	820
+pairing	Pairing	440	820
+connection-error	Connection states named after the machine	440	820
+tablet-landscape	iPad landscape: three columns	960	720
+tablet-portrait	iPad portrait: list over the conversation	480	700
+live-activity-lock-screen	Live Activity on the lock screen	440	820
+live-activity-states	Live Activity: waiting, done, closed	440	640
+dynamic-island-compact	Dynamic Island: compact and minimal	440	560
+dynamic-island-expanded	Dynamic Island: expanded	440	560
+android-live-notification	Android: silent live status notification	440	600
+tray-popover-macos	macOS menu bar popover	1040	900
+tray-pairing	Tray: pair a phone	400	560
+tray-preferences	Tray: preferences window	580	540
+tray-linux	Tray: Linux (GNOME) menu	580	420
+tray-windows	Tray: Windows flyout	580	420
+icon-ios	App icon: iOS	900	260
+icon-android	App icon: Android adaptive and themed	820	200
+icon-macos-menubar	macOS bundle icon and menu bar glyph states	1000	220
+splash	Splash screens	600	560
+og-readme-banner	Open Graph / README banner	800	440
+landing	Landing page (desktop)	1400	4300
+landing-mobile	Landing page (phone)	430	5200

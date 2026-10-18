@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Harness · Conversation: permission request (agent-neutral)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .themebar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .themebar button { font: 600 12px var(--mono); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted); cursor: pointer; }
+  .themebar button.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .themebar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .themerow { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .themerow .frame { zoom: 0.5; }
+  .themerow .cap { zoom: 2; }
+  .banner-top { background: var(--a-raised); color: var(--a-muted); font-size: 12px; text-align: center; padding: 6px; border-bottom: 1px solid var(--a-border); }
+  .banner-top.err { color: var(--a-danger); }
+  .qr { width: 230px; height: 230px; margin: 10px auto; border-radius: 16px; background: #000; position: relative; display: grid; place-items: center; }
+  .qr::before { content: ""; position: absolute; inset: 14px; border: 2px solid var(--a-accent); border-radius: 10px; mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; -webkit-mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; }
+  .qr i { width: 120px; height: 120px; background:
+    conic-gradient(from 90deg at 50% 50%, #fff 25%, transparent 0) 0 0/20px 20px,
+    conic-gradient(from 0deg at 50% 50%, transparent 25%, #fff 0) 10px 10px/20px 20px; opacity: 0.85; border-radius: 4px; }
+  .tabs2 { display: flex; gap: 0; margin: 0 14px 10px; background: var(--a-surface); border: 1px solid var(--a-border); border-radius: 10px; padding: 3px; }
+  .tabs2 span { flex: 1; text-align: center; padding: 7px; border-radius: 8px; font-size: 12.5px; color: var(--a-muted); }
+  .tabs2 span.on { background: var(--a-raised); color: var(--a-fg); font-weight: 600; }
+</style>
+<style>
+  body { padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .proto-h { font-size: 12px; color: var(--muted); }
+  .proto-h b { color: var(--fg); }
+  .proto-h a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="proto-h"><b>Remote Harness</b> · prototype · Conversation: permission request (agent-neutral) · <a href="../index.html">identity hub</a></div>
+<div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app" style="--agent-color:var(--claude)">
+            <div class="ah"><div class="ib back">‹</div><div class="title">Add rate limit on login</div><div class="ib">🔔</div><div class="ib">⌨</div><div class="ib">⋯</div></div>
+            <div class="mline"><span class="agent claude">cl</span><span class="ptag" style="color:#61afef">Work</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">~/projects/acme-api</span><span class="sp"></span><span class="pill waiting">waiting</span><span class="pill plain" style="border:1px solid var(--a-accent-fg);color:var(--a-accent-fg);background:transparent">accept edits</span></div>
+            <div class="mline" style="padding-top:0"><span class="pill plain" style="border:1px solid var(--a-border-strong);background:transparent">sonnet-5.5</span><span class="pill plain" style="border:1px dashed var(--router);color:var(--router);background:transparent">via OpenRouter</span><span class="sp"></span><span>⎇ feat/rate-limit</span></div>
+            <div class="scroll">
+              <div class="umsg">Add rate limiting to the login endpoint (5 attempts per minute per IP) and cover it with tests</div>
+              <div class="amsg">I'll start by finding how the login route is registered.</div>
+              <div class="tool"><div class="n">Grep("/auth/login" in src)<span class="chev">›</span></div><div class="r">└ src/routes/auth.ts:42: app.post("/auth/login", …</div></div>
+              <div class="tool"><div class="n">Edit(auth.ts)<span class="chev">›</span></div><div class="r">└ ok</div>
+                <div class="diff"><div class="d">-   app.post('/auth/login', loginHandler)</div><div class="a">+   app.post('/auth/login', {</div><div class="a">+     config: { rateLimit: { max: 5, timeWindow: '1 minute' } },</div><div class="a">+   }, loginHandler)</div></div></div>
+              <div class="tool"><div class="n">Bash(pnpm vitest run test/auth.test.ts)<span class="chev">›</span></div><div class="r">└ ✓ test/auth.test.ts (7 tests) 412ms</div></div>
+            </div>
+            <div class="perm">
+              <div class="h"><span style="color:var(--a-warning)">⛨</span><span class="who">Bash(gh pr create --fill --base main)</span><span class="tm">4:36</span></div>
+              <div class="lbl">command</div>
+              <div class="cmd">gh pr create --fill --base main</div>
+              <div class="ans"><span class="btn no">Deny</span><span class="btn">Always</span><span class="btn ok">Allow</span></div>
+            </div>
+            <div class="keybar"><span class="k on">esc</span><span class="k">^C</span><span class="k">↑</span><span class="k">↓</span><span class="k">←</span><span class="k">→</span><span class="k">⏎</span><span class="k">tab</span></div>
+            <div class="composer"><span class="gt">&gt;</span><div class="in">message the agent… (@ files, / commands)</div><div class="send">↑</div></div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Permissão, agent-neutral.</b> O cartão não diz "Claude": diz a ferramenta e o comando. A linha de contexto mostra modelo e provedor (OpenRouter como chip tracejado neutro). Placeholder: "message the agent…".</p>
+      </div>
+<script src="../shared.js"></script>
+</body>
+</html>

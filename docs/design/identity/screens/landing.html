@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Remote Harness</title>
+<meta name="description" content="Follow and drive your coding agents from your phone. Self-hosted, over your own Tailscale network.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  /* Landing tokens: dark-first (the product's own terminal look), light when the visitor prefers it. */
+  :root {
+    color-scheme: dark;
+    --bg: #0d0d0d; --surface: #161616; --raised: #1e1d1c; --border: #2a2a2a; --border-strong: #3a3836;
+    --fg: #e8e6e3; --muted: #8a8784; --dim: #5e5a56;
+    --accent: #e8a33d; --accent-fg: #e8a33d; --accent-ink: #1a1206; --accent-soft: rgba(232, 163, 61, 0.14);
+    --success: #7fb069; --warning: #f3dc7a; --danger: #e06c75;
+    --glow: radial-gradient(60% 50% at 70% 30%, rgba(232, 163, 61, 0.14), transparent 70%);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --bg: #f3f3f1; --surface: #ffffff; --raised: #f8f8f6; --border: #e1e0dc; --border-strong: #cbc9c4;
+      --fg: #1b1a19; --muted: #66635f; --dim: #9b9893;
+      --accent: #e8a33d; --accent-fg: #a0640a; --accent-ink: #1a1206; --accent-soft: rgba(232, 163, 61, 0.18);
+      --success: #3f8a3a; --warning: #b88a0e; --danger: #c0392b;
+      --glow: radial-gradient(60% 50% at 70% 30%, rgba(232, 163, 61, 0.22), transparent 70%);
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f3f3f1; --surface: #ffffff; --raised: #f8f8f6; --border: #e1e0dc; --border-strong: #cbc9c4;
+    --fg: #1b1a19; --muted: #66635f; --dim: #9b9893;
+    --accent: #e8a33d; --accent-fg: #a0640a; --accent-ink: #1a1206; --accent-soft: rgba(232, 163, 61, 0.18);
+    --success: #3f8a3a; --warning: #b88a0e; --danger: #c0392b;
+    --glow: radial-gradient(60% 50% at 70% 30%, rgba(232, 163, 61, 0.22), transparent 70%);
+  }
+  body { font-family: var(--sans); font-size: 16px; line-height: 1.6; background: var(--bg); color: var(--fg); padding: 0; }
+  a { color: var(--accent-fg); }
+  h1, h2, h3, .mono, code, pre, kbd, .btn, .pill, .tabs span, .eyebrow, nav, .agent, .reqs span, footer small { font-family: var(--mono); }
+  h1 { font-size: clamp(32px, 5vw, 50px); letter-spacing: -0.03em; line-height: 1.08; }
+  h2 { font-size: clamp(24px, 3vw, 32px); letter-spacing: -0.02em; }
+  h3 { font-size: 15px; }
+  p { max-width: 62ch; }
+  .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .in { max-width: 1120px; margin: 0 auto; }
+  header.top { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  header.top .in { display: flex; align-items: center; gap: 22px; height: 60px; }
+  header.top .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; color: var(--fg); font-family: var(--mono); font-size: 15px; }
+  header.top .brand svg { width: 24px; height: 24px; color: var(--accent); }
+  header.top nav { display: flex; gap: 4px; margin-left: auto; }
+  header.top nav a { color: var(--muted); font-size: 12.5px; padding: 6px 10px; border-radius: 6px; }
+  header.top nav a:hover { color: var(--fg); background: var(--surface); text-decoration: none; }
+  header.top .lang { display: flex; gap: 2px; border: 1px solid var(--border); border-radius: 8px; padding: 2px; font-family: var(--mono); font-size: 11px; }
+  header.top .lang span { padding: 3px 7px; border-radius: 6px; color: var(--muted); }
+  header.top .lang span.on { background: var(--raised); color: var(--fg); font-weight: 600; }
+  header.top .gh { font-family: var(--mono); font-size: 12px; color: var(--fg); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; white-space: nowrap; }
+  @media (max-width: 760px) { header.top nav { display: none; } }
+  .hero { position: relative; padding-block: 64px 40px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 40px; align-items: center; }
+  .hero::before { content: ""; position: absolute; inset: 0; background: var(--glow); pointer-events: none; }
+  .hero > * { position: relative; }
+  .hero .copy { display: flex; flex-direction: column; gap: 22px; }
+  .hero .copy p.lead { font-size: 18px; color: var(--muted); max-width: 54ch; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-fg); font-weight: 600; }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; font-weight: 600; font-size: 14px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn:hover { text-decoration: none; filter: brightness(1.06); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .hero .shot { display: flex; justify-content: center; }
+  .hero .shot .phone { zoom: 0.62; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-block: 44px 32px; } .hero .shot .phone { zoom: 0.5; } }
+  .agents { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-block: 18px 40px; border-bottom: 1px solid var(--border); }
+  .agents .lbl { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .agchip { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 13px; padding: 6px 12px 6px 7px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--fg); background: var(--surface); }
+  .agchip small { color: var(--muted); font-size: 11px; }
+  .agchip.soon { border-style: dashed; color: var(--muted); }
+  section.s { padding-block: 64px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 28px; }
+  section.s .head { display: flex; flex-direction: column; gap: 10px; }
+  section.s .head p { color: var(--muted); font-size: 17px; }
+  .how { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 14px; align-items: stretch; }
+  .node { border: 1px solid var(--border); background: var(--surface); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .node .ic { font-size: 26px; line-height: 1; }
+  .node h3 { font-size: 15px; }
+  .node p { font-size: 14px; color: var(--muted); }
+  .node .win { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+  .node .win span { font-family: var(--mono); font-size: 12px; padding: 5px 8px; border-radius: 6px; background: var(--raised); display: flex; align-items: center; gap: 8px; }
+  .link { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; min-width: 120px; }
+  .link i { display: block; width: 100%; border-top: 2px dashed var(--border-strong); position: relative; }
+  .link i::before, .link i::after { content: ""; position: absolute; top: -5px; width: 8px; height: 8px; border-radius: 4px; background: var(--accent); }
+  .link i::before { left: -2px; } .link i::after { right: -2px; }
+  @media (max-width: 860px) { .how { grid-template-columns: 1fr; } .link { min-width: 0; padding: 4px 0; } .link i { width: 2px; height: 28px; border-top: 0; border-left: 2px dashed var(--border-strong); } .link i::before, .link i::after { left: -3px; } .link i::before { top: -4px; } .link i::after { top: auto; bottom: -4px; } }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; counter-reset: step; }
+  .step { display: flex; gap: 14px; align-items: flex-start; }
+  .step::before { counter-increment: step; content: counter(step); flex: none; width: 30px; height: 30px; border-radius: 15px; background: var(--accent); color: var(--accent-ink); font-family: var(--mono); font-weight: 700; display: grid; place-items: center; font-size: 13px; }
+  .step b { display: block; font-family: var(--mono); font-size: 14px; margin-bottom: 2px; }
+  .step p { font-size: 14px; color: var(--muted); }
+  .step code { background: var(--raised); }
+  .feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .feat { border: 1px solid var(--border); background: var(--surface); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .feat .g { font-family: var(--mono); font-size: 20px; color: var(--accent-fg); line-height: 1; }
+  .feat p { font-size: 14px; color: var(--muted); }
+  .sec2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .sec2 .it { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+  .sec2 .it i { flex: none; font-style: normal; color: var(--success); font-family: var(--mono); font-weight: 700; }
+  .sec2 .it b { font-family: var(--mono); font-size: 14px; display: block; }
+  .sec2 .it span { color: var(--muted); font-size: 14px; }
+  .install { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr); gap: 28px; }
+  @media (max-width: 860px) { .install { grid-template-columns: 1fr; } }
+  .tabs { display: flex; gap: 2px; border: 1px solid var(--border); border-radius: 10px; padding: 3px; width: max-content; max-width: 100%; }
+  .tabs span { padding: 7px 14px; border-radius: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .tabs span.on { background: var(--raised); color: var(--fg); font-weight: 600; }
+  .cmd { display: flex; align-items: center; gap: 12px; background: #0d0d0d; color: #e8e6e3; border: 1px solid var(--border-strong); border-radius: 12px; padding: 14px 16px; font-family: var(--mono); font-size: 14px; min-width: 0; }
+  .cmd code { background: transparent; padding: 0; flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; }
+  .cmd code b { color: var(--accent); font-weight: 500; }
+  .cmd button { font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid #3a3836; background: #1e1d1c; color: #e8e6e3; cursor: pointer; white-space: nowrap; }
+  .cmd button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .reqs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .reqs span { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .stores { display: flex; flex-direction: column; gap: 10px; }
+  .store { display: flex; align-items: center; gap: 12px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 12px; padding: 12px 14px; color: var(--fg); }
+  .store:hover { text-decoration: none; border-color: var(--accent); }
+  .store .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 20px; background: var(--raised); flex: none; }
+  .store b { display: block; font-family: var(--mono); font-size: 14px; }
+  .store small { color: var(--muted); font-size: 12px; }
+  .faq { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 28px; }
+  details { border-top: 1px solid var(--border); padding: 12px 0; }
+  summary { cursor: pointer; font-family: var(--mono); font-size: 14px; font-weight: 600; list-style: none; display: flex; gap: 10px; }
+  summary::before { content: "›"; color: var(--accent-fg); }
+  details[open] summary::before { content: "⌄"; }
+  details p { font-size: 14px; color: var(--muted); padding: 8px 0 0 20px; }
+  footer { padding-block: 36px 48px; display: flex; flex-direction: column; gap: 18px; }
+  footer .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; font-family: var(--mono); font-size: 13px; }
+  footer .row a { color: var(--muted); }
+  footer .row .brand { display: flex; align-items: center; gap: 8px; color: var(--fg); font-weight: 700; margin-right: auto; }
+  footer .row .brand svg { width: 20px; height: 20px; color: var(--accent); }
+  footer small { font-size: 11.5px; color: var(--dim); max-width: 80ch; }
+  .banner-note { background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--fg); font-family: var(--mono); font-size: 12px; padding: 8px 14px; text-align: center; }
+  @media (prefers-reduced-motion: no-preference) { .hero .shot .phone { animation: rise .7s ease-out both; } @keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } } }
+</style>
+</head>
+<body>
+<div class="banner-note">Design mockup · annotations only · not deployed</div>
+<header class="top gutter"><div class="in">
+  <a class="brand" href="#"><svg><use href="#rh-mark"/></svg>Remote Harness</a>
+  <nav><a href="#how">How it works</a><a href="#features">Features</a><a href="#security">Security</a><a href="#install">Install</a><a href="#docs">Docs</a></nav>
+  <div class="lang"><span class="on">EN</span><span>PT</span><span>ES</span></div>
+  <a class="gh" href="https://github.com/maarkN/remote-harness">GitHub ↗</a>
+</div></header>
+
+<main class="gutter"><div class="in">
+  <section class="hero">
+    <div class="copy">
+      <span class="eyebrow">Self-hosted · Tailscale · tmux</span>
+      <h1>Follow and drive your coding agents from your phone.</h1>
+      <p class="lead">Claude Code and Codex run in tmux on your own machine. Remote Harness streams the conversation to your phone over your Tailscale network, so you can read what the agent did, answer its permission requests, send the next prompt and start new sessions, from anywhere.</p>
+      <div class="ctas"><a class="btn primary" href="#install">Install on your machine</a><a class="btn" href="#app">Get the app</a></div>
+      <div class="meta"><span>macOS · Linux · Windows (WSL2)</span><span>→</span><span>iOS · Android</span><span>·</span><span>MIT, no account, no cloud relay</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone t-dark">
+        <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+        <div class="app">
+          <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+          <div class="mline"><span class="dot" style="background:var(--a-success);margin:0"></span><span class="host">MacBook Pro</span><span>· 5 sessions</span></div>
+          <div class="chips"><span class="chip on">all</span><span class="chip">Personal</span><span class="chip">Work</span><span class="chip">Codex</span></div>
+          <div class="scroll">
+            <div class="attn">
+              <div class="h">⚠ Waiting for you · 1 <span>0:52</span></div>
+              <div style="display:flex;gap:8px;align-items:center;font-weight:600;font-size:13.5px"><span class="agent claude">cl</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Add rate limit on login</span></div>
+              <div style="font-size:12px;color:var(--a-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bash · <span style="color:var(--a-fg)">gh pr create --fill --base main</span></div>
+              <div class="ans"><span class="btn sm no" style="flex:1;padding:5px;font-size:12px">Deny</span><span class="btn sm" style="flex:1;padding:5px;font-size:12px">Always</span><span class="btn sm ok" style="flex:1;padding:5px;font-size:12px">Allow</span></div>
+            </div>
+            <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span><span>⎇ main</span></div><div class="m"><span class="pill running">running</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+            <div class="srow waiting"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span><span>⎇ feat/rate-limit</span></div><div class="m"><span class="pill waiting">waiting</span><span class="ptag" style="color:#61afef">Work</span></div></div>
+            <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Fix crash on onboarding</span><span class="ago">12 min</span></div><div class="p"><span>~/projects/acme-mobile</span><span>⎇ fix/onboarding</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#61afef">Work</span></div></div>
+            <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Write post about tmux + agents</span><span class="ago">40 min</span></div><div class="p"><span>~/projects/blog</span><span>⎇ main</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+            <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Review deploy pipeline</span><span class="ago">2 h</span></div><div class="p"><span>~/projects/acme-infra</span></div><div class="m"><span class="pill">ended</span><span class="ptag" style="color:#2fbf8f">Codex</span></div></div>
+          </div>
+        </div>
+        <div class="home"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="agents">
+    <span class="lbl">Works with</span>
+    <span class="agchip"><span class="agent claude">cl</span>Claude Code</span>
+    <span class="agchip"><span class="agent codex">cx</span>Codex CLI <small>beta</small></span>
+    <span class="agchip soon"><span class="agent kimi">ki</span>Kimi <small>soon</small></span>
+    <span class="agchip soon"><span class="agent qwen">qw</span>Qwen Code <small>soon</small></span>
+    <span class="agchip soon" style="padding-left:12px">OpenRouter models <small>via profiles</small></span>
+  </div>
+
+  <section class="s" id="how">
+    <div class="head"><span class="eyebrow">How it works</span><h2>Your phone, your machine, your network. Nothing in between.</h2><p>Sessions run inside tmux. The agent reports what happens through its native hooks, a small daemon on the machine bridges both to the phone, and Tailscale keeps it all private.</p></div>
+    <div class="how">
+      <div class="node"><div class="ic">📱</div><h3>Your phone</h3><p>Native iOS and Android app. Reads the conversation, answers permissions, sends prompts, keys, photos and voice. Push and live status, with no content inside.</p></div>
+      <div class="link"><span>WebSocket over Tailscale</span><i></i><span>token-paired · only your devices</span></div>
+      <div class="node"><div class="ic">💻</div><h3>Your machine</h3><p>The <code>remote-harness</code> daemon: tails transcripts, drives tmux, receives the agent's hooks on 127.0.0.1. One line to install, a Login Item or systemd unit to keep running.</p></div>
+      <div class="link"><span>hooks + tmux</span><i></i><span>send-keys · capture-pane</span></div>
+      <div class="node"><div class="ic">▣</div><h3>Your agents, in tmux</h3><p>One window per session, one alias per profile.</p><div class="win"><span><span class="agent claude">cl</span>personal → ~/.claude</span><span><span class="agent claude">cl</span>work → ~/.claude-work</span><span><span class="agent codex">cx</span>codex → ~/.codex</span></div></div>
+    </div>
+    <div class="steps">
+      <div class="step"><div><b>Install on the machine</b><p>One command. It checks tmux, git, ripgrep and Node, finds your agents and profiles, and installs the launchers.</p></div></div>
+      <div class="step"><div><b>Scan the QR code</b><p>The setup shows it at the end (or <code>remote-harness pair</code>). Both devices on the same tailnet, done.</p></div></div>
+      <div class="step"><div><b>Run your alias</b><p><code>work</code> opens Claude Code in tmux with that profile. The session shows up on the phone, fully controllable.</p></div></div>
+    </div>
+  </section>
+
+  <section class="s" id="features">
+    <div class="head"><span class="eyebrow">Features</span><h2>Everything the terminal shows, and the parts the terminal can't.</h2></div>
+    <div class="feats">
+      <div class="feat"><span class="g">≡</span><h3>One list, every agent</h3><p>Sessions from all your profiles and agents, sorted by what moved last, with a "waiting for you" strip on top.</p></div>
+      <div class="feat"><span class="g">●</span><h3>Live conversation</h3><p>Markdown, thinking, tool calls, diffs and results, streamed as they happen and paginated back to the start.</p></div>
+      <div class="feat"><span class="g">⛨</span><h3>Permissions from your pocket</h3><p>Allow, deny or always allow. "Always" is written as a rule by the agent itself and undoable from the CLI.</p></div>
+      <div class="feat"><span class="g">⏎</span><h3>Queue or send now</h3><p>Line up follow-ups while the agent works; they go in order when the turn ends. Hold to send immediately, like Ctrl+Enter.</p></div>
+      <div class="feat"><span class="g">▣</span><h3>Raw terminal</h3><p>The tmux pane itself, for menus and anything the structured view doesn't cover, with a key bar for Esc, Ctrl+C, arrows and Tab.</p></div>
+      <div class="feat"><span class="g">⎇</span><h3>Start, resume, close</h3><p>New sessions in any folder, optionally in their own git worktree. Resume read-only ones. Close with worktree clean-up that never discards work silently.</p></div>
+      <div class="feat"><span class="g">◔</span><h3>Live status</h3><p>Lock screen and Dynamic Island on iOS, a silent notification on Android: state, step type and elapsed time, never the text.</p></div>
+      <div class="feat"><span class="g">⌥</span><h3>Subagents, voice, photos</h3><p>Follow subagents and background tasks, dictate prompts on-device, attach photos. Autocomplete for @files and /commands.</p></div>
+    </div>
+  </section>
+
+  <section class="s" id="security">
+    <div class="head"><span class="eyebrow">Privacy &amp; security</span><h2>The daemon is a remote shell, so it's locked down by default.</h2></div>
+    <div class="sec2">
+      <div class="it"><i>✓</i><div><b>Only on Tailscale</b><span>The WebSocket binds to the Tailscale interface and nothing else. No port on the internet, no relay server reading your sessions.</span></div></div>
+      <div class="it"><i>✓</i><div><b>Token pairing</b><span>Every connection presents a token kept in the Keychain (macOS), Secret Service (Linux) or SecureStore (phone). Rotate it any time.</span></div></div>
+      <div class="it"><i>✓</i><div><b>Content-free push</b><span>Notifications carry a title, a profile and a session id. The live status adds the session name and folder, nothing from the conversation.</span></div></div>
+      <div class="it"><i>✓</i><div><b>No bypass</b><span>The app never offers the agent's "bypass permissions" mode, or any equivalent. Edits to your dotfiles are merged, backed up and fully reversible.</span></div></div>
+      <div class="it"><i>✓</i><div><b>No telemetry</b><span>Nothing is sent anywhere unless you set up push through your own Firebase project or the relay.</span></div></div>
+      <div class="it"><i>✓</i><div><b>Open source</b><span>MIT licensed, built in the open with OpenSpec. Read <a href="https://github.com/maarkN/remote-harness/blob/main/SECURITY.md">SECURITY.md</a> to report a problem.</span></div></div>
+    </div>
+  </section>
+
+  <section class="s" id="install">
+    <div class="head"><span class="eyebrow">Install</span><h2>One line on the machine, one scan on the phone.</h2></div>
+    <div class="install">
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <div class="tabs"><span class="on">macOS · Linux</span><span>Windows (WSL2)</span></div>
+        <div class="cmd"><code><b>curl</b> -fsSL https://remoteharness.app/install.sh | <b>bash</b></code><button type="button" data-copy="curl -fsSL https://remoteharness.app/install.sh | bash">Copy</button></div>
+        <p style="font-size:14px;color:var(--muted)">Checks the system, installs what's missing (Homebrew, apt, dnf, pacman or zypper), builds the daemon and opens the guided setup. Windows: <code>irm https://remoteharness.app/install.ps1 | iex</code> in PowerShell sets up WSL2 first.</p>
+        <div class="reqs"><span>Node 24+ (bundled if missing)</span><span>tmux</span><span>git</span><span>ripgrep</span><span>Tailscale</span><span>claude and/or codex on PATH</span></div>
+      </div>
+      <div class="stores" id="app">
+        <a class="store" href="#"><span class="ic"></span><span><b>iPhone &amp; iPad</b><small>TestFlight · iOS 17+</small></span></a>
+        <a class="store" href="#"><span class="ic">▲</span><span><b>Android</b><small>APK on GitHub Releases · Android 10+</small></span></a>
+        <p style="font-size:13px;color:var(--muted)">Both need Tailscale on the phone too. Installed the app first? Its pairing screen walks you through the machine setup.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="docs">
+    <div class="head"><span class="eyebrow">Docs &amp; FAQ</span><h2>Questions people ask first</h2><p>The full guide lives at <a href="#">remoteharness.app/docs</a>: getting started, using the app, the daemon CLI, security, troubleshooting.</p></div>
+    <div class="faq">
+      <details open><summary>Does it work away from home?</summary><p>Yes. Tailscale connects your phone and your machine wherever they are, with no port forwarding. The machine must be awake; the docs cover sleep and lock settings.</p></details>
+      <details><summary>Which agents are supported?</summary><p>Claude Code today, with every profile (<code>CLAUDE_CONFIG_DIR</code>) in one list. Codex CLI is in beta; Kimi, Qwen Code and OpenRouter-backed profiles are on the roadmap.</p></details>
+      <details><summary>Can it run my agent unsupervised?</summary><p>Only as far as the agent's own permission modes allow. The app offers default, accept edits, plan and auto; it never offers bypass. Every permission still goes through you, from the phone or the machine.</p></details>
+      <details><summary>What about sessions started outside tmux?</summary><p>They still show up, read-only. Resume one from the phone and it reopens inside tmux, fully controllable.</p></details>
+      <details><summary>Is there a cloud component?</summary><p>No. Optional push goes through FCM (your Firebase project or the content-free relay). Everything else stays on your tailnet.</p></details>
+      <details><summary>Does the daemon need a Mac?</summary><p>No: macOS, Linux (systemd) and Windows through WSL2 are all supported. The app runs on iOS and Android.</p></details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="row"><span class="brand"><svg><use href="#rh-mark"/></svg>Remote Harness</span><a href="#">Docs</a><a href="https://github.com/maarkN/remote-harness">GitHub</a><a href="https://github.com/maarkN/remote-harness/releases">Releases</a><a href="https://github.com/maarkN/remote-harness/blob/main/SECURITY.md">Security</a><a href="https://github.com/maarkN/remote-harness/blob/main/LICENSE">MIT</a><span style="color:var(--dim)">English · Português · Español</span></div>
+    <small>Remote Harness is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic or OpenAI. "Claude" and "Claude Code" are trademarks of Anthropic, PBC; "Codex" is a trademark of OpenAI. Screenshots show demo sessions.</small>
+  </footer>
+</div></main>
+<script src="../shared.js"></script>
+</body>
+</html>

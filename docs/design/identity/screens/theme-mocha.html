@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Harness · Theme: Catppuccin Mocha</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .themebar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .themebar button { font: 600 12px var(--mono); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted); cursor: pointer; }
+  .themebar button.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .themebar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .themerow { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .themerow .frame { zoom: 0.5; }
+  .themerow .cap { zoom: 2; }
+  .banner-top { background: var(--a-raised); color: var(--a-muted); font-size: 12px; text-align: center; padding: 6px; border-bottom: 1px solid var(--a-border); }
+  .banner-top.err { color: var(--a-danger); }
+  .qr { width: 230px; height: 230px; margin: 10px auto; border-radius: 16px; background: #000; position: relative; display: grid; place-items: center; }
+  .qr::before { content: ""; position: absolute; inset: 14px; border: 2px solid var(--a-accent); border-radius: 10px; mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; -webkit-mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; }
+  .qr i { width: 120px; height: 120px; background:
+    conic-gradient(from 90deg at 50% 50%, #fff 25%, transparent 0) 0 0/20px 20px,
+    conic-gradient(from 0deg at 50% 50%, transparent 25%, #fff 0) 10px 10px/20px 20px; opacity: 0.85; border-radius: 4px; }
+  .tabs2 { display: flex; gap: 0; margin: 0 14px 10px; background: var(--a-surface); border: 1px solid var(--a-border); border-radius: 10px; padding: 3px; }
+  .tabs2 span { flex: 1; text-align: center; padding: 7px; border-radius: 8px; font-size: 12.5px; color: var(--a-muted); }
+  .tabs2 span.on { background: var(--a-raised); color: var(--a-fg); font-weight: 600; }
+</style>
+<style>
+  body { padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .proto-h { font-size: 12px; color: var(--muted); }
+  .proto-h b { color: var(--fg); }
+  .proto-h a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="proto-h"><b>Remote Harness</b> · prototype · Theme: Catppuccin Mocha · <a href="../index.html">identity hub</a></div>
+<div class="frame z85">
+        <div class="phone t-mocha">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app" id="sessions-screen">
+            <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+            <div class="mline"><span class="dot" style="background:var(--a-success);margin:0"></span><span class="host">MacBook Pro</span><span>· 7 sessions</span><span class="sp"></span><span>3 agents</span></div>
+            <div class="chips"><span class="chip on">all</span><span class="chip">Personal</span><span class="chip">Work</span><span class="chip">Codex</span><span class="chip ghost">Recent ▾</span></div>
+            <div class="scroll">
+              <div class="attn">
+                <div class="h">⚠ Waiting for you · 1 <span>4:36</span></div>
+                <div class="t" style="display:flex;gap:8px;align-items:center;font-weight:600;font-size:13.5px"><span class="agent claude">cl</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Add rate limit on login</span><span class="ptag" style="color:#61afef">Work</span></div>
+                <div style="font-size:12px;color:var(--a-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bash · <span style="color:var(--a-fg)">gh pr create --fill --base main</span></div>
+                <div class="ans"><span class="btn sm no" style="flex:1">Deny</span><span class="btn sm" style="flex:1">Always</span><span class="btn sm ok" style="flex:1">Allow</span></div>
+              </div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span><span>⎇ main</span></div><div class="m"><span class="pill running">running</span><span class="ptag" style="color:#56b6c2">Personal</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow waiting"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span><span>⎇ feat/rate-limit</span><span>⌂ worktree</span></div><div class="m"><span class="pill waiting">waiting</span><span class="ptag" style="color:#61afef">Work</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Fix crash on onboarding</span><span class="ago">12 min</span></div><div class="p"><span>~/projects/acme-mobile</span><span>⎇ fix/onboarding</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#61afef">Work</span><span class="mute-ic">🔕</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Write post about tmux + agents</span><span class="ago">40 min</span></div><div class="p"><span>~/projects/blog</span><span>⎇ main</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#56b6c2">Personal</span><span class="pill plain">+2 subagents</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Review deploy pipeline</span><span class="ago">2 h</span></div><div class="p"><span>~/projects/acme-infra</span><span>⎇ main</span><span style="color:var(--a-warning)">shared checkout (2)</span></div><div class="m"><span class="pill">ended</span><span class="pill plain">read-only</span><span class="ptag" style="color:#2fbf8f">Codex</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Rename daemon strings to machine</span><span class="ago">yesterday</span></div><div class="p"><span>~/projects/remote-harness</span><span>⎇ feat/94-machine</span></div><div class="m"><span class="pill">ended</span><span class="ptag" style="color:#56b6c2">Personal</span><span class="chev" style="margin-left:auto">›</span></div></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Catppuccin Mocha.</b> Ordem global por última atividade real; a faixa "Waiting for you" fica no topo com a permissão respondível ali mesmo, sem quebrar a ordem do resto. </p>
+      </div>
+<script src="../shared.js"></script>
+</body>
+</html>

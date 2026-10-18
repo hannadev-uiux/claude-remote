@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Harness · Settings: Machine, Appearance, Profiles</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .themebar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .themebar button { font: 600 12px var(--mono); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted); cursor: pointer; }
+  .themebar button.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .themebar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .themerow { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .themerow .frame { zoom: 0.5; }
+  .themerow .cap { zoom: 2; }
+  .banner-top { background: var(--a-raised); color: var(--a-muted); font-size: 12px; text-align: center; padding: 6px; border-bottom: 1px solid var(--a-border); }
+  .banner-top.err { color: var(--a-danger); }
+  .qr { width: 230px; height: 230px; margin: 10px auto; border-radius: 16px; background: #000; position: relative; display: grid; place-items: center; }
+  .qr::before { content: ""; position: absolute; inset: 14px; border: 2px solid var(--a-accent); border-radius: 10px; mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; -webkit-mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; }
+  .qr i { width: 120px; height: 120px; background:
+    conic-gradient(from 90deg at 50% 50%, #fff 25%, transparent 0) 0 0/20px 20px,
+    conic-gradient(from 0deg at 50% 50%, transparent 25%, #fff 0) 10px 10px/20px 20px; opacity: 0.85; border-radius: 4px; }
+  .tabs2 { display: flex; gap: 0; margin: 0 14px 10px; background: var(--a-surface); border: 1px solid var(--a-border); border-radius: 10px; padding: 3px; }
+  .tabs2 span { flex: 1; text-align: center; padding: 7px; border-radius: 8px; font-size: 12.5px; color: var(--a-muted); }
+  .tabs2 span.on { background: var(--a-raised); color: var(--a-fg); font-weight: 600; }
+</style>
+<style>
+  body { padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .proto-h { font-size: 12px; color: var(--muted); }
+  .proto-h b { color: var(--fg); }
+  .proto-h a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="proto-h"><b>Remote Harness</b> · prototype · Settings: Machine, Appearance, Profiles · <a href="../index.html">identity hub</a></div>
+<div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="ib back">‹</div><div class="title">Settings</div><div class="ib"></div></div>
+            <div class="scroll" style="gap:4px">
+              <div class="sect"><div class="sh">Machine</div><div class="box">
+                <div class="frow"><span class="l">MacBook Pro<small>100.101.1.7 · remote-harness 0.11.0 · protocol 9</small></span><span class="pill idle">connected</span></div>
+                <div class="frow"><span class="l" style="color:var(--a-danger)">Forget this machine</span></div>
+              </div></div>
+              <div class="sect"><div class="sh">Appearance</div><div class="box">
+                <div class="themes">
+                  <div class="tsw"><div class="pv" style="background:linear-gradient(90deg,#0d0d0d 50%,#f3f3f1 50%)"><i style="background:#e8a33d;width:40%"></i><i style="background:#8a8784;width:70%"></i></div><span>System</span></div>
+                  <div class="tsw on"><div class="pv" style="background:#0d0d0d"><i style="background:#e8a33d;width:40%"></i><i style="background:#8a8784;width:70%"></i><i style="background:#3a3836;width:55%"></i></div><span>Dark</span></div>
+                  <div class="tsw"><div class="pv" style="background:#f3f3f1"><i style="background:#e8a33d;width:40%"></i><i style="background:#66635f;width:70%"></i><i style="background:#cbc9c4;width:55%"></i></div><span>Light</span></div>
+                  <div class="tsw"><div class="pv" style="background:#282a36"><i style="background:#bd93f9;width:40%"></i><i style="background:#f8f8f2;width:70%"></i><i style="background:#44475a;width:55%"></i></div><span>Dracula</span></div>
+                  <div class="tsw"><div class="pv" style="background:#1e1e2e"><i style="background:#fab387;width:40%"></i><i style="background:#cdd6f4;width:70%"></i><i style="background:#45475a;width:55%"></i></div><span>Mocha</span></div>
+                  <div class="tsw"><div class="pv" style="background:#eff1f5"><i style="background:#fe640b;width:40%"></i><i style="background:#4c4f69;width:70%"></i><i style="background:#ccd0da;width:55%"></i></div><span>Latte</span></div>
+                </div>
+              </div></div>
+              <div class="sect"><div class="sh">Profiles</div><div class="box">
+                <div class="frow"><span class="agent claude">cl</span><span class="l">Personal<small>Claude Code · ~/.claude · alias personal</small></span><span class="v">›</span></div>
+                <div class="frow"><span class="agent claude">cl</span><span class="l">Work<small>Claude Code · ~/.claude-work · alias work</small></span><span class="v">›</span></div>
+                <div class="frow"><span class="agent claude">cl</span><span class="l">Work · OpenRouter<small>Claude Code via gateway · sonnet-5.5</small></span><span class="v">›</span></div>
+                <div class="frow"><span class="agent codex">cx</span><span class="l">Codex<small>Codex CLI · ~/.codex · alias codex</small></span><span class="v">›</span></div>
+              </div></div>
+              <div class="sect"><div class="sh">Notifications</div><div class="box">
+                <div class="frow"><span class="l">Push notifications<small>Only this phone · never the conversation</small></span><span class="tg on"></span></div>
+                <div class="frow"><span class="l">Live status<small>Lock screen and Dynamic Island</small></span><span class="tg on"></span></div>
+                <div class="frow"><span class="l">Muted<small>1 profile · 1 session</small></span><span class="v">›</span></div>
+              </div></div>
+              <div class="sect"><div class="sh">App</div><div class="box">
+                <div class="frow"><span class="l">Version<small>0.11.0 · update 2026-10-17 · channel production</small></span><span class="v acc">Check</span></div>
+                <div class="frow"><span class="l">Documentation<small>remoteharness.app/docs</small></span><span class="v">↗</span></div>
+              </div></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Ajustes.</b> "Machine" nomeia o computador pareado (hostname do daemon, apelido editável). "Appearance" com System/Dark/Light/Dracula/Mocha/Latte. Perfis mostram agente e provedor. "Help" aponta para os docs (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/136">#136</a>).</p>
+      </div>
+<script src="../shared.js"></script>
+</body>
+</html>
