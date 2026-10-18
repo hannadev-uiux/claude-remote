@@ -11,7 +11,7 @@ export const PROFILE_HEADER = 'x-claude-remote-profile'
 /** Answers hooks that expect a decision (PermissionRequest). Aborted if Claude Code drops the request. */
 export type HookResponder = (hook: HookEvent, signal: AbortSignal) => Promise<Record<string, unknown>>
 
-function headerValue(value: string | string[] | undefined): string | null {
+export function headerValue(value: string | string[] | undefined): string | null {
   const v = Array.isArray(value) ? value[0] : value
   if (!v) return null
   const trimmed = v.trim()

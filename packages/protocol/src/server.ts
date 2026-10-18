@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  AccountLimitsSchema,
   CheckoutPeerSchema,
   CheckoutSchema,
   CommandItemSchema,
@@ -108,6 +109,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     peers: z.array(CheckoutPeerSchema),
   }),
   z.object({ type: z.literal('mute.updated'), muted: MuteStateSchema }),
+  /** Usage limits of a profile's account; sent when they change and to every client that connects. */
+  z.object({ type: z.literal('limits.updated'), limits: AccountLimitsSchema }),
 ])
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>

@@ -20,6 +20,7 @@ const session = (over: Partial<Session> = {}): Session => ({
   subagents: [],
   backgroundTasks: 0,
   checkout: null,
+  status: null,
   ...over,
 })
 

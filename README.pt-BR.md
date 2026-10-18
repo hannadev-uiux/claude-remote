@@ -50,7 +50,7 @@ O Remote Harness resolve isso com ferramentas em que você já confia: as sessõ
 ## Como funciona
 
 1. Você abre o Claude Code com um launcher (um por conta, com o nome que você escolher, como `pessoal` ou `trabalho`) que o roda numa janela do tmux.
-2. Os hooks HTTP do Claude Code avisam o daemon quando a sessão começa, para, pede permissão ou recebe um prompt.
+2. Os hooks HTTP do Claude Code avisam o daemon quando a sessão começa, para, pede permissão ou recebe um prompt. Um pequeno wrapper da status line também envia o modelo, o esforço, o uso do contexto e os limites de uso — e depois roda a sua própria status line, então o terminal continua igual.
 3. O daemon acompanha o transcript, lê o painel do tmux e entrega tudo ao app por um WebSocket autenticado, escutando **só** na interface do Tailscale.
 4. Prompts e teclas voltam pelo tmux; respostas de permissão voltam pela requisição do hook pendente.
 

@@ -132,6 +132,8 @@ export const enUS = {
     hooksIn: (path: string) => `hooks in ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} removed`,
     hooksRemovedFrom: (path: string) => `hooks removed from ${path}`,
+    statusLineIn: (path: string) => `status line in ${path}`,
+    statusLineRestored: (path: string) => `status line restored in ${path}`,
   },
   setup: {
     languageQuestion: 'Language',

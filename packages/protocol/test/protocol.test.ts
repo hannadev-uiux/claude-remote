@@ -89,6 +89,7 @@ const session: Session = {
   subagents: [],
   backgroundTasks: 0,
   checkout: { root: '/tmp', branch: 'main' },
+  status: { model: 'Opus 5.5', effort: 'high', context: { usedTokens: 124_000, size: 200_000, percent: 62 } },
 }
 
 const serverSamples: ServerMessage[] = [
@@ -199,6 +200,15 @@ const serverSamples: ServerMessage[] = [
     truncated: true,
   },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
+  {
+    type: 'limits.updated',
+    limits: {
+      profileId: 'claudin',
+      fiveHour: { percent: 41, resetsAt: 1_792_000_000_000 },
+      sevenDay: null,
+      updatedAt: '2026-10-18T00:00:00Z',
+    },
+  },
   { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
   { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
@@ -380,6 +390,20 @@ describe('server messages', () => {
   test('correlates replies by replyTo', () => {
     const result = parseServerMessage({ type: 'sessions.snapshot', replyTo: 'abc', sessions: [] })
     expect(result).toMatchObject({ ok: true, value: { replyTo: 'abc' } })
+  })
+})
+
+describe('session status', () => {
+  test('defaults to null for older daemons', () => {
+    const { status: _omit, ...old } = session
+    const result = parseServerMessage({ type: 'session.updated', session: old })
+    expect(result).toMatchObject({ ok: true, value: { session: { status: null } } })
+  })
+
+  test('unknown items are null, not zero', () => {
+    const status = { model: null, effort: null, context: null }
+    const result = parseServerMessage({ type: 'session.updated', session: { ...session, status } })
+    expect(result).toMatchObject({ ok: true, value: { session: { status } } })
   })
 })
 

@@ -133,6 +133,21 @@ const ptBR = {
     stopFollowing: 'Parar de acompanhar a saída',
     readOnly: 'Sessão somente leitura (sem painel tmux): o terminal e os atalhos não estão disponíveis.',
   },
+  sessionStatus: {
+    title: 'Status da sessão',
+    open: 'Status da sessão: {{summary}}',
+    openHint: 'Mostra os tokens em uso e quando os limites reiniciam',
+    short: { context: 'ctx', fiveHour: '5h', sevenDay: 'sem' },
+    labels: {
+      model: 'Modelo',
+      effort: 'Esforço',
+      context: 'Contexto',
+      fiveHour: 'Limite de 5 horas',
+      sevenDay: 'Limite semanal',
+    },
+    contextValue: '{{used}} / {{size}} tokens ({{percent}})',
+    limitValue: '{{percent}} · reinicia {{time}}',
+  },
   sessionDetails: {
     title: 'Detalhes da sessão',
     open: 'Detalhes da sessão: {{title}}',

@@ -133,6 +133,21 @@ const esES = {
     stopFollowing: 'Dejar de seguir la salida',
     readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
   },
+  sessionStatus: {
+    title: 'Estado de la sesión',
+    open: 'Estado de la sesión: {{summary}}',
+    openHint: 'Muestra los tokens en uso y cuándo se reinician los límites',
+    short: { context: 'ctx', fiveHour: '5h', sevenDay: 'sem' },
+    labels: {
+      model: 'Modelo',
+      effort: 'Esfuerzo',
+      context: 'Contexto',
+      fiveHour: 'Límite de 5 horas',
+      sevenDay: 'Límite semanal',
+    },
+    contextValue: '{{used}} / {{size}} tokens ({{percent}})',
+    limitValue: '{{percent}} · se reinicia {{time}}',
+  },
   sessionDetails: {
     title: 'Detalles de la sesión',
     open: 'Detalles de la sesión: {{title}}',
