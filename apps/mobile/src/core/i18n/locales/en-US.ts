@@ -115,6 +115,9 @@ const enUS = {
     placeholder: 'message Claude… (@ files, / commands)',
     placeholderReadOnly: 'read-only session',
     confirmCtrlC: 'Send Ctrl+C to the session?',
+    showSpecialKeys: 'Show special keys',
+    hideSpecialKeys: 'Hide special keys',
+    hideKeyboard: 'Hide keyboard',
     moreLines_one: '… +{{count}} line',
     moreLines_other: '… +{{count}} lines',
     errors: {

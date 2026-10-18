@@ -113,6 +113,9 @@ const ptBR = {
     placeholder: 'mensagem para o Claude… (@ arquivos, / comandos)',
     placeholderReadOnly: 'sessão somente leitura',
     confirmCtrlC: 'Enviar Ctrl+C para a sessão?',
+    showSpecialKeys: 'Mostrar teclas especiais',
+    hideSpecialKeys: 'Ocultar teclas especiais',
+    hideKeyboard: 'Ocultar teclado',
     moreLines_one: '… +{{count}} linha',
     moreLines_other: '… +{{count}} linhas',
     errors: {
