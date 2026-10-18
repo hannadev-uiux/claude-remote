@@ -107,3 +107,45 @@ The session header SHALL have a single "More options" button that opens a menu w
 #### Scenario: Load earlier
 - **WHEN** the transcript has older pages and the user taps "Load earlier"
 - **THEN** older prompts are added to the end of the list
+
+### Requirement: Tool call details
+An expanded tool call SHALL show its details in three tabs: **Output** (the diff for `Edit`, `MultiEdit` and `Write`, then the tool result, or a running indicator while there is none), **Input** (the tool input as labeled fields formatted per tool, with the top-level keys as fallback for unknown tools) and **JSON** (the raw tool name, input and result). A result with no matching tool call MUST show only Output and JSON. The app MUST remember the last tab chosen per tool type, with every MCP tool counted as one type, across app restarts; a tool type never chosen MUST open on Output. Outputs and JSON longer than 4,000 characters MUST be cut with a "Show more" control that reveals the full text. Texts in the tabs MUST be selectable. Tab names and field labels SHALL be translated (pt-BR, en-US, es-ES).
+
+#### Scenario: Bash call
+- **WHEN** the user expands a `Bash` call with `command` "pnpm test" that has finished
+- **THEN** the Output tab is selected and shows the command output, and the Input tab shows a "Command" field with "pnpm test"
+
+#### Scenario: Read range
+- **WHEN** the user opens the Input tab of a `Read` call with `offset` 10 and `limit` 50
+- **THEN** it shows the file path and the lines "10–59"
+
+#### Scenario: Remembered tab
+- **WHEN** the user picks the JSON tab on a `Grep` call and later expands another `Grep` call, even after restarting the app
+- **THEN** the JSON tab opens, while a `Bash` call still opens on Output
+
+#### Scenario: Long output
+- **WHEN** a result has more than 4,000 characters
+- **THEN** the Output tab shows the first 4,000 and a "Show more" control, and tapping it shows the whole result
+
+#### Scenario: Unknown tool
+- **WHEN** the user opens the Input tab of a tool the app does not know
+- **THEN** each top-level input key is listed with its value, objects as compact JSON
+
+### Requirement: Session details
+Tapping the session title in the header, or the folder in the row below it, SHALL open a "Session details" sheet. The title MUST be exposed as a button with a localized accessibility label. The sheet SHALL list the full folder path, the git branch and worktree root when the folder is in git, the profile name, alias and config dir, the state, the permission mode, whether the session is controllable or read-only, the tmux pane when there is one, the session id and the last update. Values MUST wrap instead of being cut and MUST be selectable. The folder, the worktree root and the session id SHALL have a Copy action that puts the full value on the clipboard. The sheet MUST close with its Close button, by tapping outside and with the Android back button. All texts MUST be translated.
+
+#### Scenario: Long folder
+- **WHEN** the user taps the title of a session whose folder is longer than the screen width
+- **THEN** the sheet shows the full path wrapped over several lines
+
+#### Scenario: Copy the folder
+- **WHEN** the user taps Copy on the folder row
+- **THEN** the full path is on the clipboard and the row briefly shows "Copied"
+
+#### Scenario: Read-only session
+- **WHEN** the session has no tmux pane
+- **THEN** the sheet shows the access as read-only and has no pane row
+
+#### Scenario: Android back
+- **WHEN** the sheet is open on Android and the user presses back
+- **THEN** the sheet closes and the session screen stays open
