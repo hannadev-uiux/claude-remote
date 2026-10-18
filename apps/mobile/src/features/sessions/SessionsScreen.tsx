@@ -16,6 +16,7 @@ import { SessionRow } from './components/SessionRow'
 import { SessionSearch } from './components/SessionSearch'
 import { isFiltering, listSessions, NO_FILTER, type SessionFilter, type StateFilter } from './filter'
 import { moveCursor } from './keyboard-nav'
+import { setSessionSort, useSessionSortStore } from './sort-store'
 import { refreshSessions, useSessionsStore } from './store'
 
 type Props = {
@@ -51,7 +52,8 @@ export function SessionsScreen({
   const toggleState = (state: Exclude<StateFilter, 'all'>) =>
     changeFilter({ state: filter.state === state ? 'all' : state })
 
-  const items = useMemo(() => listSessions(Object.values(sessions), filter), [sessions, filter])
+  const sort = useSessionSortStore((s) => s.sort)
+  const items = useMemo(() => listSessions(Object.values(sessions), filter, sort), [sessions, filter, sort])
   const profilesById = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles])
   const sharedCheckout = useMemo(() => sharedCheckoutCounts(Object.values(sessions)), [sessions])
   const sessionIds = useMemo(() => items.map((session) => session.id), [items])
@@ -127,6 +129,15 @@ export function SessionsScreen({
           label={t('sessions.ended')}
           selected={filter.state === 'ended'}
           onPress={() => toggleState('ended')}
+        />
+        <View style={styles.divider} />
+        <Chip
+          ghost
+          label={`${t(`sessions.sort.${sort}`)} ▾`}
+          onPress={() => {
+            void setSessionSort(sort === 'recent' ? 'state' : 'recent')
+            listRef.current?.scrollToOffset({ offset: 0, animated: false })
+          }}
         />
       </ScrollView>
       <SessionSearch value={filter.query} onChange={(query) => changeFilter({ query })} />

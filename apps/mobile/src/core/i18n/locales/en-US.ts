@@ -54,9 +54,10 @@ const enUS = {
   },
   time: {
     now: 'now',
-    minutesAgo: '{{count}} min ago',
-    hoursAgo: '{{count}} h ago',
-    daysAgo: '{{count}} d ago',
+    minutes: '{{count}} min',
+    hours: '{{count}} h',
+    yesterday: 'yesterday',
+    days: '{{count}} d',
   },
   pairing: {
     title: 'Pair with your computer',
@@ -473,6 +474,7 @@ const enUS = {
     subagents_one: '+{{count}} subagent',
     subagents_other: '+{{count}} subagents',
     muted: 'muted',
+    sort: { recent: 'Recent', state: 'By state', label: 'Sort' },
     all: 'all',
     active: 'active',
     ended: 'ended',

@@ -223,7 +223,9 @@ async function registerFeatures(
   desktop: DesktopOptions | undefined,
 ): Promise<{ mute: MuteStore; pushMode: () => PushMode }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
-  const transcript = registerTranscriptFeature(ctx, sessions.store)
+  const transcript = registerTranscriptFeature(ctx, sessions.store, (id, at) =>
+    sessions.service.noteActivity(id, at),
+  )
   registerSubagentsFeature(ctx, sessions.store, transcript.addResolver)
   registerStatusLineFeature(ctx, sessions.store)
   const sessionLock = new KeyedMutex()

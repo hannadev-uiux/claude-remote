@@ -43,7 +43,24 @@ export function compareSessions(a: Session, b: Session): number {
   return STATE_ORDER[a.state] - STATE_ORDER[b.state] || b.updatedAt.localeCompare(a.updatedAt)
 }
 
-/** The sessions that match `filter`, as one flat, ordered list (profiles are filters, not groups). */
-export function listSessions(sessions: Iterable<Session>, filter: SessionFilter = NO_FILTER): Session[] {
-  return [...sessions].filter((session) => matchesFilter(session, filter)).sort(compareSessions)
+/** Newest activity first, whatever the state; ties by title so the order is stable. */
+export function compareByRecency(a: Session, b: Session): number {
+  return b.updatedAt.localeCompare(a.updatedAt) || a.title.localeCompare(b.title)
+}
+
+/** `recent` (default): last activity first. `state`: waiting, running, idle, ended, then recency. */
+export type SessionSort = 'recent' | 'state'
+
+const COMPARATORS: Record<SessionSort, (a: Session, b: Session) => number> = {
+  recent: compareByRecency,
+  state: compareSessions,
+}
+
+/** The sessions that match `filter`, as one flat list in the chosen order (profiles are filters, not groups). */
+export function listSessions(
+  sessions: Iterable<Session>,
+  filter: SessionFilter = NO_FILTER,
+  sort: SessionSort = 'recent',
+): Session[] {
+  return [...sessions].filter((session) => matchesFilter(session, filter)).sort(COMPARATORS[sort])
 }

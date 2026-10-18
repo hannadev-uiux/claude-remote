@@ -12,6 +12,8 @@ const PersistedLinkSchema = z.object({
   cwd: z.string(),
   title: z.string(),
   transcriptPath: z.string().nullable(),
+  /** Last activity, kept across restarts (absent in state files written before it existed). */
+  updatedAt: z.string().optional(),
 })
 export type PersistedLink = z.infer<typeof PersistedLinkSchema>
 const PersistedStateSchema = z.object({ links: z.array(PersistedLinkSchema) })
@@ -57,11 +59,13 @@ export class SessionStore {
     const previous = this.sessions.get(id)
     const base = previous ?? defaults?.()
     if (!base) return undefined
-    const { updatedAt: _ignored, ...rest } = patch
+    const { updatedAt: stamp, ...rest } = patch
     const candidate: SessionRecord = { ...base, ...rest, id }
-    if (previous && isDeepStrictEqual({ ...candidate, updatedAt: previous.updatedAt }, previous))
+    // A newer explicit stamp is a change on its own (activity touch); an equal or older one is not.
+    const touched = stamp !== undefined && (!previous || stamp > previous.updatedAt)
+    if (previous && !touched && isDeepStrictEqual({ ...candidate, updatedAt: previous.updatedAt }, previous))
       return previous
-    const next: SessionRecord = { ...candidate, updatedAt: patch.updatedAt ?? new Date().toISOString() }
+    const next: SessionRecord = { ...candidate, updatedAt: stamp ?? new Date().toISOString() }
     this.sessions.set(id, next)
     this.broadcaster.broadcast({ type: 'session.updated', session: toWire(next) })
     for (const listener of this.listeners) listener(next, previous)
@@ -102,6 +106,7 @@ export class SessionStore {
           cwd: s.cwd,
           title: s.title,
           transcriptPath: s.transcriptPath,
+          updatedAt: s.updatedAt,
         })
       }
     }

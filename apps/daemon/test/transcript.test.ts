@@ -203,7 +203,12 @@ describe('TranscriptService', () => {
     const path = join(home.dir(), 's.jsonl')
     await copyFile(fixture, path)
     const metas: unknown[] = []
-    service = new TranscriptService(silentLogger, (_id, meta) => metas.push(meta))
+    const activity: string[] = []
+    service = new TranscriptService(
+      silentLogger,
+      (_id, meta) => metas.push(meta),
+      (id) => activity.push(id),
+    )
     const conn = fakeConnection()
     const first = await service.subscribe({ sessionId: 's', path }, conn)
     expect(first.entries.length).toBe(11)
@@ -224,6 +229,8 @@ describe('TranscriptService', () => {
       entry: { kind: 'assistant_text', text: 'novo' },
     })
     expect(metas).toContainEqual({ permissionMode: 'plan' })
+    // New lines read for the session count as its activity (the session list sorts by it).
+    expect(activity).toContain('s')
 
     const other = fakeConnection()
     const resumed = await service.subscribe({ sessionId: 's', path }, other, 19)

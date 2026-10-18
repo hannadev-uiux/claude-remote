@@ -57,7 +57,7 @@ describe('sessionDetails', () => {
     expect(value('mode')).toBe('accept edits')
     expect(value('access')).toBe('controllable (tmux)')
     expect(value('pane')).toBe('%12')
-    expect(value('updated')).toMatch(/^5 min ago · /)
+    expect(value('updated')).toMatch(/^5 min · /)
   })
 
   test('adds branch and worktree (copyable) inside git', () => {

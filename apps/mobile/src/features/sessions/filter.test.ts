@@ -31,19 +31,38 @@ describe('listSessions', () => {
     s('g', 'other', 'idle', '2026-10-14T07:00:00Z'),
   ]
 
-  test('one flat list: waiting, running, idle, ended, newest first inside each state', () => {
-    expect(listSessions(sessions).map((x) => x.id)).toEqual(['b', 'd', 'e', 'a', 'f', 'g', 'c'])
+  test('by default one flat list by last activity, whatever the state', () => {
+    expect(listSessions(sessions).map((x) => x.id)).toEqual(['e', 'c', 'a', 'b', 'd', 'f', 'g'])
+  })
+
+  test('ties on the same activity are ordered by title', () => {
+    expect(listSessions(sessions.slice(5), NO_FILTER, 'recent').map((x) => x.id)).toEqual(['f', 'g'])
+  })
+
+  test('by state: waiting, running, idle, ended, newest first inside each state', () => {
+    expect(listSessions(sessions, NO_FILTER, 'state').map((x) => x.id)).toEqual([
+      'b',
+      'd',
+      'e',
+      'a',
+      'f',
+      'g',
+      'c',
+    ])
   })
 
   test('filters by profile without grouping', () => {
     expect(listSessions(sessions, { ...NO_FILTER, profileId: 'drclaude' }).map((x) => x.id)).toEqual([
-      'b',
       'a',
+      'b',
     ])
   })
 
   test('accepts any iterable', () => {
-    expect(listSessions(new Set(sessions.slice(0, 2))).map((x) => x.id)).toEqual(['b', 'a'])
+    expect(listSessions(new Set(sessions.slice(0, 2)), NO_FILTER, 'state').map((x) => x.id)).toEqual([
+      'b',
+      'a',
+    ])
   })
 })
 

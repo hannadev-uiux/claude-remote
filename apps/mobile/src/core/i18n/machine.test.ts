@@ -31,7 +31,7 @@ describe('machine name in the catalogs', () => {
   })
 
   test('other placeholders are untouched', () => {
-    expect(createI18n('en-US').t('time.minutesAgo', { count: 3 })).toBe('3 min ago')
+    expect(createI18n('en-US').t('time.minutes', { count: 3 })).toBe('3 min')
   })
 
   test.each(LOCALES)('%s spells the machine placeholders exactly', (locale) => {

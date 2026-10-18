@@ -50,9 +50,10 @@ const esES = {
   },
   time: {
     now: 'ahora',
-    minutesAgo: 'hace {{count}} min',
-    hoursAgo: 'hace {{count}} h',
-    daysAgo: 'hace {{count}} d',
+    minutes: '{{count}} min',
+    hours: '{{count}} h',
+    yesterday: 'ayer',
+    days: '{{count}} d',
   },
   pairing: {
     title: 'Vincular con el ordenador',
@@ -473,6 +474,7 @@ const esES = {
     subagents_one: '+{{count}} subagente',
     subagents_other: '+{{count}} subagentes',
     muted: 'silenciada',
+    sort: { recent: 'Recientes', state: 'Por estado', label: 'Ordenar' },
     all: 'todos',
     active: 'activas',
     ended: 'terminadas',
