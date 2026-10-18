@@ -9,7 +9,7 @@ import { spawnJsonLines, trayAssetsDir, trayCommand } from '../../infra/tray-hel
 import type { DaemonContext } from '../../main.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from '../update/update.ts'
-import { isQuietMoment, isUpdateChannel, underServiceManager } from './channel.ts'
+import { isQuietMoment, isUpdateChannel, underServiceManager, updateLabel } from './channel.ts'
 import { type AvailableUpdate, UpdateChecker } from './checker.ts'
 import { buildTrayMenu, CHANNEL_ACTION_PREFIX, TRAY_ACTIONS } from './menu.ts'
 import { TrayHost } from './tray-host.ts'
@@ -41,9 +41,11 @@ export async function registerUpdatesFeature(
   const source = updateSource(deps.options.cliPath, installerSourceDir())
   let settings = { update: ctx.config.update, tray: ctx.config.tray }
   let updating = false
+  /** Commit whose update failed: automatic updates do not retry it (the menu still can). */
+  let failedCommit: string | null = null
 
   const notifyAvailable = (available: AvailableUpdate) => {
-    const version = available.version ?? '?'
+    const version = updateLabel(available, DAEMON_VERSION)
     return available.downgrade
       ? desktop.notify(m.older(version), m.olderBody)
       : desktop.notify(m.available(version), m.availableBody)
@@ -91,7 +93,12 @@ export async function registerUpdatesFeature(
           version: DAEMON_VERSION,
           channel: settings.update.channel,
           auto: settings.update.auto,
-          available: checker?.state.available ?? null,
+          available: checker?.state.available
+            ? {
+                version: updateLabel(checker.state.available, DAEMON_VERSION),
+                downgrade: checker.state.available.downgrade,
+              }
+            : null,
           checking: checker?.checking ?? false,
           updating,
           canUpdate: checker !== null,
@@ -106,21 +113,36 @@ export async function registerUpdatesFeature(
     if (updating || !source.ok || !deps.options.cliPath || !available) return
     updating = true
     ctx.logger.info({ version: available.version, channel: settings.update.channel }, 'updating')
-    void desktop.notify(m.updating(available.version ?? '?'), '')
-    runDetachedUpdate({
-      nodePath: process.execPath,
-      cliPath: deps.options.cliPath,
-      ref: settings.update.channel,
-      logFile: join(paths.logs(), 'update.log'),
-      systemdRun: Boolean(process.env.INVOCATION_ID),
-    })
+    void desktop.notify(m.updating(updateLabel(available, DAEMON_VERSION)), '')
+    try {
+      runDetachedUpdate({
+        nodePath: process.execPath,
+        cliPath: deps.options.cliPath,
+        ref: settings.update.channel,
+        logFile: join(paths.logs(), 'update.log'),
+        systemdRun: Boolean(process.env.INVOCATION_ID),
+        // A successful update restarts this daemon; still being here after a failure frees the menu.
+        onExit: (code) => {
+          if (code === 0) return
+          ctx.logger.warn({ code, log: join(paths.logs(), 'update.log') }, 'update failed')
+          updating = false
+          failedCommit = available.commit
+          refreshMenu()
+        },
+      })
+    } catch (error) {
+      ctx.logger.warn({ err: error }, 'could not start the update')
+      updating = false
+      failedCommit = available.commit
+    }
     refreshMenu()
   }
 
   /** Automatic updates restart the daemon: only when nobody is waiting on Claude, never a downgrade. */
   const maybeAutoUpdate = () => {
     const available = checker?.state.available
-    if (!settings.update.auto || !available || available.downgrade) return
+    if (!settings.update.auto || !available || available.downgrade || available.commit === failedCommit)
+      return
     if (isQuietMoment(deps.store.all(), deps.hasPendingPermission)) runUpdate()
   }
 

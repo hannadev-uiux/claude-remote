@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test, vi } from 'vitest'
@@ -12,10 +12,12 @@ import {
   isDowngrade,
   isQuietMoment,
   underServiceManager,
+  updateLabel,
 } from '../src/features/updates/channel.ts'
 import { CHECK_INTERVAL_MS, readUpdateState, UpdateChecker } from '../src/features/updates/checker.ts'
 import { buildTrayMenu, type TrayItem, type TrayMenuState } from '../src/features/updates/menu.ts'
 import { TrayHost } from '../src/features/updates/tray-host.ts'
+import { runDetachedUpdate } from '../src/infra/desktop.ts'
 import { spawnJsonLines, type TrayProcess, trayAssetsDir, trayCommand } from '../src/infra/tray-helper.ts'
 import { fakeExecutor, useTempHome } from './helpers.ts'
 
@@ -27,6 +29,12 @@ describe('versions and moments', () => {
     expect(compareVersions('v1.2.3', '1.2.3')).toBe(0)
     expect(compareVersions('1.2.3-beta.1', '1.2.3')).toBe(0)
     expect(compareVersions('1.2', '1.2.1')).toBeLessThan(0)
+  })
+
+  test('updateLabel', () => {
+    expect(updateLabel({ version: '0.11.0', commit: 'abcdef123' }, '0.10.0')).toBe('0.11.0')
+    expect(updateLabel({ version: '0.10.0', commit: 'abcdef123' }, '0.10.0')).toBe('0.10.0 (abcdef1)')
+    expect(updateLabel({ version: null, commit: 'abcdef123' }, '0.10.0')).toBe('abcdef1')
   })
 
   test('isDowngrade', () => {
@@ -321,5 +329,25 @@ createInterface({ input: process.stdin }).on('line', (line) => {
     expect(first).toEqual(second)
     expect(first).toMatchObject({ command: expect.stringMatching(/RemoteHarnessTray-[0-9a-f]{12}$/) })
     expect(exec.calls.filter((c) => c.file === 'swiftc')).toHaveLength(1)
+  })
+})
+
+describe('runDetachedUpdate', () => {
+  test('runs `update --ref <channel>` detached, logging to a new folder, and reports the exit', async () => {
+    const cli = join(home.dir(), 'cli.mjs')
+    await writeFile(cli, 'console.log(process.argv.slice(2).join(" ")); process.exit(3)\n')
+    const logFile = join(home.dir(), 'logs', 'update.log')
+    const code = await new Promise<number | null>((resolve) =>
+      runDetachedUpdate({
+        nodePath: process.execPath,
+        cliPath: cli,
+        ref: 'development',
+        logFile,
+        systemdRun: false,
+        onExit: resolve,
+      }),
+    )
+    expect(code).toBe(3)
+    expect(readFileSync(logFile, 'utf8')).toBe('update --ref development\n')
   })
 })

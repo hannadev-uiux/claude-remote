@@ -23,6 +23,16 @@ export function compareVersions(a: string, b: string): number {
   return 0
 }
 
+/**
+ * How to name an available update: its version, plus the short commit when the version did not
+ * change (a new commit on `development` usually keeps the number).
+ */
+export function updateLabel(available: { version: string | null; commit: string }, current: string): string {
+  const commit = available.commit.slice(0, 7)
+  if (!available.version) return commit
+  return available.version === current ? `${available.version} (${commit})` : available.version
+}
+
 /** True when updating to `next` goes back to an older version (e.g. development → main). */
 export function isDowngrade(current: string, next: string | null): boolean {
   return next !== null && compareVersions(next, current) < 0

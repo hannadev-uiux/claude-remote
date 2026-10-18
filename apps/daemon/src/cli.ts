@@ -56,7 +56,7 @@ import { tildify } from './features/setup/profiles.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { STATUS_LINE_SCRIPT } from './features/status-line/wrapper.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
-import { isDowngrade, isUpdateChannel, UPDATE_CHANNELS } from './features/updates/channel.ts'
+import { isDowngrade, isUpdateChannel, UPDATE_CHANNELS, updateLabel } from './features/updates/channel.ts'
 import { readUpdateState, UpdateChecker, type UpdateState } from './features/updates/checker.ts'
 import { WslHost } from './features/wsl/host.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
@@ -656,8 +656,8 @@ function printUpdateState(state: UpdateState | null): void {
   console.log(`· ${u.lastCheck(new Date(state.checkedAt).toLocaleString(configuredLocaleSync()))}`)
   const available = state.available
   if (!available) console.log(`✓ ${u.upToDate}`)
-  else if (available.downgrade) console.log(`· ${u.older(available.version ?? '?')}`)
-  else console.log(`↑ ${u.available(available.version ?? '?')}`)
+  else if (available.downgrade) console.log(`· ${u.older(updateLabel(available, DAEMON_VERSION))}`)
+  else console.log(`↑ ${u.available(updateLabel(available, DAEMON_VERSION))}`)
 }
 
 const push = program.command('push').description(m.cli.push.description)

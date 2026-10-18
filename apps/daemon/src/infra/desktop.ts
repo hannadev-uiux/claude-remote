@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
-import { openSync } from 'node:fs'
+import { mkdirSync, openSync } from 'node:fs'
+import { dirname } from 'node:path'
 import type { Executor } from './exec.ts'
 import type { Platform } from './platform.ts'
 
@@ -61,6 +62,8 @@ export function runDetachedUpdate(o: {
   logFile: string
   env?: NodeJS.ProcessEnv
   systemdRun: boolean
+  /** Exit code of the updater (under systemd: of `systemd-run`, which returns once the unit started). */
+  onExit?: (code: number | null) => void
 }): void {
   const env = o.env ?? process.env
   const command = [o.nodePath, o.cliPath, 'update', '--ref', o.ref]
@@ -70,7 +73,10 @@ export function runDetachedUpdate(o: {
         ['--user', '--collect', '--quiet', '--unit', `remote-harness-update-${Date.now()}`, ...command],
       ] as const)
     : ([command[0]!, command.slice(1)] as const)
+  mkdirSync(dirname(o.logFile), { recursive: true })
   const log = openSync(o.logFile, 'a')
   const child = spawn(file, args, { detached: true, stdio: ['ignore', log, log], env })
+  child.on('error', () => o.onExit?.(null))
+  child.on('exit', (code) => o.onExit?.(code))
   child.unref()
 }
