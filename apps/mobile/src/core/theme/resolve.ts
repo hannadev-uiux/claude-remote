@@ -9,8 +9,8 @@ export function isThemePreference(value: unknown): value is ThemePreference {
   return typeof value === 'string' && (THEME_PREFERENCES as readonly string[]).includes(value)
 }
 
-/** Theme used for each system scheme when the preference is `system` (no light theme yet). */
-const SYSTEM_THEME: Record<ColorScheme, ThemeName> = { dark: 'dark', light: 'dark' }
+/** Theme used for each system scheme when the preference is `system`. */
+const SYSTEM_THEME: Record<ColorScheme, ThemeName> = { dark: 'dark', light: 'light' }
 
 export function resolveThemeName(preference: ThemePreference, system: ColorScheme): ThemeName {
   return preference === 'system' ? SYSTEM_THEME[system] : preference
