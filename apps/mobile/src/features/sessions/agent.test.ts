@@ -33,7 +33,7 @@ describe('agentLabel', () => {
     )
   })
 
-  test('the session agent is unknown until the protocol carries it', () => {
-    expect(sessionAgent({ id: 's1' } as Session)).toBeNull()
+  test('every session is Claude Code until the protocol carries the agent', () => {
+    expect(sessionAgent({ id: 's1' } as Session)).toBe('claude')
   })
 })

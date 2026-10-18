@@ -3,11 +3,11 @@ import type { TFunction } from '../../core/i18n/create'
 import { AGENT_NAMES, type AgentId } from '../../core/theme/agents'
 
 /**
- * The agent running a session. Unknown until the protocol carries it (#108): every session is
- * Claude Code today, but the copy stays neutral ("the agent") instead of assuming it.
+ * The agent running a session. Until the protocol carries it (#108) every session the daemon lists
+ * is Claude Code, which the badge shows; copy that has no session at hand keeps saying "the agent".
  */
 export function sessionAgent(_session: Pick<Session, 'id'>): AgentId | null {
-  return null
+  return 'claude'
 }
 
 /**

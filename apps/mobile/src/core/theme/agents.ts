@@ -20,3 +20,14 @@ export const AGENT_NAMES: Record<AgentId, string> = {
   kimi: 'Kimi',
   qwen: 'Qwen',
 }
+
+/** Two-letter codes shown in the agent badge. */
+export const AGENT_CODES: Record<AgentId, string> = {
+  claude: 'cl',
+  codex: 'cx',
+  kimi: 'ki',
+  qwen: 'qw',
+}
+
+/** Text over an agent color (the agent colors are light enough in every theme). */
+export const AGENT_BADGE_INK = '#0D0D0D'

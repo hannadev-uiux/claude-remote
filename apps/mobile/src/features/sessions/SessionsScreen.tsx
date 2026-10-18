@@ -1,3 +1,4 @@
+import type { Session } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -6,21 +7,14 @@ import { RefreshControl, ScrollView, TextInput, View } from 'react-native'
 import { addListener, constants } from 'react-native-key-command'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { makeStyles, space, useTheme } from '@/core/theme'
-import { Button, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
+import { Button, Chip, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
+import { useMuteStore } from '../mute/store'
 import { NestedSubagents } from '../subagents/SubagentList'
 import { sharedCheckoutCounts } from './checkout'
-import { ProfileHeader } from './components/ProfileHeader'
+import { MachineLine } from './components/MachineLine'
 import { SessionRow } from './components/SessionRow'
 import { SessionSearch } from './components/SessionSearch'
-import {
-  flattenSections,
-  groupSessions,
-  isFiltering,
-  NO_FILTER,
-  type SessionFilter,
-  type SessionListItem,
-  type StateFilter,
-} from './grouping'
+import { isFiltering, listSessions, NO_FILTER, type SessionFilter, type StateFilter } from './filter'
 import { moveCursor } from './keyboard-nav'
 import { refreshSessions, useSessionsStore } from './store'
 
@@ -44,9 +38,10 @@ export function SessionsScreen({
   const sessions = useSessionsStore((s) => s.sessions)
   const loaded = useSessionsStore((s) => s.loaded)
   const refreshing = useSessionsStore((s) => s.refreshing)
+  const muted = useMuteStore()
   const [filter, setFilter] = useState<SessionFilter>(NO_FILTER)
   const [keyboardCursor, setKeyboardCursor] = useState<string | null>(null)
-  const listRef = useRef<FlashListRef<SessionListItem>>(null)
+  const listRef = useRef<FlashListRef<Session>>(null)
 
   // A new filter is a new list: start from the top.
   const changeFilter = (patch: Partial<SessionFilter>) => {
@@ -56,15 +51,10 @@ export function SessionsScreen({
   const toggleState = (state: Exclude<StateFilter, 'all'>) =>
     changeFilter({ state: filter.state === state ? 'all' : state })
 
-  const items = useMemo(
-    () => flattenSections(groupSessions(Object.values(sessions), profiles, filter)),
-    [sessions, profiles, filter],
-  )
+  const items = useMemo(() => listSessions(Object.values(sessions), filter), [sessions, filter])
+  const profilesById = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles])
   const sharedCheckout = useMemo(() => sharedCheckoutCounts(Object.values(sessions)), [sessions])
-  const sessionIds = useMemo(
-    () => items.flatMap((item) => (item.type === 'session' ? [item.session.id] : [])),
-    [items],
-  )
+  const sessionIds = useMemo(() => items.map((session) => session.id), [items])
   const sessionIdsRef = useRef(sessionIds)
   sessionIdsRef.current = sessionIds
   const keyboardCursorRef = useRef(keyboardCursor)
@@ -102,7 +92,7 @@ export function SessionsScreen({
     <Screen>
       <ConnectionBanner />
       <DaemonUpdateBanner />
-      <SessionSearch value={filter.query} onChange={(query) => changeFilter({ query })} />
+      <MachineLine sessions={items} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -112,61 +102,55 @@ export function SessionsScreen({
       >
         {profiles.length > 1 ? (
           <>
-            <Button
+            <Chip
               label={t('sessions.all')}
-              compact
-              variant={filter.profileId === null ? 'primary' : 'secondary'}
+              selected={filter.profileId === null}
               onPress={() => changeFilter({ profileId: null })}
             />
             {profiles.map((p) => (
-              <Button
+              <Chip
                 key={p.id}
                 label={p.name}
-                compact
-                variant={filter.profileId === p.id ? 'primary' : 'secondary'}
+                selected={filter.profileId === p.id}
                 onPress={() => changeFilter({ profileId: filter.profileId === p.id ? null : p.id })}
               />
             ))}
             <View style={styles.divider} />
           </>
         ) : null}
-        <Button
+        <Chip
           label={t('sessions.active')}
-          compact
-          variant={filter.state === 'active' ? 'primary' : 'secondary'}
+          selected={filter.state === 'active'}
           onPress={() => toggleState('active')}
         />
-        <Button
+        <Chip
           label={t('sessions.ended')}
-          compact
-          variant={filter.state === 'ended' ? 'primary' : 'secondary'}
+          selected={filter.state === 'ended'}
           onPress={() => toggleState('ended')}
         />
       </ScrollView>
-      <FlashList<SessionListItem>
+      <SessionSearch value={filter.query} onChange={(query) => changeFilter({ query })} />
+      <FlashList<Session>
         ref={listRef}
         data={items}
-        // On by default in FlashList 2: when a filter brings the other profiles back, it kept the
-        // list anchored to the last profile's rows, with the rest above the viewport.
+        // On by default in FlashList 2: when a filter brings other sessions back, it kept the list
+        // anchored to the last rows, with the rest above the viewport.
         maintainVisibleContentPosition={{ disabled: true }}
-        keyExtractor={(item) => (item.type === 'header' ? `h:${item.profile.id}` : item.session.id)}
-        getItemType={(item) => item.type}
-        renderItem={({ item }) =>
-          item.type === 'header' ? (
-            <ProfileHeader profile={item.profile} count={item.count} />
-          ) : (
-            <>
-              <SessionRow
-                session={item.session}
-                pendingPermissions={pendingBySession[item.session.id] ?? 0}
-                sharedCheckout={sharedCheckout[item.session.id] ?? 0}
-                selected={item.session.id === selectedSessionId}
-                keyboardFocused={item.session.id === keyboardCursor}
-              />
-              <NestedSubagents sessionId={item.session.id} subagents={item.session.subagents} />
-            </>
-          )
-        }
+        keyExtractor={(session) => session.id}
+        renderItem={({ item: session }) => (
+          <>
+            <SessionRow
+              session={session}
+              profile={profilesById.get(session.profileId)}
+              muted={muted.sessions.includes(session.id) || muted.profiles.includes(session.profileId)}
+              pendingPermissions={pendingBySession[session.id] ?? 0}
+              sharedCheckout={sharedCheckout[session.id] ?? 0}
+              selected={session.id === selectedSessionId}
+              keyboardFocused={session.id === keyboardCursor}
+            />
+            <NestedSubagents sessionId={session.id} subagents={session.subagents} />
+          </>
+        )}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
@@ -202,13 +186,13 @@ export function SessionsScreen({
 const useStyles = makeStyles((theme) => ({
   // A horizontal ScrollView grows to fill a column parent; keep it at the height of the chips.
   filterBar: { flexGrow: 0 },
-  filters: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm, alignItems: 'center' },
+  filters: { gap: space.xs, paddingHorizontal: space.lg, paddingBottom: space.sm, alignItems: 'center' },
   divider: {
     width: 1,
     alignSelf: 'stretch',
     backgroundColor: theme.colors.border,
     marginHorizontal: space.xs,
   },
-  list: { paddingBottom: space.xxl },
+  list: { paddingTop: space.sm, paddingBottom: space.xxl },
   code: { backgroundColor: theme.colors.surface, padding: space.md, borderRadius: 8, gap: space.xs },
 }))

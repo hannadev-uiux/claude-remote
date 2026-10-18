@@ -1,18 +1,6 @@
-import type { Profile, Session } from '@remote-harness/protocol'
+import type { Session } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
-import {
-  flattenSections,
-  groupSessions,
-  isFiltering,
-  matchesFilter,
-  NO_FILTER,
-  normalizeSearch,
-} from './grouping'
-
-const profiles: Profile[] = [
-  { id: 'claudin', name: 'Pessoal', configDir: '', color: '#D97757' },
-  { id: 'drclaude', name: 'DoctorX', configDir: '', color: '#61AFEF' },
-]
+import { isFiltering, listSessions, matchesFilter, NO_FILTER, normalizeSearch } from './filter'
 
 function s(id: string, profileId: string, state: Session['state'], updatedAt: string): Session {
   return {
@@ -32,7 +20,7 @@ function s(id: string, profileId: string, state: Session['state'], updatedAt: st
   }
 }
 
-describe('groupSessions', () => {
+describe('listSessions', () => {
   const sessions = [
     s('a', 'drclaude', 'idle', '2026-10-14T10:00:00Z'),
     s('b', 'drclaude', 'waiting', '2026-10-14T09:00:00Z'),
@@ -43,22 +31,19 @@ describe('groupSessions', () => {
     s('g', 'other', 'idle', '2026-10-14T07:00:00Z'),
   ]
 
-  test('orders groups by profile and sessions by state then recency', () => {
-    const sections = groupSessions(sessions, profiles)
-    expect(sections.map((x) => x.profile.id)).toEqual(['claudin', 'drclaude', 'other'])
-    expect(sections[0]?.sessions.map((x) => x.id)).toEqual(['d', 'e', 'f', 'c'])
-    expect(sections[1]?.sessions.map((x) => x.id)).toEqual(['b', 'a'])
+  test('one flat list: waiting, running, idle, ended, newest first inside each state', () => {
+    expect(listSessions(sessions).map((x) => x.id)).toEqual(['b', 'd', 'e', 'a', 'f', 'g', 'c'])
   })
 
-  test('filters by profile', () => {
-    expect(
-      groupSessions(sessions, profiles, { ...NO_FILTER, profileId: 'drclaude' }).map((x) => x.profile.id),
-    ).toEqual(['drclaude'])
+  test('filters by profile without grouping', () => {
+    expect(listSessions(sessions, { ...NO_FILTER, profileId: 'drclaude' }).map((x) => x.id)).toEqual([
+      'b',
+      'a',
+    ])
   })
 
-  test('flattens into header + rows', () => {
-    const items = flattenSections(groupSessions(sessions, profiles, { ...NO_FILTER, profileId: 'drclaude' }))
-    expect(items.map((i) => i.type)).toEqual(['header', 'session', 'session'])
+  test('accepts any iterable', () => {
+    expect(listSessions(new Set(sessions.slice(0, 2))).map((x) => x.id)).toEqual(['b', 'a'])
   })
 })
 
