@@ -12,6 +12,10 @@ const ptBR = {
     generic: 'o agente',
     genericSentence: 'O agente',
   },
+  machine: {
+    generic: 'sua máquina',
+    genericSentence: 'Sua máquina',
+  },
   nav: {
     pair: 'Parear',
     setupGuide: 'Primeira configuração',
@@ -22,7 +26,7 @@ const ptBR = {
   },
   connection: {
     banner: {
-      connecting: 'conectando ao daemon…',
+      connecting: 'conectando a {{machine}}…',
       authenticating: 'autenticando…',
       reconnecting: 'reconectando…',
       unauthorized: 'token recusado — pareie novamente',
@@ -41,8 +45,8 @@ const ptBR = {
   errors: {
     invalidCwd: 'Diretório inválido.',
     notFound: 'Não encontrado: pode ter sido fechado ou removido.',
-    disconnected: 'Sem conexão com o daemon.',
-    timeout: 'O daemon não respondeu.',
+    disconnected: 'Sem conexão com {{machine}}.',
+    timeout: '{{Machine}} não respondeu.',
   },
   time: {
     now: 'agora',
@@ -68,9 +72,9 @@ const ptBR = {
     token: 'token',
     connect: 'Conectar',
     errors: {
-      timeout: 'Tempo esgotado. O computador está no Tailscale e o daemon rodando?',
-      unauthorized: 'Token recusado pelo daemon.',
-      failed: 'Não foi possível conectar ao daemon.',
+      timeout: 'Tempo esgotado. O computador está no Tailscale com o Remote Harness rodando?',
+      unauthorized: '{{Machine}} recusou o pareamento. Pareie de novo.',
+      failed: 'Não foi possível conectar a {{machine}}.',
     },
   },
   setupGuide: {
@@ -195,14 +199,15 @@ const ptBR = {
       firebase: 'Firebase próprio',
       relay: 'embutido',
       off: 'desligado',
-      unknown: 'desconhecido (atualize o daemon)',
+      unknown: 'desconhecido (atualize o Remote Harness no computador)',
     },
     permission: { granted: 'permitidas', denied: 'não permitidas', unknown: 'ainda não pedidas' },
     issues: {
       noFirebase: 'Este build do app não tem notificações push.',
       permissionDenied: 'As notificações do Remote Harness estão desligadas nos ajustes do sistema.',
       daemonOff: 'O push está desligado no computador. Rode `remote-harness push on` para religar.',
-      notRegistered: 'Este celular ainda não se registrou no daemon. Deixe o app conectado por um instante.',
+      notRegistered:
+        'Este celular ainda não se registrou em {{machine}}. Deixe o app conectado por um instante.',
       noRelay:
         'Este build não tem push relay, então o computador precisa de uma conta de serviço do Firebase (veja o README).',
       relayFailed: 'Não foi possível falar com o push relay. O app tenta de novo na próxima conexão.',
@@ -213,8 +218,8 @@ const ptBR = {
     results: {
       sent: 'Teste enviado. Deve chegar em alguns segundos.',
       off: 'O push está desligado no computador.',
-      unregistered: 'O daemon ainda não conhece este celular. Reconecte e tente de novo.',
-      failed: 'O envio falhou. Veja os logs do daemon (`remote-harness doctor`).',
+      unregistered: '{{Machine}} ainda não conhece este celular. Reconecte e tente de novo.',
+      failed: 'O envio falhou. No computador, rode `remote-harness doctor` para ver os logs.',
     },
   },
   liveStatus: {
@@ -364,7 +369,7 @@ const ptBR = {
       tooLarge: 'Imagem grande demais (máx. 5 MB).',
       unsupported: 'Formato de imagem não suportado.',
       expired: 'Uma foto anexada expirou no computador. Anexe de novo.',
-      daemonOutdated: 'O daemon no seu computador não recebe fotos. Atualize com `claude-remote update`.',
+      daemonOutdated: '{{Machine}} ainda não recebe fotos. No computador, rode `remote-harness update`.',
       cameraDenied: 'Acesso à câmera negado. Permita nos Ajustes.',
       loadFailed: 'Não foi possível carregar a foto.',
     },
@@ -488,7 +493,8 @@ const ptBR = {
     more_other: '+{{count}} subagentes ({{running}} rodando)',
   },
   settings: {
-    daemon: 'Daemon',
+    machine: 'Máquina',
+    name: 'nome',
     host: 'host',
     version: 'versão',
     protocol: 'protocolo',
@@ -503,8 +509,8 @@ const ptBR = {
     },
     profiles: 'Perfis',
     noProfiles: 'Nenhum perfil encontrado no computador.',
-    forgetButton: 'Esquecer daemon',
-    forgetTitle: 'Esquecer daemon?',
+    forgetButton: 'Esquecer esta máquina',
+    forgetTitle: 'Esquecer esta máquina?',
     forgetBody: 'O token será apagado deste aparelho. Você precisará parear de novo.',
     forget: 'Esquecer',
   },
@@ -531,7 +537,7 @@ const ptBR = {
     error: 'Não consegui procurar atualizações. Tente mais tarde.',
     disabled: 'As atualizações pelo ar estão desligadas neste build: instale um build novo para atualizar.',
     daemonOutdated:
-      'O computador roda o Remote Harness {{version}}; este app precisa da {{minimum}} ou mais nova. No computador, rode claude-remote update.',
+      'O computador roda o Remote Harness {{version}}; este app precisa da {{minimum}} ou mais nova. No computador, rode `remote-harness update`.',
     dismiss: 'Dispensar',
   },
   terminal: {

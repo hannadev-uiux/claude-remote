@@ -13,7 +13,7 @@ describe('promptErrorMessage', () => {
       'Sessão sem painel tmux: somente leitura.',
     )
     expect(promptErrorMessage(new DaemonRequestError('disconnected', 'x'), t)).toBe(
-      'Sem conexão com o daemon.',
+      'Sem conexão com sua máquina.',
     )
     expect(promptErrorMessage(new DaemonRequestError('internal', 'boom'), t)).toBe('boom')
     expect(promptErrorMessage(new Error('e'), t)).toBe('e')

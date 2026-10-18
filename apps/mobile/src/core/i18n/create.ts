@@ -1,5 +1,6 @@
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@remote-harness/protocol'
 import i18next, { type i18n, type Module, type TFunction } from 'i18next'
+import { machineName } from './machine'
 import { resources } from './resources'
 
 export type { TFunction }
@@ -19,6 +20,14 @@ export function createI18n(locale: Locale, plugins: readonly Module[] = []): i18
     resources,
     compatibilityJSON: 'v4',
     interpolation: { escapeValue: false },
+    // `{{machine}}` / `{{Machine}}` name the paired computer without every call site passing it:
+    // the registered name, else the catalog's generic form. An explicit variable still wins.
+    missingInterpolationHandler: (text: string, match: unknown) => {
+      const variable = Array.isArray(match) ? String(match[1]).trim() : ''
+      if (variable === 'machine') return machineName() ?? instance.t('machine.generic')
+      if (variable === 'Machine') return machineName() ?? instance.t('machine.genericSentence')
+      return text
+    },
     returnNull: false,
     initAsync: false,
   })
