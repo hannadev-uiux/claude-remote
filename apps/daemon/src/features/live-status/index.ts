@@ -73,8 +73,13 @@ export function registerLiveStatusFeature(
         return service.handle(sessionId, { type: 'end' })
     }
   })
+  // Tool permissions can be answered from the lock screen; questions and plans only in the app.
   ctx.bus.on('permission.requested', (info) =>
-    service.handle(info.sessionId, { type: 'waiting', permission: true }),
+    service.handle(info.sessionId, {
+      type: 'waiting',
+      permission: true,
+      ...(info.interaction ? {} : { pending: { requestId: info.requestId, tool: info.tool } }),
+    }),
   )
   ctx.bus.on('permission.resolved', ({ info }) => service.handle(info.sessionId, { type: 'resumed' }))
   ctx.onStop(() => service.dispose())

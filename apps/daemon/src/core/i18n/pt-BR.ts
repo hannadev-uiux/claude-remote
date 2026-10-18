@@ -388,6 +388,10 @@ export const ptBR = {
     },
     tools: (count: number) => (count === 1 ? '1 ferramenta' : `${count} ferramentas`),
     ago: 'há {time}',
+    allow: 'Permitir',
+    deny: 'Negar',
+    total: 'total',
+    closedHint: 'transcrição mantida · retome pelo app',
   },
   updates: {
     available: (version: string) => `Remote Harness ${version} disponível`,

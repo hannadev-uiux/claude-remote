@@ -321,8 +321,16 @@ describe('client messages', () => {
       ago: '{time} ago',
       changedAt: 2,
       endedAt: 3,
+      glyphs: ['⌘'],
+      pending: { requestId: 'r1', tool: 'Bash', allow: 'Allow', deny: 'Deny' },
+      hint: '',
     }
     expect(LiveStatusPropsSchema.parse({ ...full, prompt: 'secret' })).toEqual(full)
+    // The pending request carries identifiers and labels only.
+    expect(
+      LiveStatusPropsSchema.parse({ ...full, pending: { ...full.pending, input: { command: 'rm' } } })
+        .pending,
+    ).toEqual(full.pending)
     expect(LiveStatusPropsSchema.safeParse({ ...props, state: 'error' }).success).toBe(false)
   })
 
@@ -357,6 +365,9 @@ describe('client messages', () => {
       ago: '',
       changedAt: 0,
       endedAt: null,
+      glyphs: [],
+      pending: null,
+      hint: '',
     })
   })
 
