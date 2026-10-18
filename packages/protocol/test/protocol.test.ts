@@ -43,6 +43,7 @@ const clientSamples: ClientMessage[] = [
   },
   { type: 'device.register', id: '1', fcmToken: 'tok' },
   { type: 'device.register', id: '1', fcmToken: 'tok', platform: 'android' },
+  { type: 'device.unregister', id: '1', fcmToken: 'tok' },
   { type: 'app.visibility', id: '1', foreground: true },
   { type: 'push.test', id: '1', fcmToken: 'tok' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },

@@ -97,6 +97,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     platform: DevicePlatformSchema.optional(),
     relay: PushRelaySchema.optional(),
   }),
+  /** This phone turned push off: the daemon forgets its token. */
+  z.object({ type: z.literal('device.unregister'), id, fcmToken: z.string().min(1) }),
   z.object({ type: z.literal('app.visibility'), id, foreground: z.boolean() }),
   /** Sends a test push to this phone only (its registered token); answered with `push.testResult`. */
   z.object({ type: z.literal('push.test'), id, fcmToken: z.string().min(1) }),

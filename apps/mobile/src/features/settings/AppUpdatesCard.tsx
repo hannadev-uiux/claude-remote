@@ -1,6 +1,6 @@
 import Constants from 'expo-constants'
 import { useTranslation } from 'react-i18next'
-import { Alert, StyleSheet, View } from 'react-native'
+import { Alert, Linking, StyleSheet, View } from 'react-native'
 import { space } from '@/core/theme'
 import {
   checkForUpdate,
@@ -14,6 +14,9 @@ import {
   useUpdatesStore,
 } from '@/core/updates'
 import { Button, Card, Text } from '@/ui'
+
+const DOCS_URL = 'https://remoteharness.app/docs'
+const ISSUES_URL = 'https://github.com/maarkN/remote-harness/issues/new'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -127,6 +130,20 @@ export function AppUpdatesCard() {
             {t('updates.disabled')}
           </Text>
         )}
+        <View style={styles.links}>
+          <Button
+            label={t('settings.documentation')}
+            variant="ghost"
+            compact
+            onPress={() => void Linking.openURL(DOCS_URL)}
+          />
+          <Button
+            label={t('settings.reportProblem')}
+            variant="ghost"
+            compact
+            onPress={() => void Linking.openURL(ISSUES_URL)}
+          />
+        </View>
       </View>
     </Card>
   )
@@ -137,4 +154,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.md },
   // Wraps on narrow phones ("desenvolvimento" is long).
   chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 1, gap: space.sm },
+  links: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
 })
