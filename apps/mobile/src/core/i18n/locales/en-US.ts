@@ -135,6 +135,21 @@ const enUS = {
     stopFollowing: 'Stop following output',
     readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
   },
+  sessionStatus: {
+    title: 'Session status',
+    open: 'Session status: {{summary}}',
+    openHint: 'Shows the tokens in use and when the limits reset',
+    short: { context: 'ctx', fiveHour: '5h', sevenDay: 'week' },
+    labels: {
+      model: 'Model',
+      effort: 'Effort',
+      context: 'Context',
+      fiveHour: '5-hour limit',
+      sevenDay: 'Weekly limit',
+    },
+    contextValue: '{{used}} / {{size}} tokens ({{percent}})',
+    limitValue: '{{percent}} · resets {{time}}',
+  },
   sessionDetails: {
     title: 'Session details',
     open: 'Session details: {{title}}',
@@ -168,6 +183,38 @@ const enUS = {
     loadEarlier: 'Load earlier',
     loading: 'loading…',
     start: 'Start of the conversation',
+  },
+  pushSettings: {
+    title: 'Notifications',
+    computer: 'Computer',
+    phone: 'This phone',
+    status: { ready: 'on', issue: 'needs attention', off: 'off' },
+    modes: {
+      firebase: 'own Firebase',
+      relay: 'built-in',
+      off: 'off',
+      unknown: 'unknown (update the daemon)',
+    },
+    permission: { granted: 'allowed', denied: 'not allowed', unknown: 'not asked yet' },
+    issues: {
+      noFirebase: 'This build of the app has no push notifications.',
+      permissionDenied: 'Notifications are turned off for Remote Harness in the system settings.',
+      daemonOff: 'Push is turned off on the computer. Run `remote-harness push on` to turn it back on.',
+      notRegistered:
+        'This phone has not registered with the daemon yet. Keep the app connected for a moment.',
+      noRelay:
+        'This build has no push relay, so the computer needs a Firebase service account (see the README).',
+      relayFailed: 'The push relay could not be reached. The app tries again on the next connection.',
+    },
+    test: 'Send test notification',
+    testing: 'Sending…',
+    openSettings: 'Open settings',
+    results: {
+      sent: 'Test sent. It should arrive in a few seconds.',
+      off: 'Push is turned off on the computer.',
+      unregistered: 'The daemon does not know this phone yet. Reconnect and try again.',
+      failed: 'Sending failed. See the daemon logs (`remote-harness doctor`).',
+    },
   },
   liveStatus: {
     states: { working: 'Working', waiting: 'Waiting for you', done: 'Done', closed: 'Session closed' },

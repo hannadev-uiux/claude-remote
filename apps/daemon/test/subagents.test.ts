@@ -51,6 +51,7 @@ function setup(now = Date.now) {
       subagents: [],
       backgroundTasks: 0,
       checkout: null,
+      status: null,
       transcriptPath,
       ...patch,
     }))

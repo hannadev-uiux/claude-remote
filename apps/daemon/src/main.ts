@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type Profile } from '@remote-harness/protocol'
+import { PROTOCOL_VERSION, type Profile, type PushMode } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
 import { type Config, loadConfig, resolveProfiles } from './core/config.ts'
@@ -24,8 +24,10 @@ import { registerPermissionsFeature } from './features/permissions/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
 import { registerSessionsFeature } from './features/sessions/index.ts'
+import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
+import { type DesktopOptions, registerUpdatesFeature } from './features/updates/index.ts'
 import type { Executor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolvePlatform } from './infra/platform.ts'
@@ -50,6 +52,8 @@ export type DaemonOptions = {
   wsPort?: number
   hookPort?: number
   pushSender?: PushSender | null
+  /** Update checks and the tray icon: only for the service daemon (`start` without `--dev`). */
+  desktop?: DesktopOptions
 }
 
 export type RunningDaemon = {
@@ -155,7 +159,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     return { ok: true }
   })
 
-  const features = await registerFeatures(context)
+  const features = await registerFeatures(context, options.desktop)
 
   await hooks.listen({ host: '127.0.0.1', port: options.hookPort ?? config.hookPort })
   const hookAddress = hooks.server.address()
@@ -188,6 +192,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       profiles,
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),
+      push: { mode: features.pushMode() },
     }),
   })
   const wsAddress = wss.address()
@@ -213,10 +218,14 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
 }
 
 /** Wires every feature module. Each feature registers its own handlers, hooks and listeners. */
-async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }> {
+async function registerFeatures(
+  ctx: DaemonContext,
+  desktop: DesktopOptions | undefined,
+): Promise<{ mute: MuteStore; pushMode: () => PushMode }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
   const transcript = registerTranscriptFeature(ctx, sessions.store)
   registerSubagentsFeature(ctx, sessions.store, transcript.addResolver)
+  registerStatusLineFeature(ctx, sessions.store)
   const sessionLock = new KeyedMutex()
   const attachments = registerAttachmentsFeature(ctx, sessions.store)
   registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
@@ -235,6 +244,13 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
     isMuted,
     follow: transcript.follow,
   })
+  if (desktop) {
+    await registerUpdatesFeature(ctx, {
+      store: sessions.store,
+      hasPendingPermission: (id) => permissions.broker.hasPending(id),
+      options: desktop,
+    })
+  }
   await sessions.start()
-  return { mute: mute.store }
+  return { mute: mute.store, pushMode: push.mode }
 }

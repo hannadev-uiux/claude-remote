@@ -2,6 +2,12 @@ import { chmod, copyFile, mkdir, readFile, realpath, rm, stat } from 'node:fs/pr
 import { basename, join } from 'node:path'
 import type { Profile } from '@remote-harness/protocol'
 import { readJsonFile, writeFileAtomic, writeJsonAtomic } from '../../infra/fs.ts'
+import {
+  renderStatusLineScript,
+  STATUS_LINE_SCRIPT,
+  unwrapStatusLine,
+  wrapStatusLine,
+} from '../status-line/wrapper.ts'
 import { removePathBlock, renderLauncher, upsertPathBlock } from './launcher.ts'
 import { type HookInstallOptions, mergeOurHooks, removeOurHooks } from './settings-hooks.ts'
 
@@ -41,6 +47,25 @@ export async function installHooks(profile: Profile, options: HookInstallOptions
 
 export async function uninstallHooks(profile: Profile): Promise<boolean> {
   return updateSettings(settingsPath(profile), (s) => removeOurHooks(s))
+}
+
+/** Writes the status line wrapper (it holds the hooks port and secret, so only the user can read it). */
+export async function installStatusLineScript(
+  binDir: string,
+  options: { port: number; secret: string },
+): Promise<string> {
+  const path = join(binDir, STATUS_LINE_SCRIPT)
+  await writeFileAtomic(path, renderStatusLineScript(options), 0o700)
+  return path
+}
+
+export async function installStatusLine(profile: Profile, scriptPath: string): Promise<boolean> {
+  return updateSettings(settingsPath(profile), (s) => wrapStatusLine(s, scriptPath))
+}
+
+/** Restores the profile's own status line (or removes ours when there was none). */
+export async function uninstallStatusLine(profile: Profile): Promise<boolean> {
+  return updateSettings(settingsPath(profile), (s) => unwrapStatusLine(s))
 }
 
 export async function installLaunchers(

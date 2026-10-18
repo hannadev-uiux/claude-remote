@@ -133,6 +133,21 @@ const ptBR = {
     stopFollowing: 'Parar de acompanhar a saída',
     readOnly: 'Sessão somente leitura (sem painel tmux): o terminal e os atalhos não estão disponíveis.',
   },
+  sessionStatus: {
+    title: 'Status da sessão',
+    open: 'Status da sessão: {{summary}}',
+    openHint: 'Mostra os tokens em uso e quando os limites reiniciam',
+    short: { context: 'ctx', fiveHour: '5h', sevenDay: 'sem' },
+    labels: {
+      model: 'Modelo',
+      effort: 'Esforço',
+      context: 'Contexto',
+      fiveHour: 'Limite de 5 horas',
+      sevenDay: 'Limite semanal',
+    },
+    contextValue: '{{used}} / {{size}} tokens ({{percent}})',
+    limitValue: '{{percent}} · reinicia {{time}}',
+  },
   sessionDetails: {
     title: 'Detalhes da sessão',
     open: 'Detalhes da sessão: {{title}}',
@@ -166,6 +181,37 @@ const ptBR = {
     loadEarlier: 'Carregar anteriores',
     loading: 'carregando…',
     start: 'Início da conversa',
+  },
+  pushSettings: {
+    title: 'Notificações',
+    computer: 'Computador',
+    phone: 'Este celular',
+    status: { ready: 'ligadas', issue: 'precisa de atenção', off: 'desligadas' },
+    modes: {
+      firebase: 'Firebase próprio',
+      relay: 'embutido',
+      off: 'desligado',
+      unknown: 'desconhecido (atualize o daemon)',
+    },
+    permission: { granted: 'permitidas', denied: 'não permitidas', unknown: 'ainda não pedidas' },
+    issues: {
+      noFirebase: 'Este build do app não tem notificações push.',
+      permissionDenied: 'As notificações do Remote Harness estão desligadas nos ajustes do sistema.',
+      daemonOff: 'O push está desligado no computador. Rode `remote-harness push on` para religar.',
+      notRegistered: 'Este celular ainda não se registrou no daemon. Deixe o app conectado por um instante.',
+      noRelay:
+        'Este build não tem push relay, então o computador precisa de uma conta de serviço do Firebase (veja o README).',
+      relayFailed: 'Não foi possível falar com o push relay. O app tenta de novo na próxima conexão.',
+    },
+    test: 'Enviar notificação de teste',
+    testing: 'Enviando…',
+    openSettings: 'Abrir ajustes',
+    results: {
+      sent: 'Teste enviado. Deve chegar em alguns segundos.',
+      off: 'O push está desligado no computador.',
+      unregistered: 'O daemon ainda não conhece este celular. Reconecte e tente de novo.',
+      failed: 'O envio falhou. Veja os logs do daemon (`remote-harness doctor`).',
+    },
   },
   liveStatus: {
     states: {

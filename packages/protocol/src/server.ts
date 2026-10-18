@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  AccountLimitsSchema,
   CheckoutPeerSchema,
   CheckoutSchema,
   CommandItemSchema,
@@ -12,6 +13,8 @@ import {
   PermissionRequestInfoSchema,
   ProfileSchema,
   ProjectItemSchema,
+  PushModeSchema,
+  PushTestResultSchema,
   RuleScopeSchema,
   SessionSchema,
   SessionStateSchema,
@@ -32,6 +35,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     profiles: z.array(ProfileSchema),
     defaultRuleScope: RuleScopeSchema,
     muted: MuteStateSchema,
+    /** Absent in older daemons. */
+    push: z.object({ mode: PushModeSchema }).optional(),
   }),
   z.object({ type: z.literal('pong'), replyTo }),
   z.object({ type: z.literal('ack'), replyTo, data: z.record(z.string(), z.unknown()).optional() }),
@@ -108,6 +113,9 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     peers: z.array(CheckoutPeerSchema),
   }),
   z.object({ type: z.literal('mute.updated'), muted: MuteStateSchema }),
+  z.object({ type: z.literal('push.testResult'), replyTo, result: PushTestResultSchema }),
+  /** Usage limits of a profile's account; sent when they change and to every client that connects. */
+  z.object({ type: z.literal('limits.updated'), limits: AccountLimitsSchema }),
 ])
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>

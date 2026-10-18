@@ -75,7 +75,7 @@ Remote Harness solves this with tools you already trust: sessions run inside **t
 ```
 
 1. You start Claude Code with a tiny launcher (one per account, named by you, e.g. `pessoal`, `trabalho`) that runs it inside a tmux window.
-2. Claude Code's HTTP hooks tell the daemon when a session starts, stops, needs permission or gets a prompt.
+2. Claude Code's HTTP hooks tell the daemon when a session starts, stops, needs permission or gets a prompt. A small status line wrapper also forwards the model, effort, context usage and usage limits — and then runs your own status line, so the terminal looks the same.
 3. The daemon tails the session transcript, reads the tmux pane, and serves everything to the app over an authenticated WebSocket bound **only** to the Tailscale interface.
 4. Prompts and keys go back through tmux; permission answers go back through the pending hook request.
 
@@ -118,6 +118,15 @@ The installer checks the system (macOS or Linux) and Node, installs missing `tmu
 - helps with Tailscale and shows the pairing QR code.
 
 To update, run `remote-harness update` (or `--ref <branch|tag>`): it fetches the new version, rebuilds, refreshes the hooks and restarts the service, without the setup questions; the same as `bash -s -- --update` with the line above. `remote-harness setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
+
+**Update notifications and the menu bar icon.** The background service checks its update channel on the git remote every 6 hours. When there is a new version it shows a desktop notification. It never checks a development clone.
+- **Menu bar / tray icon:** shows that the daemon is running and its version. From it you can check for updates, update now, turn automatic updates on or off, pick the channel, open the logs, restart the daemon and run `doctor`.
+  - On macOS it is a small Swift helper built on first start with the Command Line Tools.
+  - On Linux it needs `python3` with GTK 3 and AyatanaAppIndicator3 or AppIndicator3 (`gir1.2-ayatanaappindicator3-0.1` on Debian/Ubuntu; GNOME also needs the AppIndicator extension).
+  - Without them, and in WSL, the daemon runs headless as before. `"tray": false` in the config turns it off.
+- `remote-harness updates channel main|development` picks the branch that `update` and the check follow. Going back from `development` to `main` warns that it installs an older version.
+- `remote-harness updates auto on` updates by itself. It only does so when no session is running or waiting and no permission is pending, and never to an older version.
+- `remote-harness updates status` and `remote-harness updates check` show the last result.
 
 <details>
 <summary>Linux notes</summary>
@@ -205,7 +214,11 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
    - **Push relay** (no credential on the computer): build the app with `REMOTE_HARNESS_PUSH_RELAY_URL` pointing to your relay (see below). The app gets a *grant* from the relay (its FCM token, sealed) and hands it to the daemon, which posts each notification to the relay. A daemon can only reach the phones paired with it.
    - **Self-hosted**: save the Firebase service account to `~/.remote-harness/firebase-service-account.json` and restart the daemon. It sends to FCM directly, and wins over the relay when both exist.
 
-   `remote-harness doctor` lists the phones registered for push and their platform.
+   `remote-harness doctor` and `remote-harness push status` show the mode in use and the phones registered for push. In the app, **Settings → Notifications** shows the same, says what is missing, and has **Send test notification** (`remote-harness push test` sends one to every phone).
+
+   Push is on by default: the app asks for the permission right after pairing, for every event type. Use the mute controls to silence a profile or a session, or `remote-harness push off` to stop every push and live status update on this computer (`remote-harness push on` turns it back on; both apply without restarting the daemon).
+
+   **What the relay sees:** the grant (your FCM token and Live Activity token, sealed with a key only the relay has) and the same content-free message FCM gets: a generic title ("Session finished"), the profile name, the session id, the event type and the permission request id. For the live status it also sees the session title, folder and step categories. It stores nothing.
 
 **Deploying the push relay** (`apps/push-relay`, a Cloud Function in `southamerica-east1`; needs the **Blaze** plan, FCM is free and personal use stays within the free tier of Cloud Functions):
 

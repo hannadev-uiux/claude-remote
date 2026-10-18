@@ -63,6 +63,9 @@ export const esES = {
       devices: (platforms: string) => `móviles registrados para push: ${platforms}`,
       noDevices: 'ningún móvil registrado para push',
       noDevicesHint: 'abre la app y permite las notificaciones',
+      pushMode: (mode: string) => `push: ${mode}`,
+      noRelayGrant:
+        'ningún móvil tiene grant del relay: usa una build de la app con el push relay o guarda una cuenta de servicio de Firebase',
     },
     install: {
       description:
@@ -99,7 +102,9 @@ export const esES = {
     update: {
       description:
         'actualiza a la última versión: compila, actualiza los hooks y reinicia el servicio (sin preguntas)',
-      ref: 'rama o tag que se instala',
+      ref: 'rama o tag que se instala (por defecto: el canal de actualización)',
+      older: (from: string, to: string) =>
+        `Esto instala una versión más antigua (${from} → ${to}) porque cambió el canal de actualización.`,
       force: 'vuelve a compilar aunque ya esté actualizado',
       checking: (ref: string) => `Buscando una versión nueva en ${ref}`,
       notInstaller: (dir: string) =>
@@ -117,6 +122,51 @@ export const esES = {
       updated: (from: string, to: string) => `Remote Harness actualizado: ${from} → ${to}`,
       rebuilt: (version: string) => `Remote Harness ${version} compilado de nuevo`,
     },
+    updates: {
+      description: 'canal de actualización, actualizaciones automáticas y la comprobación en segundo plano',
+      status: 'muestra la versión, el canal y la última comprobación',
+      check: 'busca una nueva versión ahora',
+      channel: 'muestra o cambia el canal: main (estable) o development',
+      auto: 'activa o desactiva las actualizaciones automáticas',
+      current: (version: string, channel: string) => `Remote Harness ${version} · canal ${channel}`,
+      autoState: (on: boolean): string =>
+        on ? 'actualizaciones automáticas activadas' : 'actualizaciones automáticas desactivadas',
+      lastCheck: (when: string) => `última comprobación: ${when}`,
+      neverChecked: 'aún sin comprobar',
+      available: (version: string) => `nueva versión disponible: ${version}`,
+      older: (version: string) =>
+        `el canal tiene una versión más antigua: ${version} (\`remote-harness update\` la instala)`,
+      upToDate: 'actualizado',
+      channelSet: (channel: string) => `canal: ${channel}`,
+      invalidValue: (value: string, list: string) => `Valor desconocido "${value}". Usa uno de: ${list}.`,
+      invalidChannel: (value: string, list: string) => `Canal desconocido "${value}". Usa uno de: ${list}.`,
+      runUpdate: 'ejecuta `remote-harness update` para cambiar ahora',
+      applied: 'aplicado al daemon en ejecución',
+      notRunning: 'el daemon no está en ejecución: se aplica en el próximo inicio',
+    },
+    push: {
+      description: 'notificaciones push: estado, activar o desactivar, enviar una prueba',
+      status: 'muestra cómo se envían los pushes y a cuántos móviles',
+      on: 'envía pushes (cuenta de servicio de Firebase si existe, si no el push relay)',
+      off: 'detiene todos los pushes y las actualizaciones del estado en vivo',
+      test: 'envía una notificación de prueba a todos los móviles registrados',
+      modes: {
+        firebase: (path: string) => `Firebase propio (${path})`,
+        relay: 'push relay integrado',
+        off: 'desactivado (config "push": "off")',
+      },
+      phones: (count: number) => (count === 1 ? '1 móvil registrado' : `${count} móviles registrados`),
+      changed: (mode: string) => `push: ${mode}`,
+      applied: 'aplicado al daemon en ejecución',
+      notRunning: 'el daemon no está en ejecución: se aplica en el próximo inicio',
+      testSent: (count: number) =>
+        count === 1 ? 'prueba enviada a 1 móvil' : `prueba enviada a ${count} móviles`,
+      testResult: {
+        off: 'el push está desactivado (`remote-harness push on`)',
+        unregistered: 'ningún móvil registrado: abre la app y permite las notificaciones',
+        failed: 'el envío falló: mira los logs del daemon',
+      },
+    },
     rules: {
       description: 'reglas de "permitir siempre" creadas por la app',
       list: 'lista las reglas creadas por la app',
@@ -133,6 +183,8 @@ export const esES = {
     hooksIn: (path: string) => `hooks en ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} eliminado`,
     hooksRemovedFrom: (path: string) => `hooks eliminados de ${path}`,
+    statusLineIn: (path: string) => `status line en ${path}`,
+    statusLineRestored: (path: string) => `status line restaurada en ${path}`,
   },
   setup: {
     languageQuestion: 'Idioma',
@@ -335,11 +387,38 @@ export const esES = {
     tools: (count: number) => (count === 1 ? '1 herramienta' : `${count} herramientas`),
     ago: 'hace {time}',
   },
+  updates: {
+    available: (version: string) => `Remote Harness ${version} disponible`,
+    availableBody: 'Actualiza desde el icono de la barra de menús o ejecuta `remote-harness update`.',
+    older: (version: string) => `Remote Harness ${version} de este canal es más antiguo`,
+    olderBody:
+      'Elige "Instalar" en el icono de la barra de menús o ejecuta `remote-harness update` para cambiar.',
+    updating: (version: string) => `Actualizando Remote Harness a ${version}…`,
+    tray: {
+      tooltip: (version: string) => `Remote Harness ${version}`,
+      running: (version: string) => `En ejecución · ${version}`,
+      updateAvailable: (version: string) => `Actualización disponible: ${version}`,
+      updating: 'Actualizando…',
+      check: 'Buscar actualizaciones',
+      checking: 'Buscando…',
+      updateNow: (version: string) => `Actualizar ahora (${version})`,
+      installOlder: (version: string) => `Instalar ${version} (más antigua)`,
+      auto: 'Actualizaciones automáticas',
+      channel: 'Canal',
+      channels: { main: 'main (estable)', development: 'development' },
+      logs: 'Abrir logs',
+      restart: 'Reiniciar daemon',
+      doctor: 'Ejecutar doctor',
+      quit: 'Cerrar icono',
+    },
+  },
   push: {
     sessionDone: 'Sesión terminada',
     sessionWaiting: 'Sesión esperándote',
     permissionPending: 'Permiso pendiente',
     questionPending: 'Claude está esperando tu respuesta',
     planPending: 'Plan listo para revisar',
+    testTitle: 'Notificación de prueba',
+    testBody: (host: string) => `Las notificaciones de ${host} funcionan`,
   },
 } satisfies Messages

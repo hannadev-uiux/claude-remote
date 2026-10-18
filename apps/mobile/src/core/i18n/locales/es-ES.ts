@@ -133,6 +133,21 @@ const esES = {
     stopFollowing: 'Dejar de seguir la salida',
     readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
   },
+  sessionStatus: {
+    title: 'Estado de la sesión',
+    open: 'Estado de la sesión: {{summary}}',
+    openHint: 'Muestra los tokens en uso y cuándo se reinician los límites',
+    short: { context: 'ctx', fiveHour: '5h', sevenDay: 'sem' },
+    labels: {
+      model: 'Modelo',
+      effort: 'Esfuerzo',
+      context: 'Contexto',
+      fiveHour: 'Límite de 5 horas',
+      sevenDay: 'Límite semanal',
+    },
+    contextValue: '{{used}} / {{size}} tokens ({{percent}})',
+    limitValue: '{{percent}} · se reinicia {{time}}',
+  },
   sessionDetails: {
     title: 'Detalles de la sesión',
     open: 'Detalles de la sesión: {{title}}',
@@ -170,6 +185,39 @@ const esES = {
     loadEarlier: 'Cargar anteriores',
     loading: 'cargando…',
     start: 'Inicio de la conversación',
+  },
+  pushSettings: {
+    title: 'Notificaciones',
+    computer: 'Ordenador',
+    phone: 'Este móvil',
+    status: { ready: 'activadas', issue: 'requiere atención', off: 'desactivadas' },
+    modes: {
+      firebase: 'Firebase propio',
+      relay: 'integrado',
+      off: 'desactivado',
+      unknown: 'desconocido (actualiza el daemon)',
+    },
+    permission: { granted: 'permitidas', denied: 'no permitidas', unknown: 'aún no solicitadas' },
+    issues: {
+      noFirebase: 'Esta build de la app no tiene notificaciones push.',
+      permissionDenied: 'Las notificaciones de Remote Harness están desactivadas en los ajustes del sistema.',
+      daemonOff:
+        'El push está desactivado en el ordenador. Ejecuta `remote-harness push on` para reactivarlo.',
+      notRegistered: 'Este móvil aún no se ha registrado en el daemon. Deja la app conectada un momento.',
+      noRelay:
+        'Esta build no tiene push relay, así que el ordenador necesita una cuenta de servicio de Firebase (ver el README).',
+      relayFailed:
+        'No se pudo contactar con el push relay. La app lo intenta de nuevo en la próxima conexión.',
+    },
+    test: 'Enviar notificación de prueba',
+    testing: 'Enviando…',
+    openSettings: 'Abrir ajustes',
+    results: {
+      sent: 'Prueba enviada. Debería llegar en unos segundos.',
+      off: 'El push está desactivado en el ordenador.',
+      unregistered: 'El daemon aún no conoce este móvil. Vuelve a conectar e inténtalo de nuevo.',
+      failed: 'El envío falló. Mira los logs del daemon (`remote-harness doctor`).',
+    },
   },
   liveStatus: {
     states: { working: 'Trabajando', waiting: 'Esperándote', done: 'Terminada', closed: 'Sesión cerrada' },

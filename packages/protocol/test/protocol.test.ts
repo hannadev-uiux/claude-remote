@@ -44,6 +44,7 @@ const clientSamples: ClientMessage[] = [
   { type: 'device.register', id: '1', fcmToken: 'tok' },
   { type: 'device.register', id: '1', fcmToken: 'tok', platform: 'android' },
   { type: 'app.visibility', id: '1', foreground: true },
+  { type: 'push.test', id: '1', fcmToken: 'tok' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'android', fcmToken: 'tok' },
   { type: 'live.unregister', id: '1', sessionId: 's' },
@@ -89,6 +90,7 @@ const session: Session = {
   subagents: [],
   backgroundTasks: 0,
   checkout: { root: '/tmp', branch: 'main' },
+  status: { model: 'Opus 5.5', effort: 'high', context: { usedTokens: 124_000, size: 200_000, percent: 62 } },
 }
 
 const serverSamples: ServerMessage[] = [
@@ -100,7 +102,9 @@ const serverSamples: ServerMessage[] = [
     profiles: [],
     defaultRuleScope: 'project',
     muted: { profiles: [], sessions: [] },
+    push: { mode: 'relay' },
   },
+  { type: 'push.testResult', replyTo: '1', result: 'unregistered' },
   { type: 'pong', replyTo: '1' },
   { type: 'ack', replyTo: '1' },
   { type: 'error', replyTo: '1', code: 'not_found', message: 'x' },
@@ -199,6 +203,15 @@ const serverSamples: ServerMessage[] = [
     truncated: true,
   },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
+  {
+    type: 'limits.updated',
+    limits: {
+      profileId: 'claudin',
+      fiveHour: { percent: 41, resetsAt: 1_792_000_000_000 },
+      sevenDay: null,
+      updatedAt: '2026-10-18T00:00:00Z',
+    },
+  },
   { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
   { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
@@ -380,6 +393,20 @@ describe('server messages', () => {
   test('correlates replies by replyTo', () => {
     const result = parseServerMessage({ type: 'sessions.snapshot', replyTo: 'abc', sessions: [] })
     expect(result).toMatchObject({ ok: true, value: { replyTo: 'abc' } })
+  })
+})
+
+describe('session status', () => {
+  test('defaults to null for older daemons', () => {
+    const { status: _omit, ...old } = session
+    const result = parseServerMessage({ type: 'session.updated', session: old })
+    expect(result).toMatchObject({ ok: true, value: { session: { status: null } } })
+  })
+
+  test('unknown items are null, not zero', () => {
+    const status = { model: null, effort: null, context: null }
+    const result = parseServerMessage({ type: 'session.updated', session: { ...session, status } })
+    expect(result).toMatchObject({ ok: true, value: { session: { status } } })
   })
 })
 

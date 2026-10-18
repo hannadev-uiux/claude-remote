@@ -31,3 +31,11 @@ export function extractPushData(request: {
   const trigger = request.trigger as { payload?: unknown } | null | undefined
   return pick(trigger?.payload)
 }
+
+/** The test push the user asked for: shown as a banner even with the app in the foreground. */
+export function isTestPush(request: { content?: { data?: unknown }; trigger?: unknown }): boolean {
+  const event = (source: unknown) =>
+    source && typeof source === 'object' ? (source as Record<string, unknown>).event : undefined
+  const trigger = request.trigger as { payload?: unknown } | null | undefined
+  return event(request.content?.data) === 'test' || event(trigger?.payload) === 'test'
+}

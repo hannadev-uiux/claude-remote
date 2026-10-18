@@ -65,6 +65,9 @@ export const enUS = {
       devices: (platforms: string) => `phones registered for push: ${platforms}`,
       noDevices: 'no phone registered for push',
       noDevicesHint: 'open the app and allow notifications',
+      pushMode: (mode: string) => `push: ${mode}`,
+      noRelayGrant:
+        'no phone has a relay grant: use an app build with the push relay, or save a Firebase service account',
     },
     install: {
       description:
@@ -100,7 +103,9 @@ export const enUS = {
     update: {
       description:
         'update to the latest version: build, refresh hooks and restart the service (no questions)',
-      ref: 'branch or tag to install',
+      ref: 'branch or tag to install (default: the update channel)',
+      older: (from: string, to: string) =>
+        `This installs an older version (${from} → ${to}) because the update channel changed.`,
       force: 'rebuild even when already up to date',
       checking: (ref: string) => `Checking ${ref} for a new version`,
       notInstaller: (dir: string) =>
@@ -115,6 +120,49 @@ export const enUS = {
       serviceNotInstalled: 'background service not installed (optional: `remote-harness service install`)',
       updated: (from: string, to: string) => `Remote Harness updated: ${from} → ${to}`,
       rebuilt: (version: string) => `Remote Harness ${version} rebuilt`,
+    },
+    updates: {
+      description: 'update channel, automatic updates and the background check',
+      status: 'show the version, channel and the last check',
+      check: 'check for a new version now',
+      channel: 'show or change the channel: main (stable) or development',
+      auto: 'turn automatic updates on or off',
+      current: (version: string, channel: string) => `Remote Harness ${version} · channel ${channel}`,
+      autoState: (on: boolean): string => (on ? 'automatic updates on' : 'automatic updates off'),
+      lastCheck: (when: string) => `last check: ${when}`,
+      neverChecked: 'not checked yet',
+      available: (version: string) => `new version available: ${version}`,
+      older: (version: string) =>
+        `the channel has an older version: ${version} (\`remote-harness update\` installs it)`,
+      upToDate: 'up to date',
+      channelSet: (channel: string) => `channel: ${channel}`,
+      invalidValue: (value: string, list: string) => `Unknown value "${value}". Use one of: ${list}.`,
+      invalidChannel: (value: string, list: string) => `Unknown channel "${value}". Use one of: ${list}.`,
+      runUpdate: 'run `remote-harness update` to switch now',
+      applied: 'applied to the running daemon',
+      notRunning: 'the daemon is not running: it applies on the next start',
+    },
+    push: {
+      description: 'push notifications: status, turn on or off, send a test',
+      status: 'show how pushes are sent and to how many phones',
+      on: 'send pushes (Firebase service account if present, else the push relay)',
+      off: 'stop every push and live status update',
+      test: 'send a test notification to every registered phone',
+      modes: {
+        firebase: (path: string) => `own Firebase (${path})`,
+        relay: 'built-in push relay',
+        off: 'off (config "push": "off")',
+      },
+      phones: (count: number) => (count === 1 ? '1 phone registered' : `${count} phones registered`),
+      changed: (mode: string) => `push: ${mode}`,
+      applied: 'applied to the running daemon',
+      notRunning: 'the daemon is not running: it applies on the next start',
+      testSent: (count: number) => (count === 1 ? 'test sent to 1 phone' : `test sent to ${count} phones`),
+      testResult: {
+        off: 'push is off (`remote-harness push on`)',
+        unregistered: 'no phone registered: open the app and allow notifications',
+        failed: 'sending failed: see the daemon logs',
+      },
     },
     rules: {
       description: '"always allow" rules created by the app',
@@ -132,6 +180,8 @@ export const enUS = {
     hooksIn: (path: string) => `hooks in ${path}`,
     launcherRemoved: (id: string) => `launcher ${id} removed`,
     hooksRemovedFrom: (path: string) => `hooks removed from ${path}`,
+    statusLineIn: (path: string) => `status line in ${path}`,
+    statusLineRestored: (path: string) => `status line restored in ${path}`,
   },
   setup: {
     languageQuestion: 'Language',
@@ -334,12 +384,38 @@ export const enUS = {
     /** Time since the state changed; the widget puts a live counter in `{time}`. */
     ago: '{time} ago',
   },
+  updates: {
+    available: (version: string) => `Remote Harness ${version} available`,
+    availableBody: 'Update from the menu bar icon or run `remote-harness update`.',
+    older: (version: string) => `Remote Harness ${version} on this channel is older`,
+    olderBody: 'Choose "Install" in the menu bar icon or run `remote-harness update` to switch to it.',
+    updating: (version: string) => `Updating Remote Harness to ${version}…`,
+    tray: {
+      tooltip: (version: string) => `Remote Harness ${version}`,
+      running: (version: string) => `Running · ${version}`,
+      updateAvailable: (version: string) => `Update available: ${version}`,
+      updating: 'Updating…',
+      check: 'Check for updates',
+      checking: 'Checking…',
+      updateNow: (version: string) => `Update now (${version})`,
+      installOlder: (version: string) => `Install ${version} (older)`,
+      auto: 'Automatic updates',
+      channel: 'Channel',
+      channels: { main: 'main (stable)', development: 'development' },
+      logs: 'Open logs',
+      restart: 'Restart daemon',
+      doctor: 'Run doctor',
+      quit: 'Quit tray',
+    },
+  },
   push: {
     sessionDone: 'Session finished',
     sessionWaiting: 'Session waiting for you',
     permissionPending: 'Permission pending',
     questionPending: 'Claude is waiting for your answer',
     planPending: 'Plan ready for review',
+    testTitle: 'Test notification',
+    testBody: (host: string) => `Notifications from ${host} are working`,
   },
 }
 

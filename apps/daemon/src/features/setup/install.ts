@@ -15,10 +15,13 @@ import {
   installHooks,
   installLaunchers,
   installShellPath,
+  installStatusLine,
+  installStatusLineScript,
   settingsPath,
   shellRcFiles,
   uninstallHooks,
   uninstallLaunchers,
+  uninstallStatusLine,
 } from '../hooks/installer.ts'
 import type { ServiceManager } from '../service/service-manager.ts'
 
@@ -80,6 +83,7 @@ export async function installAll(
     text: m.shellPath(displayPaths(changed.length > 0 ? changed : o.rcFiles)),
   })
   const secret = await ensureHookSecret()
+  const statusLineScript = await installStatusLineScript(paths.bin(), { port: config.hookPort, secret })
   for (const profile of profiles) {
     const changed = await installHooks(profile, {
       port: config.hookPort,
@@ -87,6 +91,8 @@ export async function installAll(
       permissionTimeoutSec: config.hookPermissionTimeoutSec,
     })
     lines.push({ status: changed ? 'done' : 'skip', text: m.hooksIn(settingsPath(profile)) })
+    const wrapped = await installStatusLine(profile, statusLineScript)
+    lines.push({ status: wrapped ? 'done' : 'skip', text: m.statusLineIn(settingsPath(profile)) })
   }
   return lines
 }
@@ -106,6 +112,8 @@ export async function removeProfiles(
     if (!(await isDirectory(resolved.configDir))) continue
     const removed = await uninstallHooks(resolved)
     lines.push({ status: removed ? 'done' : 'skip', text: m.hooksRemovedFrom(settingsPath(resolved)) })
+    const restored = await uninstallStatusLine(resolved)
+    lines.push({ status: restored ? 'done' : 'skip', text: m.statusLineRestored(settingsPath(resolved)) })
   }
   return lines
 }
