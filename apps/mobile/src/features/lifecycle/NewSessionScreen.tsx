@@ -8,7 +8,7 @@ import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } f
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { useDebounced } from '@/core/utils/use-debounced'
-import { Button, Card, Screen, Text } from '@/ui'
+import { AgentBadge, Button, Card, Screen, Text } from '@/ui'
 import { DirectoryPickerSheet } from './DirectoryPickerSheet'
 import {
   completeDirectory,
@@ -16,12 +16,17 @@ import {
   matchingSuggestions,
   splitDirectoryInput,
 } from './directory-input'
+import { profileAgent, profileDetail, recentDetail } from './new-session'
 import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
 import { useDirectories, useDirectoriesSupported } from './use-directories'
 
 /** Folder suggestions shown under the directory field. */
 const MAX_SUGGESTIONS = 8
 
+/**
+ * Agent & profile (radio list with the agent badge) → Model (only when the provider lists models,
+ * #109) → Directory (field, Browse, suggestions, branch) → Recent → worktree toggle → Start.
+ */
 export function NewSessionScreen() {
   const { t } = useTranslation()
   const { colors } = useTheme()
@@ -151,19 +156,38 @@ export function NewSessionScreen() {
         <Text size="xs" color="textMuted">
           {t('newSession.profile')}
         </Text>
-        <View style={styles.row}>
-          {profiles.map((p) => (
-            <Button
-              key={p.id}
-              label={p.name}
-              compact
-              variant={p.id === profileId ? 'primary' : 'secondary'}
-              onPress={() => setProfileId(p.id)}
-            />
-          ))}
+        <View style={styles.list}>
+          {profiles.map((p) => {
+            const selected = p.id === profileId
+            return (
+              <Pressable
+                key={p.id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                onPress={() => setProfileId(p.id)}
+                style={({ pressed }) => [
+                  styles.profile,
+                  selected && styles.selected,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <AgentBadge agent={profileAgent(p)} />
+                <View style={styles.flex}>
+                  <Text weight="medium" numberOfLines={1} style={{ color: p.color || colors.text }}>
+                    {p.name}
+                  </Text>
+                  <Text size="xs" color="textMuted" numberOfLines={1}>
+                    {profileDetail(p)}
+                  </Text>
+                </View>
+                <Text color={selected ? 'accentText' : 'textDim'}>{selected ? '●' : '○'}</Text>
+              </Pressable>
+            )
+          })}
         </View>
+        {/* The Model row goes here once the selected profile's provider lists models (#109). */}
 
-        <Text size="xs" color="textMuted">
+        <Text size="xs" color="textMuted" style={styles.section}>
           {t('newSession.directory')}
         </Text>
         <View style={styles.inputRow}>
@@ -218,20 +242,48 @@ export function NewSessionScreen() {
             </Text>
           </View>
         ) : null}
-        {peers.length > 0 ? (
-          <Card accent={colors.warning}>
-            <Text color="warning" size="sm">
-              {t('newSession.busy', { count: peers.length })}
-            </Text>
-            {peers.map((p) => (
-              <Text key={p.id} size="sm" numberOfLines={1}>
-                • {p.title || t('common.session')}
+
+        <Text size="xs" color="textMuted" style={styles.section}>
+          {t('newSession.recent')}
+        </Text>
+        {(projects.data ?? []).map((p) => {
+          const detail = recentDetail(p, t)
+          return (
+            <Pressable
+              key={p.cwd}
+              accessibilityRole="button"
+              onPress={() => setCwd(p.cwd)}
+              style={({ pressed }) => [
+                styles.project,
+                pressed && styles.pressed,
+                p.cwd === cwd && styles.selected,
+              ]}
+            >
+              <Folder size={16} color={colors.info} />
+              <View style={styles.flex}>
+                <Text size="sm" numberOfLines={1}>
+                  {shortPath(p.cwd)}
+                </Text>
+                {detail ? (
+                  <Text size="xs" color="textMuted" numberOfLines={1}>
+                    {detail}
+                  </Text>
+                ) : null}
+              </View>
+              <Text size="xs" color="textDim">
+                {relativeTime(p.lastUsedAt, t)}
               </Text>
-            ))}
-          </Card>
+            </Pressable>
+          )
+        })}
+        {projects.data?.length === 0 ? (
+          <Text size="sm" color="textDim">
+            {t('newSession.noRecent')}
+          </Text>
         ) : null}
+
         {checkout ? (
-          <View style={styles.option}>
+          <View style={[styles.option, styles.section]}>
             <View style={styles.flex}>
               <Text size="sm">{t('newSession.worktree')}</Text>
               <Text size="xs" color="textDim">
@@ -246,6 +298,21 @@ export function NewSessionScreen() {
             />
           </View>
         ) : null}
+        {peers.length > 0 ? (
+          <Card accent={colors.warning}>
+            <Text color="warning" size="sm">
+              {t('newSession.busy', { count: peers.length })}
+            </Text>
+            {peers.map((p) => (
+              <Text key={p.id} size="sm" numberOfLines={1}>
+                • {p.title || t('common.session')}
+              </Text>
+            ))}
+            <Text size="xs" color="textMuted">
+              {t('newSession.busyHint')}
+            </Text>
+          </Card>
+        ) : null}
         <Button
           label={t('newSession.start')}
           variant="primary"
@@ -259,34 +326,6 @@ export function NewSessionScreen() {
               {error}
             </Text>
           </Card>
-        ) : null}
-
-        <Text size="xs" color="textMuted" style={styles.section}>
-          {t('newSession.recent')}
-        </Text>
-        {(projects.data ?? []).map((p) => (
-          <Pressable
-            key={p.cwd}
-            onPress={() => setCwd(p.cwd)}
-            style={({ pressed }) => [
-              styles.project,
-              pressed && styles.pressed,
-              p.cwd === cwd && styles.selected,
-            ]}
-          >
-            <Folder size={16} color={colors.info} />
-            <Text size="sm" style={styles.flex} numberOfLines={1}>
-              {shortPath(p.cwd)}
-            </Text>
-            <Text size="xs" color="textDim">
-              {relativeTime(p.lastUsedAt, t)}
-            </Text>
-          </Pressable>
-        ))}
-        {projects.data?.length === 0 ? (
-          <Text size="sm" color="textDim">
-            {t('newSession.noRecent')}
-          </Text>
         ) : null}
       </ScrollView>
       {directoriesSupported ? (
@@ -306,7 +345,17 @@ export function NewSessionScreen() {
 
 const useStyles = makeStyles((theme) => ({
   content: { padding: space.lg, gap: space.sm },
-  row: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' },
+  list: { gap: space.xs },
+  profile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   suggestions: {
     borderWidth: 1,
@@ -334,7 +383,7 @@ const useStyles = makeStyles((theme) => ({
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
   },
-  section: { marginTop: space.lg },
+  section: { marginTop: space.md },
   branch: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   option: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs },
   project: {

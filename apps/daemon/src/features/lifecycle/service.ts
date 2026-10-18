@@ -136,16 +136,34 @@ export class LifecycleService {
   }
 
   /** Recent working directories of a profile, most recent first. */
+  /**
+   * The profile's directories by most recent use, each with the branch of its latest session and
+   * how many sessions were used there in the last 7 days.
+   */
   projects(profileId: string): ProjectItem[] {
     this.profile(profileId)
-    const latest = new Map<string, string>()
+    const weekAgo = new Date(this.now().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const latest = new Map<string, ProjectItem>()
     for (const s of this.store.all()) {
       if (s.profileId !== profileId || !s.cwd) continue
+      const recent = s.updatedAt >= weekAgo ? 1 : 0
       const current = latest.get(s.cwd)
-      if (!current || s.updatedAt > current) latest.set(s.cwd, s.updatedAt)
+      if (!current) {
+        latest.set(s.cwd, {
+          cwd: s.cwd,
+          lastUsedAt: s.updatedAt,
+          branch: s.checkout?.branch ?? null,
+          sessions: recent,
+        })
+        continue
+      }
+      current.sessions += recent
+      if (s.updatedAt > current.lastUsedAt) {
+        current.lastUsedAt = s.updatedAt
+        current.branch = s.checkout?.branch ?? current.branch
+      }
     }
-    return [...latest.entries()]
-      .map(([cwd, lastUsedAt]) => ({ cwd, lastUsedAt }))
+    return [...latest.values()]
       .sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))
       .slice(0, MAX_PROJECTS)
   }
