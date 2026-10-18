@@ -204,6 +204,25 @@ export type LiveState = z.infer<typeof LiveStateSchema>
 /** Name the app passes to `createLiveActivity` and the daemon puts in `content-state.name`. */
 export const LIVE_ACTIVITY_NAME = 'SessionActivity'
 
+const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?$/)
+
+/**
+ * App theme colors the live status is drawn with. The app sends them when it registers; the daemon
+ * echoes them in every update, since the widget cannot read the app's theme.
+ */
+export const LivePaletteSchema = z.object({
+  background: HexColorSchema,
+  text: HexColorSchema,
+  textMuted: HexColorSchema,
+  /** Working state. */
+  accent: HexColorSchema,
+  /** Done state. */
+  success: HexColorSchema,
+  /** Waiting state. */
+  warning: HexColorSchema,
+})
+export type LivePalette = z.infer<typeof LivePaletteSchema>
+
 /**
  * Props of the live status, rendered as they are by the widget (it cannot translate): texts arrive
  * already translated. Besides the session title and folder, never session content: names, state,
@@ -235,6 +254,8 @@ export const LiveStatusPropsSchema = z.object({
   changedAt: z.number().default(0),
   /** End of the turn (done or closed), epoch milliseconds: the elapsed timer stops there. */
   endedAt: z.number().nullable().default(null),
+  /** Theme colors of the app that registered; absent from older daemons (the widget uses dark). */
+  palette: LivePaletteSchema.optional(),
 })
 export type LiveStatusProps = z.infer<typeof LiveStatusPropsSchema>
 

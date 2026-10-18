@@ -1,15 +1,16 @@
 import type { Session } from '@remote-harness/protocol'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { StyleSheet, View } from 'react-native'
+import { View } from 'react-native'
 import { useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
-import { colors, space } from '@/core/theme'
+import { makeStyles, space } from '@/core/theme'
 import { Button, Text } from '@/ui'
 
 /** Shown on read-only sessions: reopens them with `claude --resume` in a new tmux window. */
 export function ResumeBanner({ session }: { session: Session }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const client = useDaemonClient()
   const [busy, setBusy] = useState(false)
   const [launched, setLaunched] = useState(false)
@@ -50,15 +51,15 @@ export function ResumeBanner({ session }: { session: Session }) {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   base: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     padding: space.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   flex: { flex: 1 },
-})
+}))

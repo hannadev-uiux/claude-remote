@@ -1,7 +1,7 @@
 import { Check, X } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { ActivityIndicator, View } from 'react-native'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, IconButton, Text } from '@/ui'
 import { formatElapsed } from '../timer'
 import type { VoiceRecordingState } from '../use-voice-recording'
@@ -17,6 +17,8 @@ type Props = {
 
 export function RecordingOverlay({ state, level, elapsedMs, onCancel, onDone, onRetryOnline }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
 
   if (state === 'denied') {
     return (
@@ -53,43 +55,43 @@ export function RecordingOverlay({ state, level, elapsedMs, onCancel, onDone, on
       </Text>
       <IconButton icon={X} label={t('voice.cancel')} onPress={onCancel} disabled={transcribing} />
       {transcribing ? (
-        <ActivityIndicator size="small" color={colors.accent} style={styles.spinner} />
+        <ActivityIndicator size="small" color={colors.accentText} style={styles.spinner} />
       ) : (
-        <IconButton icon={Check} label={t('voice.done')} color="accent" onPress={onDone} />
+        <IconButton icon={Check} label={t('voice.done')} color="accentText" onPress={onDone} />
       )}
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
   meter: {
     flex: 1,
     height: 6,
     borderRadius: radius.pill,
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
     overflow: 'hidden',
   },
-  meterFill: { height: '100%', backgroundColor: colors.accent },
+  meterFill: { height: '100%', backgroundColor: theme.colors.accent },
   timer: { minWidth: 36, textAlign: 'right' },
   spinner: { width: 20, height: 20 },
   message: {
     gap: space.sm,
     paddingHorizontal: space.md,
     paddingVertical: space.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
   messageText: { marginBottom: space.xs },
   row: { flexDirection: 'row', gap: space.sm },
-})
+}))

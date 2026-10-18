@@ -13,7 +13,7 @@ export function SessionListActions() {
       <IconButton
         icon={Plus}
         label={t('nav.newSession')}
-        color="accent"
+        color="accentText"
         onPress={() => router.push('/new')}
       />
       <IconButton icon={Settings} label={t('nav.settings')} onPress={() => router.push('/settings')} />

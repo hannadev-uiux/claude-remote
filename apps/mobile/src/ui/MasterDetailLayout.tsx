@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors } from '@/core/theme'
+import { useTheme } from '@/core/theme'
 
 const SIDEBAR_WIDTH = 340
 
@@ -18,10 +18,11 @@ export function MasterDetailLayout({
   sidebar: ReactNode | null
   children: ReactNode
 }) {
+  const { colors } = useTheme()
   return (
     <View style={styles.row}>
       {sidebar ? (
-        <SafeAreaView edges={['top', 'left']} style={styles.sidebar}>
+        <SafeAreaView edges={['top', 'left']} style={[styles.sidebar, { borderRightColor: colors.border }]}>
           {sidebar}
         </SafeAreaView>
       ) : null}
@@ -32,6 +33,6 @@ export function MasterDetailLayout({
 
 const styles = StyleSheet.create({
   row: { flex: 1, flexDirection: 'row' },
-  sidebar: { width: SIDEBAR_WIDTH, borderRightWidth: 1, borderRightColor: colors.border },
+  sidebar: { width: SIDEBAR_WIDTH, borderRightWidth: 1 },
   detail: { flex: 1 },
 })

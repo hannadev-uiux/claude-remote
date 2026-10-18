@@ -2,10 +2,10 @@ import type { PermissionMode, SelectableMode } from '@remote-harness/protocol'
 import * as Haptics from 'expo-haptics'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, Modal, Pressable, StyleSheet, View } from 'react-native'
+import { Alert, Modal, Pressable, View } from 'react-native'
 import { useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
-import { colors, radius, space } from '@/core/theme'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, Text } from '@/ui'
 import { SELECTABLE_MODES } from './modes'
 
@@ -19,6 +19,8 @@ export function ModeSelector({
   disabled?: boolean
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const client = useDaemonClient()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -107,18 +109,24 @@ export function ModeSelector({
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   pill: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: space.sm, paddingVertical: 3 },
-  backdrop: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: theme.colors.backdrop, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     padding: space.xl,
     gap: space.sm,
     borderTopWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-  option: { padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, gap: 2 },
-  selected: { borderColor: colors.accent, backgroundColor: colors.accentMuted },
-})
+  option: {
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    gap: 2,
+  },
+  selected: { borderColor: theme.colors.accent, backgroundColor: theme.colors.accentSoft },
+}))

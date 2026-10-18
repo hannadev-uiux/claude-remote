@@ -4,7 +4,7 @@ import { Alert, StyleSheet, Switch, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
 import type { TFunction } from '@/core/i18n/create'
-import { colors, space } from '@/core/theme'
+import { space, useTheme } from '@/core/theme'
 import { Card, IconButton, Text } from '@/ui'
 import { setMuted, useMuteStore } from './store'
 
@@ -24,6 +24,7 @@ function toggle(
 /** Per-profile switches for the settings screen. */
 export function ProfileMuteCard() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
   const client = useDaemonClient()
   const profiles = useConnectionStore(selectProfiles)
   const mutedProfiles = useMuteStore((s) => s.profiles)

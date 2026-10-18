@@ -2,7 +2,7 @@ import type { SessionStatus } from '@remote-harness/protocol'
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, Pressable, StyleSheet } from 'react-native'
-import { colors, space } from '@/core/theme'
+import { makeStyles, space } from '@/core/theme'
 import { Text } from '@/ui'
 import { useLimitsStore } from './limits-store'
 import { formatPercent, LEVEL_COLORS, type StatusItem, statusItems } from './logic'
@@ -11,6 +11,7 @@ import { StatusSheet } from './StatusSheet'
 /** Single-line model · effort · context · limits under the session header; hidden without data. */
 export function StatusBar({ status, profileId }: { status: SessionStatus | null; profileId: string }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const limits = useLimitsStore((s) => s.byProfile[profileId])
   const [open, setOpen] = useState(false)
   const items = statusItems(status, limits, Date.now())
@@ -56,12 +57,12 @@ export function StatusBar({ status, profileId }: { status: SessionStatus | null;
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   bar: {
     paddingHorizontal: space.lg,
     paddingVertical: space.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
-  pressed: { backgroundColor: colors.surfaceRaised },
-})
+  pressed: { backgroundColor: theme.colors.surfaceRaised },
+}))

@@ -2,7 +2,7 @@ import type { AccountLimits, SessionStatus } from '@remote-harness/protocol'
 import { useTranslation } from 'react-i18next'
 import { Modal, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, radius, space } from '@/core/theme'
+import { makeStyles, radius, space } from '@/core/theme'
 import { Button, Text } from '@/ui'
 import { activeWindow, formatPercent, formatReset, formatTokens, LEVEL_COLORS, statusLevel } from './logic'
 
@@ -22,6 +22,7 @@ export function StatusSheet({
 }) {
   const { t, i18n } = useTranslation()
   const insets = useSafeAreaInsets()
+  const styles = useStyles()
   const now = Date.now()
   const rows: Row[] = []
   if (status?.model)
@@ -85,23 +86,23 @@ export function StatusSheet({
   )
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+const useStyles = makeStyles((theme) => ({
+  backdrop: { flex: 1, backgroundColor: theme.colors.backdrop, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingHorizontal: space.xl,
     paddingTop: space.xl,
     gap: space.sm,
     borderTopWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   list: { paddingVertical: space.sm },
   row: {
     gap: space.xxs,
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
-})
+}))

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { StyleSheet, View, type ViewStyle } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { View, type ViewStyle } from 'react-native'
+import { makeStyles, radius, space } from '@/core/theme'
 
 export function Card({
   children,
@@ -11,15 +11,16 @@ export function Card({
   style?: ViewStyle
   accent?: string
 }) {
+  const styles = useStyles()
   return <View style={[styles.base, accent ? { borderColor: accent } : null, style]}>{children}</View>
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   base: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: space.md,
   },
-})
+}))

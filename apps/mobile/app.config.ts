@@ -12,8 +12,10 @@ import {
   withXcodeProject,
 } from 'expo/config-plugins'
 
+/** Dark theme background (splash and adaptive icon backdrop; the artwork changes in #84). */
 const BACKGROUND = '#0D0D0D'
-const ORANGE = '#D97757'
+/** Product accent (amber), same as `accent` in `src/core/theme/palettes.ts`. */
+const ACCENT = '#E8A33D'
 /** Same id on both stores. */
 const APP_ID = 'tech.doctorx.clauderemote'
 /** Android notification channel; the daemon sends `android.notification.channelId` with this id. */
@@ -291,7 +293,8 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   scheme: 'claude-remote',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'dark',
+  // System surfaces (alerts, pickers) follow the phone; the app theme comes from `src/core/theme`.
+  userInterfaceStyle: 'automatic',
   backgroundColor: BACKGROUND,
   ios: {
     bundleIdentifier: APP_ID,
@@ -389,7 +392,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
       {
         enableBackgroundRemoteNotifications: false,
         icon: './assets/notification-icon.png',
-        color: ORANGE,
+        color: ACCENT,
         defaultChannel: NOTIFICATION_CHANNEL,
       },
     ],

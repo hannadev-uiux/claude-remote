@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Alert, ScrollView, StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
 import { credentialsStorage } from '@/core/storage/credentials'
-import { space } from '@/core/theme'
+import { space, useTheme } from '@/core/theme'
 import { Badge, Button, Card, Screen, Text } from '@/ui'
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -22,6 +22,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function SettingsScreen({ children }: { children?: React.ReactNode }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
   const credentials = useConnectionStore((s) => s.credentials)
   const hello = useConnectionStore((s) => s.hello)
   const status = useConnectionStore((s) => s.status)
@@ -69,7 +70,7 @@ export function SettingsScreen({ children }: { children?: React.ReactNode }) {
             <Text weight="bold">{t('settings.profiles')}</Text>
             {(hello?.profiles ?? []).map((p) => (
               <View key={p.id} style={styles.title}>
-                <Text size="sm" style={{ color: p.color }}>
+                <Text size="sm" style={{ color: p.color || colors.textMuted }}>
                   ● {p.name}
                 </Text>
                 <Text size="xs" color="textMuted">

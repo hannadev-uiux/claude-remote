@@ -1,8 +1,8 @@
 import type { Key } from '@remote-harness/protocol'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
-import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { Alert, Pressable, ScrollView } from 'react-native'
+import { makeStyles, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
 
 /** `confirm` asks before sending (texts in the catalogs). */
@@ -33,6 +33,7 @@ export function KeyBar({
   keys?: KeySpec[]
 }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const press = (spec: KeySpec) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     if (!spec.confirm) return onKey(spec.key)
@@ -63,7 +64,7 @@ export function KeyBar({
           <Text
             size="sm"
             weight="medium"
-            color={spec.key === 'Escape' || spec.key === 'C-c' ? 'accent' : 'text'}
+            color={spec.key === 'Escape' || spec.key === 'C-c' ? 'accentText' : 'text'}
           >
             {spec.label}
           </Text>
@@ -73,7 +74,7 @@ export function KeyBar({
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   bar: { flexGrow: 0 },
   row: { gap: space.xs, paddingHorizontal: space.sm, paddingVertical: space.xs },
   key: {
@@ -84,8 +85,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
   },
-  esc: { borderColor: colors.accent },
-})
+  esc: { borderColor: theme.colors.accent },
+}))

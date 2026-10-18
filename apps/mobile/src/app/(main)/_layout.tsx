@@ -6,7 +6,7 @@ import { addListener, constants } from 'react-native-key-command'
 import { useShallow } from 'zustand/react/shallow'
 import { useConnectionStore } from '@/core/connection'
 import { useWidthClass, type WidthClass } from '@/core/layout'
-import { colors, fonts, space } from '@/core/theme'
+import { space, useTheme } from '@/core/theme'
 import { useLiveStatus } from '@/features/live-status/use-live-status'
 import { selectPendingCounts, usePermissionsStore } from '@/features/permissions/store'
 import { usePush } from '@/features/push/use-push'
@@ -14,7 +14,7 @@ import { extractSessionIdFromPathname } from '@/features/sessions/active-session
 import { SessionListActions } from '@/features/sessions/components/SessionListActions'
 import { SessionsScreen } from '@/features/sessions/SessionsScreen'
 import { useDaemonSync } from '@/features/sync/use-daemon-sync'
-import { MasterDetailLayout, Text } from '@/ui'
+import { MasterDetailLayout, stackScreenOptions, Text } from '@/ui'
 
 /** Cmd+N, Cmd+, and Esc outside a text field (closes the detail pane). */
 function useShellKeyCommands(widthClass: WidthClass) {
@@ -51,6 +51,7 @@ export default function MainLayout() {
   const widthClass = useWidthClass()
   const pathname = usePathname()
   const pending = usePermissionsStore(useShallow(selectPendingCounts))
+  const theme = useTheme()
   useShellKeyCommands(widthClass)
   if (!credentials) return <Redirect href="/pair" />
 
@@ -72,16 +73,7 @@ export default function MainLayout() {
         ) : null
       }
     >
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontFamily: fonts.bold, fontSize: 16 },
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: colors.background },
-          headerBackButtonDisplayMode: 'minimal',
-        }}
-      >
+      <Stack screenOptions={stackScreenOptions(theme)}>
         <Stack.Screen name="index" options={{ title: 'Remote Harness' }} />
         <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
         <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />

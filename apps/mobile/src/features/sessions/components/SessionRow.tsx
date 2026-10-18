@@ -3,8 +3,8 @@ import { router } from 'expo-router'
 import { ChevronRight, GitBranch } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { Pressable, View } from 'react-native'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { Badge, Text } from '@/ui'
 import { StateBadge } from './StateBadge'
@@ -28,6 +28,8 @@ export const SessionRow = memo(function SessionRow({
   keyboardFocused = false,
 }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const waiting = pendingPermissions > 0 || session.state === 'waiting'
   const [hovered, setHovered] = useState(false)
   return (
@@ -87,7 +89,7 @@ export const SessionRow = memo(function SessionRow({
   )
 })
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -97,13 +99,13 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
-  waiting: { borderColor: colors.warning },
-  selected: { borderColor: colors.accent, backgroundColor: colors.accentMuted },
-  keyboardFocused: { borderColor: colors.accent },
-  hovered: { backgroundColor: colors.surfaceRaised },
+  waiting: { borderColor: theme.colors.warning },
+  selected: { borderColor: theme.colors.accent, backgroundColor: theme.colors.accentSoft },
+  keyboardFocused: { borderColor: theme.colors.accent },
+  hovered: { backgroundColor: theme.colors.surfaceRaised },
   pressed: { opacity: 0.7 },
   main: { flex: 1, gap: space.xs },
   path: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
@@ -116,4 +118,4 @@ const styles = StyleSheet.create({
     gap: space.sm,
     marginTop: space.xxs,
   },
-})
+}))

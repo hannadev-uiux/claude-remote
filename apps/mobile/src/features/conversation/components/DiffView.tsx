@@ -1,11 +1,12 @@
-import { StyleSheet, View } from 'react-native'
-import { colors, space } from '@/core/theme'
+import { View } from 'react-native'
+import { makeStyles, space } from '@/core/theme'
 import { Text } from '@/ui'
 import type { DiffLine } from '../diff'
 
 const PREFIX = { add: '+', remove: '-', context: ' ' } as const
 
 export function DiffView({ lines }: { lines: DiffLine[] }) {
+  const styles = useStyles()
   return (
     <View style={styles.base}>
       {lines.map((line, i) => (
@@ -26,9 +27,9 @@ export function DiffView({ lines }: { lines: DiffLine[] }) {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   base: { borderRadius: 6, overflow: 'hidden', marginTop: space.xs },
   line: { paddingHorizontal: space.sm, paddingVertical: 1 },
-  add: { backgroundColor: colors.diffAdd },
-  remove: { backgroundColor: colors.diffRemove },
-})
+  add: { backgroundColor: theme.colors.diffAdd },
+  remove: { backgroundColor: theme.colors.diffRemove },
+}))

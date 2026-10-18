@@ -1,8 +1,8 @@
 import type { CommandItem, FileItem } from '@remote-harness/protocol'
 import { File, Folder, Terminal } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { colors, space } from '@/core/theme'
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native'
+import { makeStyles, space, useTheme } from '@/core/theme'
 import { Text } from '@/ui'
 import { commandDescription } from './describe-command'
 import type { Suggestions } from './use-suggestions'
@@ -15,11 +15,15 @@ type Props = {
 
 export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   if (!suggestions) return null
   const empty = suggestions.items.length === 0
   return (
     <View style={styles.wrap}>
-      {suggestions.loading && empty ? <ActivityIndicator color={colors.accent} style={styles.pad} /> : null}
+      {suggestions.loading && empty ? (
+        <ActivityIndicator color={colors.accentText} style={styles.pad} />
+      ) : null}
       {!suggestions.loading && empty ? (
         <Text size="xs" color="textDim" style={styles.pad}>
           {t('autocomplete.empty')}
@@ -49,7 +53,7 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
                 onPress={() => onPickCommand(item)}
                 style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               >
-                <Terminal size={14} color={colors.accent} />
+                <Terminal size={14} color={colors.accentText} />
                 <View style={styles.flex}>
                   <Text size="sm" weight="medium">
                     /{item.name}
@@ -70,8 +74,12 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: { borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface },
+const useStyles = makeStyles((theme) => ({
+  wrap: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
   list: { maxHeight: 220 },
   row: {
     flexDirection: 'row',
@@ -80,7 +88,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
   },
-  pressed: { backgroundColor: colors.surfaceRaised },
+  pressed: { backgroundColor: theme.colors.surfaceRaised },
   flex: { flex: 1 },
   pad: { padding: space.md },
-})
+}))

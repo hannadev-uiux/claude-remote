@@ -2,8 +2,8 @@ import type { PermissionRequestInfo } from '@remote-harness/protocol'
 import { ShieldAlert } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ScrollView, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { ScrollView, View } from 'react-native'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, Text } from '@/ui'
 import { describePermission, secondsLeft } from '../describe'
 
@@ -26,6 +26,8 @@ function useCountdown(expiresAt: string) {
 
 export function PermissionCard({ request, busy, onAllow, onAlways, onDeny }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const d = describePermission(request, t)
   const left = useCountdown(request.expiresAt)
   return (
@@ -70,18 +72,23 @@ export function PermissionCard({ request, busy, onAllow, onAlways, onDeny }: Pro
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     margin: space.sm,
     padding: space.md,
     gap: space.xs,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.warning,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.warning,
+    backgroundColor: theme.colors.surface,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   flex: { flex: 1 },
-  detail: { maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.sm, padding: space.sm },
+  detail: {
+    maxHeight: 120,
+    backgroundColor: theme.colors.background,
+    borderRadius: radius.sm,
+    padding: space.sm,
+  },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
-})
+}))

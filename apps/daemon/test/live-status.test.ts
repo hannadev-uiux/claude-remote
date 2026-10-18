@@ -252,6 +252,24 @@ describe('LiveStatusService', () => {
 
   const register = { sessionId: 's1', platform: 'ios' as const, fcmToken: 'fcm', activityToken: 'act' }
 
+  test('echoes the app palette in every update of the registration', async () => {
+    const { service, sent } = setup()
+    const palette = {
+      background: '#0D0D0D',
+      text: '#E8E6E3',
+      textMuted: '#8A8784',
+      accent: '#E8A33D',
+      success: '#7FB069',
+      warning: '#F3DC7A',
+    }
+    await service.register({ ...register, palette })
+    service.handle('s1', { type: 'waiting', permission: true })
+    expect(sent.map((m) => m.props.palette)).toEqual([palette, palette])
+    // Older apps register without one: the widget then falls back to its dark colors.
+    await service.register({ ...register, sessionId: 's2' })
+    expect(sent.at(-1)?.props.palette).toBeUndefined()
+  })
+
   test('sends the state on register, throttles steps and ends on Stop', async () => {
     vi.useFakeTimers()
     const { service, sent, unfollow, emit, advance } = setup()

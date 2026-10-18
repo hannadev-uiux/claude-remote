@@ -6,7 +6,7 @@ import { Text } from './Text'
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <View style={styles.base}>
-      <Text size="lg" weight="bold" color="accent">
+      <Text size="lg" weight="bold" color="accentText">
         {'>_ '}
         <Text size="lg" weight="bold">
           {title}

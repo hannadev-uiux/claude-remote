@@ -1,5 +1,5 @@
 import { Text as RNText, type TextProps as RNTextProps, StyleSheet } from 'react-native'
-import { type ColorName, colors, fontSize, fonts } from '@/core/theme'
+import { type ColorName, fontSize, fonts, useTheme } from '@/core/theme'
 
 export type TextProps = RNTextProps & {
   size?: keyof typeof fontSize
@@ -9,6 +9,7 @@ export type TextProps = RNTextProps & {
 
 /** Monospace text with theme defaults. */
 export function Text({ size = 'md', color = 'text', weight = 'regular', style, ...rest }: TextProps) {
+  const { colors } = useTheme()
   return (
     <RNText
       {...rest}

@@ -1,17 +1,17 @@
 import type { AccountLimits, SessionStatus, UsageWindow } from '@remote-harness/protocol'
 import type { ColorName } from '@/core/theme'
 
-/** Percentages from here are shown in Claude orange… */
+/** Percentages from here are shown in the warning color… */
 export const WARNING_PERCENT = 70
 /** …and from here in red. */
 export const CRITICAL_PERCENT = 90
 
 export type StatusLevel = 'normal' | 'warning' | 'critical'
 
-/** Secondary text, Claude orange, red. */
+/** Secondary text, warning yellow, red (the accent is the brand color, not a warning). */
 export const LEVEL_COLORS: Record<StatusLevel, ColorName> = {
   normal: 'textMuted',
-  warning: 'accent',
+  warning: 'warning',
   critical: 'danger',
 }
 

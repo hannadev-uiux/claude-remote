@@ -2,11 +2,11 @@ import type { Key } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native'
 import { useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
 import { keyboardBehavior } from '@/core/platform/platform'
-import { colors, maxContentWidth, radius, space } from '@/core/theme'
+import { makeStyles, maxContentWidth, radius, space, useTheme } from '@/core/theme'
 import { ConnectionBanner, Screen, Text } from '@/ui'
 import { TranscriptImagesContext } from '../images/use-transcript-image'
 import { useSessionsStore } from '../sessions/store'
@@ -65,6 +65,8 @@ export function ConversationScreen({
   onHistoryClose,
 }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const client = useDaemonClient()
   const key = streamKey(sessionId, agentId)
   const stream = useTranscriptStore(selectStream(key))
@@ -136,10 +138,12 @@ export function ConversationScreen({
               }
               contentContainerStyle={styles.content}
             />
-            {stream.loadingOlder ? <ActivityIndicator color={colors.accent} style={styles.loader} /> : null}
+            {stream.loadingOlder ? (
+              <ActivityIndicator color={colors.accentText} style={styles.loader} />
+            ) : null}
             {unseen ? (
               <Pressable accessibilityRole="button" onPress={jumpToEnd} style={styles.unseen}>
-                <Text size="xs" weight="bold" color="background">
+                <Text size="xs" weight="bold" color="accentInk">
                   {t('conversation.newMessages')}
                 </Text>
               </Pressable>
@@ -163,7 +167,7 @@ export function ConversationScreen({
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   flex: { flex: 1 },
   // In wide panes (iPad) the content is centered in a column; in narrow panes `maxWidth` is never
   // reached and the column takes up 100% of the width, same as before.
@@ -175,9 +179,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: space.md,
     alignSelf: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: space.md,
     paddingVertical: space.xs,
     borderRadius: radius.pill,
   },
-})
+}))

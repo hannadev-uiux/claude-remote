@@ -2,7 +2,7 @@ import type { Key } from '@remote-harness/protocol'
 import { Command, KeyboardOff } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native'
-import { colors, space } from '@/core/theme'
+import { makeStyles, space, useTheme } from '@/core/theme'
 import { IconButton } from '@/ui'
 import { setKeyboardToolbarExpanded, useKeyboardToolbarStore } from '../keyboard-toolbar-store'
 import { KeyBar } from './KeyBar'
@@ -23,6 +23,8 @@ export function KeyboardToolbar({
   canDismiss: boolean
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const expanded = useKeyboardToolbarStore((s) => s.expanded)
   return (
     <View style={styles.bar}>
@@ -34,7 +36,7 @@ export function KeyboardToolbar({
         onPress={() => void setKeyboardToolbarExpanded(!expanded)}
         style={({ pressed }) => [styles.toggle, expanded && styles.toggleOn, pressed && styles.pressed]}
       >
-        <Command size={16} color={expanded ? colors.accent : colors.textMuted} strokeWidth={2} />
+        <Command size={16} color={expanded ? colors.accentText : colors.textMuted} strokeWidth={2} />
       </Pressable>
       <View style={styles.keys}>{expanded ? <KeyBar onKey={onKey} disabled={keysDisabled} /> : null}</View>
       {canDismiss ? (
@@ -49,7 +51,7 @@ export function KeyboardToolbar({
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   // Fixed height: expanding the keys must not move the conversation.
   bar: {
     height: 40,
@@ -57,8 +59,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: space.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   toggle: {
     width: 32,
@@ -67,7 +69,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 16,
   },
-  toggleOn: { backgroundColor: colors.surfaceRaised },
+  toggleOn: { backgroundColor: theme.colors.surfaceRaised },
   pressed: { opacity: 0.6 },
   keys: { flex: 1 },
-})
+}))

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
-import { colors, space } from '@/core/theme'
+import { makeStyles, space, useTheme } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
 import { SmartComposer } from '@/features/autocomplete/SmartComposer'
 import { ConversationScreen } from '@/features/conversation/ConversationScreen'
@@ -25,6 +25,8 @@ import { ActionMenu, headerActions, Text } from '@/ui'
 
 export default function SessionRoute() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const { id } = useLocalSearchParams<{ id: string }>()
   const session = useSessionsStore((s) => s.sessions[id])
   const profile = useConnectionStore((s) => s.hello?.profiles.find((p) => p.id === session?.profileId))
@@ -144,7 +146,7 @@ export default function SessionRoute() {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   title: { maxWidth: 200 },
   titleButton: { maxWidth: 200, flexDirection: 'row', alignItems: 'center', gap: space.xs },
   titleText: { flexShrink: 1 },
@@ -157,9 +159,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
   meta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
   cwd: { flexShrink: 1 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-})
+}))

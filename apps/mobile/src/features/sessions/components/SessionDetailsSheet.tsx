@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, radius, space } from '@/core/theme'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, Text } from '@/ui'
 import { type SessionDetail, type SessionDetailKey, sessionDetails } from '../details'
 
@@ -25,6 +25,7 @@ export function SessionDetailsSheet({
 }) {
   const { t, i18n } = useTranslation()
   const insets = useSafeAreaInsets()
+  const styles = useStyles()
   const [copied, setCopied] = useState<SessionDetailKey | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => () => clearTimeout(timer.current), [])
@@ -90,6 +91,8 @@ function CopyButton({
   done: boolean
   onPress: () => void
 }) {
+  const { colors } = useTheme()
+  const styles = useStyles()
   const Icon = done ? Check : Copy
   return (
     <Pressable
@@ -107,18 +110,18 @@ function CopyButton({
   )
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+const useStyles = makeStyles((theme) => ({
+  backdrop: { flex: 1, backgroundColor: theme.colors.backdrop, justifyContent: 'flex-end' },
   sheet: {
     maxHeight: '85%',
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingHorizontal: space.xl,
     paddingTop: space.xl,
     gap: space.sm,
     borderTopWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   list: { flexGrow: 0 },
   content: { paddingVertical: space.sm },
@@ -128,7 +131,7 @@ const styles = StyleSheet.create({
     gap: space.md,
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
   text: { flex: 1, gap: space.xxs },
   copy: {
@@ -141,5 +144,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm,
     borderRadius: radius.md,
   },
-  pressed: { backgroundColor: colors.surfaceRaised },
-})
+  pressed: { backgroundColor: theme.colors.surfaceRaised },
+}))

@@ -1,12 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, Switch, View } from 'react-native'
-import { colors, space } from '@/core/theme'
+import { space, useTheme } from '@/core/theme'
 import { Card, Text } from '@/ui'
 import { setLiveStatusEnabled, useLiveStatusSettings } from './settings-store'
 
 /** Turns the lock screen live status of running sessions on or off (on by default). */
 export function LiveStatusCard() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
   const enabled = useLiveStatusSettings((s) => s.enabled)
   return (
     <Card>

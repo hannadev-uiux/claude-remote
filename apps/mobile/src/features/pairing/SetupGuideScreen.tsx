@@ -2,8 +2,8 @@ import { router } from 'expo-router'
 import { ExternalLink, QrCode, Share2 } from 'lucide-react-native'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Linking, Platform, ScrollView, Share, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { Linking, Platform, ScrollView, Share, View } from 'react-native'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, Card, Screen, Text } from '@/ui'
 import { buildSetupGuide, type GuideAction, REPO_URL } from './setup-guide'
 
@@ -22,12 +22,14 @@ function actionIcon(action: GuideAction, color: string) {
 /** Step-by-step for people who installed the app before setting up Tailscale and the computer. */
 export function SetupGuideScreen() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const guide = useMemo(() => buildSetupGuide(t, Platform.OS), [t])
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
         <Text size="xl" weight="bold">
-          <Text size="xl" weight="bold" color="accent">
+          <Text size="xl" weight="bold" color="accentText">
             {'> '}
           </Text>
           {t('setupGuide.title')}
@@ -41,7 +43,7 @@ export function SetupGuideScreen() {
               <View style={styles.step}>
                 <View style={styles.header}>
                   <View style={styles.badge}>
-                    <Text size="sm" weight="bold" color="background">
+                    <Text size="sm" weight="bold" color="accentInk">
                       {index + 1}
                     </Text>
                   </View>
@@ -52,7 +54,7 @@ export function SetupGuideScreen() {
                 <Text color="textMuted">{step.body}</Text>
                 {step.code ? (
                   <View style={styles.code}>
-                    <Text size="sm" color="accent" selectable>
+                    <Text size="sm" color="accentText" selectable>
                       {`$ ${step.code}`}
                     </Text>
                   </View>
@@ -64,7 +66,7 @@ export function SetupGuideScreen() {
                       key={action.label}
                       label={action.label}
                       variant={primary ? 'primary' : 'secondary'}
-                      icon={actionIcon(action, primary ? colors.background : colors.text)}
+                      icon={actionIcon(action, primary ? colors.accentInk : colors.text)}
                       onPress={() => runAction(action)}
                     />
                   )
@@ -82,7 +84,7 @@ export function SetupGuideScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   content: { padding: space.lg, gap: space.lg },
   step: { gap: space.md },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
@@ -93,15 +95,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: theme.colors.accent,
   },
   code: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.background,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
   },
   footer: { textAlign: 'center' },
-})
+}))
