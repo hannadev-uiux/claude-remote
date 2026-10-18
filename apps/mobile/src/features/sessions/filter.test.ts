@@ -1,6 +1,6 @@
 import type { Session } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
-import { isFiltering, listSessions, matchesFilter, NO_FILTER, normalizeSearch } from './filter'
+import { isFiltering, isHidden, listSessions, matchesFilter, NO_FILTER, normalizeSearch } from './filter'
 
 function s(id: string, profileId: string, state: Session['state'], updatedAt: string): Session {
   return {
@@ -103,4 +103,28 @@ test('isFiltering', () => {
   expect(isFiltering(NO_FILTER)).toBe(false)
   expect(isFiltering({ ...NO_FILTER, query: ' ' })).toBe(false)
   expect(isFiltering({ ...NO_FILTER, state: 'ended' })).toBe(true)
+})
+
+describe('pinned and hidden sessions', () => {
+  const sessions = [
+    s('a', 'p', 'idle', '2026-10-14T12:00:00Z'),
+    s('b', 'p', 'running', '2026-10-14T11:00:00Z'),
+    { ...s('c', 'p', 'ended', '2026-10-14T10:00:00Z'), controllable: false },
+    s('d', 'p', 'idle', '2026-10-14T09:00:00Z'),
+  ]
+
+  test('pinned sessions come first in both orders, keeping their own order', () => {
+    const prefs = { pinned: ['d', 'b'], hidden: [] }
+    expect(listSessions(sessions, NO_FILTER, 'recent', prefs).map((x) => x.id)).toEqual(['b', 'd', 'a', 'c'])
+    expect(listSessions(sessions, NO_FILTER, 'state', prefs).map((x) => x.id)).toEqual(['b', 'd', 'a', 'c'])
+  })
+
+  test('hidden sessions leave the list unless they are live again', () => {
+    expect(
+      listSessions(sessions, NO_FILTER, 'recent', { pinned: [], hidden: ['c'] }).map((x) => x.id),
+    ).toEqual(['a', 'b', 'd'])
+    // A live session cannot be hidden: it shows even when flagged.
+    expect(isHidden(sessions[1]!, { pinned: [], hidden: ['b'] })).toBe(false)
+    expect(isHidden(sessions[2]!, { pinned: [], hidden: ['c'] })).toBe(true)
+  })
 })

@@ -56,6 +56,7 @@ describe('sessionMenu', () => {
       ['toggleKeyBar', false],
       ['history', false],
       ['toggleFollow', false],
+      ['close', false],
     ])
     expect(hidden.items[1]?.label).toBe('Show keyboard shortcuts')
     expect(hidden.disabledReason).toBeUndefined()
@@ -73,9 +74,18 @@ describe('sessionMenu', () => {
     expect(label(false)).toBe('Follow output')
   })
 
-  test('read-only session disables terminal and keys, keeps history and follow, and explains why', () => {
+  test('read-only session disables terminal, keys and close, keeps history and follow, and explains why', () => {
     const menu = sessionMenu({ controllable: false, keyBarVisible: false, following: false }, en)
-    expect(menu.items.filter((i) => i.disabled).map((i) => i.key)).toEqual(['terminal', 'toggleKeyBar'])
+    expect(menu.items.filter((i) => i.disabled).map((i) => i.key)).toEqual([
+      'terminal',
+      'toggleKeyBar',
+      'close',
+    ])
     expect(menu.disabledReason).toMatch(/read-only/i)
+  })
+
+  test('close is the last item and reads "Close session"', () => {
+    const menu = sessionMenu({ controllable: true, keyBarVisible: false, following: false }, en)
+    expect(menu.items.at(-1)).toEqual({ key: 'close', label: 'Close session', disabled: false })
   })
 })

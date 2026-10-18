@@ -20,6 +20,7 @@ import {
   SessionStateSchema,
   SubagentInfoSchema,
   TranscriptEntrySchema,
+  WorktreeInfoSchema,
 } from './domain.ts'
 
 const replyTo = z.string().optional()
@@ -112,6 +113,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     checkout: CheckoutSchema.nullable(),
     peers: z.array(CheckoutPeerSchema),
   }),
+  /** `null` when the session's folder is not inside a linked git worktree. */
+  z.object({ type: z.literal('worktree.info'), replyTo, worktree: WorktreeInfoSchema.nullable() }),
   z.object({ type: z.literal('mute.updated'), muted: MuteStateSchema }),
   z.object({ type: z.literal('push.testResult'), replyTo, result: PushTestResultSchema }),
   /** Usage limits of a profile's account; sent when they change and to every client that connects. */

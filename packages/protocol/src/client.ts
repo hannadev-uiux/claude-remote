@@ -9,6 +9,7 @@ import {
   PermissionAnswerSchema,
   PushRelaySchema,
   RuleScopeSchema,
+  WorktreeActionSchema,
 } from './domain.ts'
 
 const id = z.string().min(1)
@@ -133,6 +134,10 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('checkout.inspect'), id, profileId: z.string().min(1), cwd: z.string().min(1) }),
   z.object({ type: z.literal('session.resume'), id, profileId: z.string().min(1), sessionId }),
+  /** Ends the session gracefully (deny pending, Escape, /exit, then the pane); optional worktree cleanup. */
+  z.object({ type: z.literal('session.close'), id, sessionId, worktree: WorktreeActionSchema.optional() }),
+  z.object({ type: z.literal('worktree.inspect'), id, sessionId }),
+  z.object({ type: z.literal('worktree.cleanup'), id, sessionId, action: WorktreeActionSchema }),
   z.object({ type: z.literal('pane.subscribe'), id, sessionId }),
   z.object({ type: z.literal('pane.unsubscribe'), id, sessionId }),
   z.object({

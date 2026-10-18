@@ -102,6 +102,15 @@ export class PermissionBroker {
     return [...this.pending.values()].some((p) => p.info.sessionId === sessionId)
   }
 
+  /** Denies every pending request of a session (before closing it, so the agent is not stuck in the hook). */
+  denyAll(sessionId: string, message?: string): number {
+    const mine = [...this.pending.values()].filter((p) => p.info.sessionId === sessionId)
+    for (const pending of mine) {
+      pending.settle({ kind: 'decision', decision: { behavior: 'deny', ...(message ? { message } : {}) } })
+    }
+    return mine.length
+  }
+
   async handle(hook: HookEvent, signal: AbortSignal): Promise<Record<string, unknown>> {
     const payload = hook.payload
     const tool = typeof payload.tool_name === 'string' ? payload.tool_name : 'tool'

@@ -107,6 +107,33 @@ export function checkoutPeers<T extends Pick<Session, 'id' | 'controllable' | 's
 export const CheckoutPeerSchema = z.object({ id: z.string(), title: z.string() })
 export type CheckoutPeer = z.infer<typeof CheckoutPeerSchema>
 
+/** A linked git worktree a session works in (never the repository's main checkout). */
+export const WorktreeInfoSchema = z.object({
+  path: z.string(),
+  branch: z.string().nullable(),
+  /** The repository's main checkout. */
+  mainRoot: z.string(),
+  /** Modified or untracked files. */
+  dirty: z.number().int().nonnegative(),
+  /** Commits reachable from HEAD and from no remote ref (also when the branch has no upstream). */
+  unpushed: z.number().int().nonnegative(),
+})
+export type WorktreeInfo = z.infer<typeof WorktreeInfoSchema>
+
+/**
+ * What to do with a session's worktree: `delete` only when clean and pushed; `push-delete` commits
+ * and pushes first; `discard-delete` throws the work away (asked twice in the app).
+ */
+export const WorktreeActionSchema = z.enum(['delete', 'push-delete', 'discard-delete'])
+export type WorktreeAction = z.infer<typeof WorktreeActionSchema>
+
+/** Data of the `ack` to `session.close`. */
+export const CloseResultSchema = z.object({
+  closed: z.enum(['exited', 'killed', 'already']),
+  worktree: z.enum(['deleted', 'kept']).optional(),
+})
+export type CloseResult = z.infer<typeof CloseResultSchema>
+
 /**
  * An image in the transcript, without its data (fetched with `transcript.image`). `id` locates it in
  * the transcript (opaque to the app); `bytes` is the decoded size, so oversized images can be skipped.

@@ -17,6 +17,7 @@ import { ModeSelector } from '@/features/mode/ModeSelector'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
 import { SessionPermissions } from '@/features/permissions/components/SessionPermissions'
 import { StatusBar } from '@/features/session-status/StatusBar'
+import { CloseSessionSheet } from '@/features/sessions/components/CloseSessionSheet'
 import { SessionDetailsSheet } from '@/features/sessions/components/SessionDetailsSheet'
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
@@ -36,6 +37,7 @@ export default function SessionRoute() {
   const following = useFollowStore((s) => s.follow)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [closeOpen, setCloseOpen] = useState(false)
   const title = session?.title || t('common.session')
   // A focused composer would keep the keyboard over the sheet's lower rows.
   const openDetails = () => {
@@ -48,6 +50,10 @@ export default function SessionRoute() {
     toggleKeyBar: () => void setKeyBarVisible(!keyBarVisible),
     history: () => setHistoryOpen(true),
     toggleFollow: () => void setFollow(!following),
+    close: () => {
+      Keyboard.dismiss()
+      setCloseOpen(true)
+    },
   }
 
   return (
@@ -96,6 +102,9 @@ export default function SessionRoute() {
           profile={profile}
           onClose={() => setDetailsOpen(false)}
         />
+      ) : null}
+      {session && closeOpen ? (
+        <CloseSessionSheet session={session} mode="close" onDone={() => setCloseOpen(false)} />
       ) : null}
       <ConversationScreen
         sessionId={id}
