@@ -236,7 +236,10 @@ async function registerFeatures(
   registerAutocompleteFeature(ctx, sessions.store)
   registerPaneFeature(ctx, sessions.store)
   const checkout = registerCheckoutFeature(ctx, sessions.store)
-  registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver)
+  registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver, {
+    lock: sessionLock,
+    denyPending: (id) => void permissions.broker.denyAll(id),
+  })
   const mute = await registerMuteFeature(ctx)
   const isMuted = (profileId: string | null, sessionId: string) => mute.store.isMuted(profileId, sessionId)
   const push = await registerPushFeature(ctx, { isMuted, sender: ctx.pushSender })

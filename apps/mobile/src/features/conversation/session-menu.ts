@@ -1,13 +1,13 @@
 import type { TFunction } from '../../core/i18n/create'
 
-export type SessionMenuAction = 'terminal' | 'toggleKeyBar' | 'history' | 'toggleFollow'
+export type SessionMenuAction = 'terminal' | 'toggleKeyBar' | 'history' | 'toggleFollow' | 'close'
 
 export type SessionMenuItem = { key: SessionMenuAction; label: string; disabled: boolean }
 
 /**
  * Items of the session "More options" menu. Without a tmux pane nothing can be sent to the session,
- * so the terminal and the key bar are disabled (with `disabledReason`); the history and the follow
- * toggle only affect the app.
+ * so the terminal, the key bar and Close are disabled (with `disabledReason`); the history and the
+ * follow toggle only affect the app.
  */
 export function sessionMenu(
   {
@@ -31,6 +31,7 @@ export function sessionMenu(
         label: following ? t('sessionMenu.stopFollowing') : t('sessionMenu.follow'),
         disabled: false,
       },
+      { key: 'close', label: t('sessionMenu.close'), disabled: !controllable },
     ],
     ...(controllable ? {} : { disabledReason: t('sessionMenu.readOnly') }),
   }

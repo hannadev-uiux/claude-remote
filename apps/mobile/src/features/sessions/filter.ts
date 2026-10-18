@@ -1,4 +1,4 @@
-import type { Session, SessionState } from '@remote-harness/protocol'
+import { isLiveSession, type Session, type SessionState } from '@remote-harness/protocol'
 
 const STATE_ORDER: Record<SessionState, number> = { waiting: 0, running: 1, idle: 2, ended: 3 }
 
@@ -56,11 +56,29 @@ const COMPARATORS: Record<SessionSort, (a: Session, b: Session) => number> = {
   state: compareSessions,
 }
 
-/** The sessions that match `filter`, as one flat list in the chosen order (profiles are filters, not groups). */
+/** Per-device list preferences (see `prefs-store`). */
+export type SessionPrefs = { pinned: readonly string[]; hidden: readonly string[] }
+
+export const NO_PREFS: SessionPrefs = { pinned: [], hidden: [] }
+
+/** A hidden session stays out of the list until it is live again (resumed or restarted on the computer). */
+export function isHidden(session: Session, prefs: SessionPrefs): boolean {
+  return prefs.hidden.includes(session.id) && !isLiveSession(session)
+}
+
+/**
+ * The sessions that match `filter`, as one flat list in the chosen order (profiles are filters, not
+ * groups): pinned sessions first, hidden ones left out.
+ */
 export function listSessions(
   sessions: Iterable<Session>,
   filter: SessionFilter = NO_FILTER,
   sort: SessionSort = 'recent',
+  prefs: SessionPrefs = NO_PREFS,
 ): Session[] {
-  return [...sessions].filter((session) => matchesFilter(session, filter)).sort(COMPARATORS[sort])
+  const compare = COMPARATORS[sort]
+  const pinned = new Set(prefs.pinned)
+  return [...sessions]
+    .filter((session) => matchesFilter(session, filter) && !isHidden(session, prefs))
+    .sort((a, b) => Number(pinned.has(b.id)) - Number(pinned.has(a.id)) || compare(a, b))
 }

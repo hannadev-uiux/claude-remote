@@ -48,6 +48,10 @@ const clientSamples: ClientMessage[] = [
   { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'android', fcmToken: 'tok' },
   { type: 'live.unregister', id: '1', sessionId: 's' },
+  { type: 'session.close', id: '1', sessionId: 's' },
+  { type: 'session.close', id: '1', sessionId: 's', worktree: 'push-delete' },
+  { type: 'worktree.inspect', id: '1', sessionId: 's' },
+  { type: 'worktree.cleanup', id: '1', sessionId: 's', action: 'delete' },
   {
     type: 'device.register',
     id: '1',
@@ -266,6 +270,18 @@ describe('client messages', () => {
 
   test('accepts any key string (the daemon enforces the allow list)', () => {
     expect(parseClientMessage({ type: 'session.key', id: '1', sessionId: 's', key: 'C-z' }).ok).toBe(true)
+  })
+
+  test('worktree actions are a closed set', () => {
+    expect(
+      parseClientMessage({ type: 'worktree.cleanup', id: '1', sessionId: 's', action: 'wipe' }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'bad_request' },
+    })
+    expect(parseClientMessage({ type: 'session.close', id: '1', sessionId: 's', worktree: 'keep' }).ok).toBe(
+      false,
+    )
   })
 
   test('live status props carry only the allowed fields', () => {

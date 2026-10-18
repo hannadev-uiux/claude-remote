@@ -1,6 +1,6 @@
 import type { Profile, Session } from '@remote-harness/protocol'
 import { router } from 'expo-router'
-import { BellOff, ChevronRight } from 'lucide-react-native'
+import { BellOff, ChevronRight, Pin } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View } from 'react-native'
@@ -24,6 +24,10 @@ type Props = {
   selected?: boolean
   /** Keyboard navigation cursor (arrow keys) — may point to a session other than the open one. */
   keyboardFocused?: boolean
+  /** Pinned to the top of the list on this device. */
+  pinned?: boolean
+  /** Long press opens the session's action sheet. */
+  onLongPress?: () => void
 }
 
 /**
@@ -38,6 +42,8 @@ export const SessionRow = memo(function SessionRow({
   sharedCheckout = 0,
   selected = false,
   keyboardFocused = false,
+  pinned = false,
+  onLongPress,
 }: Props) {
   const { t } = useTranslation()
   const { colors } = useTheme()
@@ -49,6 +55,8 @@ export const SessionRow = memo(function SessionRow({
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/session/[id]', params: { id: session.id } })}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={({ pressed }) => [
@@ -102,6 +110,9 @@ export const SessionRow = memo(function SessionRow({
         ) : null}
         {!session.controllable ? <Badge label={t('common.readOnly')} /> : null}
         <ProfileTag profile={profile ?? { name: session.profileId, color: '' }} />
+        {pinned ? (
+          <Pin size={12} color={colors.accentText} accessibilityLabel={t('sessionActions.pinned')} />
+        ) : null}
         {muted ? <BellOff size={12} color={colors.textDim} accessibilityLabel={t('sessions.muted')} /> : null}
         {subagents > 0 ? <Badge label={t('sessions.subagents', { count: subagents })} /> : null}
         {session.backgroundTasks > 0 ? (

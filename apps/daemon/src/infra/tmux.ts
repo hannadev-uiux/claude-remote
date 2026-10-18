@@ -86,6 +86,11 @@ export class TmuxClient {
     await this.run(['send-keys', '-t', paneId, ...keys])
   }
 
+  /** Kills a pane (its window closes when it was the last one). */
+  async killPane(paneId: string): Promise<void> {
+    await this.run(['kill-pane', '-t', paneId])
+  }
+
   /** Types text literally, key by key. */
   async sendLiteral(paneId: string, text: string): Promise<void> {
     await this.run(['send-keys', '-t', paneId, '-l', '--', text])
