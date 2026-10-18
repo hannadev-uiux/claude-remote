@@ -1,11 +1,24 @@
+import type { Key } from '@remote-harness/protocol'
 import { ArrowUp } from 'lucide-react-native'
-import { forwardRef, type ReactNode } from 'react'
+import { forwardRef, type ReactNode, useLayoutEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, type TextInputProps, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  type TextInputProps,
+  View,
+} from 'react-native'
 import Animated, { LayoutAnimationConfig, ReduceMotion, ZoomIn, ZoomOut } from 'react-native-reanimated'
+import { useKeyboardHeight } from '@/core/platform/use-keyboard-height'
 import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
+import { keyboardToolbar } from '../keyboard-toolbar'
+import { hideKeyBar, releaseKeyBar, useKeyboardToolbarStore } from '../keyboard-toolbar-store'
+import { KeyboardToolbar } from './KeyboardToolbar'
 
 type Props = {
   value: string
@@ -28,6 +41,9 @@ type Props = {
   hasAttachments?: boolean
   /** A recording is running or being transcribed: the voice button stays to stop it. */
   voiceActive?: boolean
+  /** Sends a special key; with it, a toolbar with the keys is attached to the keyboard. */
+  onKey?: (key: Key) => void
+  keysDisabled?: boolean
 }
 
 // Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
@@ -48,6 +64,19 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
     hasAttach: props.attachButton != null,
     hasVoice: props.voiceButton != null,
   })
+  const [focused, setFocused] = useState(false)
+  const keyboardHeight = useKeyboardHeight()
+  const expanded = useKeyboardToolbarStore((s) => s.expanded)
+  const toolbar = keyboardToolbar({ os: Platform.OS, focused, keyboardHeight, expanded })
+  const hidesKeyBar = props.onKey != null && toolbar.hideKeyBar
+  const [owner] = useState(() => Symbol('composer'))
+  // Layout effect: the key bar under the conversation leaves in the same frame the toolbar's keys
+  // appear, so the keys are never shown twice.
+  useLayoutEffect(() => {
+    if (!hidesKeyBar) return
+    hideKeyBar(owner)
+    return () => releaseKeyBar(owner)
+  }, [hidesKeyBar, owner])
   return (
     <View style={styles.wrap}>
       {props.accessory}
@@ -67,6 +96,8 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           onChangeText={props.onChangeText}
           onSelectionChange={props.onSelectionChange}
           selection={props.selection}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           editable={!props.disabled}
           multiline
           placeholder={props.disabled ? t('conversation.placeholderReadOnly') : t('conversation.placeholder')}
@@ -108,6 +139,13 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           ) : null}
         </LayoutAnimationConfig>
       </View>
+      {props.onKey && toolbar.visible ? (
+        <KeyboardToolbar
+          onKey={props.onKey}
+          keysDisabled={props.keysDisabled}
+          canDismiss={toolbar.canDismiss}
+        />
+      ) : null}
     </View>
   )
 })

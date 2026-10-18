@@ -16,6 +16,7 @@ import { PromptHistorySheet } from './components/PromptHistorySheet'
 import { ToolCallCard } from './components/ToolCallCard'
 import { useFollowStore } from './follow-store'
 import { useKeyBarStore } from './key-bar-store'
+import { useKeyboardToolbarStore } from './keyboard-toolbar-store'
 import type { PromptHistoryItem } from './prompt-history'
 import { loadOlder, selectStream, streamKey, subscribeTranscript, useTranscriptStore } from './store'
 import { buildTimeline, type TimelineItem } from './timeline'
@@ -68,7 +69,10 @@ export function ConversationScreen({
   const key = streamKey(sessionId, agentId)
   const stream = useTranscriptStore(selectStream(key))
   const controllable = useSessionsStore((s) => s.sessions[sessionId]?.controllable ?? false)
-  const keyBarVisible = useKeyBarStore((s) => s.visible)
+  // While the keyboard toolbar shows the same keys, the bar under the conversation steps aside.
+  const keyBarShown = useKeyBarStore((s) => s.visible)
+  const keyBarHidden = useKeyboardToolbarStore((s) => s.keyBarHiddenBy !== null)
+  const keyBarVisible = keyBarShown && !keyBarHidden
   const items = useMemo(() => buildTimeline(stream.entries), [stream.entries])
   const follow = useFollowStore((s) => s.follow)
   const listRef = useRef<FlashListRef<TimelineItem>>(null)

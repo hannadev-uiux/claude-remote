@@ -111,6 +111,8 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
       sending={prompt.sending}
       disabled={disabled}
       error={prompt.error}
+      onKey={prompt.sendKey}
+      keysDisabled={disabled}
       accessory={
         trigger ? (
           <SuggestionList

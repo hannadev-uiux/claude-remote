@@ -113,6 +113,9 @@ const esES = {
     placeholder: 'mensaje para Claude… (@ archivos, / comandos)',
     placeholderReadOnly: 'sesión de solo lectura',
     confirmCtrlC: '¿Enviar Ctrl+C a la sesión?',
+    showSpecialKeys: 'Mostrar teclas especiales',
+    hideSpecialKeys: 'Ocultar teclas especiales',
+    hideKeyboard: 'Ocultar teclado',
     moreLines_one: '… +{{count}} línea',
     moreLines_other: '… +{{count}} líneas',
     errors: {
