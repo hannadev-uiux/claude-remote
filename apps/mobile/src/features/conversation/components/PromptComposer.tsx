@@ -6,9 +6,10 @@ import { ActivityIndicator, Platform, Pressable, TextInput, type TextInputProps,
 import Animated, { LayoutAnimationConfig, ReduceMotion, ZoomIn, ZoomOut } from 'react-native-reanimated'
 import { useKeyboardHeight } from '@/core/platform/use-keyboard-height'
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
-import { agentLabel } from '@/features/sessions/agent'
+import type { AgentId } from '@/core/theme/agents'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
+import { composerPlaceholder } from '../composer-placeholder'
 import { keyboardToolbar } from '../keyboard-toolbar'
 import { hideKeyBar, releaseKeyBar, useKeyboardToolbarStore } from '../keyboard-toolbar-store'
 import { KeyboardToolbar } from './KeyboardToolbar'
@@ -37,6 +38,8 @@ type Props = {
   /** Sends a special key; with it, a toolbar with the keys is attached to the keyboard. */
   onKey?: (key: Key) => void
   keysDisabled?: boolean
+  /** The session's agent, named in the placeholder when known. */
+  agent?: AgentId | null
 }
 
 // Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
@@ -95,11 +98,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           onBlur={() => setFocused(false)}
           editable={!props.disabled}
           multiline
-          placeholder={
-            props.disabled
-              ? t('conversation.placeholderReadOnly')
-              : t('conversation.placeholder', { agent: agentLabel(null, t) })
-          }
+          placeholder={composerPlaceholder(props.agent ?? null, props.disabled, t)}
           placeholderTextColor={colors.textDim}
           autoCapitalize="none"
           autoCorrect={false}

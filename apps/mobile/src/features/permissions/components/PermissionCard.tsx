@@ -1,11 +1,12 @@
 import type { PermissionRequestInfo } from '@remote-harness/protocol'
 import { ShieldAlert } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, View } from 'react-native'
 import { makeStyles, radius, space, useTheme } from '@/core/theme'
+import { formatElapsed } from '@/core/utils/time'
+import { useNow } from '@/core/utils/use-now'
 import { Button, Text } from '@/ui'
-import { describePermission, secondsLeft } from '../describe'
+import { describePermission, permissionTimer } from '../describe'
 
 type Props = {
   request: PermissionRequestInfo
@@ -15,21 +16,18 @@ type Props = {
   onDeny: () => void
 }
 
-function useCountdown(expiresAt: string) {
-  const [left, setLeft] = useState(() => secondsLeft(expiresAt))
-  useEffect(() => {
-    const timer = setInterval(() => setLeft(secondsLeft(expiresAt)), 1000)
-    return () => clearInterval(timer)
-  }, [expiresAt])
-  return left
-}
-
+/**
+ * Agent-neutral permission card: shield · `Tool(arguments)` · time waiting (red when about to
+ * expire), the detail label and box, then Deny / Always / Allow. The strip, the tray and the lock
+ * screen show the same content in the same order.
+ */
 export function PermissionCard({ request, busy, onAllow, onAlways, onDeny }: Props) {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useStyles()
   const d = describePermission(request, t)
-  const left = useCountdown(request.expiresAt)
+  const now = useNow(1_000)
+  const timer = permissionTimer(request.createdAt, request.expiresAt, now)
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -37,8 +35,8 @@ export function PermissionCard({ request, busy, onAllow, onAlways, onDeny }: Pro
         <Text weight="bold" color="warning" style={styles.flex} numberOfLines={1}>
           {d.title}
         </Text>
-        <Text size="xs" color={left < 30 ? 'danger' : 'textMuted'}>
-          {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+        <Text size="xs" color={timer.urgent ? 'danger' : 'textMuted'}>
+          {formatElapsed(timer.elapsedMs)}
         </Text>
       </View>
       <Text size="xs" color="textMuted">

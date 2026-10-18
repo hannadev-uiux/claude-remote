@@ -1,11 +1,13 @@
 import type { ImageRef } from '@remote-harness/protocol'
 import { ChevronDown, ChevronRight } from 'lucide-react-native'
-import { memo, useState } from 'react'
+import { memo, useContext, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { makeStyles, radius, space, useTheme } from '@/core/theme'
+import { AGENT_COLORS } from '@/core/theme/agents'
 import { Text } from '@/ui'
 import { ImageStrip } from '../../images/ImageStrip'
+import { ConversationAgent } from '../agent-context'
 import { systemText } from '../timeline'
 import { Markdown } from './Markdown'
 
@@ -31,11 +33,13 @@ export const UserMessage = memo(function UserMessage({
 })
 
 export const AssistantMessage = memo(function AssistantMessage({ text }: { text: string }) {
+  // The dot carries the agent's color; the user's `>` stays in the accent.
+  const agent = useContext(ConversationAgent)
+  const { colors } = useTheme()
+  const color = agent ? AGENT_COLORS[agent] : colors.accentText
   return (
     <View style={styles.assistant}>
-      <Text color="accentText" style={styles.bullet}>
-        ●
-      </Text>
+      <Text style={[styles.bullet, { color }]}>●</Text>
       <View style={styles.flex}>
         <Markdown text={text} />
       </View>

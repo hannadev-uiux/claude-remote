@@ -206,6 +206,8 @@ const esES = {
   },
   sessionStatus: {
     title: 'Estado de la sesión',
+    /** Chip del proveedor en la segunda línea de contexto, cuando el protocolo lo informe (#109). */
+    provider: 'vía {{provider}}',
     open: 'Estado de la sesión: {{summary}}',
     openHint: 'Muestra los tokens en uso y cuándo se reinician los límites',
     short: { context: 'ctx', fiveHour: '5h', sevenDay: 'sem' },

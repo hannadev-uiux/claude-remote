@@ -206,6 +206,8 @@ const ptBR = {
   },
   sessionStatus: {
     title: 'Status da sessão',
+    /** Chip do provedor na segunda linha de contexto, quando o protocolo o informar (#109). */
+    provider: 'via {{provider}}',
     open: 'Status da sessão: {{summary}}',
     openHint: 'Mostra os tokens em uso e quando os limites reiniciam',
     short: { context: 'ctx', fiveHour: '5h', sevenDay: 'sem' },

@@ -46,6 +46,14 @@ export type StatusItem =
   | { key: 'model' | 'effort'; text: string; percent: null; level: null }
   | { key: GaugeKey; text: ''; percent: number; level: StatusLevel }
 
+/** The model chip's text (`sonnet-5.5 · high`), or `null` when the model is unknown. */
+export function modelLabel(
+  status: Pick<SessionStatus, 'model' | 'effort'> | null | undefined,
+): string | null {
+  if (!status?.model) return null
+  return status.effort ? `${status.model} · ${status.effort}` : status.model
+}
+
 /** Items to show, in order; unknown items are left out (never shown as 0%). */
 export function statusItems(
   status: SessionStatus | null | undefined,

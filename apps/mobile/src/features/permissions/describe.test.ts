@@ -1,9 +1,27 @@
 import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
-import { buildRespond, describePermission, secondsLeft } from './describe'
+import { buildRespond, describePermission, permissionTimer, secondsLeft } from './describe'
 
 const en = createI18n('en-US').t
 const pt = createI18n('pt-BR').t
+
+test('permissionTimer counts the wait and flags the last 30 seconds', () => {
+  const created = '2026-10-18T12:00:00Z'
+  const expires = '2026-10-18T12:06:00Z'
+  // 4:36 waiting, 84 s left.
+  expect(permissionTimer(created, expires, Date.parse('2026-10-18T12:04:36Z'))).toEqual({
+    elapsedMs: 276_000,
+    urgent: false,
+  })
+  // 5:40 waiting, 20 s left.
+  expect(permissionTimer(created, expires, Date.parse('2026-10-18T12:05:40Z'))).toEqual({
+    elapsedMs: 340_000,
+    urgent: true,
+  })
+  // A clock behind the daemon never shows a negative wait; a bad date shows zero.
+  expect(permissionTimer(created, expires, Date.parse('2026-10-18T11:59:00Z')).elapsedMs).toBe(0)
+  expect(permissionTimer('nope', expires, Date.parse('2026-10-18T12:01:00Z')).elapsedMs).toBe(0)
+})
 
 describe('describePermission', () => {
   test('shows the full command for Bash', () => {
