@@ -119,6 +119,15 @@ The installer checks the system (macOS or Linux) and Node, installs missing `tmu
 
 To update, run `remote-harness update` (or `--ref <branch|tag>`): it fetches the new version, rebuilds, refreshes the hooks and restarts the service, without the setup questions; the same as `bash -s -- --update` with the line above. `remote-harness setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
 
+**Update notifications and the menu bar icon.** The background service checks its update channel on the git remote every 6 hours. When there is a new version it shows a desktop notification. It never checks a development clone.
+- **Menu bar / tray icon:** shows that the daemon is running and its version. From it you can check for updates, update now, turn automatic updates on or off, pick the channel, open the logs, restart the daemon and run `doctor`.
+  - On macOS it is a small Swift helper built on first start with the Command Line Tools.
+  - On Linux it needs `python3` with GTK 3 and AyatanaAppIndicator3 or AppIndicator3 (`gir1.2-ayatanaappindicator3-0.1` on Debian/Ubuntu; GNOME also needs the AppIndicator extension).
+  - Without them, and in WSL, the daemon runs headless as before. `"tray": false` in the config turns it off.
+- `remote-harness updates channel main|development` picks the branch that `update` and the check follow. Going back from `development` to `main` warns that it installs an older version.
+- `remote-harness updates auto on` updates by itself. It only does so when no session is running or waiting and no permission is pending, and never to an older version.
+- `remote-harness updates status` and `remote-harness updates check` show the last result.
+
 <details>
 <summary>Linux notes</summary>
 

@@ -30,6 +30,15 @@ export const ConfigSchema = z.object({
   language: LocaleSchema.optional(),
   /** `off` sends no push nor live status; `auto` = Firebase service account if present, else the relay. */
   push: z.enum(['auto', 'off']).default('auto'),
+  /** Branch `remote-harness update` and the background check follow; `auto` applies updates by itself. */
+  update: z
+    .object({
+      channel: z.enum(['main', 'development']).default('main'),
+      auto: z.boolean().default(false),
+    })
+    .default({ channel: 'main', auto: false }),
+  /** Menu bar / tray icon of the service daemon (where a helper is available). */
+  tray: z.boolean().default(true),
 })
 export type Config = z.infer<typeof ConfigSchema>
 

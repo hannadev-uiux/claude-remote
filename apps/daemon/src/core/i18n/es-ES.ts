@@ -102,7 +102,9 @@ export const esES = {
     update: {
       description:
         'actualiza a la última versión: compila, actualiza los hooks y reinicia el servicio (sin preguntas)',
-      ref: 'rama o tag que se instala',
+      ref: 'rama o tag que se instala (por defecto: el canal de actualización)',
+      older: (from: string, to: string) =>
+        `Esto instala una versión más antigua (${from} → ${to}) porque cambió el canal de actualización.`,
       force: 'vuelve a compilar aunque ya esté actualizado',
       checking: (ref: string) => `Buscando una versión nueva en ${ref}`,
       notInstaller: (dir: string) =>
@@ -119,6 +121,28 @@ export const esES = {
         'servicio en segundo plano no instalado (opcional: `remote-harness service install`)',
       updated: (from: string, to: string) => `Remote Harness actualizado: ${from} → ${to}`,
       rebuilt: (version: string) => `Remote Harness ${version} compilado de nuevo`,
+    },
+    updates: {
+      description: 'canal de actualización, actualizaciones automáticas y la comprobación en segundo plano',
+      status: 'muestra la versión, el canal y la última comprobación',
+      check: 'busca una nueva versión ahora',
+      channel: 'muestra o cambia el canal: main (estable) o development',
+      auto: 'activa o desactiva las actualizaciones automáticas',
+      current: (version: string, channel: string) => `Remote Harness ${version} · canal ${channel}`,
+      autoState: (on: boolean): string =>
+        on ? 'actualizaciones automáticas activadas' : 'actualizaciones automáticas desactivadas',
+      lastCheck: (when: string) => `última comprobación: ${when}`,
+      neverChecked: 'aún sin comprobar',
+      available: (version: string) => `nueva versión disponible: ${version}`,
+      older: (version: string) =>
+        `el canal tiene una versión más antigua: ${version} (\`remote-harness update\` la instala)`,
+      upToDate: 'actualizado',
+      channelSet: (channel: string) => `canal: ${channel}`,
+      invalidValue: (value: string, list: string) => `Valor desconocido "${value}". Usa uno de: ${list}.`,
+      invalidChannel: (value: string, list: string) => `Canal desconocido "${value}". Usa uno de: ${list}.`,
+      runUpdate: 'ejecuta `remote-harness update` para cambiar ahora',
+      applied: 'aplicado al daemon en ejecución',
+      notRunning: 'el daemon no está en ejecución: se aplica en el próximo inicio',
     },
     push: {
       description: 'notificaciones push: estado, activar o desactivar, enviar una prueba',
@@ -362,6 +386,31 @@ export const esES = {
     },
     tools: (count: number) => (count === 1 ? '1 herramienta' : `${count} herramientas`),
     ago: 'hace {time}',
+  },
+  updates: {
+    available: (version: string) => `Remote Harness ${version} disponible`,
+    availableBody: 'Actualiza desde el icono de la barra de menús o ejecuta `remote-harness update`.',
+    older: (version: string) => `Remote Harness ${version} de este canal es más antiguo`,
+    olderBody:
+      'Elige "Instalar" en el icono de la barra de menús o ejecuta `remote-harness update` para cambiar.',
+    updating: (version: string) => `Actualizando Remote Harness a ${version}…`,
+    tray: {
+      tooltip: (version: string) => `Remote Harness ${version}`,
+      running: (version: string) => `En ejecución · ${version}`,
+      updateAvailable: (version: string) => `Actualización disponible: ${version}`,
+      updating: 'Actualizando…',
+      check: 'Buscar actualizaciones',
+      checking: 'Buscando…',
+      updateNow: (version: string) => `Actualizar ahora (${version})`,
+      installOlder: (version: string) => `Instalar ${version} (más antigua)`,
+      auto: 'Actualizaciones automáticas',
+      channel: 'Canal',
+      channels: { main: 'main (estable)', development: 'development' },
+      logs: 'Abrir logs',
+      restart: 'Reiniciar daemon',
+      doctor: 'Ejecutar doctor',
+      quit: 'Cerrar icono',
+    },
   },
   push: {
     sessionDone: 'Sesión terminada',
