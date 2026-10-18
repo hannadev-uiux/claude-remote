@@ -205,7 +205,11 @@ Both appear in the app, fully controllable. "Always allow" rules created from th
    - **Push relay** (no credential on the computer): build the app with `REMOTE_HARNESS_PUSH_RELAY_URL` pointing to your relay (see below). The app gets a *grant* from the relay (its FCM token, sealed) and hands it to the daemon, which posts each notification to the relay. A daemon can only reach the phones paired with it.
    - **Self-hosted**: save the Firebase service account to `~/.remote-harness/firebase-service-account.json` and restart the daemon. It sends to FCM directly, and wins over the relay when both exist.
 
-   `remote-harness doctor` lists the phones registered for push and their platform.
+   `remote-harness doctor` and `remote-harness push status` show the mode in use and the phones registered for push. In the app, **Settings → Notifications** shows the same, says what is missing, and has **Send test notification** (`remote-harness push test` sends one to every phone).
+
+   Push is on by default: the app asks for the permission right after pairing, for every event type. Use the mute controls to silence a profile or a session, or `remote-harness push off` to stop every push and live status update on this computer (`remote-harness push on` turns it back on; both apply without restarting the daemon).
+
+   **What the relay sees:** the grant (your FCM token and Live Activity token, sealed with a key only the relay has) and the same content-free message FCM gets: a generic title ("Session finished"), the profile name, the session id, the event type and the permission request id. For the live status it also sees the session title, folder and step categories. It stores nothing.
 
 **Deploying the push relay** (`apps/push-relay`, a Cloud Function in `southamerica-east1`; needs the **Blaze** plan, FCM is free and personal use stays within the free tier of Cloud Functions):
 

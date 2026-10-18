@@ -1,8 +1,11 @@
-import { effectiveLocale } from '../../core/config.ts'
+import { existsSync } from 'node:fs'
+import type { PushMode } from '@remote-harness/protocol'
+import { effectiveLocale, loadConfig } from '../../core/config.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
-import { paths } from '../../core/paths.ts'
+import { hostName, paths } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import { DeviceRegistry } from './devices.ts'
+import { type PushSetting, resolvePushMode, SwitchablePushSender } from './mode.ts'
 import { createRelaySender } from './relay-sender.ts'
 import { createFirebaseSender, type PushSender } from './sender.ts'
 import { PushService } from './service.ts'
@@ -13,17 +16,31 @@ export async function registerPushFeature(
 ) {
   const devices = new DeviceRegistry(paths.devices())
   await devices.load()
-  const sender =
-    options.sender !== undefined
-      ? options.sender
-      : // A local service account (self-hosted Firebase) wins; otherwise the phones' relay grants.
-        ((await createFirebaseSender(paths.firebaseServiceAccount(), ctx.logger)) ??
-        createRelaySender(ctx.logger))
+  const relay = createRelaySender(ctx.logger)
+  let firebase: Promise<PushSender | null> | undefined
+  /** Inner sender for a mode; the Firebase one is created once (firebase-admin is heavy). */
+  const senderFor = async (mode: PushMode): Promise<PushSender | null> => {
+    if (options.sender !== undefined) return options.sender
+    if (mode === 'off') return null
+    if (mode === 'relay') return relay
+    firebase ??= createFirebaseSender(paths.firebaseServiceAccount(), ctx.logger)
+    return (await firebase) ?? relay
+  }
+  const modeFor = (setting: PushSetting): PushMode =>
+    options.sender === null
+      ? 'off'
+      : resolvePushMode({ setting, hasServiceAccount: existsSync(paths.firebaseServiceAccount()) })
+  const initial = modeFor(ctx.config.push)
+  const sender = new SwitchablePushSender(await senderFor(initial), initial)
+  ctx.logger.info({ mode: sender.mode }, 'push mode')
+
   const service = new PushService(sender, devices, ctx.logger, {
     profiles: ctx.profiles,
     hasForegroundClient: () => ctx.hub.hasForegroundClient(),
     isMuted: options.isMuted,
     messages: messagesFor(effectiveLocale(ctx.config)).push,
+    mode: () => sender.mode,
+    host: hostName(),
   })
 
   ctx.router.register('device.register', async (msg) => {
@@ -34,7 +51,23 @@ export async function registerPushFeature(
     connection.foreground = msg.foreground
     return undefined
   })
+  ctx.router.register('push.test', async (msg) => {
+    const { result } = await service.sendTest(msg.fcmToken)
+    return { type: 'push.testResult', result }
+  })
+  // `remote-harness push on|off` rewrites the config, then asks the running daemon to apply it.
+  ctx.hooks.post('/admin/push-mode', async () => {
+    const config = await loadConfig(ctx.logger)
+    const mode = modeFor(config.push)
+    sender.set(await senderFor(mode), mode)
+    ctx.logger.info({ mode: sender.mode }, 'push mode changed')
+    return { mode: sender.mode }
+  })
+  ctx.hooks.post('/admin/push-test', async () => {
+    const { result, sent } = await service.sendTest()
+    return { mode: sender.mode, result, sent }
+  })
   ctx.bus.on('hook', (hook) => void service.notify(service.messageForHook(hook)))
   ctx.bus.on('permission.requested', (info) => void service.notify(service.messageForPermission(info)))
-  return { service, devices, sender }
+  return { service, devices, sender, mode: () => sender.mode }
 }
