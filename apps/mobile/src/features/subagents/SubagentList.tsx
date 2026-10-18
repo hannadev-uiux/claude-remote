@@ -1,9 +1,8 @@
 import type { SubagentInfo } from '@remote-harness/protocol'
 import { router } from 'expo-router'
-import { Bot } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
-import { Pressable, ScrollView } from 'react-native'
-import { makeStyles, radius, space, useTheme } from '@/core/theme'
+import { Pressable } from 'react-native'
+import { makeStyles, space } from '@/core/theme'
 import { Text } from '@/ui'
 import { sortSubagents, subagentLabel } from './sort'
 
@@ -36,35 +35,7 @@ export function NestedSubagents({ sessionId, subagents }: { sessionId: string; s
   )
 }
 
-/** Horizontal strip of subagents shown on top of the conversation. */
-export function SubagentStrip({ sessionId, subagents }: { sessionId: string; subagents: SubagentInfo[] }) {
-  const { colors } = useTheme()
-  const styles = useStyles()
-  if (subagents.length === 0) return null
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.bar}
-      contentContainerStyle={styles.strip}
-    >
-      {sortSubagents(subagents).map((sub) => (
-        <Pressable
-          key={sub.agentId}
-          onPress={() => open(sessionId, sub.agentId)}
-          style={[styles.chip, sub.state === 'running' && styles.running]}
-        >
-          <Bot size={12} color={sub.state === 'running' ? colors.accentText : colors.textDim} />
-          <Text size="xs" color={sub.state === 'running' ? 'text' : 'textMuted'} numberOfLines={1}>
-            {subagentLabel(sub)}
-          </Text>
-        </Pressable>
-      ))}
-    </ScrollView>
-  )
-}
-
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(() => ({
   nested: {
     marginLeft: space.xl + space.lg,
     marginRight: space.lg,
@@ -72,19 +43,4 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: space.sm,
   },
   more: { marginLeft: space.xl + space.lg, marginBottom: space.sm },
-  bar: { flexGrow: 0 },
-  strip: { gap: space.xs, paddingHorizontal: space.md, paddingVertical: space.xs },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    maxWidth: 200,
-    paddingHorizontal: space.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  running: { borderColor: theme.colors.accent },
 }))

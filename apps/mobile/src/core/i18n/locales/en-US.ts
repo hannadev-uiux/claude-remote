@@ -146,6 +146,9 @@ const enUS = {
     stopFollowing: 'Stop following output',
     readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
     close: 'Close session',
+    /** `n` is a plain number in parentheses, so no plural form applies. */
+    subagents: 'Subagents ({{n}})',
+    subagentsRunning: 'Subagents ({{n}} · {{running}} running)',
   },
   sessionActions: {
     close: 'Close session',
@@ -566,6 +569,14 @@ const enUS = {
     },
   },
   subagents: {
+    title: 'Subagents',
+    summary_one: '{{count}} subagent',
+    summary_other: '{{count}} subagents',
+    summaryRunning_one: '{{count}} subagent · {{running}} running',
+    summaryRunning_other: '{{count}} subagents · {{running}} running',
+    tools_one: '{{count}} tool',
+    tools_other: '{{count}} tools',
+    state: { running: 'running', done: 'done' },
     running: '· running',
     done: '· done',
     more_one: '+{{count}} subagent ({{running}} running)',

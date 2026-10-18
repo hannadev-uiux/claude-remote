@@ -1,6 +1,7 @@
 import type { PermissionRequestInfo, Session } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
-import { formatElapsed, pendingForStrip, stripSessionId } from './strip'
+import { formatElapsed } from '../../core/utils/time'
+import { pendingForStrip, stripSessionId } from './strip'
 
 const session = (id: string, state: Session['state'], updatedAt: string) =>
   ({ id, state, updatedAt, profileId: 'p', title: id, cwd: '/w', subagents: [] }) as unknown as Session

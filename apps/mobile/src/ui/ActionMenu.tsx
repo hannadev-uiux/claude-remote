@@ -19,11 +19,14 @@ export function ActionMenu({
   label,
   items,
   disabledReason,
+  attention = false,
 }: {
   icon: LucideIcon
   label: string
   items: ActionMenuItem[]
   disabledReason?: string
+  /** Accent dot over the button: something behind the menu deserves a look (running subagents). */
+  attention?: boolean
 }) {
   const { t } = useTranslation()
   const theme = useTheme()
@@ -59,6 +62,7 @@ export function ActionMenu({
     <>
       <View ref={anchor} collapsable={false}>
         <IconButton icon={icon} label={label} onPress={show} />
+        {attention ? <View pointerEvents="none" style={styles.dot} /> : null}
       </View>
       {Platform.OS === 'ios' ? null : (
         <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -109,4 +113,15 @@ const useStyles = makeStyles((theme) => ({
     elevation: 8,
   },
   pressed: { backgroundColor: theme.colors.surface },
+  dot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 9,
+    height: 9,
+    borderRadius: radius.pill,
+    backgroundColor: theme.colors.accent,
+    borderWidth: 1.5,
+    borderColor: theme.colors.background,
+  },
 }))
