@@ -88,6 +88,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     relay: PushRelaySchema.optional(),
   }),
   z.object({ type: z.literal('app.visibility'), id, foreground: z.boolean() }),
+  /** Sends a test push to this phone only (its registered token); answered with `push.testResult`. */
+  z.object({ type: z.literal('push.test'), id, fcmToken: z.string().min(1) }),
   z.object({
     type: z.literal('live.register'),
     id,

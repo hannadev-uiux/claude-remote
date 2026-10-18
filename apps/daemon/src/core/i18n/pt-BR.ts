@@ -63,6 +63,9 @@ export const ptBR = {
       devices: (platforms: string) => `celulares registrados para push: ${platforms}`,
       noDevices: 'nenhum celular registrado para push',
       noDevicesHint: 'abra o app e permita as notificações',
+      pushMode: (mode: string) => `push: ${mode}`,
+      noRelayGrant:
+        'nenhum celular tem grant do relay: use um build do app com o push relay ou salve uma conta de serviço do Firebase',
     },
     install: {
       description:
@@ -114,6 +117,29 @@ export const ptBR = {
         'serviço em segundo plano não instalado (opcional: `remote-harness service install`)',
       updated: (from: string, to: string) => `Remote Harness atualizado: ${from} → ${to}`,
       rebuilt: (version: string) => `Remote Harness ${version} compilado de novo`,
+    },
+    push: {
+      description: 'notificações push: status, ligar ou desligar, enviar um teste',
+      status: 'mostra como os pushes são enviados e para quantos celulares',
+      on: 'envia pushes (conta de serviço do Firebase se existir, senão o push relay)',
+      off: 'para todos os pushes e atualizações do status ao vivo',
+      test: 'envia uma notificação de teste para todos os celulares registrados',
+      modes: {
+        firebase: (path: string) => `Firebase próprio (${path})`,
+        relay: 'push relay embutido',
+        off: 'desligado (config "push": "off")',
+      },
+      phones: (count: number) => (count === 1 ? '1 celular registrado' : `${count} celulares registrados`),
+      changed: (mode: string) => `push: ${mode}`,
+      applied: 'aplicado ao daemon em execução',
+      notRunning: 'o daemon não está rodando: vale na próxima vez que iniciar',
+      testSent: (count: number) =>
+        count === 1 ? 'teste enviado para 1 celular' : `teste enviado para ${count} celulares`,
+      testResult: {
+        off: 'o push está desligado (`remote-harness push on`)',
+        unregistered: 'nenhum celular registrado: abra o app e permita as notificações',
+        failed: 'o envio falhou: veja os logs do daemon',
+      },
     },
     rules: {
       description: 'regras de "permitir sempre" criadas pelo app',
@@ -344,5 +370,7 @@ export const ptBR = {
     permissionPending: 'Permissão pendente',
     questionPending: 'O Claude está esperando sua resposta',
     planPending: 'Plano pronto para revisão',
+    testTitle: 'Notificação de teste',
+    testBody: (host: string) => `As notificações de ${host} estão funcionando`,
   },
 } satisfies Messages

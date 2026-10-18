@@ -187,6 +187,16 @@ export const PushRelaySchema = z.object({
 })
 export type PushRelay = z.infer<typeof PushRelaySchema>
 
+/**
+ * How the daemon sends pushes: straight to FCM with a Firebase service account (`firebase`), through
+ * the push relay with each phone's grant (`relay`), or not at all (`off`).
+ */
+export const PushModeSchema = z.enum(['firebase', 'relay', 'off'])
+export type PushMode = z.infer<typeof PushModeSchema>
+
+export const PushTestResultSchema = z.enum(['sent', 'off', 'unregistered', 'failed'])
+export type PushTestResult = z.infer<typeof PushTestResultSchema>
+
 /** States of a session's live status (Live Activity / Android notification). */
 export const LiveStateSchema = z.enum(['working', 'waiting', 'done', 'closed'])
 export type LiveState = z.infer<typeof LiveStateSchema>

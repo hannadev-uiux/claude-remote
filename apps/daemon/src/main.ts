@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type Profile } from '@remote-harness/protocol'
+import { PROTOCOL_VERSION, type Profile, type PushMode } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
 import { type Config, loadConfig, resolveProfiles } from './core/config.ts'
@@ -189,6 +189,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       profiles,
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),
+      push: { mode: features.pushMode() },
     }),
   })
   const wsAddress = wss.address()
@@ -214,7 +215,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
 }
 
 /** Wires every feature module. Each feature registers its own handlers, hooks and listeners. */
-async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }> {
+async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore; pushMode: () => PushMode }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
   const transcript = registerTranscriptFeature(ctx, sessions.store)
   registerSubagentsFeature(ctx, sessions.store, transcript.addResolver)
@@ -238,5 +239,5 @@ async function registerFeatures(ctx: DaemonContext): Promise<{ mute: MuteStore }
     follow: transcript.follow,
   })
   await sessions.start()
-  return { mute: mute.store }
+  return { mute: mute.store, pushMode: push.mode }
 }

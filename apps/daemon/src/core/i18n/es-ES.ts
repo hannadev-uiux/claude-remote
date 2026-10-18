@@ -63,6 +63,9 @@ export const esES = {
       devices: (platforms: string) => `móviles registrados para push: ${platforms}`,
       noDevices: 'ningún móvil registrado para push',
       noDevicesHint: 'abre la app y permite las notificaciones',
+      pushMode: (mode: string) => `push: ${mode}`,
+      noRelayGrant:
+        'ningún móvil tiene grant del relay: usa una build de la app con el push relay o guarda una cuenta de servicio de Firebase',
     },
     install: {
       description:
@@ -116,6 +119,29 @@ export const esES = {
         'servicio en segundo plano no instalado (opcional: `remote-harness service install`)',
       updated: (from: string, to: string) => `Remote Harness actualizado: ${from} → ${to}`,
       rebuilt: (version: string) => `Remote Harness ${version} compilado de nuevo`,
+    },
+    push: {
+      description: 'notificaciones push: estado, activar o desactivar, enviar una prueba',
+      status: 'muestra cómo se envían los pushes y a cuántos móviles',
+      on: 'envía pushes (cuenta de servicio de Firebase si existe, si no el push relay)',
+      off: 'detiene todos los pushes y las actualizaciones del estado en vivo',
+      test: 'envía una notificación de prueba a todos los móviles registrados',
+      modes: {
+        firebase: (path: string) => `Firebase propio (${path})`,
+        relay: 'push relay integrado',
+        off: 'desactivado (config "push": "off")',
+      },
+      phones: (count: number) => (count === 1 ? '1 móvil registrado' : `${count} móviles registrados`),
+      changed: (mode: string) => `push: ${mode}`,
+      applied: 'aplicado al daemon en ejecución',
+      notRunning: 'el daemon no está en ejecución: se aplica en el próximo inicio',
+      testSent: (count: number) =>
+        count === 1 ? 'prueba enviada a 1 móvil' : `prueba enviada a ${count} móviles`,
+      testResult: {
+        off: 'el push está desactivado (`remote-harness push on`)',
+        unregistered: 'ningún móvil registrado: abre la app y permite las notificaciones',
+        failed: 'el envío falló: mira los logs del daemon',
+      },
     },
     rules: {
       description: 'reglas de "permitir siempre" creadas por la app',
@@ -343,5 +369,7 @@ export const esES = {
     permissionPending: 'Permiso pendiente',
     questionPending: 'Claude está esperando tu respuesta',
     planPending: 'Plan listo para revisar',
+    testTitle: 'Notificación de prueba',
+    testBody: (host: string) => `Las notificaciones de ${host} funcionan`,
   },
 } satisfies Messages

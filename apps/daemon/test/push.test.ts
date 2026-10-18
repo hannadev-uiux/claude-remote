@@ -1,9 +1,12 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
+import type { PushMode } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
+import { loadConfig, updateConfigFile } from '../src/core/config.ts'
 import { messagesFor } from '../src/core/i18n/index.ts'
 import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
 import { DeviceRegistry, describeDevices, MAX_DEVICES } from '../src/features/push/devices.ts'
+import { resolvePushMode, SwitchablePushSender } from '../src/features/push/mode.ts'
 import {
   ANDROID_CHANNEL_ID,
   buildMulticast,
@@ -38,6 +41,7 @@ async function setup(
     invalid?: string[]
     tokens?: string[]
     locale?: Parameters<typeof messagesFor>[0]
+    mode?: PushMode
   } = {},
 ) {
   const devices = new DeviceRegistry(paths.devices())
@@ -49,6 +53,8 @@ async function setup(
     hasForegroundClient: () => opts.foreground ?? false,
     isMuted: () => opts.muted ?? false,
     messages: messagesFor(opts.locale ?? 'en-US').push,
+    mode: () => opts.mode ?? 'relay',
+    host: 'mac',
   })
   return { service, sent, devices }
 }
@@ -215,6 +221,8 @@ describe('PushService', () => {
       hasForegroundClient: () => false,
       isMuted: () => false,
       messages: en,
+      mode: () => 'off',
+      host: 'mac',
     })
     expect(await disabled.notify(msg)).toBe(false)
   })
@@ -306,5 +314,72 @@ describe('integration: device.register', () => {
       ws.close()
       await daemon.stop()
     }
+  })
+})
+
+describe('push mode', () => {
+  test('off wins, then the service account, then the relay', () => {
+    expect(resolvePushMode({ setting: 'off', hasServiceAccount: true })).toBe('off')
+    expect(resolvePushMode({ setting: 'auto', hasServiceAccount: true })).toBe('firebase')
+    expect(resolvePushMode({ setting: 'auto', hasServiceAccount: false })).toBe('relay')
+  })
+
+  test('the switchable sender stops and resumes without new holders', async () => {
+    const { sender, sent } = fakeSender()
+    const switchable = new SwitchablePushSender(sender, 'relay')
+    const target = [{ token: 't' }]
+    const message = { title: 't', body: 'b', data: {} }
+    await switchable.send(target, message)
+    switchable.set(sender, 'off')
+    expect(switchable.mode).toBe('off')
+    await switchable.send(target, message)
+    expect(await switchable.sendLive({} as never)).toEqual({ invalid: false })
+    switchable.set(sender, 'firebase')
+    await switchable.send(target, message)
+    expect(sent).toHaveLength(2)
+    switchable.set(null, 'relay')
+    expect(switchable.mode).toBe('off')
+  })
+})
+
+describe('test push', () => {
+  test('goes only to the asking phone, even in the foreground and muted', async () => {
+    const { service, sent } = await setup({ tokens: ['a', 'b'], foreground: true, muted: true })
+    expect(await service.sendTest('a')).toEqual({ result: 'sent', sent: 1 })
+    expect(sent).toEqual([
+      { tokens: ['a'], message: { title: en.testTitle, body: en.testBody('mac'), data: { event: 'test' } } },
+    ])
+  })
+
+  test('every phone from the CLI', async () => {
+    const { service, sent } = await setup({ tokens: ['a', 'b'] })
+    expect(await service.sendTest()).toEqual({ result: 'sent', sent: 2 })
+    expect(sent[0]?.tokens).toEqual(['b', 'a'])
+  })
+
+  test('off, unregistered and invalid tokens', async () => {
+    expect((await (await setup({ mode: 'off' })).service.sendTest('tok-1')).result).toBe('off')
+    expect((await (await setup()).service.sendTest('other')).result).toBe('unregistered')
+    const { service, devices } = await setup({ invalid: ['tok-1'] })
+    expect(await service.sendTest('tok-1')).toEqual({ result: 'failed', sent: 0 })
+    expect(devices.list()).toEqual([])
+  })
+})
+
+describe('updateConfigFile', () => {
+  test('changes one key, keeps the rest and backs up', async () => {
+    const path = paths.config()
+    const original = {
+      profiles: [{ id: 'a', name: 'A', configDir: '~/.claude', color: '#fff' }],
+      wsPort: 9000,
+    }
+    await loadConfig(silentLogger)
+    await writeFile(path, JSON.stringify(original))
+    expect(await updateConfigFile({ push: 'off' })).toBe(true)
+    expect(await updateConfigFile({ push: 'off' })).toBe(false)
+    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({ ...original, push: 'off' })
+    expect(JSON.parse(await readFile(`${path}.bak-claude-remote`, 'utf8'))).toEqual(original)
+    expect((await loadConfig(silentLogger)).push).toBe('off')
+    await expect(updateConfigFile({ push: 'maybe' })).rejects.toThrow()
   })
 })

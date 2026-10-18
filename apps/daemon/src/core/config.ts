@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { copyFile } from 'node:fs/promises'
 import {
   type Locale,
   LocaleSchema,
@@ -27,6 +28,8 @@ export const ConfigSchema = z.object({
   tmuxSession: z.string().min(1).default('claude-remote'),
   /** Language of the CLI, setup and push texts; absent = the system language. */
   language: LocaleSchema.optional(),
+  /** `off` sends no push nor live status; `auto` = Firebase service account if present, else the relay. */
+  push: z.enum(['auto', 'off']).default('auto'),
 })
 export type Config = z.infer<typeof ConfigSchema>
 
@@ -62,6 +65,9 @@ export function configuredLocaleSync(path = paths.config(), env = process.env): 
   }
 }
 
+/** Same suffix as the backups of the user's files. */
+const CONFIG_BACKUP_SUFFIX = '.bak-claude-remote'
+
 export class ConfigError extends Error {
   override name = 'ConfigError'
 }
@@ -85,6 +91,25 @@ export async function loadConfig(logger: Logger, path = paths.config()): Promise
     throw new ConfigError(`invalid config ${path}: ${issue?.path.join('.') || '(root)'}: ${issue?.message}`)
   }
   return parsed.data
+}
+
+/**
+ * Changes top-level keys of the config file (read → merge → backup → atomic write), keeping
+ * everything else as written. Fails on an invalid result instead of writing it.
+ */
+export async function updateConfigFile(
+  patch: Record<string, unknown>,
+  path = paths.config(),
+): Promise<boolean> {
+  const raw = await readJsonFile(path)
+  const current = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const next = { ...current, ...patch }
+  if (JSON.stringify(next) === JSON.stringify(current)) return false
+  const parsed = ConfigSchema.safeParse(next)
+  if (!parsed.success) throw new ConfigError(`invalid config ${path}: ${parsed.error.issues[0]?.message}`)
+  if (raw !== undefined) await copyFile(path, `${path}${CONFIG_BACKUP_SUFFIX}`)
+  await writeJsonAtomic(path, next)
+  return true
 }
 
 /** Expands `~` and drops profiles whose config dir does not exist. */

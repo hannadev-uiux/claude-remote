@@ -4,10 +4,17 @@ import { rm } from 'node:fs/promises'
 import { homedir, userInfo } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { LOCALES, type Locale, LocaleSchema } from '@remote-harness/protocol'
+import {
+  LOCALES,
+  type Locale,
+  LocaleSchema,
+  type PushMode,
+  PushTestResultSchema,
+} from '@remote-harness/protocol'
 import { Command, InvalidArgumentError, Option } from 'commander'
 import qrcode from 'qrcode-terminal'
-import { configuredLocaleSync, loadConfig, resolveProfiles } from './core/config.ts'
+import { z } from 'zod'
+import { configuredLocaleSync, loadConfig, resolveProfiles, updateConfigFile } from './core/config.ts'
 import { envVar } from './core/env.ts'
 import { type Messages, messagesFor } from './core/i18n/index.ts'
 import { createLogger } from './core/logger.ts'
@@ -33,6 +40,7 @@ import {
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
 import { DeviceRegistry, describeDevices } from './features/push/devices.ts'
+import { resolvePushMode } from './features/push/mode.ts'
 import { LaunchdService } from './features/service/launchd.ts'
 import type { ServiceManager } from './features/service/service-manager.ts'
 import { SystemdUserService } from './features/service/systemd.ts'
@@ -60,6 +68,8 @@ import {
 } from './infra/platform.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
+
+const PushTestReplySchema = z.object({ result: PushTestResultSchema, sent: z.number() })
 
 /** Language of every text below: config `language`, else the system one (read at startup). */
 let m: Messages = messagesFor(configuredLocaleSync())
@@ -141,6 +151,11 @@ export function pairingUrl(host: string, port: number, token: string): string {
 }
 
 async function notifyDaemon(path: string): Promise<boolean> {
+  return (await adminRequest(path)) !== null
+}
+
+/** POSTs an admin route of the running daemon; its JSON reply, or null when it is not running. */
+async function adminRequest(path: string): Promise<unknown | null> {
   const logger = createLogger({ level: 'silent' })
   const config = await loadConfig(logger)
   const secret = await ensureHookSecret()
@@ -149,10 +164,24 @@ async function notifyDaemon(path: string): Promise<boolean> {
       method: 'POST',
       headers: { [SECRET_HEADER]: secret },
     })
-    return response.ok
+    return response.ok ? ((await response.json()) as unknown) : null
   } catch {
-    return false
+    return null
   }
+}
+
+/** Push mode for this computer as the daemon resolves it at start. */
+async function localPushMode(): Promise<PushMode> {
+  const config = await loadConfig(createLogger({ level: 'silent' }))
+  return resolvePushMode({
+    setting: config.push,
+    hasServiceAccount: existsSync(paths.firebaseServiceAccount()),
+  })
+}
+
+function pushModeLabel(mode: PushMode): string {
+  const modes = m.cli.push.modes
+  return mode === 'firebase' ? modes.firebase(tildify(paths.firebaseServiceAccount())) : modes[mode]
 }
 
 const program = new Command()
@@ -348,8 +377,13 @@ program
     const devices = new DeviceRegistry(paths.devices())
     await devices.load()
     const platforms = describeDevices(devices.devices())
-    // Informational: push is optional (it needs the Firebase service account and app permission).
+    const pushMode = await localPushMode().catch(() => null)
+    if (pushMode) console.log(`· ${d.pushMode(pushModeLabel(pushMode))}`)
+    // Informational: push is optional (it needs the app's permission, and a relay grant or Firebase).
     console.log(`· ${platforms ? d.devices(platforms) : `${d.noDevices} (${d.noDevicesHint})`}`)
+    if (pushMode === 'relay' && platforms && !devices.devices().some((device) => device.relay)) {
+      console.log(`  ${d.noRelayGrant}`)
+    }
   })
 
 program
@@ -523,6 +557,46 @@ async function finishUpdate(from: string | undefined): Promise<void> {
     `\n✓ ${from && from !== DAEMON_VERSION ? u.updated(from, DAEMON_VERSION) : u.rebuilt(DAEMON_VERSION)}`,
   )
 }
+
+const push = program.command('push').description(m.cli.push.description)
+push
+  .command('status')
+  .description(m.cli.push.status)
+  .action(async () => {
+    const devices = new DeviceRegistry(paths.devices())
+    await devices.load()
+    const mode = await localPushMode()
+    console.log(`${mode === 'off' ? '·' : '✓'} ${m.cli.push.changed(pushModeLabel(mode))}`)
+    console.log(`· ${m.cli.push.phones(devices.devices().length)}`)
+  })
+for (const setting of ['on', 'off'] as const) {
+  push
+    .command(setting)
+    .description(m.cli.push[setting])
+    .action(async () => {
+      await updateConfigFile({ push: setting === 'on' ? 'auto' : 'off' })
+      const reply = await adminRequest('/admin/push-mode')
+      console.log(`✓ ${m.cli.push.changed(pushModeLabel(await localPushMode()))}`)
+      console.log(`  ${reply ? m.cli.push.applied : m.cli.push.notRunning}`)
+    })
+}
+push
+  .command('test')
+  .description(m.cli.push.test)
+  .action(async () => {
+    const reply = PushTestReplySchema.safeParse(await adminRequest('/admin/push-test'))
+    if (!reply.success) {
+      console.error(`✗ ${m.cli.doctor.daemonRunning} — ${m.cli.doctor.runStart}`)
+      process.exit(1)
+    }
+    const { result, sent } = reply.data
+    if (result === 'sent') {
+      console.log(`✓ ${m.cli.push.testSent(sent)}`)
+      return
+    }
+    console.error(`✗ ${m.cli.push.testResult[result]}`)
+    process.exit(1)
+  })
 
 const rules = program.command('rules').description(m.cli.rules.description)
 rules

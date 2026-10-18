@@ -65,6 +65,9 @@ export const enUS = {
       devices: (platforms: string) => `phones registered for push: ${platforms}`,
       noDevices: 'no phone registered for push',
       noDevicesHint: 'open the app and allow notifications',
+      pushMode: (mode: string) => `push: ${mode}`,
+      noRelayGrant:
+        'no phone has a relay grant: use an app build with the push relay, or save a Firebase service account',
     },
     install: {
       description:
@@ -115,6 +118,28 @@ export const enUS = {
       serviceNotInstalled: 'background service not installed (optional: `remote-harness service install`)',
       updated: (from: string, to: string) => `Remote Harness updated: ${from} → ${to}`,
       rebuilt: (version: string) => `Remote Harness ${version} rebuilt`,
+    },
+    push: {
+      description: 'push notifications: status, turn on or off, send a test',
+      status: 'show how pushes are sent and to how many phones',
+      on: 'send pushes (Firebase service account if present, else the push relay)',
+      off: 'stop every push and live status update',
+      test: 'send a test notification to every registered phone',
+      modes: {
+        firebase: (path: string) => `own Firebase (${path})`,
+        relay: 'built-in push relay',
+        off: 'off (config "push": "off")',
+      },
+      phones: (count: number) => (count === 1 ? '1 phone registered' : `${count} phones registered`),
+      changed: (mode: string) => `push: ${mode}`,
+      applied: 'applied to the running daemon',
+      notRunning: 'the daemon is not running: it applies on the next start',
+      testSent: (count: number) => (count === 1 ? 'test sent to 1 phone' : `test sent to ${count} phones`),
+      testResult: {
+        off: 'push is off (`remote-harness push on`)',
+        unregistered: 'no phone registered: open the app and allow notifications',
+        failed: 'sending failed: see the daemon logs',
+      },
     },
     rules: {
       description: '"always allow" rules created by the app',
@@ -342,6 +367,8 @@ export const enUS = {
     permissionPending: 'Permission pending',
     questionPending: 'Claude is waiting for your answer',
     planPending: 'Plan ready for review',
+    testTitle: 'Test notification',
+    testBody: (host: string) => `Notifications from ${host} are working`,
   },
 }
 
