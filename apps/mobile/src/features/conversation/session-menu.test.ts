@@ -38,21 +38,31 @@ describe('promptHistory', () => {
 
 describe('sessionMenu', () => {
   test('controllable session enables everything and labels the toggle by state', () => {
-    const hidden = sessionMenu({ controllable: true, keyBarVisible: false }, en)
+    const hidden = sessionMenu({ controllable: true, keyBarVisible: false, following: true }, en)
     expect(hidden.items.map((i) => [i.key, i.disabled])).toEqual([
       ['terminal', false],
       ['toggleKeyBar', false],
       ['history', false],
+      ['toggleFollow', false],
     ])
     expect(hidden.items[1]?.label).toBe('Show keyboard shortcuts')
     expect(hidden.disabledReason).toBeUndefined()
-    expect(sessionMenu({ controllable: true, keyBarVisible: true }, en).items[1]?.label).toBe(
-      'Hide keyboard shortcuts',
-    )
+    expect(
+      sessionMenu({ controllable: true, keyBarVisible: true, following: true }, en).items[1]?.label,
+    ).toBe('Hide keyboard shortcuts')
   })
 
-  test('read-only session disables terminal and keys, keeps history and explains why', () => {
-    const menu = sessionMenu({ controllable: false, keyBarVisible: false }, en)
+  test('follow toggle is labeled by the action it takes', () => {
+    const label = (following: boolean) =>
+      sessionMenu({ controllable: true, keyBarVisible: false, following }, en).items.find(
+        (i) => i.key === 'toggleFollow',
+      )?.label
+    expect(label(true)).toBe('Stop following output')
+    expect(label(false)).toBe('Follow output')
+  })
+
+  test('read-only session disables terminal and keys, keeps history and follow, and explains why', () => {
+    const menu = sessionMenu({ controllable: false, keyBarVisible: false, following: false }, en)
     expect(menu.items.filter((i) => i.disabled).map((i) => i.key)).toEqual(['terminal', 'toggleKeyBar'])
     expect(menu.disabledReason).toMatch(/read-only/i)
   })

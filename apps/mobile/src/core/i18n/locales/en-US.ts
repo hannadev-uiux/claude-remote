@@ -128,6 +128,8 @@ const enUS = {
     showKeys: 'Show keyboard shortcuts',
     hideKeys: 'Hide keyboard shortcuts',
     history: 'Conversation history',
+    follow: 'Follow output',
+    stopFollowing: 'Stop following output',
     readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
   },
   sessionDetails: {
