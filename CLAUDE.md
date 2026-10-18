@@ -16,9 +16,10 @@ openspec/          Changes numerados (proposal, specs, design, tasks), sempre em
 ### Daemon (`apps/daemon/src`)
 - `core/` config, logger (pino), event bus tipado, keychain, paths
 - `infra/` adaptadores de sistema (`TmuxClient`, fs atômico, executor de processos). Único lugar que chama `tmux`/`git`/`rg`/`security`.
-- `features/<feature>/` regra de negócio por feature (sessions, transcript, input, attachments, permissions, mode, autocomplete, pane, lifecycle, subagents, push, mute). Features não importam umas às outras diretamente quando um evento do bus resolve.
+- `features/<feature>/` regra de negócio por feature (sessions, transcript, input, attachments, permissions, mode, autocomplete, pane, lifecycle, subagents, push, mute, status-line, updates). Features não importam umas às outras diretamente quando um evento do bus resolve.
 - `transport/` `ws-server` (app) e `hooks-server` (Fastify, 127.0.0.1). Handlers registrados por `router.register(type, handler)`.
 - `main.ts` composição manual (DI por construtor). `cli.ts` comandos (commander).
+- `tray/` helpers do ícone na bandeja (Swift no macOS, Python/AppIndicator no Linux): só desenham o menu que o daemon manda em JSON lines no stdin e devolvem os cliques no stdout.
 
 ### App (`apps/mobile`)
 - `app/` rotas Expo Router finas (só compõem telas de `src/features`)

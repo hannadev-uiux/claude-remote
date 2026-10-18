@@ -56,6 +56,8 @@ import { tildify } from './features/setup/profiles.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { STATUS_LINE_SCRIPT } from './features/status-line/wrapper.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
+import { isDowngrade, isUpdateChannel, UPDATE_CHANNELS } from './features/updates/channel.ts'
+import { readUpdateState, UpdateChecker, type UpdateState } from './features/updates/checker.ts'
 import { WslHost } from './features/wsl/host.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
@@ -202,6 +204,12 @@ program
     try {
       const { kind, store } = await selectStore()
       logger.info({ platform, tokenStore: kind }, 'token store selected')
+      let stopDaemon: (() => Promise<void>) | undefined
+      const shutdown = async () => {
+        logger.info('stopping')
+        await stopDaemon?.()
+        process.exit(0)
+      }
       const daemon = await startDaemon({
         logger,
         exec: execaExecutor,
@@ -209,12 +217,11 @@ program
         dev: opts.dev,
         host: opts.host,
         waitForTailscale: opts.waitTailscale,
+        // Update checks and the tray belong to the service daemon, not to development runs.
+        // Restarting is exiting: launchd (KeepAlive) / systemd (Restart=always) start it again.
+        desktop: opts.dev ? undefined : { cliPath: builtCliPath(), restart: () => void shutdown() },
       })
-      const shutdown = async () => {
-        logger.info('stopping')
-        await daemon.stop()
-        process.exit(0)
-      }
+      stopDaemon = () => daemon.stop()
       process.on('SIGINT', shutdown)
       process.on('SIGTERM', shutdown)
     } catch (error) {
@@ -480,17 +487,21 @@ service
 program
   .command('update')
   .description(m.cli.update.description)
-  .option('--ref <ref>', m.cli.update.ref, envVar('REF') || 'main')
+  .option('--ref <ref>', m.cli.update.ref)
   .option('--force', m.cli.update.force)
   // Second half, run by `install.sh --update` with the freshly built CLI.
   .addOption(new Option('--finish').hideHelp())
   .addOption(new Option('--from <version>').hideHelp())
-  .action(async (options: { ref: string; force?: boolean; finish?: boolean; from?: string }) => {
-    if (options.finish) {
-      await finishUpdate(options.from)
+  .action(async (opts: { ref?: string; force?: boolean; finish?: boolean; from?: string }) => {
+    if (opts.finish) {
+      await finishUpdate(opts.from)
       return
     }
     const u = m.cli.update
+    // --ref, then REMOTE_HARNESS_REF, then the update channel of the config.
+    const ref =
+      opts.ref || envVar('REF') || (await loadConfig(createLogger({ level: 'silent' }))).update.channel
+    const options = { ...opts, ref }
     const source = updateSource(builtCliPath(), installerSourceDir())
     if (!source.ok) {
       console.error(
@@ -513,6 +524,8 @@ program
     }
     if (result.status === 'available') {
       console.log(`  ${u.available(result.version ?? '?', result.commit.slice(0, 7))}`)
+      if (isDowngrade(DAEMON_VERSION, result.version))
+        console.log(`⚠ ${u.older(DAEMON_VERSION, result.version ?? '?')}`)
       if (!(await updater.checkout())) {
         console.error(`✗ ${u.checkoutFailed}`)
         process.exit(1)
@@ -556,6 +569,95 @@ async function finishUpdate(from: string | undefined): Promise<void> {
   console.log(
     `\n✓ ${from && from !== DAEMON_VERSION ? u.updated(from, DAEMON_VERSION) : u.rebuilt(DAEMON_VERSION)}`,
   )
+}
+
+const updates = program.command('updates').description(m.cli.updates.description)
+updates
+  .command('status')
+  .description(m.cli.updates.status)
+  .action(async () => {
+    const u = m.cli.updates
+    const config = await loadConfig(createLogger({ level: 'silent' }))
+    console.log(u.current(DAEMON_VERSION, config.update.channel))
+    console.log(`· ${u.autoState(config.update.auto)}`)
+    printUpdateState(await readUpdateState(paths.updates()))
+  })
+updates
+  .command('check')
+  .description(m.cli.updates.check)
+  .action(async () => {
+    const reply = await adminRequest('/admin/updates-check')
+    const state = reply && typeof reply === 'object' ? (reply as { state?: unknown }).state : undefined
+    if (state) {
+      printUpdateState(await readUpdateState(paths.updates()))
+      return
+    }
+    // No service daemon (or a development one): check here, without notifying.
+    const source = updateSource(builtCliPath(), installerSourceDir())
+    if (!source.ok) {
+      console.error(
+        `✗ ${source.reason === 'not-built' ? m.cli.buildMissing : m.cli.update.notInstaller(tildify(source.root))}`,
+      )
+      process.exit(1)
+    }
+    const config = await loadConfig(createLogger({ level: 'silent' }))
+    const checker = new UpdateChecker({
+      fetch: (ref) => new SourceUpdater(execaExecutor, source.root).fetch(ref),
+      statePath: paths.updates(),
+      currentVersion: DAEMON_VERSION,
+      logger: createLogger({ level: 'silent' }),
+      onAvailable: () => {},
+    })
+    await checker.load()
+    printUpdateState(await checker.check(config.update.channel, true))
+  })
+updates
+  .command('channel [name]')
+  .description(m.cli.updates.channel)
+  .action(async (name: string | undefined) => {
+    const u = m.cli.updates
+    const config = await loadConfig(createLogger({ level: 'silent' }))
+    if (!name) {
+      console.log(u.channelSet(config.update.channel))
+      return
+    }
+    if (!isUpdateChannel(name)) {
+      console.error(`✗ ${u.invalidChannel(name, UPDATE_CHANNELS.join(', '))}`)
+      process.exit(1)
+    }
+    await updateConfigFile({ update: { ...config.update, channel: name } })
+    const reply = await adminRequest('/admin/updates-reload')
+    console.log(`✓ ${u.channelSet(name)}`)
+    console.log(`  ${reply ? u.applied : u.notRunning}`)
+    if (name !== config.update.channel) console.log(`  ${u.runUpdate}`)
+  })
+updates
+  .command('auto <state>')
+  .description(m.cli.updates.auto)
+  .action(async (state: string) => {
+    const u = m.cli.updates
+    if (state !== 'on' && state !== 'off') {
+      console.error(`✗ ${u.invalidValue(state, 'on, off')}`)
+      process.exit(1)
+    }
+    const config = await loadConfig(createLogger({ level: 'silent' }))
+    await updateConfigFile({ update: { ...config.update, auto: state === 'on' } })
+    const reply = await adminRequest('/admin/updates-reload')
+    console.log(`✓ ${u.autoState(state === 'on')}`)
+    console.log(`  ${reply ? u.applied : u.notRunning}`)
+  })
+
+function printUpdateState(state: UpdateState | null): void {
+  const u = m.cli.updates
+  if (!state?.checkedAt) {
+    console.log(`· ${u.neverChecked}`)
+    return
+  }
+  console.log(`· ${u.lastCheck(new Date(state.checkedAt).toLocaleString(configuredLocaleSync()))}`)
+  const available = state.available
+  if (!available) console.log(`✓ ${u.upToDate}`)
+  else if (available.downgrade) console.log(`· ${u.older(available.version ?? '?')}`)
+  else console.log(`↑ ${u.available(available.version ?? '?')}`)
 }
 
 const push = program.command('push').description(m.cli.push.description)

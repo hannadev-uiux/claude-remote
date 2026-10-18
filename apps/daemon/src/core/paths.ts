@@ -56,6 +56,10 @@ export const paths = {
   attachments: () => join(dataHome(), 'attachments'),
   bin: () => join(dataHome(), 'bin'),
   logs: () => join(dataHome(), 'logs'),
+  /** Result of the last background update check. */
+  updates: () => join(dataHome(), 'updates.json'),
+  /** Compiled tray helper (macOS). */
+  tray: () => join(dataHome(), 'tray'),
   /** App bundle launched by the LaunchAgent (gives the background item its name and icon). */
   app: () => join(dataHome(), 'Claude Remote.app'),
 }
