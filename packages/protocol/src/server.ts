@@ -3,6 +3,7 @@ import {
   CheckoutPeerSchema,
   CheckoutSchema,
   CommandItemSchema,
+  DirectoryItemSchema,
   ErrorCodeSchema,
   FileItemSchema,
   MuteStateSchema,
@@ -88,6 +89,18 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('files.results'), replyTo, query: z.string(), items: z.array(FileItemSchema) }),
   z.object({ type: z.literal('commands.results'), replyTo, items: z.array(CommandItemSchema) }),
   z.object({ type: z.literal('projects.results'), replyTo, items: z.array(ProjectItemSchema) }),
+  z.object({
+    type: z.literal('directories.results'),
+    replyTo,
+    /** Absolute path that was listed. */
+    path: z.string(),
+    /** `null` at the home folder: the listing never goes above it. */
+    parent: z.string().nullable(),
+    home: z.string(),
+    items: z.array(DirectoryItemSchema),
+    /** More entries matched than `limit`. */
+    truncated: z.boolean(),
+  }),
   z.object({
     type: z.literal('checkout.info'),
     replyTo,

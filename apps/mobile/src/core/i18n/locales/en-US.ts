@@ -348,6 +348,18 @@ const enUS = {
     confirmBody: 'The sessions may edit the same files and switch the branch under each other.',
     confirmStart: 'Start anyway',
     confirmWorktree: 'Use a worktree',
+    browse: 'Browse',
+    picker: {
+      title: 'Choose a folder',
+      up: 'Parent folder',
+      showHidden: 'Show hidden folders',
+      choose: 'Choose this folder',
+      empty: 'No folders here.',
+      truncated:
+        'Showing the first {{count}} folders. To reach another one, type its path in the directory field.',
+      error: 'Could not open this folder.',
+      back: 'Go back',
+    },
     errors: {
       invalidCwd: 'Directory not found or outside your home folder.',
       profileNotFound: 'This profile no longer exists on the computer. Pick another one.',

@@ -349,6 +349,18 @@ const ptBR = {
     confirmBody: 'As sessões podem editar os mesmos arquivos e trocar a branch uma da outra.',
     confirmStart: 'Iniciar mesmo assim',
     confirmWorktree: 'Usar uma worktree',
+    browse: 'Procurar',
+    picker: {
+      title: 'Escolha uma pasta',
+      up: 'Pasta acima',
+      showHidden: 'Mostrar pastas ocultas',
+      choose: 'Escolher esta pasta',
+      empty: 'Nenhuma pasta aqui.',
+      truncated:
+        'Mostrando as primeiras {{count}} pastas. Para chegar a outra, digite o caminho no campo de diretório.',
+      error: 'Não foi possível abrir esta pasta.',
+      back: 'Voltar',
+    },
     errors: {
       invalidCwd: 'Diretório não encontrado ou fora da sua pasta pessoal.',
       profileNotFound: 'Este perfil não existe mais no computador. Escolha outro.',

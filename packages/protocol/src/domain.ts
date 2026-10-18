@@ -258,6 +258,13 @@ export type FileItem = z.infer<typeof FileItemSchema>
 export const ProjectItemSchema = z.object({ cwd: z.string(), lastUsedAt: z.string() })
 export type ProjectItem = z.infer<typeof ProjectItemSchema>
 
+/** A subdirectory listed by `directories.list`; `git` when it holds a `.git` directory or file. */
+export const DirectoryItemSchema = z.object({ name: z.string(), path: z.string(), git: z.boolean() })
+export type DirectoryItem = z.infer<typeof DirectoryItemSchema>
+/** Default and maximum number of items in `directories.results`. */
+export const DIRECTORY_LIST_LIMIT = 200
+export const MAX_DIRECTORY_LIST_LIMIT = 500
+
 export const MuteStateSchema = z.object({
   profiles: z.array(z.string()).default([]),
   sessions: z.array(z.string()).default([]),

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { Folder, GitBranch } from 'lucide-react-native'
+import { Folder, FolderGit2, FolderSearch, GitBranch } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native'
@@ -9,7 +9,18 @@ import { colors, fontSize, fonts, radius, space } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { useDebounced } from '@/core/utils/use-debounced'
 import { Button, Card, Screen, Text } from '@/ui'
+import { DirectoryPickerSheet } from './DirectoryPickerSheet'
+import {
+  completeDirectory,
+  directoryToBrowse,
+  matchingSuggestions,
+  splitDirectoryInput,
+} from './directory-input'
 import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
+import { useDirectories, useDirectoriesSupported } from './use-directories'
+
+/** Folder suggestions shown under the directory field. */
+const MAX_SUGGESTIONS = 8
 
 export function NewSessionScreen() {
   const { t } = useTranslation()
@@ -53,6 +64,37 @@ export function NewSessionScreen() {
   const current = inspectedCwd === cwd.trim() ? inspection.data : undefined
   const checkout = current?.checkout ?? null
   const peers = current?.peers ?? []
+
+  // Folder autocomplete: the listing may lag the text, so it is narrowed to what is typed now.
+  const directoriesSupported = useDirectoriesSupported()
+  // Cheap probe so an older daemon hides "Browse" before it is tapped.
+  useDirectories({ path: '~', limit: 1 })
+  const [focused, setFocused] = useState(false)
+  const [picking, setPicking] = useState(false)
+  const typed = splitDirectoryInput(cwd)
+  const debouncedQuery = splitDirectoryInput(useDebounced(cwd, 250))
+  const listing = useDirectories(
+    focused && debouncedQuery
+      ? {
+          path: debouncedQuery.dir,
+          prefix: debouncedQuery.prefix,
+          hidden: debouncedQuery.prefix.startsWith('.'),
+          limit: MAX_SUGGESTIONS,
+        }
+      : null,
+    { keepPrevious: true },
+  ).data
+  const suggestions =
+    focused && listing
+      ? matchingSuggestions(
+          {
+            query: { dir: listing.request.path, prefix: listing.request.prefix ?? '' },
+            items: listing.items,
+          },
+          typed,
+          MAX_SUGGESTIONS,
+        )
+      : []
 
   const finish = () => {
     starting.current = false
@@ -122,15 +164,50 @@ export function NewSessionScreen() {
         <Text size="xs" color="textMuted">
           {t('newSession.directory')}
         </Text>
-        <TextInput
-          value={cwd}
-          onChangeText={setCwd}
-          placeholder={t('newSession.placeholder')}
-          placeholderTextColor={colors.textDim}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.input}
-        />
+        <View style={styles.inputRow}>
+          <TextInput
+            value={cwd}
+            onChangeText={setCwd}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={t('newSession.placeholder')}
+            placeholderTextColor={colors.textDim}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.input, styles.flex]}
+          />
+          {directoriesSupported ? (
+            <Button
+              label={t('newSession.browse')}
+              compact
+              variant="secondary"
+              icon={<FolderSearch size={16} color={colors.text} />}
+              onPress={() => setPicking(true)}
+            />
+          ) : null}
+        </View>
+        {typed && suggestions.length > 0 ? (
+          <View style={styles.suggestions}>
+            {suggestions.map((item) => (
+              <Pressable
+                key={item.path}
+                accessibilityRole="button"
+                accessibilityLabel={item.name}
+                onPress={() => setCwd(completeDirectory(typed.dir, item.name))}
+                style={({ pressed }) => [styles.suggestion, pressed && styles.pressed]}
+              >
+                {item.git ? (
+                  <FolderGit2 size={14} color={colors.accent} />
+                ) : (
+                  <Folder size={14} color={colors.info} />
+                )}
+                <Text size="sm" numberOfLines={1} style={styles.flex}>
+                  {item.name}/
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         {checkout ? (
           <View style={styles.branch}>
             <GitBranch size={14} color={colors.textMuted} />
@@ -210,6 +287,17 @@ export function NewSessionScreen() {
           </Text>
         ) : null}
       </ScrollView>
+      {directoriesSupported ? (
+        <DirectoryPickerSheet
+          visible={picking}
+          initialPath={directoryToBrowse(cwd)}
+          onChoose={(path) => {
+            setCwd(path)
+            setPicking(false)
+          }}
+          onClose={() => setPicking(false)}
+        />
+      ) : null}
     </Screen>
   )
 }
@@ -217,6 +305,23 @@ export function NewSessionScreen() {
 const styles = StyleSheet.create({
   content: { padding: space.lg, gap: space.sm },
   row: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  suggestions: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  suggestion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   input: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
