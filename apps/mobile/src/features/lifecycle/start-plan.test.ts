@@ -61,6 +61,8 @@ describe('startErrorMessage', () => {
     expect(startErrorMessage(new DaemonRequestError('internal', 'Claude Code exited'), en)).toBe(
       'Could not open the agent in tmux: Claude Code exited',
     )
-    expect(startErrorMessage(new DaemonRequestError('timeout', 'x'), en)).toBe('The daemon did not respond.')
+    expect(startErrorMessage(new DaemonRequestError('timeout', 'x'), en)).toBe(
+      'Your machine did not respond.',
+    )
   })
 })

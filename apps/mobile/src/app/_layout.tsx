@@ -21,6 +21,7 @@ import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
 import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
+import { restoreMachineAlias, useMachineNameSync } from '@/features/settings/machine-store'
 import { stackScreenOptions } from '@/ui'
 
 void SplashScreen.preventAutoHideAsync()
@@ -42,6 +43,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void restoreThemePreference()
+    void restoreMachineAlias()
     void restoreKeyBar()
     void restoreKeyboardToolbar()
     void restoreFollow()
@@ -64,6 +66,7 @@ export default function RootLayout() {
 function Shell({ ready }: { ready: boolean }) {
   const { t } = useTranslation()
   const theme = useTheme()
+  useMachineNameSync()
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <SafeAreaProvider>

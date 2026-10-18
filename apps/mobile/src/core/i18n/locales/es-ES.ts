@@ -12,6 +12,10 @@ const esES = {
     generic: 'el agente',
     genericSentence: 'El agente',
   },
+  machine: {
+    generic: 'tu máquina',
+    genericSentence: 'Tu máquina',
+  },
   nav: {
     pair: 'Vincular',
     setupGuide: 'Primera configuración',
@@ -22,7 +26,7 @@ const esES = {
   },
   connection: {
     banner: {
-      connecting: 'conectando con el daemon…',
+      connecting: 'conectando con {{machine}}…',
       authenticating: 'autenticando…',
       reconnecting: 'reconectando…',
       unauthorized: 'token rechazado — vuelve a vincular',
@@ -41,8 +45,8 @@ const esES = {
   errors: {
     invalidCwd: 'Directorio no válido.',
     notFound: 'No encontrado: puede que se haya cerrado o eliminado.',
-    disconnected: 'Sin conexión con el daemon.',
-    timeout: 'El daemon no ha respondido.',
+    disconnected: 'Sin conexión con {{machine}}.',
+    timeout: '{{Machine}} no respondió.',
   },
   time: {
     now: 'ahora',
@@ -68,9 +72,9 @@ const esES = {
     token: 'token',
     connect: 'Conectar',
     errors: {
-      timeout: 'Tiempo agotado. ¿El ordenador está en Tailscale y el daemon en marcha?',
-      unauthorized: 'El daemon ha rechazado el token.',
-      failed: 'No se ha podido conectar con el daemon.',
+      timeout: 'Tiempo agotado. ¿El ordenador está en Tailscale con Remote Harness en marcha?',
+      unauthorized: '{{Machine}} rechazó la vinculación. Vuelve a vincular.',
+      failed: 'No se pudo conectar con {{machine}}.',
     },
   },
   setupGuide: {
@@ -199,7 +203,7 @@ const esES = {
       firebase: 'Firebase propio',
       relay: 'integrado',
       off: 'desactivado',
-      unknown: 'desconocido (actualiza el daemon)',
+      unknown: 'desconocido (actualiza Remote Harness en el ordenador)',
     },
     permission: { granted: 'permitidas', denied: 'no permitidas', unknown: 'aún no solicitadas' },
     issues: {
@@ -207,7 +211,7 @@ const esES = {
       permissionDenied: 'Las notificaciones de Remote Harness están desactivadas en los ajustes del sistema.',
       daemonOff:
         'El push está desactivado en el ordenador. Ejecuta `remote-harness push on` para reactivarlo.',
-      notRegistered: 'Este móvil aún no se ha registrado en el daemon. Deja la app conectada un momento.',
+      notRegistered: 'Este móvil aún no se ha registrado en {{machine}}. Deja la app conectada un momento.',
       noRelay:
         'Esta build no tiene push relay, así que el ordenador necesita una cuenta de servicio de Firebase (ver el README).',
       relayFailed:
@@ -219,8 +223,8 @@ const esES = {
     results: {
       sent: 'Prueba enviada. Debería llegar en unos segundos.',
       off: 'El push está desactivado en el ordenador.',
-      unregistered: 'El daemon aún no conoce este móvil. Vuelve a conectar e inténtalo de nuevo.',
-      failed: 'El envío falló. Mira los logs del daemon (`remote-harness doctor`).',
+      unregistered: '{{Machine}} aún no conoce este móvil. Vuelve a conectar e inténtalo de nuevo.',
+      failed: 'El envío falló. En el ordenador, ejecuta `remote-harness doctor` para ver los registros.',
     },
   },
   liveStatus: {
@@ -365,8 +369,7 @@ const esES = {
       tooLarge: 'Imagen demasiado grande (máx. 5 MB).',
       unsupported: 'Formato de imagen no compatible.',
       expired: 'Una foto adjunta caducó en el ordenador. Adjúntala de nuevo.',
-      daemonOutdated:
-        'El daemon de tu ordenador no puede recibir fotos. Actualízalo con `claude-remote update`.',
+      daemonOutdated: '{{Machine}} aún no recibe fotos. En el ordenador, ejecuta `remote-harness update`.',
       cameraDenied: 'Acceso a la cámara denegado. Permítelo en Ajustes.',
       loadFailed: 'No se pudo cargar la foto.',
     },
@@ -490,7 +493,8 @@ const esES = {
     more_other: '+{{count}} subagentes ({{running}} en marcha)',
   },
   settings: {
-    daemon: 'Daemon',
+    machine: 'Máquina',
+    name: 'nombre',
     host: 'host',
     version: 'versión',
     protocol: 'protocolo',
@@ -505,8 +509,8 @@ const esES = {
     },
     profiles: 'Perfiles',
     noProfiles: 'No se ha encontrado ningún perfil en el ordenador.',
-    forgetButton: 'Olvidar daemon',
-    forgetTitle: '¿Olvidar el daemon?',
+    forgetButton: 'Olvidar esta máquina',
+    forgetTitle: '¿Olvidar esta máquina?',
     forgetBody: 'El token se borrará de este dispositivo. Tendrás que volver a vincularlo.',
     forget: 'Olvidar',
   },
@@ -534,7 +538,7 @@ const esES = {
     disabled:
       'Las actualizaciones por aire están desactivadas en este build: instala un build nuevo para actualizar.',
     daemonOutdated:
-      'El ordenador ejecuta Remote Harness {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta claude-remote update.',
+      'El ordenador ejecuta Remote Harness {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta `remote-harness update`.',
     dismiss: 'Descartar',
   },
   terminal: {

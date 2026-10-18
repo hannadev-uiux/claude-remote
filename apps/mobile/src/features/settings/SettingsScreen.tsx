@@ -50,13 +50,14 @@ export function SettingsScreen({ children }: { children?: React.ReactNode }) {
         <Card>
           <View style={styles.gap}>
             <View style={styles.title}>
-              <Text weight="bold">{t('settings.daemon')}</Text>
+              <Text weight="bold">{t('settings.machine')}</Text>
               <Badge
                 label={t(`connection.status.${status}`)}
                 tone={status === 'open' ? 'success' : 'warning'}
                 dot
               />
             </View>
+            <Row label={t('settings.name')} value={hello?.host || '—'} />
             <Row
               label={t('settings.host')}
               value={credentials ? `${credentials.host}:${credentials.port}` : '—'}

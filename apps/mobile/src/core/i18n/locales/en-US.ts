@@ -15,6 +15,11 @@ const enUS = {
     generic: 'the agent',
     genericSentence: 'The agent',
   },
+  machine: {
+    /** `{{machine}}` / `{{Machine}}` when neither an alias nor the host name is known. */
+    generic: 'your machine',
+    genericSentence: 'Your machine',
+  },
   nav: {
     pair: 'Pair',
     setupGuide: 'First-time setup',
@@ -25,7 +30,7 @@ const enUS = {
   },
   connection: {
     banner: {
-      connecting: 'connecting to the daemon…',
+      connecting: 'connecting to {{machine}}…',
       authenticating: 'authenticating…',
       reconnecting: 'reconnecting…',
       unauthorized: 'token rejected — pair again',
@@ -44,8 +49,8 @@ const enUS = {
   errors: {
     invalidCwd: 'Invalid directory.',
     notFound: 'Not found: it may have been closed or removed.',
-    disconnected: 'No connection to the daemon.',
-    timeout: 'The daemon did not respond.',
+    disconnected: "Can't reach {{machine}}.",
+    timeout: '{{Machine}} did not respond.',
   },
   time: {
     now: 'now',
@@ -71,9 +76,9 @@ const enUS = {
     token: 'token',
     connect: 'Connect',
     errors: {
-      timeout: 'Timed out. Is the computer on Tailscale and the daemon running?',
-      unauthorized: 'Token rejected by the daemon.',
-      failed: 'Could not connect to the daemon.',
+      timeout: 'Timed out. Is the computer on Tailscale with Remote Harness running?',
+      unauthorized: '{{Machine}} rejected the pairing. Pair again.',
+      failed: "Couldn't connect to {{machine}}.",
     },
   },
   setupGuide: {
@@ -198,7 +203,7 @@ const enUS = {
       firebase: 'own Firebase',
       relay: 'built-in',
       off: 'off',
-      unknown: 'unknown (update the daemon)',
+      unknown: 'unknown (update Remote Harness on the computer)',
     },
     permission: { granted: 'allowed', denied: 'not allowed', unknown: 'not asked yet' },
     issues: {
@@ -206,7 +211,7 @@ const enUS = {
       permissionDenied: 'Notifications are turned off for Remote Harness in the system settings.',
       daemonOff: 'Push is turned off on the computer. Run `remote-harness push on` to turn it back on.',
       notRegistered:
-        'This phone has not registered with the daemon yet. Keep the app connected for a moment.',
+        'This phone has not registered with {{machine}} yet. Keep the app connected for a moment.',
       noRelay:
         'This build has no push relay, so the computer needs a Firebase service account (see the README).',
       relayFailed: 'The push relay could not be reached. The app tries again on the next connection.',
@@ -217,8 +222,8 @@ const enUS = {
     results: {
       sent: 'Test sent. It should arrive in a few seconds.',
       off: 'Push is turned off on the computer.',
-      unregistered: 'The daemon does not know this phone yet. Reconnect and try again.',
-      failed: 'Sending failed. See the daemon logs (`remote-harness doctor`).',
+      unregistered: '{{Machine}} does not know this phone yet. Reconnect and try again.',
+      failed: 'Sending failed. On the computer, run `remote-harness doctor` to see the logs.',
     },
   },
   liveStatus: {
@@ -364,8 +369,7 @@ const enUS = {
       tooLarge: 'Image too large (max. 5 MB).',
       unsupported: 'Unsupported image format.',
       expired: 'An attached photo expired on the computer. Attach it again.',
-      daemonOutdated:
-        "The daemon on your computer can't receive photos. Update it with `claude-remote update`.",
+      daemonOutdated: "{{Machine}} can't receive photos yet. On the computer, run `remote-harness update`.",
       cameraDenied: 'Camera access denied. Allow it in Settings.',
       loadFailed: "Couldn't load the photo.",
     },
@@ -489,7 +493,8 @@ const enUS = {
     more_other: '+{{count}} subagents ({{running}} running)',
   },
   settings: {
-    daemon: 'Daemon',
+    machine: 'Machine',
+    name: 'name',
     host: 'host',
     version: 'version',
     protocol: 'protocol',
@@ -504,8 +509,8 @@ const enUS = {
     },
     profiles: 'Profiles',
     noProfiles: 'No profiles found on the computer.',
-    forgetButton: 'Forget daemon',
-    forgetTitle: 'Forget daemon?',
+    forgetButton: 'Forget this machine',
+    forgetTitle: 'Forget this machine?',
     forgetBody: "The token will be deleted from this device. You'll need to pair again.",
     forget: 'Forget',
   },
@@ -532,7 +537,7 @@ const enUS = {
     error: 'Could not check for updates. Try again later.',
     disabled: 'Over-the-air updates are off in this build: install a new build to update.',
     daemonOutdated:
-      'The computer runs Remote Harness {{version}}; this app needs {{minimum}} or newer. On the computer, run claude-remote update.',
+      'The computer runs Remote Harness {{version}}; this app needs {{minimum}} or newer. On the computer, run `remote-harness update`.',
     dismiss: 'Dismiss',
   },
   terminal: {
