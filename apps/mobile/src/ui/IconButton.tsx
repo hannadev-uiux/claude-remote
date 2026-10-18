@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react-native'
 import { useState } from 'react'
 import { Pressable, StyleSheet } from 'react-native'
-import { type ColorName, colors, radius } from '@/core/theme'
+import { type ColorName, radius, useTheme } from '@/core/theme'
 
 export function IconButton({
   icon: Icon,
@@ -18,6 +18,7 @@ export function IconButton({
   size?: number
   disabled?: boolean
 }) {
+  const { colors } = useTheme()
   const [hovered, setHovered] = useState(false)
   return (
     <Pressable
@@ -30,7 +31,7 @@ export function IconButton({
       onHoverOut={() => setHovered(false)}
       style={({ pressed }) => [
         styles.base,
-        hovered && !disabled && styles.hovered,
+        hovered && !disabled && { backgroundColor: colors.surfaceRaised },
         { opacity: disabled ? 0.4 : pressed ? 0.6 : 1 },
       ]}
     >
@@ -41,5 +42,4 @@ export function IconButton({
 
 const styles = StyleSheet.create({
   base: { padding: 6, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  hovered: { backgroundColor: colors.surfaceRaised },
 })

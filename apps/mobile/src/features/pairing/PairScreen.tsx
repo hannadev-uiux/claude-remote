@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native'
 import { keyboardBehavior } from '@/core/platform/platform'
-import { colors, fontSize, fonts, radius, space } from '@/core/theme'
+import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, Card, Screen, Text } from '@/ui'
 import { parseCredentials, parsePairingUrl } from './parse-pairing-url'
 import { usePairing } from './use-pairing'
@@ -22,6 +22,8 @@ type Mode = 'scan' | 'manual'
 
 export function PairScreen() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const params = useLocalSearchParams<{ host?: string; port?: string; token?: string }>()
   const [permission, requestPermission] = useCameraPermissions()
   const [mode, setMode] = useState<Mode>('scan')
@@ -57,13 +59,13 @@ export function PairScreen() {
       <KeyboardAvoidingView behavior={keyboardBehavior(Platform.OS)} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text size="xl" weight="bold">
-            <Text size="xl" weight="bold" color="accent">
+            <Text size="xl" weight="bold" color="accentText">
               {'> '}
             </Text>
             {t('pairing.title')}
           </Text>
           <Text color="textMuted">
-            <Trans i18nKey="pairing.intro" components={{ cmd: <Text color="accent" /> }} />
+            <Trans i18nKey="pairing.intro" components={{ cmd: <Text color="accentText" /> }} />
           </Text>
 
           <Pressable
@@ -73,7 +75,7 @@ export function PairScreen() {
           >
             <Card accent={colors.accent}>
               <View style={styles.guide}>
-                <Rocket size={20} color={colors.accent} />
+                <Rocket size={20} color={colors.accentText} />
                 <View style={styles.flex}>
                   <Text weight="bold">{t('pairing.guideTitle')}</Text>
                   <Text size="sm" color="textMuted">
@@ -91,7 +93,7 @@ export function PairScreen() {
               compact
               flex
               variant={mode === 'scan' ? 'primary' : 'secondary'}
-              icon={<QrCode size={16} color={mode === 'scan' ? colors.background : colors.text} />}
+              icon={<QrCode size={16} color={mode === 'scan' ? colors.accentInk : colors.text} />}
               onPress={() => setMode('scan')}
             />
             <Button
@@ -99,7 +101,7 @@ export function PairScreen() {
               compact
               flex
               variant={mode === 'manual' ? 'primary' : 'secondary'}
-              icon={<Keyboard size={16} color={mode === 'manual' ? colors.background : colors.text} />}
+              icon={<Keyboard size={16} color={mode === 'manual' ? colors.accentInk : colors.text} />}
               onPress={() => setMode('manual')}
             />
           </View>
@@ -141,6 +143,7 @@ function Scanner(props: {
   onScanned: (result: BarcodeScanningResult) => void
 }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   if (!props.granted) {
     return (
       <Card>
@@ -166,7 +169,7 @@ function Scanner(props: {
       <View style={styles.reticle} pointerEvents="none" />
       {props.busy ? (
         <View style={styles.overlay}>
-          <Text color="accent">{t('pairing.connecting')}</Text>
+          <Text color="accentText">{t('pairing.connecting')}</Text>
         </View>
       ) : null}
     </View>
@@ -183,6 +186,7 @@ function ManualForm({
   onInvalid: () => void
 }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const [host, setHost] = useState('')
   const [port, setPort] = useState('7337')
   const [token, setToken] = useState('')
@@ -211,6 +215,8 @@ function Field(props: {
   keyboardType?: 'default' | 'number-pad'
   secure?: boolean
 }) {
+  const { colors } = useTheme()
+  const styles = useStyles()
   return (
     <View style={styles.field}>
       <Text size="xs" color="textMuted">
@@ -231,7 +237,7 @@ function Field(props: {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   flex: { flex: 1 },
   content: { padding: space.lg, gap: space.lg },
   tabs: { flexDirection: 'row', gap: space.sm },
@@ -242,8 +248,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.borderStrong,
+    backgroundColor: theme.colors.surface,
   },
   reticle: {
     position: 'absolute',
@@ -252,25 +258,25 @@ const styles = StyleSheet.create({
     right: '18%',
     bottom: '18%',
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: theme.colors.accent,
     borderRadius: radius.lg,
   },
   overlay: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000000AA',
+    backgroundColor: theme.colors.backdrop,
   },
   field: { gap: space.xs },
   input: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.background,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
-    color: colors.text,
+    color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
   },
-})
+}))

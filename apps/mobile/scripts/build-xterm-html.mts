@@ -1,6 +1,8 @@
 /**
  * Embeds xterm.js (UMD build + CSS) into a self-contained HTML string for the WebView, so the
- * terminal works offline. Run: pnpm --filter @remote-harness/mobile xterm
+ * terminal works offline. The page carries no colors: the app injects the theme as `window.__theme`
+ * before the page loads (`injectedJavaScriptBeforeContentLoaded`) and calls `window.setTheme` on a
+ * theme switch. Run: pnpm --filter @remote-harness/mobile xterm
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -16,23 +18,33 @@ const html = `<!doctype html>
 <html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>${css}
-html,body{margin:0;padding:0;background:#0D0D0D;height:100%;overflow:hidden}
+html,body{margin:0;padding:0;height:100%;overflow:hidden}
 #term{padding:4px}
-.xterm-viewport{background:#0D0D0D!important}
 </style>
 </head><body><div id="term"></div>
 <script>${js}</script>
 <script>
 (function(){
+  var theme = window.__theme || {};
+  function paint(){
+    var background = theme.background || '';
+    document.documentElement.style.background = background;
+    document.body.style.background = background;
+    var viewport = document.querySelector('.xterm-viewport');
+    if (viewport) viewport.style.background = background;
+  }
   var term = new Terminal({
     disableStdin: true, cursorBlink: false, convertEol: true, scrollback: 0, fontSize: 11,
     fontFamily: 'Menlo, monospace',
-    theme: { background: '#0D0D0D', foreground: '#E8E6E3', cursor: '#D97757', selectionBackground: '#D9775755',
-      black: '#161616', red: '#E06C75', green: '#7FB069', yellow: '#E5C07B', blue: '#61AFEF', magenta: '#C678DD',
-      cyan: '#56B6C2', white: '#E8E6E3', brightBlack: '#5E5A56', brightRed: '#E06C75', brightGreen: '#98C379',
-      brightYellow: '#E5C07B', brightBlue: '#61AFEF', brightMagenta: '#C678DD', brightCyan: '#56B6C2', brightWhite: '#FFFFFF' }
+    theme: theme
   });
   term.open(document.getElementById('term'));
+  paint();
+  window.setTheme = function(next){
+    theme = next || {};
+    term.options.theme = theme;
+    paint();
+  };
   // Pick the font size that fits the pane width on the phone screen.
   function fit(cols){
     var width = window.innerWidth - 8;
@@ -44,7 +56,7 @@ html,body{margin:0;padding:0;background:#0D0D0D;height:100%;overflow:hidden}
     if (term.cols !== frame.cols || term.rows !== frame.rows) term.resize(frame.cols, frame.rows);
     term.reset();
     // iOS draws U+23FA (the Claude Code bullet) as an emoji; use a text glyph of the same width.
-    term.write(frame.text.replace(/\\n$/, '').replace(/\u23FA/g, '\u25CF'));
+    term.write(frame.text.replace(/\\n$/, '').replace(/⏺/g, '●'));
   };
   window.ReactNativeWebView && window.ReactNativeWebView.postMessage('ready');
 })();

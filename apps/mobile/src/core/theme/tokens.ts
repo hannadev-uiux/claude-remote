@@ -1,29 +1,4 @@
-/** Design tokens: a dark terminal look inspired by the Claude Code TUI. */
-export const colors = {
-  background: '#0D0D0D',
-  surface: '#161616',
-  surfaceRaised: '#1E1D1C',
-  border: '#2A2A2A',
-  borderStrong: '#3A3836',
-  text: '#E8E6E3',
-  textMuted: '#8A8784',
-  textDim: '#5E5A56',
-  accent: '#D97757',
-  accentMuted: '#D9775733',
-  success: '#7FB069',
-  successMuted: '#7FB06926',
-  danger: '#E06C75',
-  dangerMuted: '#E06C7526',
-  warning: '#E5C07B',
-  warningMuted: '#E5C07B26',
-  info: '#61AFEF',
-  infoMuted: '#61AFEF26',
-  diffAdd: '#7FB06922',
-  diffRemove: '#E06C7522',
-  /** Behind full-screen media. */
-  scrim: '#000000F2',
-} as const
-
+/** Non-color design tokens (type, spacing, radii). Colors live in `palettes.ts`, per theme. */
 export const fonts = {
   regular: 'JetBrainsMono_400Regular',
   medium: 'JetBrainsMono_500Medium',
@@ -39,5 +14,3 @@ export const radius = { sm: 4, md: 8, lg: 12, pill: 999 } as const
 
 /** Max width of conversation content (text, diffs, tool calls) in wide detail panes (iPad). */
 export const maxContentWidth = 760
-
-export type ColorName = keyof typeof colors

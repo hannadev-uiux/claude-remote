@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } from '@/core/connection'
-import { colors, fontSize, fonts, radius, space } from '@/core/theme'
+import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { useDebounced } from '@/core/utils/use-debounced'
 import { Button, Card, Screen, Text } from '@/ui'
@@ -24,6 +24,8 @@ const MAX_SUGGESTIONS = 8
 
 export function NewSessionScreen() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const client = useDaemonClient()
   const connected = useIsConnected()
   const profiles = useConnectionStore(selectProfiles)
@@ -197,7 +199,7 @@ export function NewSessionScreen() {
                 style={({ pressed }) => [styles.suggestion, pressed && styles.pressed]}
               >
                 {item.git ? (
-                  <FolderGit2 size={14} color={colors.accent} />
+                  <FolderGit2 size={14} color={colors.accentText} />
                 ) : (
                   <Folder size={14} color={colors.info} />
                 )}
@@ -302,15 +304,15 @@ export function NewSessionScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   content: { padding: space.lg, gap: space.sm },
   row: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   suggestions: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
     borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     overflow: 'hidden',
   },
   suggestion: {
@@ -320,15 +322,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: space.md,
-    color: colors.text,
+    color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
   },
@@ -342,10 +344,10 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   pressed: { opacity: 0.7 },
-  selected: { borderColor: colors.accent },
+  selected: { borderColor: theme.colors.accent },
   flex: { flex: 1 },
-})
+}))

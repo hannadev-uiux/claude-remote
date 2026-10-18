@@ -63,6 +63,21 @@ const clientSamples: ClientMessage[] = [
     fcmToken: 'tok',
     relay: { url: 'https://relay.example/r', grant: 'g' },
   },
+  {
+    type: 'live.register',
+    id: '1',
+    sessionId: 's',
+    platform: 'android',
+    fcmToken: 'tok',
+    palette: {
+      background: '#0D0D0D',
+      text: '#E8E6E3',
+      textMuted: '#8A8784',
+      accent: '#E8A33D',
+      success: '#7FB069',
+      warning: '#F3DC7A',
+    },
+  },
   { type: 'files.search', id: '1', sessionId: 's', query: 'src', limit: 20 },
   { type: 'commands.list', id: '1', sessionId: 's' },
   { type: 'projects.list', id: '1', profileId: 'claudin' },
@@ -267,6 +282,26 @@ describe('client messages', () => {
     }
     expect(LiveStatusPropsSchema.parse({ ...full, prompt: 'secret' })).toEqual(full)
     expect(LiveStatusPropsSchema.safeParse({ ...props, state: 'error' }).success).toBe(false)
+  })
+
+  test('live status props carry the app palette when the registration had one', () => {
+    const props = { title: 'Work', state: 'working', status: 'Working', step: '', tools: '', startedAt: 1 }
+    const palette = {
+      background: '#0D0D0D',
+      text: '#E8E6E3',
+      textMuted: '#8A8784',
+      accent: '#E8A33D',
+      success: '#7FB069',
+      warning: '#F3DC7A',
+    }
+    expect(LiveStatusPropsSchema.parse({ ...props, palette }).palette).toEqual(palette)
+    expect(LiveStatusPropsSchema.parse(props).palette).toBeUndefined()
+    expect(
+      LiveStatusPropsSchema.safeParse({ ...props, palette: { ...palette, accent: 'amber' } }).success,
+    ).toBe(false)
+    const register = { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok' }
+    expect(parseClientMessage({ ...register, palette })).toMatchObject({ ok: true, value: { palette } })
+    expect(parseClientMessage({ ...register, palette: { accent: '#E8A33D' } }).ok).toBe(false)
   })
 
   test('live status props from older daemons get defaults', () => {

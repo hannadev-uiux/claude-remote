@@ -2,18 +2,10 @@ import type { Key } from '@remote-harness/protocol'
 import { ArrowUp } from 'lucide-react-native'
 import { forwardRef, type ReactNode, useLayoutEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  type TextInputProps,
-  View,
-} from 'react-native'
+import { ActivityIndicator, Platform, Pressable, TextInput, type TextInputProps, View } from 'react-native'
 import Animated, { LayoutAnimationConfig, ReduceMotion, ZoomIn, ZoomOut } from 'react-native-reanimated'
 import { useKeyboardHeight } from '@/core/platform/use-keyboard-height'
-import { colors, fontSize, fonts, radius, space } from '@/core/theme'
+import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
 import { keyboardToolbar } from '../keyboard-toolbar'
@@ -53,6 +45,8 @@ const exiting = ZoomOut.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const hasText = props.value.trim().length > 0
   const hasAttachments = props.hasAttachments === true
   const canSend = !props.disabled && !props.sending && (hasText || hasAttachments)
@@ -87,7 +81,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
       ) : null}
       {props.attachments}
       <View style={styles.row}>
-        <Text color="accent" weight="bold" style={styles.prompt}>
+        <Text color="accentText" weight="bold" style={styles.prompt}>
           {'>'}
         </Text>
         <TextInput
@@ -130,9 +124,9 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
                 style={[styles.send, { backgroundColor: canSend ? colors.accent : colors.surfaceRaised }]}
               >
                 {props.sending ? (
-                  <ActivityIndicator size="small" color={colors.background} />
+                  <ActivityIndicator size="small" color={colors.accentInk} />
                 ) : (
-                  <ArrowUp size={18} color={canSend ? colors.background : colors.textDim} />
+                  <ArrowUp size={18} color={canSend ? colors.accentInk : colors.textDim} />
                 )}
               </Pressable>
             </Animated.View>
@@ -150,8 +144,12 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
   )
 })
 
-const styles = StyleSheet.create({
-  wrap: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+const useStyles = makeStyles((theme) => ({
+  wrap: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+  },
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, padding: space.sm },
   prompt: { paddingBottom: 9 },
   input: {
@@ -162,12 +160,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
   },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   error: { paddingHorizontal: space.md, paddingTop: space.xs },
-})
+}))

@@ -18,22 +18,29 @@ import { createLiveActivity } from 'expo-widgets'
 /**
  * Lock screen and Dynamic Island layout of a session's live status. It runs in the widget runtime:
  * only `@expo/ui/swift-ui`, no app state, no imports used inside, so the texts arrive translated in
- * the props, the colors are written inline (theme background #0D0D0D, text #E8E6E3, secondary
- * #8A8784, accent #D97757, success #7FB069, warning #E5C07B) and props from older daemons may lack
- * the fields after `startedAt`. The app icon comes from the widget extension's asset catalog
+ * the props, the colors arrive in `props.palette` (the app theme; the literals below are the dark
+ * theme, used when an older daemon sends none) and props from older daemons may lack the fields
+ * after `startedAt`. The app icon comes from the widget extension's asset catalog
  * (`withLiveActivityIcon` in `app.config.ts`). The state is the border color; the footer counts the
  * time since it changed.
  */
 function SessionActivityLayout(props: LiveStatusProps) {
   'widget'
+  const palette = props.palette
+  const background = palette ? palette.background : '#0D0D0D'
+  const text = palette ? palette.text : '#E8E6E3'
+  const textMuted = palette ? palette.textMuted : '#8A8784'
+  const accent = palette ? palette.accent : '#E8A33D'
+  const success = palette ? palette.success : '#7FB069'
+  const warning = palette ? palette.warning : '#F3DC7A'
   const tint =
     props.state === 'waiting'
-      ? '#E5C07B'
+      ? warning
       : props.state === 'done'
-        ? '#7FB069'
+        ? success
         : props.state === 'closed'
-          ? '#8A8784'
-          : '#D97757'
+          ? textMuted
+          : accent
   const symbol =
     props.state === 'waiting'
       ? 'hand.raised.fill'
@@ -80,7 +87,7 @@ function SessionActivityLayout(props: LiveStatusProps) {
   )
   const stateIcon = <Image systemName={symbol} modifiers={[foregroundStyle(tint)]} />
   const sessionName = props.session ? (
-    <Text modifiers={[font({ size: 16, weight: 'bold' }), foregroundStyle('#E8E6E3'), lineLimit(1)]}>
+    <Text modifiers={[font({ size: 16, weight: 'bold' }), foregroundStyle(text), lineLimit(1)]}>
       {props.session}
     </Text>
   ) : null
@@ -88,7 +95,7 @@ function SessionActivityLayout(props: LiveStatusProps) {
     <Text
       modifiers={[
         font({ size: 12, design: 'monospaced' }),
-        foregroundStyle('#8A8784'),
+        foregroundStyle(textMuted),
         lineLimit(1),
         truncationMode('head'),
       ]}
@@ -122,15 +129,13 @@ function SessionActivityLayout(props: LiveStatusProps) {
         spacing={6}
         modifiers={[
           padding({ all: 14 }),
-          activityBackgroundTint('#0D0D0D'),
+          activityBackgroundTint(background),
           strokeBorder({ content: tint, style: { lineWidth: 2 }, shape: 'containerRelativeShape' }),
         ]}
       >
         <HStack spacing={10}>
           {appIcon(28)}
-          <Text
-            modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle('#E8E6E3'), lineLimit(1)]}
-          >
+          <Text modifiers={[font({ size: 15, weight: 'semibold' }), foregroundStyle(text), lineLimit(1)]}>
             {host}
           </Text>
           <Spacer />
@@ -144,16 +149,16 @@ function SessionActivityLayout(props: LiveStatusProps) {
         ) : null}
         {latest ? (
           <VStack alignment="leading" spacing={2}>
-            {stepLine(latest, '#E8E6E3')}
-            {stepLine(previous, '#8A8784')}
-            {stepLine(oldest, '#8A8784')}
+            {stepLine(latest, text)}
+            {stepLine(previous, textMuted)}
+            {stepLine(oldest, textMuted)}
           </VStack>
         ) : null}
         <HStack spacing={6}>
           {since}
           <Spacer />
           {props.tools ? (
-            <Text modifiers={[font({ size: 12 }), foregroundStyle('#8A8784')]}>{props.tools}</Text>
+            <Text modifiers={[font({ size: 12 }), foregroundStyle(textMuted)]}>{props.tools}</Text>
           ) : null}
         </HStack>
       </VStack>

@@ -1,18 +1,22 @@
 import * as Haptics from 'expo-haptics'
 import type { ReactNode } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { type ColorName, radius, space, type ThemeColors, useTheme } from '@/core/theme'
 import { Text } from './Text'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost'
 
-const VARIANTS: Record<Variant, { bg: string; border: string; text: keyof typeof colors }> = {
-  primary: { bg: colors.accent, border: colors.accent, text: 'background' },
-  secondary: { bg: colors.surfaceRaised, border: colors.borderStrong, text: 'text' },
-  danger: { bg: colors.dangerMuted, border: colors.danger, text: 'danger' },
-  success: { bg: colors.successMuted, border: colors.success, text: 'success' },
+type Paint = ColorName | 'transparent'
+
+const VARIANTS: Record<Variant, { bg: Paint; border: Paint; text: ColorName }> = {
+  primary: { bg: 'accent', border: 'accent', text: 'accentInk' },
+  secondary: { bg: 'surfaceRaised', border: 'borderStrong', text: 'text' },
+  danger: { bg: 'dangerSoft', border: 'danger', text: 'danger' },
+  success: { bg: 'successSoft', border: 'success', text: 'success' },
   ghost: { bg: 'transparent', border: 'transparent', text: 'textMuted' },
 }
+
+const paint = (colors: ThemeColors, name: Paint) => (name === 'transparent' ? 'transparent' : colors[name])
 
 export type ButtonProps = {
   label: string
@@ -35,6 +39,7 @@ export function Button({
   compact,
   flex,
 }: ButtonProps) {
+  const { colors } = useTheme()
   const v = VARIANTS[variant]
   const inactive = disabled || loading
   return (
@@ -50,7 +55,11 @@ export function Button({
         styles.base,
         compact && styles.compact,
         flex && styles.flex,
-        { backgroundColor: v.bg, borderColor: v.border, opacity: inactive ? 0.5 : pressed ? 0.75 : 1 },
+        {
+          backgroundColor: paint(colors, v.bg),
+          borderColor: paint(colors, v.border),
+          opacity: inactive ? 0.5 : pressed ? 0.75 : 1,
+        },
       ]}
     >
       {loading ? (

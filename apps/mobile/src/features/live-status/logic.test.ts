@@ -1,7 +1,8 @@
 import type { Session } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
-import { liveStateFor, localLiveProps, sessionsToStart, shortenHome } from './logic'
+import { dark } from '@/core/theme/palettes'
+import { livePalette, liveStateFor, localLiveProps, sessionsToStart, shortenHome } from './logic'
 
 const session = (id: string, state: Session['state'], profileId = 'p1') =>
   ({ id, state, profileId, title: 'Fix login', cwd: '/Users/me/app' }) as Session
@@ -42,6 +43,20 @@ describe('localLiveProps', () => {
       changedAt: 6,
       endedAt: null,
     })
+  })
+
+  test('carries the theme palette the status started with', () => {
+    const palette = livePalette(dark)
+    expect(palette).toEqual({
+      background: dark.colors.background,
+      text: dark.colors.text,
+      textMuted: dark.colors.textMuted,
+      accent: dark.colors.accent,
+      success: dark.colors.success,
+      warning: dark.colors.warning,
+    })
+    const info = { title: 'Work', host: 'mac', startedAt: 5, changedAt: 6, endedAt: null, palette }
+    expect(localLiveProps(session('a', 'running'), info, createI18n('en-US').t).palette).toEqual(palette)
   })
 
   test('shortens the usual home folders', () => {

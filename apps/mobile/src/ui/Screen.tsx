@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { StyleSheet, View, type ViewStyle } from 'react-native'
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context'
-import { colors } from '@/core/theme'
+import { useTheme } from '@/core/theme'
 
 export function Screen({
   children,
@@ -12,14 +12,15 @@ export function Screen({
   edges?: Edge[]
   style?: ViewStyle
 }) {
+  const { colors } = useTheme()
   return (
-    <SafeAreaView edges={edges} style={styles.safe}>
+    <SafeAreaView edges={edges} style={[styles.safe, { backgroundColor: colors.background }]}>
       <View style={[styles.body, style]}>{children}</View>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1 },
   body: { flex: 1 },
 })

@@ -1,4 +1,4 @@
-import type { DevicePlatform, PushRelay } from '@remote-harness/protocol'
+import type { DevicePlatform, LivePalette, PushRelay } from '@remote-harness/protocol'
 import type { Messages } from '../../core/i18n/index.ts'
 import type { Logger } from '../../core/logger.ts'
 import type { PushSender } from '../push/sender.ts'
@@ -21,6 +21,8 @@ export type LiveRegistration = {
   fcmToken: string
   activityToken?: string
   relay?: PushRelay
+  /** App theme colors, echoed in every update so remote updates never reset the widget colors. */
+  palette?: LivePalette
 }
 
 type Entry = LiveRegistration & {
@@ -142,7 +144,10 @@ export class LiveStatusService {
         fcmToken: entry.fcmToken,
         ...(entry.activityToken ? { activityToken: entry.activityToken } : {}),
         ...(entry.relay ? { relay: entry.relay } : {}),
-        props: liveProps(entry.status, this.options.info(entry.sessionId, profileId), this.options.messages),
+        props: {
+          ...liveProps(entry.status, this.options.info(entry.sessionId, profileId), this.options.messages),
+          ...(entry.palette ? { palette: entry.palette } : {}),
+        },
         event: final ? 'end' : 'update',
         at: now,
         staleAt: now + STALE_AFTER_MS,

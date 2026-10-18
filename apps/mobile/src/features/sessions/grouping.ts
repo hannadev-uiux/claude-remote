@@ -70,7 +70,8 @@ export function groupSessions(
   for (const [id, list] of byProfile) {
     if (known.has(id)) continue
     sections.push({
-      profile: { id, name: id, configDir: '', color: '#8A8784' },
+      // No color: the UI falls back to its muted text color for unknown profiles.
+      profile: { id, name: id, configDir: '', color: '' },
       sessions: list.sort(compareSessions),
     })
   }

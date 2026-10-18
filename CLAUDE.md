@@ -59,7 +59,7 @@ cd apps/mobile && npx expo export --platform ios      # valida o bundle sem simu
 
 ## Tema visual
 
-Terminal escuro estilo Claude Code: fundo `#0D0D0D`, superfície `#161616`, borda `#2A2A2A`, texto `#E8E6E3`, secundário `#8A8784`, destaque laranja Claude `#D97757`; fonte JetBrains Mono. Tokens em `apps/mobile/src/core/theme`.
+Tokens semânticos por tema em `apps/mobile/src/core/theme` (`palettes.ts`), lidos em tempo de render com `useTheme()` / `makeStyles(theme => …)`; nunca importe uma paleta estática nem escreva hex fora desse módulo (há teste que falha). Tema padrão **dark**, terminal escuro estilo Claude Code: fundo `#0D0D0D`, superfície `#161616`, borda `#2A2A2A`, texto `#E8E6E3`, secundário `#8A8784`, destaque âmbar `#E8A33D` (`accent` para preenchimentos/bordas, `accentText` para texto e ícones, `accentInk` sobre o preenchimento), aviso `#F3DC7A`; fonte JetBrains Mono. Cores de agente fixas em todos os temas (`agents.ts`): Claude Code `#D97757`, Codex `#2FBF8F`, Kimi `#5B9BF5`, Qwen `#8C6CF5`; provedores (OpenRouter) só com contorno neutro. Protótipos em `docs/design/identity/`.
 
 ## Fluxo de trabalho (OpenSpec)
 

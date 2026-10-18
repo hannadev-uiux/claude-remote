@@ -2,10 +2,10 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native'
+import { RefreshControl, ScrollView, TextInput, View } from 'react-native'
 import { addListener, constants } from 'react-native-key-command'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
-import { colors, space } from '@/core/theme'
+import { makeStyles, space, useTheme } from '@/core/theme'
 import { Button, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
 import { NestedSubagents } from '../subagents/SubagentList'
 import { sharedCheckoutCounts } from './checkout'
@@ -37,6 +37,8 @@ export function SessionsScreen({
   interactive = false,
 }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const client = useDaemonClient()
   const profiles = useConnectionStore(selectProfiles)
   const sessions = useSessionsStore((s) => s.sessions)
@@ -180,7 +182,7 @@ export function SessionsScreen({
               <Text color="textMuted">{t('sessions.emptyBody')}</Text>
               <View style={styles.code}>
                 {(profiles.length > 0 ? profiles.map((p) => p.id) : ['claudin']).map((alias) => (
-                  <Text key={alias} color="accent">
+                  <Text key={alias} color="accentText">
                     $ {alias}
                   </Text>
                 ))}
@@ -197,11 +199,16 @@ export function SessionsScreen({
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   // A horizontal ScrollView grows to fill a column parent; keep it at the height of the chips.
   filterBar: { flexGrow: 0 },
   filters: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm, alignItems: 'center' },
-  divider: { width: 1, alignSelf: 'stretch', backgroundColor: colors.border, marginHorizontal: space.xs },
+  divider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: theme.colors.border,
+    marginHorizontal: space.xs,
+  },
   list: { paddingBottom: space.xxl },
-  code: { backgroundColor: colors.surface, padding: space.md, borderRadius: 8, gap: space.xs },
-})
+  code: { backgroundColor: theme.colors.surface, padding: space.md, borderRadius: 8, gap: space.xs },
+}))

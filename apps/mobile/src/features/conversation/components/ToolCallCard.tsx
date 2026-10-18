@@ -2,8 +2,8 @@ import type { TranscriptEntry } from '@remote-harness/protocol'
 import { ChevronDown, ChevronRight } from 'lucide-react-native'
 import { memo, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { Pressable, ScrollView, View } from 'react-native'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Text } from '@/ui'
 import { ImageStrip } from '../../images/ImageStrip'
 import { diffForTool } from '../diff'
@@ -25,6 +25,8 @@ export const ToolCallCard = memo(function ToolCallCard({
   result: Result | null
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const [open, setOpen] = useState(false)
   const title = use ? summarizeTool(use.name, use.input, t) : t('conversation.toolResult')
   const diff = useMemo(() => (use ? diffForTool(use.name, use.input, t) : null), [use, t])
@@ -79,6 +81,7 @@ function ToolDetails({
   diff: ReturnType<typeof diffForTool>
 }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const name = use?.name ?? ''
   const available = use ? TOOL_TABS : RESULT_TABS
   const saved = useToolTabStore((s) => s.saved)
@@ -103,7 +106,7 @@ function ToolDetails({
             accessibilityRole="tab"
             accessibilityState={{ selected: key === tab }}
           >
-            <Text size="xs" weight="medium" color={key === tab ? 'accent' : 'textMuted'}>
+            <Text size="xs" weight="medium" color={key === tab ? 'accentText' : 'textMuted'}>
               {t(`conversation.tabs.${key}`)}
             </Text>
           </Pressable>
@@ -148,6 +151,7 @@ function ToolDetails({
 
 function InputFields({ name, input }: { name: string; input: Use['input'] }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const fields = useMemo(() => toolInputFields(name, input), [name, input])
   if (!fields.length) {
     return (
@@ -190,6 +194,7 @@ function LongText({
   onShowAll: () => void
 }) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const cut = showAll ? { text, hidden: false } : cutText(text)
   return (
     <View>
@@ -203,7 +208,7 @@ function LongText({
       </ScrollView>
       {cut.hidden ? (
         <Pressable onPress={onShowAll} style={styles.more} accessibilityRole="button">
-          <Text size="xs" color="accent">
+          <Text size="xs" color="accentText">
             {t('conversation.showMore')}
           </Text>
         </Pressable>
@@ -212,31 +217,36 @@ function LongText({
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   wrap: {
     marginHorizontal: space.md,
     marginVertical: space.xs,
     padding: space.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   flex: { flex: 1 },
   preview: { marginTop: space.xs, marginLeft: space.lg },
   images: { marginLeft: space.lg },
   body: { marginTop: space.sm, gap: space.sm },
-  tabs: { flexDirection: 'row', gap: space.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  tabs: { flexDirection: 'row', gap: space.md, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   tab: {
     paddingVertical: space.xs,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
     marginBottom: -1,
   },
-  tabActive: { borderBottomColor: colors.accent },
+  tabActive: { borderBottomColor: theme.colors.accent },
   fields: { gap: space.sm },
   field: { gap: space.xxs },
-  block: { backgroundColor: colors.background, borderRadius: radius.sm, padding: space.sm, maxHeight: 480 },
+  block: {
+    backgroundColor: theme.colors.background,
+    borderRadius: radius.sm,
+    padding: space.sm,
+    maxHeight: 480,
+  },
   more: { alignSelf: 'flex-start', paddingVertical: space.xs },
-})
+}))

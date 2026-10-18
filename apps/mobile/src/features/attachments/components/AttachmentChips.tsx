@@ -1,7 +1,7 @@
 import { X } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { Image, Pressable, ScrollView, View } from 'react-native'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import type { PreparedImage } from '../limits'
 
 type Props = { images: PreparedImage[]; onRemove: (key: string) => void; disabled?: boolean }
@@ -9,6 +9,8 @@ type Props = { images: PreparedImage[]; onRemove: (key: string) => void; disable
 /** Thumbnails of the photos waiting to be sent with the prompt. */
 export function AttachmentChips({ images, onRemove, disabled }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   if (images.length === 0) return null
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
@@ -37,7 +39,7 @@ export function AttachmentChips({ images, onRemove, disabled }: Props) {
 
 const THUMB = 56
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: { gap: space.sm, paddingHorizontal: space.md, paddingTop: space.sm },
   chip: { width: THUMB, height: THUMB },
   thumb: {
@@ -45,8 +47,8 @@ const styles = StyleSheet.create({
     height: THUMB,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   remove: {
     position: 'absolute',
@@ -57,8 +59,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surfaceRaised,
+    backgroundColor: theme.colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
-})
+}))

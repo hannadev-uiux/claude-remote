@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Text } from '@/ui'
 import { ImageStrip } from '../../images/ImageStrip'
 import { systemText } from '../timeline'
@@ -16,9 +16,10 @@ export const UserMessage = memo(function UserMessage({
   text: string
   images: readonly ImageRef[]
 }) {
+  const themed = useStyles()
   return (
-    <View style={styles.user}>
-      <Text color="accent" weight="bold">
+    <View style={themed.user}>
+      <Text color="accentText" weight="bold">
         {'> '}
       </Text>
       <View style={styles.flex}>
@@ -32,7 +33,7 @@ export const UserMessage = memo(function UserMessage({
 export const AssistantMessage = memo(function AssistantMessage({ text }: { text: string }) {
   return (
     <View style={styles.assistant}>
-      <Text color="accent" style={styles.bullet}>
+      <Text color="accentText" style={styles.bullet}>
         ●
       </Text>
       <View style={styles.flex}>
@@ -44,6 +45,7 @@ export const AssistantMessage = memo(function AssistantMessage({ text }: { text:
 
 export const ThinkingBlock = memo(function ThinkingBlock({ text }: { text: string }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
   const [open, setOpen] = useState(false)
   const Icon = open ? ChevronDown : ChevronRight
   return (
@@ -98,17 +100,20 @@ export const UnknownEntry = memo(function UnknownEntry({ raw }: { raw: string })
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  user: {
-    flexDirection: 'row',
-    marginHorizontal: space.md,
-    marginVertical: space.sm,
-    padding: space.md,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.md,
-  },
   assistant: { flexDirection: 'row', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.xs },
   bullet: { marginTop: 3 },
   thinking: { paddingHorizontal: space.lg, paddingVertical: space.xs, gap: space.xs },
   italic: { fontStyle: 'italic' },
   system: { paddingHorizontal: space.lg, paddingVertical: space.xs },
 })
+
+const useStyles = makeStyles((theme) => ({
+  user: {
+    flexDirection: 'row',
+    marginHorizontal: space.md,
+    marginVertical: space.sm,
+    padding: space.md,
+    backgroundColor: theme.colors.surfaceRaised,
+    borderRadius: radius.md,
+  },
+}))

@@ -3,6 +3,7 @@ import {
   AttachmentMimeTypeSchema,
   DevicePlatformSchema,
   DIRECTORY_LIST_LIMIT,
+  LivePaletteSchema,
   MAX_ATTACHMENTS,
   MAX_DIRECTORY_LIST_LIMIT,
   PermissionAnswerSchema,
@@ -99,6 +100,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     /** iOS Live Activity push token (hex); absent on Android. */
     activityToken: z.string().min(1).optional(),
     relay: PushRelaySchema.optional(),
+    /** App theme colors for the live status, echoed by the daemon in every update. */
+    palette: LivePaletteSchema.optional(),
   }),
   z.object({ type: z.literal('live.unregister'), id, sessionId }),
   z.object({
