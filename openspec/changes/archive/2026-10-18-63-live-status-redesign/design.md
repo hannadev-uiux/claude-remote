@@ -1,0 +1,12 @@
+## Context
+
+`LiveStatusService` reduces hook, permission and transcript events into a `LiveStatus` (state, step, tool count, three recent lines, times) and sends `liveProps` through FCM (ActivityKit content state on iOS, a tagged low-importance notification on Android). `SessionActivity.tsx` draws the banner and the Dynamic Island with `@expo/ui/swift-ui` in the widget runtime, from props only. Notification actions already answer permissions with `respondInBackground`. The prototypes (`live-activity-lock-screen.html`, `live-activity-states.html`, `dynamic-island-*.html`) fix the layout.
+
+## Decisions
+
+- **Props stay content-free.** `glyphs` are category glyphs (newest first, five at most, repeats kept so the row reads as a timeline); `pending` carries only the request id, the tool name and the two translated button labels; `hint` is a translated fixed line. Nothing new about the conversation travels.
+- **Pending lives in the reducer.** `waiting` events may carry `pending`; `permission.requested` supplies it for tool permissions only (questions and plans are answered in the app, as with notification actions). `resumed`, `prompt`, `stop` and `end` clear it. A pending change is a "send now" condition so the buttons appear and disappear without waiting for the step throttle.
+- **Buttons through the activity.** `@expo/ui` `Button` with `target` (`allow:<requestId>` / `deny:<requestId>`) runs the Live Activity intent; `expo-widgets` delivers it to the app as a user interaction, where `liveAction(target)` (pure) parses it and `respondInBackground` answers over a short-lived connection, exactly as the notification actions do. No new protocol message.
+- **Color encodes only the state.** The mark (`LiveActivityIcon`, already the bold Tether on dark from #84) is the only icon; the border, the timer, the state line and the current glyph take the state color (working = accent, waiting = warning, done = success, closed = muted). The large timer is monospaced and tabular; `ProgressView` without a value gives the indeterminate bar while working.
+- **Android keeps parity of content, not of actions.** The notification body becomes `state · step · tools` plus the glyph row. Action buttons on Android need the app to render data messages itself (a background handler that does not exist yet); that stays a separate change so this one does not touch the delivery path blind.
+- Older daemons send none of the new fields: the widget renders without glyphs, buttons or hint, as before.

@@ -1,5 +1,5 @@
 import type { LivePalette, LiveStatusProps, Session, SessionState } from '@remote-harness/protocol'
-import { after, type LiveActivity } from 'expo-widgets'
+import { addUserInteractionListener, after, type LiveActivity } from 'expo-widgets'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppState, Platform } from 'react-native'
@@ -11,11 +11,13 @@ import { currentTheme } from '@/core/theme'
 import { useMuteStore } from '../mute/store'
 import { loadMessaging } from '../push/firebase'
 import { relayFor } from '../push/push-relay'
+import { respondInBackground } from '../push/respond-in-background'
 import { useSessionsStore } from '../sessions/store'
 import {
   DONE_DISMISS_MS,
   isMutedSession,
   type LocalLiveInfo,
+  liveAction,
   livePalette,
   localLiveProps,
   sessionsToStart,
@@ -46,6 +48,16 @@ export function useLiveStatus() {
   const { t } = useTranslation()
   const tRef = useRef<TFunction>(t)
   tRef.current = t
+
+  // Deny / Allow tapped on the activity (lock screen or Dynamic Island): answered like a
+  // notification action, over a short-lived connection, whether or not the app is in front.
+  useEffect(() => {
+    const subscription = addUserInteractionListener((event) => {
+      const action = liveAction(event.target)
+      if (action) void respondInBackground(action.requestId, action.decision)
+    })
+    return () => subscription.remove()
+  }, [])
 
   useEffect(() => {
     if (!client) return

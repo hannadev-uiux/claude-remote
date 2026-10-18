@@ -81,7 +81,9 @@ export function buildLiveMessage(message: LiveMessage) {
       },
     }
   }
-  const details = [props.step, props.tools].filter(Boolean).join(' · ')
+  // Android has no activity: the body carries the state line and the glyph row (oldest → newest).
+  const glyphs = [...(props.glyphs ?? [])].reverse().join(' ')
+  const details = [props.step, props.tools, glyphs].filter(Boolean).join(' · ')
   return {
     token: message.fcmToken,
     data,

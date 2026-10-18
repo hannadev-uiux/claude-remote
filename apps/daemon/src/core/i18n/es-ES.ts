@@ -386,6 +386,10 @@ export const esES = {
     },
     tools: (count: number) => (count === 1 ? '1 herramienta' : `${count} herramientas`),
     ago: 'hace {time}',
+    allow: 'Permitir',
+    deny: 'Denegar',
+    total: 'total',
+    closedHint: 'transcripción guardada · reanuda desde la app',
   },
   updates: {
     available: (version: string) => `Remote Harness ${version} disponible`,

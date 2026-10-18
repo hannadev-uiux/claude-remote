@@ -6,6 +6,9 @@ export type LiveStep = keyof Messages['live']['steps']
 /** One line of the latest steps: a category, the tool behind it and how many times in a row. */
 export type RecentStep = { step: LiveStep; tool: string | null; count: number }
 
+/** The tool permission the session waits for: only its id and the tool name, never the input. */
+export type LivePendingRequest = { requestId: string; tool: string }
+
 /** Live status of one registered session. Only categories and counts: never session content. */
 export type LiveStatus = {
   state: LiveState
@@ -19,12 +22,16 @@ export type LiveStatus = {
   endedAt: number | null
   /** Latest steps, newest first. */
   recent: RecentStep[]
+  /** Last step categories, newest first (the glyph row). */
+  glyphs: LiveStep[]
+  /** Tool permission waiting for an answer, answerable from the lock screen. */
+  pending: LivePendingRequest | null
 }
 
 export type LiveEvent =
   | { type: 'prompt' }
   | { type: 'step'; step: LiveStep; tool: string | null }
-  | { type: 'waiting'; permission: boolean }
+  | { type: 'waiting'; permission: boolean; pending?: LivePendingRequest }
   | { type: 'resumed' }
   | { type: 'stop' }
   | { type: 'end' }
@@ -37,6 +44,8 @@ export const STALE_AFTER_MS = 30 * 60_000
 export const DONE_DISMISS_MS = 15 * 60_000
 /** Lines of latest steps kept. */
 export const RECENT_STEPS = 3
+/** Glyphs of latest steps kept. */
+export const RECENT_GLYPHS = 5
 
 const TOOL_STEPS: Record<string, LiveStep> = {
   Bash: 'command',
@@ -54,6 +63,21 @@ const TOOL_STEPS: Record<string, LiveStep> = {
   Task: 'agent',
   Agent: 'agent',
   TodoWrite: 'planning',
+}
+
+/** One glyph per step category, drawn by the widget's recent row. */
+export const GLYPHS: Record<LiveStep, string> = {
+  command: '⌘',
+  editing: '✎',
+  reading: '⌕',
+  searching: '⌕',
+  web: '⇄',
+  agent: '⌥',
+  permission: '?',
+  thinking: '·',
+  writing: '·',
+  planning: '·',
+  tool: '·',
 }
 
 /** Fixed category for a tool name; the tool's input and output never leave the daemon. */
@@ -85,6 +109,8 @@ export function initialLiveStatus(at: number): LiveStatus {
     changedAt: at,
     endedAt: null,
     recent: [],
+    glyphs: [],
+    pending: null,
   }
 }
 
@@ -95,6 +121,11 @@ export function pushRecent(recent: readonly RecentStep[], step: LiveStep, tool: 
     return [{ ...newest, count: newest.count + 1 }, ...older]
   }
   return [{ step, tool, count: 1 }, ...recent].slice(0, RECENT_STEPS)
+}
+
+/** Adds a step to the glyph row (repeats kept: the row reads as a timeline). */
+export function pushGlyph(glyphs: readonly LiveStep[], step: LiveStep): LiveStep[] {
+  return [step, ...glyphs].slice(0, RECENT_GLYPHS)
 }
 
 /** `status` in `state`, stamping the change time only when the state actually changes. */
@@ -113,15 +144,27 @@ export function reduceLiveStatus(status: LiveStatus, event: LiveEvent, now: numb
         step: event.step,
         toolCount: status.toolCount + (event.tool ? 1 : 0),
         recent: pushRecent(status.recent, event.step, event.tool),
+        glyphs: pushGlyph(status.glyphs, event.step),
       }
-    case 'waiting':
-      return { ...withState(status, 'waiting', now), step: event.permission ? 'permission' : status.step }
+    case 'waiting': {
+      const waiting = withState(status, 'waiting', now)
+      if (!event.permission) return waiting
+      return {
+        ...waiting,
+        step: 'permission',
+        pending: event.pending ?? status.pending,
+        // The permission shows once in the row, however many times the daemon hears about it.
+        glyphs: status.glyphs[0] === 'permission' ? status.glyphs : pushGlyph(status.glyphs, 'permission'),
+      }
+    }
     case 'resumed':
-      return status.state === 'waiting' ? { ...withState(status, 'working', now), step: null } : status
+      return status.state === 'waiting'
+        ? { ...withState(status, 'working', now), step: null, pending: null }
+        : status
     case 'stop':
-      return { ...withState(status, 'done', now), step: null, endedAt: now }
+      return { ...withState(status, 'done', now), step: null, endedAt: now, pending: null }
     case 'end':
-      return { ...withState(status, 'closed', now), step: null, endedAt: now }
+      return { ...withState(status, 'closed', now), step: null, endedAt: now, pending: null }
   }
 }
 
@@ -131,8 +174,8 @@ export function isFinal(status: LiveStatus): boolean {
 }
 
 /**
- * When to send `next`: `now` for a state change (or the first send), `later` (after the delay) for a
- * step-only change inside the throttle window, `never` when nothing visible changed.
+ * When to send `next`: `now` for a state or pending change (or the first send), `later` (after the
+ * delay) for a step-only change inside the throttle window, `never` when nothing visible changed.
  */
 export function planSend(
   previous: LiveStatus | null,
@@ -144,7 +187,8 @@ export function planSend(
     !previous ||
     lastSentAt === null ||
     previous.state !== next.state ||
-    previous.startedAt !== next.startedAt
+    previous.startedAt !== next.startedAt ||
+    previous.pending?.requestId !== next.pending?.requestId
   ) {
     return { when: 'now' }
   }
@@ -204,5 +248,15 @@ export function liveProps(
     ago: messages.ago,
     changedAt: status.changedAt,
     endedAt: status.endedAt,
+    glyphs: status.glyphs.map((step) => GLYPHS[step]),
+    pending: status.pending
+      ? {
+          ...status.pending,
+          tool: shortTool(status.pending.tool),
+          allow: messages.allow,
+          deny: messages.deny,
+        }
+      : null,
+    hint: status.state === 'done' ? messages.total : status.state === 'closed' ? messages.closedHint : '',
   }
 }

@@ -260,6 +260,15 @@ export type LivePalette = z.infer<typeof LivePaletteSchema>
  * step categories with tool names, tool count, times. Fields after `startedAt` have defaults because
  * older daemons do not send them.
  */
+/** The tool permission a live status waits for, answerable from the lock screen; labels already translated. */
+export const LivePendingSchema = z.object({
+  requestId: z.string(),
+  tool: z.string(),
+  allow: z.string(),
+  deny: z.string(),
+})
+export type LivePending = z.infer<typeof LivePendingSchema>
+
 export const LiveStatusPropsSchema = z.object({
   /** Profile name. */
   title: z.string(),
@@ -285,6 +294,12 @@ export const LiveStatusPropsSchema = z.object({
   changedAt: z.number().default(0),
   /** End of the turn (done or closed), epoch milliseconds: the elapsed timer stops there. */
   endedAt: z.number().nullable().default(null),
+  /** Glyphs of the last five steps, newest first (`⌘` command, `✎` edit, `⌕` search, `⇄` web, `⌥` subagent, `?` permission, `·` other). */
+  glyphs: z.array(z.string()).default([]),
+  /** The tool permission the session waits for, with its translated button labels; `null` otherwise. */
+  pending: LivePendingSchema.nullable().default(null),
+  /** Short translated line: "total" when done, "transcript kept · resume from the app" when closed. */
+  hint: z.string().default(''),
   /** Theme colors of the app that registered; absent from older daemons (the widget uses dark). */
   palette: LivePaletteSchema.optional(),
 })

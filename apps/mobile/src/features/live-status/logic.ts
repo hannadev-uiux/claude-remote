@@ -92,6 +92,24 @@ export function localLiveProps(
     ago: t('liveStatus.ago'),
     changedAt: info.changedAt,
     endedAt: info.endedAt,
+    glyphs: [],
+    pending: null,
+    hint: '',
     ...(info.palette ? { palette: info.palette } : {}),
   }
+}
+
+/**
+ * The decision behind a Live Activity button target (`allow:<requestId>` / `deny:<requestId>`), or
+ * `null` for any other interaction.
+ */
+export function liveAction(target: string): { requestId: string; decision: 'allow' | 'deny' } | null {
+  const match = /^(allow|deny):(.+)$/.exec(target)
+  if (!match?.[1] || !match[2]) return null
+  return { requestId: match[2], decision: match[1] === 'allow' ? 'allow' : 'deny' }
+}
+
+/** Button targets the widget emits for a pending permission. */
+export function liveActionTarget(decision: 'allow' | 'deny', requestId: string): string {
+  return `${decision}:${requestId}`
 }

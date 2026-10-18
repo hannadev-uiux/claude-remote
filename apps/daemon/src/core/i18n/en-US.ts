@@ -383,6 +383,13 @@ export const enUS = {
     tools: (count: number) => (count === 1 ? '1 tool' : `${count} tools`),
     /** Time since the state changed; the widget puts a live counter in `{time}`. */
     ago: '{time} ago',
+    /** Lock screen buttons while a tool permission waits. */
+    allow: 'Allow',
+    deny: 'Deny',
+    /** Beside the frozen timer once the turn is done. */
+    total: 'total',
+    /** Under the state once the session closed. */
+    closedHint: 'transcript kept · resume from the app',
   },
   updates: {
     available: (version: string) => `Remote Harness ${version} available`,
