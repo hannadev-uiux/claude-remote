@@ -2,8 +2,10 @@ import { bindings, defineConfig, triggers } from 'cf/config'
 import * as entrypoint from './src/index.ts' with { type: 'cf-worker' }
 
 /**
- * Worker behind remoteharness.app. The zone's redirect rules answer everything else (www, the
- * installers and the fallback to the repository); these routes are excluded from the fallback.
+ * Worker behind remoteharness.app: the landing page, the updates proxy and the iPhone install
+ * link. The zone's redirect rules still answer `www` and the installers (the Worker mirrors those
+ * two); its old fallback to the repository has to be removed for the landing to be reachable,
+ * since redirect rules run before Workers.
  */
 export default defineConfig({
   worker: {
@@ -15,6 +17,7 @@ export default defineConfig({
       IOS_BUILDS: bindings.r2({ name: 'remote-harness-ios' }),
     },
     triggers: [
+      triggers.fetch({ pattern: 'remoteharness.app/*', zone: 'remoteharness.app' }),
       triggers.fetch({ pattern: 'remoteharness.app/api/updates/*', zone: 'remoteharness.app' }),
       triggers.fetch({ pattern: 'remoteharness.app/ios/*', zone: 'remoteharness.app' }),
     ],
