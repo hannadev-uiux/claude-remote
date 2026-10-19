@@ -1,4 +1,4 @@
-import type { LiveState, LiveStatusProps, TranscriptEntry } from '@remote-harness/protocol'
+import type { LiveState, LiveStatusProps, Session, TranscriptEntry } from '@remote-harness/protocol'
 import type { Messages } from '../../core/i18n/index.ts'
 
 export type LiveStep = keyof Messages['live']['steps']
@@ -26,6 +26,8 @@ export type LiveStatus = {
   glyphs: LiveStep[]
   /** Tool permission waiting for an answer, answerable from the lock screen. */
   pending: LivePendingRequest | null
+  /** Tasks running in parallel in the session (background tasks and running subagents). */
+  tasks: number
 }
 
 export type LiveEvent =
@@ -35,12 +37,13 @@ export type LiveEvent =
   | { type: 'resumed' }
   | { type: 'stop' }
   | { type: 'end' }
+  | { type: 'tasks'; count: number }
 
 /** Step-only changes are sent at most this often (state changes go out at once). */
 export const STEP_INTERVAL_MS = 15_000
 /** The activity looks stale after this long without an update. */
 export const STALE_AFTER_MS = 30 * 60_000
-/** A finished turn stays on the lock screen this long. */
+/** A finished turn stays on the lock screen this long, and a new turn in that window reuses it. */
 export const DONE_DISMISS_MS = 15 * 60_000
 /** Lines of latest steps kept. */
 export const RECENT_STEPS = 3
@@ -100,7 +103,7 @@ export function stepForEntry(entry: TranscriptEntry): LiveEvent | null {
   }
 }
 
-export function initialLiveStatus(at: number): LiveStatus {
+export function initialLiveStatus(at: number, tasks = 0): LiveStatus {
   return {
     state: 'working',
     step: null,
@@ -111,7 +114,13 @@ export function initialLiveStatus(at: number): LiveStatus {
     recent: [],
     glyphs: [],
     pending: null,
+    tasks,
   }
+}
+
+/** Tasks a session runs in parallel: its background tasks plus the subagents still running. */
+export function parallelTasks(session: Pick<Session, 'backgroundTasks' | 'subagents'>): number {
+  return session.backgroundTasks + session.subagents.filter((s) => s.state === 'running').length
 }
 
 /** Adds a step to the latest ones, merging it with the newest when it repeats. */
@@ -133,10 +142,15 @@ function withState(status: LiveStatus, state: LiveState, now: number): LiveStatu
   return status.state === state ? status : { ...status, state, changedAt: now }
 }
 
-/** Next status after an event at `now`. A finished or closed status only changes with a new prompt. */
+/**
+ * Next status after an event at `now`. A finished status only changes with a new prompt, a task
+ * count (background tasks outlive the turn) or the session closing; a closed one never does.
+ */
 export function reduceLiveStatus(status: LiveStatus, event: LiveEvent, now: number): LiveStatus {
-  if (event.type === 'prompt') return initialLiveStatus(now)
-  if (status.state === 'done' || status.state === 'closed') return status
+  if (event.type === 'prompt') return initialLiveStatus(now, status.tasks)
+  if (status.state === 'closed') return status
+  if (event.type === 'tasks') return status.tasks === event.count ? status : { ...status, tasks: event.count }
+  if (status.state === 'done' && event.type !== 'end') return status
   switch (event.type) {
     case 'step':
       return {
@@ -168,9 +182,9 @@ export function reduceLiveStatus(status: LiveStatus, event: LiveEvent, now: numb
   }
 }
 
-/** Whether the status ended the activity (no more updates after it). */
+/** Whether the status ends the activity at once (closed). A done one ends after DONE_DISMISS_MS. */
 export function isFinal(status: LiveStatus): boolean {
-  return status.state === 'done' || status.state === 'closed'
+  return status.state === 'closed'
 }
 
 /**
@@ -195,7 +209,8 @@ export function planSend(
   if (
     previous.step === next.step &&
     previous.toolCount === next.toolCount &&
-    previous.recent === next.recent
+    previous.recent === next.recent &&
+    previous.tasks === next.tasks
   ) {
     return { when: 'never' }
   }
@@ -258,5 +273,6 @@ export function liveProps(
         }
       : null,
     hint: status.state === 'done' ? messages.total : status.state === 'closed' ? messages.closedHint : '',
+    tasks: status.tasks > 0 ? messages.tasks(status.tasks) : '',
   }
 }

@@ -107,8 +107,10 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 ### 1. Computer (macOS or Linux): one-line install
 
 ```bash
-curl -fsSL https://remoteharness.app/install.sh | bash
+curl -fsSL https://remoteharness.app/install | bash
 ```
+
+The same address serves every system: curl and wget get the macOS / Linux script, Windows PowerShell gets the WSL2 installer (see below), and a browser gets a page with the right command for that computer. `?ref=<branch|tag>` installs another version, e.g. `curl -fsSL "https://remoteharness.app/install?ref=development" | bash`.
 
 The installer checks the system (macOS or Linux) and Node, installs missing `tmux`/`ripgrep`/`zsh`/`git` (Homebrew on macOS; apt, dnf, pacman or zypper on Linux, with `sudo` after telling you why), puts the source in `~/.remote-harness/src`, builds the daemon and opens a guided setup (`remote-harness setup`) that:
 
@@ -145,10 +147,10 @@ To update, run `remote-harness update` (or `--ref <branch|tag>`): it fetches the
 Remote Harness drives Claude Code through tmux, so on Windows it runs inside **WSL2** (Linux on Windows), where Claude Code is best supported too. In PowerShell:
 
 ```powershell
-irm https://remoteharness.app/install.ps1 | iex
+irm https://remoteharness.app/install | iex
 ```
 
-The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when it is missing (Windows asks for administrator permission; reboot if asked, then run the same command again), helps create the Linux user, and then runs the Linux installer above inside the distribution. Options: `& ([scriptblock]::Create((irm https://remoteharness.app/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when it is missing (Windows asks for administrator permission; reboot if asked, then run the same command again), helps create the Linux user, and then runs the Linux installer above inside the distribution. Options: `& ([scriptblock]::Create((irm https://remoteharness.app/install))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
 
 - **Node and Claude Code** must be installed **inside WSL** (not only on Windows); the installer says what is missing.
 - **systemd**: the background service is a systemd user unit, and WSL only boots systemd with `[boot] systemd=true` in `/etc/wsl.conf`. The setup shows the exact `sudo` command, runs it only if you agree (with a backup), and asks you to run `wsl --shutdown` from PowerShell.
@@ -273,19 +275,17 @@ Builds are created without an update server, so updates are off. To ship JavaScr
 2. **Build** with the server URL, e.g. in `apps/mobile/.env.local` (git-ignored, read by the build and the publisher):
    ```dotenv
    REMOTE_HARNESS_UPDATES_URL=https://remoteharness.app/api/updates/manifest
-   # Optional: prefix of the asset URLs signed into each update, for a server that only accepts its own address
-   REMOTE_HARNESS_UPDATES_ASSETS_URL=https://maarkn.dev/api/claude-remote/updates/assets/
    ```
-   `remoteharness.app/api/updates/*` is a Cloudflare Worker (`apps/web`) that forwards to the update server, so the server can move without new builds.
-   A custom URL without `certs/certificate.pem` is refused. The URL is part of the runtime version: builds made with the old `https://maarkn.dev/api/claude-remote/updates/manifest` only receive updates published with that URL, so publish once more with it until those builds are replaced. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
+   The server is the Cloudflare Worker in `apps/web`, with the update files in R2 (`remote-harness-updates`); it implements the protocol itself and never holds the signing key. Asset URLs signed into each update default to `<updates base>/assets/`; `REMOTE_HARNESS_UPDATES_ASSETS_URL` changes that prefix for another server.
+   A custom URL without `certs/certificate.pem` is refused. The URL is part of the runtime version, so it never changes for installed builds. Builds made before the rename with `https://maarkn.dev/api/claude-remote/updates/manifest` are answered by that old server until they are replaced. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
 3. **Publish** a JavaScript change:
    ```bash
    REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/.remote-harness-keys/private-key.pem \
      pnpm --filter @remote-harness/mobile ota:publish          # --platform ios|android, --dry-run
    ```
-   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `REMOTE_HARNESS_UPDATES_TOKEN`.
+   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the Worker's `UPDATES_TOKEN` secret (`cf workers secrets put UPDATES_TOKEN` in `apps/web`).
 
-**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the server's `REMOTE_HARNESS_UPDATES_DEV_TOKEN`, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
+**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the Worker's `UPDATES_DEV_TOKEN` secret, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
 
 The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 
@@ -320,7 +320,7 @@ Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Development
 
-`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one), `make install-ios-link` (same release build, installed from a Safari link served over Tailscale, so the iPhone needs no cable and can be on any network; it must already be registered in the Apple team, and the tailnet needs HTTPS certificates enabled; Tailscale cannot serve a folder on macOS, so a small server on `127.0.0.1` keeps running behind `tailscale serve`; with `IOS_LINK=web` the build goes to Cloudflare R2 instead and the link is `https://remoteharness.app/ios/<token>/`, so the phone needs no Tailscale: the random token in `IOS_LINK_DIR/.web-token` is the only protection, since a development-signed IPA lists the registered devices; uploading needs the `cf` CLI logged in) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.remote-harness-keys/private-key.pem`, or `~/.claude-remote-keys` when only that one exists; token in `REMOTE_HARNESS_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
+`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one), `make install-ios-link` (same release build, installed from a Safari link served over Tailscale, so the iPhone needs no cable and can be on any network; it must already be registered in the Apple team, and the tailnet needs HTTPS certificates enabled; Tailscale cannot serve a folder on macOS, so a small server on `127.0.0.1` keeps running behind `tailscale serve`; with `IOS_LINK=web` the build goes to Cloudflare R2 instead and the link is `https://remoteharness.app/app/<token>/`, so the phone needs no Tailscale: the random token in `IOS_LINK_DIR/.web-token` is the only protection, since a development-signed IPA lists the registered devices; uploading needs the `cf` CLI logged in), `make install-android-link` (release APK on the same link and token, needs the Android SDK; build it from the same machine every time, since the APK keeps that machine's release signing and a newer one then installs over the previous one; the page shows the iPhone button to iPhones and iPads, the APK to Android phones, and both plus a QR code to a desktop browser, with "Not your device? Show all options" always there; links printed before as `/ios/<token>/` keep working) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.remote-harness-keys/private-key.pem`, or `~/.claude-remote-keys` when only that one exists; token in `REMOTE_HARNESS_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
 
 ```bash
 pnpm check                                             # typecheck + tests + Biome across the monorepo

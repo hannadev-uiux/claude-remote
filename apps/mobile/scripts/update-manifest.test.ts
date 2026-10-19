@@ -5,12 +5,12 @@ import { buildManifest, contentTypeFor, signatureHeader, updatesBase } from './u
 const bytes = (s: string) => new TextEncoder().encode(s)
 
 describe('updatesBase', () => {
-  test('drops the trailing /manifest of the new and the old URL', () => {
+  test('drops the trailing /manifest, with or without a trailing slash', () => {
     expect(updatesBase('https://remoteharness.app/api/updates/manifest')).toBe(
       'https://remoteharness.app/api/updates',
     )
-    expect(updatesBase('https://maarkn.dev/api/claude-remote/updates/manifest/')).toBe(
-      'https://maarkn.dev/api/claude-remote/updates',
+    expect(updatesBase('https://updates.example.com/api/app/updates/manifest/')).toBe(
+      'https://updates.example.com/api/app/updates',
     )
   })
 })

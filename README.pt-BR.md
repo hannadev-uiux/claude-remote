@@ -59,8 +59,10 @@ Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [R
 ## Início rápido
 
 ```bash
-curl -fsSL https://remoteharness.app/install.sh | bash
+curl -fsSL https://remoteharness.app/install | bash
 ```
+
+O mesmo endereço serve para todos os sistemas: curl e wget recebem o script de macOS / Linux, o PowerShell do Windows recebe o instalador do WSL2 (veja abaixo) e o navegador recebe uma página com o comando certo para aquele computador. `?ref=<branch|tag>` instala outra versão, por exemplo `curl -fsSL "https://remoteharness.app/install?ref=development" | bash`.
 
 O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.remote-harness/src` e abre um assistente que encontra suas contas do Claude Code (ou cria uma nova: cria a pasta e abre o Claude Code nela para o login), pergunta o **alias** de cada uma (o comando que abre a conta no tmux, por exemplo `pessoal` e `trabalho`), instala hooks e serviço e mostra o QR de pareamento. Rode de novo para atualizar (ou `remote-harness update`); `remote-harness setup` muda contas e aliases depois. O serviço procura atualizações no canal escolhido a cada 6 horas e avisa com uma notificação no computador (nunca num clone de desenvolvimento). O **ícone na barra de menus** (macOS: um helper em Swift compilado na primeira execução com as Command Line Tools; Linux: `python3` com GTK 3 e AyatanaAppIndicator3/AppIndicator3) mostra que o daemon está rodando e permite procurar e aplicar atualizações, ligar as atualizações automáticas, escolher o canal, abrir os logs, reiniciar o daemon e rodar o `doctor`; sem ele (e no WSL) o daemon segue sem ícone, e `"tray": false` na config o desliga. `remote-harness updates channel main|development` escolhe o canal (voltar para `main` avisa que instala uma versão mais antiga), `remote-harness updates auto on` atualiza sozinho só quando nenhuma sessão está rodando ou esperando e não há permissão pendente (nunca para uma versão mais antiga), e `remote-harness updates status|check` mostram a última verificação. Instalações feitas antes da mudança de nome para Remote Harness continuam usando `~/.claude-remote`, e o comando `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam funcionando.
 
@@ -97,10 +99,10 @@ No emulador sem Tailscale: `remote-harness start --dev`, `remote-harness pair --
 O Remote Harness controla o Claude Code pelo tmux, então no Windows ele roda dentro do **WSL2** (Linux no Windows). No PowerShell:
 
 ```powershell
-irm https://remoteharness.app/install.ps1 | iex
+irm https://remoteharness.app/install | iex
 ```
 
-O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se faltar (o Windows pede permissão de administrador; reinicie se ele pedir e rode o mesmo comando de novo), ajuda a criar o usuário do Linux e roda o instalador do Linux dentro da distribuição. Opções: `& ([scriptblock]::Create((irm https://remoteharness.app/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se faltar (o Windows pede permissão de administrador; reinicie se ele pedir e rode o mesmo comando de novo), ajuda a criar o usuário do Linux e roda o instalador do Linux dentro da distribuição. Opções: `& ([scriptblock]::Create((irm https://remoteharness.app/install))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
 
 - **Node e Claude Code** precisam estar instalados **dentro do WSL** (não só no Windows); o instalador avisa o que falta.
 - **systemd**: o serviço é uma unit de usuário do systemd, e o WSL só inicia o systemd com `[boot] systemd=true` em `/etc/wsl.conf`. O assistente mostra o comando `sudo` exato, só roda se você concordar (com backup) e pede para rodar `wsl --shutdown` no PowerShell.

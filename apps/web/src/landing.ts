@@ -1,5 +1,6 @@
 import { esc, inline } from './html.ts'
 import { LOCALE_PATHS, type Locale, messagesFor, WEB_LOCALES, type WebMessages } from './i18n/index.ts'
+import { INSTALL_COMMANDS } from './install.ts'
 import { MARK_REGULAR, OG_IMAGE_URL, REPO_URL, SITE_URL } from './site.ts'
 import { STYLES } from './styles.ts'
 
@@ -7,11 +8,7 @@ const OG_LOCALES: Record<Locale, string> = { 'en-US': 'en_US', 'pt-BR': 'pt_BR',
 const LANG_CODES: Record<Locale, string> = { 'en-US': 'EN', 'pt-BR': 'PT', 'es-ES': 'ES' }
 const LANG_NAMES: Record<Locale, string> = { 'en-US': 'English', 'pt-BR': 'Português', 'es-ES': 'Español' }
 
-/** The two one-liners, as the README and the installers document them (#131 unifies them). */
-export const INSTALL_COMMANDS = {
-  unix: 'curl -fsSL https://remoteharness.app/install.sh | bash',
-  windows: 'irm https://remoteharness.app/install.ps1 | iex',
-} as const
+export { INSTALL_COMMANDS }
 
 /** The language's documentation root (`/en/docs/`). */
 export function docsPath(locale: Locale): string {
@@ -224,7 +221,7 @@ function security(m: WebMessages): string {
 </section>`
 }
 
-function command(text: string, m: WebMessages): string {
+export function command(text: string, m: WebMessages): string {
   const [bin = '', ...rest] = text.split(' ')
   const pipe = rest.indexOf('|')
   const highlighted =
@@ -271,7 +268,7 @@ function faq(m: WebMessages): string {
 }
 
 /** Tabs (Windows preselected on Windows browsers) and copy buttons; the page works without it. */
-const SCRIPT = `(function(){
+export const SCRIPT = `(function(){
 var tabs=document.querySelectorAll('[data-tab]'),panes=document.querySelectorAll('[data-pane]');
 function select(name){tabs.forEach(function(t){var on=t.getAttribute('data-tab')===name;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false')});panes.forEach(function(p){p.hidden=p.getAttribute('data-pane')!==name})}
 tabs.forEach(function(t){t.addEventListener('click',function(){select(t.getAttribute('data-tab'))})});

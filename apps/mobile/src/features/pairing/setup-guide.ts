@@ -1,8 +1,12 @@
 import type { TFunction } from '@/core/i18n/create'
 
-/** One-line installer of the computer side (remoteharness.app redirects to the install.sh on main). */
-export const INSTALL_URL = 'https://remoteharness.app/install.sh'
+/**
+ * Single install URL of the computer side: curl gets the macOS / Linux / WSL script, PowerShell the
+ * Windows one, and a browser a page that shows the right command for its system.
+ */
+export const INSTALL_URL = 'https://remoteharness.app/install'
 export const INSTALL_COMMAND = `curl -fsSL ${INSTALL_URL} | bash`
+export const INSTALL_COMMAND_WINDOWS = `irm ${INSTALL_URL} | iex`
 /** Tailscale in the store of the phone the guide runs on. */
 export const TAILSCALE_STORES = {
   ios: { name: 'App Store', url: 'https://apps.apple.com/app/tailscale/id1470499037' },
@@ -67,8 +71,10 @@ export function buildSetupGuide(t: TFunction, os: string): GuideStep[] {
     },
     {
       ...text('install'),
+      body: t('setupGuide.steps.install.body', { windows: INSTALL_COMMAND_WINDOWS }),
       code: INSTALL_COMMAND,
-      actions: [{ kind: 'share', label: t('setupGuide.steps.install.action'), text: INSTALL_COMMAND }],
+      // The link opened on the computer shows the command for its system.
+      actions: [{ kind: 'share', label: t('setupGuide.steps.install.action'), text: INSTALL_URL }],
     },
     { ...text('pair'), actions: [{ kind: 'scan', label: t('setupGuide.steps.pair.action') }] },
   ]

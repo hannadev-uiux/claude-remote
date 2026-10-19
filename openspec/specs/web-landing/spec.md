@@ -36,18 +36,18 @@ The Worker SHALL render the page in pt-BR, en-US or es-ES. `/` SHALL pick the la
 - **THEN** the page comes in en-US
 
 ### Requirement: Discoverability
-Each page SHALL have a translated `<title>` and meta description, Open Graph and Twitter card tags (type, title, description, URL, image `docs/brand/og.png`, locale), and a favicon (the mark as SVG at `/favicon.svg`, also served at `/favicon.ico`). The Worker SHALL serve `/sitemap.xml` listing `/`, `/en/`, `/pt-br/`, `/es/` and every documentation page in every language, and `/robots.txt` allowing everything and naming the sitemap.
+Each page SHALL have a translated `<title>` and meta description, Open Graph and Twitter card tags (type, title, description, URL, image `https://remoteharness.app/og.png`, locale), and a favicon (the mark as SVG at `/favicon.svg`, also served at `/favicon.ico`). The Worker SHALL serve the brand image (`docs/brand/og.png`, bundled at build time) at `/og.png`, `/sitemap.xml` listing `/`, `/en/`, `/pt-br/`, `/es/` and every documentation page in every language, and `/robots.txt` allowing everything and naming the sitemap.
 
 #### Scenario: Social preview
 - **WHEN** a chat app unfurls `https://remoteharness.app/pt-br/`
-- **THEN** it gets the Portuguese title and description and the brand image
+- **THEN** it gets the Portuguese title and description and the brand image from `https://remoteharness.app/og.png`
 
 #### Scenario: Sitemap
 - **WHEN** a crawler fetches `/sitemap.xml`
 - **THEN** it receives XML with the four landing URLs and the docs pages
 
 ### Requirement: Install section
-The install section SHALL show the install command per operating system in tabs (macOS · Linux with `curl -fsSL https://remoteharness.app/install.sh | bash`, Windows with `irm https://remoteharness.app/install.ps1 | iex`), each with a copy button, the Windows tab preselected on Windows browsers, the requirements as chips (Node 24+ bundled when missing, tmux, git, ripgrep, Tailscale, `claude` on PATH), and the app cards (iPhone & iPad, Android) with the current way to get each build. Both commands MUST be present in the markup so the section works without JavaScript.
+The install section SHALL show the install command per operating system in tabs (macOS · Linux with `curl -fsSL https://remoteharness.app/install | bash`, Windows with `irm https://remoteharness.app/install | iex`), each with a copy button, the Windows tab preselected on Windows browsers, the requirements as chips (Node 24+ bundled when missing, tmux, git, ripgrep, Tailscale, `claude` on PATH), and the app cards (iPhone & iPad, Android) with the current way to get each build. Both commands MUST be present in the markup so the section works without JavaScript.
 
 #### Scenario: Copy the command
 - **WHEN** the visitor taps Copy next to the macOS · Linux command
@@ -58,7 +58,7 @@ The install section SHALL show the install command per operating system in tabs 
 - **THEN** the Windows tab is selected first
 
 ### Requirement: Other paths
-The Worker SHALL keep the updates proxy and the iPhone install link exactly as they are, SHALL redirect `/install.sh` and `/install.ps1` (302) to the files on the `main` branch, and SHALL answer every other path with a small branded 404 page in the negotiated language that links to the landing and the repository.
+The Worker SHALL answer `/api/updates/*` as the updates server and the app install link as their requirements say, SHALL answer `/install`, `/install.sh` and `/install.ps1` as the installer URLs require, and SHALL answer every other path with a small branded 404 page in the negotiated language that links to the landing and the repository.
 
 #### Scenario: Old redirect path
 - **WHEN** someone opens `/anything-else`
@@ -66,4 +66,4 @@ The Worker SHALL keep the updates proxy and the iPhone install link exactly as t
 
 #### Scenario: Installer through the Worker
 - **WHEN** `curl -fsSL https://remoteharness.app/install.sh` reaches the Worker
-- **THEN** it is redirected to `https://raw.githubusercontent.com/maarkN/remote-harness/main/install.sh`
+- **THEN** it receives the bundled `install.sh` as `text/plain`, without a redirect

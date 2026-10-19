@@ -5,8 +5,9 @@
 #   PLATFORM=ios|android publish-ota for a single platform (default: both)
 #   CHANNEL=<name>       publish-ota channel (default: production; CI publishes development)
 #   OTA_KEY=<path>       private key that signs OTA updates
-#   IOS_LINK=web         install-ios-link publishes on https://remoteharness.app/ios/<token>/ (R2) instead of the tailnet
-#   IOS_LINK_DIR=<path>  folder install-ios-link builds into and serves on the tailnet (default ~/.remote-harness-builds/ios)
+#   IOS_LINK=web         install-ios-link publishes on https://remoteharness.app/app/<token>/ (R2) instead of the tailnet
+#   IOS_LINK_DIR=<path>  folder of the install link: builds, the web token shared with install-android-link
+#                        (default ~/.remote-harness-builds/ios)
 #   PROJECT=<id>         Firebase project for deploy-push-relay
 #   REMOTE_HARNESS_UPDATES_TOKEN (or the older CLAUDE_REMOTE_UPDATES_TOKEN) must be in the environment for publish-ota (never stored here).
 
@@ -29,7 +30,7 @@ CHANNEL ?= production
 
 .PHONY: help install check lint-fix openspec \
 	daemon-dev daemon-build \
-	start ios-dev android-dev prebuild ios-devices install-ios install-ios-link install-android \
+	start ios-dev android-dev prebuild ios-devices install-ios install-ios-link install-android install-android-link \
 	publish-ota publish-ota-dry \
 	deploy-push-relay
 
@@ -37,7 +38,7 @@ help: ## List the targets
 	@if [ -t 1 ]; then c=$$'\033[38;2;217;119;87m'; r=$$'\033[0m'; b=$$'\033[1m'; fi; \
 	awk -v c="$$c" -v r="$$r" -v b="$$b" 'BEGIN {FS = ":.*## "} \
 		/^## / {printf "\n%s%s%s\n", b, substr($$0, 4), r} \
-		/^[a-z][a-z-]*:.*## / {printf "  %s%-16s%s %s\n", c, $$1, r, $$2}' $(MAKEFILE_LIST)
+		/^[a-z][a-z-]*:.*## / {printf "  %s%-20s%s %s\n", c, $$1, r, $$2}' $(MAKEFILE_LIST)
 
 ## Workspace
 
@@ -106,6 +107,13 @@ install-ios-link: ## Release build the iPhone installs from a Safari link (Tails
 install-android: ## Release build on a connected Android phone (fresh android/)
 	cd $(MOBILE) && npx expo prebuild --platform android --clean && \
 		npx expo run:android $(device_flag) --variant release
+
+install-android-link: ## Release APK on the same remoteharness.app link as IOS_LINK=web (Android SDK, fresh android/)
+	@cd $(MOBILE) && npx tsx scripts/android-link.mts --check && \
+		npx expo prebuild --platform android --clean && \
+		echo "▸ gradlew assembleRelease" && \
+		(cd android && ./gradlew --quiet assembleRelease) && \
+		npx tsx scripts/android-link.mts android/app/build/outputs/apk/release/app-release.apk "$(IOS_LINK_DIR)"
 
 ## OTA updates
 

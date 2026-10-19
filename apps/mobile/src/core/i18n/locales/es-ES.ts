@@ -97,8 +97,8 @@ const esES = {
       },
       install: {
         title: 'Remote Harness en el ordenador',
-        body: 'En un terminal del ordenador, ejecuta el instalador. Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
-        action: 'Enviar el comando al ordenador',
+        body: 'En un terminal del ordenador, ejecuta el instalador (en Windows, en PowerShell: `{{windows}}`). Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
+        action: 'Enviar el enlace de instalación al ordenador',
       },
       pair: {
         title: 'Vincular',
@@ -338,6 +338,8 @@ const esES = {
     title: 'Estado en vivo',
     hint: 'Mientras una sesión trabaja, síguela en la pantalla de bloqueo y en la Dynamic Island (iPhone) o en una notificación silenciosa (Android). Muestra el ordenador, el nombre y la carpeta de la sesión, el estado, los últimos tipos de paso y el tiempo, nunca la conversación en sí.',
     ago: 'hace {time}',
+    tasks_one: '{{count}} tarea en curso',
+    tasks_other: '{{count}} tareas en curso',
     enabled: 'Mostrar estado en vivo',
     channelName: 'Estado en vivo',
     channelDescription: 'Progreso de las sesiones mientras trabajan (silencioso).',

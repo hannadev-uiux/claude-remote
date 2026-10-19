@@ -280,6 +280,47 @@ export const ptBR: WebMessages = {
     applies: 'Vale para {{version}}',
     fallback: 'Esta página ainda não foi traduzida; aqui está a versão em inglês.',
   },
+  installPage: {
+    title: 'Instalar o Remote Harness',
+    description:
+      'Um comando instala o Remote Harness no macOS, Linux ou Windows (WSL2): confere o sistema, compila o daemon e abre o setup guiado.',
+    eyebrow: 'Instalar',
+    heading: 'Uma linha no terminal do seu computador.',
+    lead: 'O mesmo endereço serve para todos: curl e wget recebem o script de macOS · Linux, o PowerShell recebe o do Windows e o navegador recebe esta página.',
+    unix: 'macOS · Linux · WSL',
+    windows: 'Windows (PowerShell)',
+    detected: 'Para o seu sistema',
+    others: 'Outros sistemas',
+    phone: 'Rode no terminal do computador em que o seu agente de código roda, não no celular.',
+    version: 'Instalando `{{ref}}` em vez da última versão.',
+    next: 'Passo a passo, com o que fazer depois do setup: [primeiros passos]({{docs}}).',
+  },
+  appLink: {
+    title: 'Instalar o app',
+    lead: 'O Remote Harness para o seu celular, compilado e publicado do seu computador.',
+    version: 'Versão {{version}} ({{build}}) · {{date}}',
+    notPublished: 'Ainda não publicado.',
+    size: '{{size}} MB',
+    ios: {
+      title: 'iPhone e iPad',
+      install: 'Instalar',
+      registered:
+        'Só iPhones e iPads cadastrados no time de desenvolvedor instalam este build. Abra esta página no Safari.',
+      developerMode:
+        'Na primeira vez, o iOS pede para ligar o Modo de Desenvolvedor: Ajustes → Privacidade e Segurança → Modo de Desenvolvedor, e reiniciar.',
+    },
+    android: {
+      title: 'Android',
+      download: 'Baixar o APK',
+      unknownApps:
+        'O navegador pede para permitir a instalação de apps desconhecidos (Configurações → Apps → Acesso especial → Instalar apps desconhecidos). Depois abra o arquivo baixado.',
+      updates: 'Um APK mais novo instala por cima do anterior e mantém o pareamento.',
+    },
+    qr: 'Aponte a câmera do celular para abrir esta página nele.',
+    qrLabel: 'QR code desta página',
+    showAll: 'Não é o seu aparelho? Mostrar todas as opções',
+    private: 'Link privado: quem tiver o link baixa estes builds. Não publique em lugar aberto.',
+  },
   notFound: {
     title: 'Página não encontrada',
     body: 'Não há nada neste endereço. A página inicial explica o app; o repositório tem o código e a documentação.',

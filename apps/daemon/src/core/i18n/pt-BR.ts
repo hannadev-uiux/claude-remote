@@ -341,7 +341,7 @@ export const ptBR = {
   },
   wsl: {
     windowsHint:
-      'No Windows, o Remote Harness roda dentro do WSL2. No PowerShell: `irm https://remoteharness.app/install.ps1 | iex`',
+      'No Windows, o Remote Harness roda dentro do WSL2. No PowerShell: `irm https://remoteharness.app/install | iex`',
     detected: (distro: string) => `WSL2 (distribuição ${distro})`,
     unknownDistro: 'desconhecida',
     systemd: 'systemd rodando no WSL',
@@ -443,6 +443,7 @@ export const ptBR = {
       permission: 'permissão pendente',
     },
     tools: (count: number) => (count === 1 ? '1 ferramenta' : `${count} ferramentas`),
+    tasks: (count: number) => (count === 1 ? '1 tarefa rodando' : `${count} tarefas rodando`),
     ago: 'há {time}',
     allow: 'Permitir',
     deny: 'Negar',

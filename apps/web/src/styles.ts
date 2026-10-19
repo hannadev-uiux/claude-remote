@@ -199,6 +199,13 @@ footer small { font-size: 11.5px; color: var(--dim); max-width: 80ch; }
 .nf { min-height: 70vh; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding-block: 64px; }
 .nf .code { font-family: var(--mono); color: var(--muted); font-size: 13px; }
 
+/* install page */
+.installpage .col { display: flex; flex-direction: column; gap: 14px; max-width: 760px; min-width: 0; }
+.installpage h1 { font-size: clamp(28px, 4vw, 40px); }
+.installpage .oslabel { font-family: var(--mono); font-size: 14px; }
+.installpage .others .pane { padding-top: 12px; }
+.installpage .others .note, .installpage .phone { padding: 0; }
+
 /* docs */
 .docs { display: grid; grid-template-columns: 220px minmax(0, 1fr) 200px; gap: 40px; padding-block: 36px 64px; align-items: start; }
 .docs .side { position: sticky; top: 76px; display: flex; flex-direction: column; gap: 16px; }

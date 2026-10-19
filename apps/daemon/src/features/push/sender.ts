@@ -83,7 +83,7 @@ export function buildLiveMessage(message: LiveMessage) {
   }
   // Android has no activity: the body carries the state line and the glyph row (oldest → newest).
   const glyphs = [...(props.glyphs ?? [])].reverse().join(' ')
-  const details = [props.step, props.tools, glyphs].filter(Boolean).join(' · ')
+  const details = [props.step, props.tools, props.tasks, glyphs].filter(Boolean).join(' · ')
   return {
     token: message.fcmToken,
     data,
@@ -94,7 +94,8 @@ export function buildLiveMessage(message: LiveMessage) {
         channelId: ANDROID_LIVE_CHANNEL_ID,
         title: `${props.session || props.title} · ${props.status}`,
         body: details || props.status,
-        sticky: message.event === 'update',
+        // A finished turn can be swiped away while it waits for the next one.
+        sticky: message.event === 'update' && props.state !== 'done',
         notificationPriority: 'PRIORITY_LOW' as const,
         defaultSound: false,
       },

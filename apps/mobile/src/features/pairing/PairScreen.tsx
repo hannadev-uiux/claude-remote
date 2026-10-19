@@ -30,7 +30,8 @@ export function PairScreen() {
   const { pair, busy, error, setError } = usePairing()
   const locked = useRef(false)
 
-  // Opened through a `claude-remote://pair?...` link (e.g. scanned with the iOS Camera app).
+  // Opened through a `remoteharness://pair?...` or `claude-remote://pair?...` link (e.g. scanned with
+  // the iOS Camera app).
   useEffect(() => {
     const fromLink = parseCredentials(params)
     if (fromLink && !locked.current) {

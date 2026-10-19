@@ -4,25 +4,30 @@ import { route } from '../src/routes.ts'
 const token = 'aB3_x-9aB3_x-9aB3_x-9aB3_x'
 
 describe('route', () => {
-  test('forwards the updates API with the query string', () => {
-    expect(route('/api/updates/manifest', '?a=1')).toEqual({
-      kind: 'updates',
-      url: 'https://maarkn.dev/api/claude-remote/updates/manifest?a=1',
-    })
-    expect(route('/api/updates/assets/abc')).toMatchObject({
-      url: 'https://maarkn.dev/api/claude-remote/updates/assets/abc',
-    })
+  test('the updates API is answered here, by path', () => {
+    expect(route('/api/updates/manifest', '?a=1')).toEqual({ kind: 'updates', path: 'manifest' })
+    expect(route('/api/updates/assets/abc')).toEqual({ kind: 'updates', path: 'assets/abc' })
+    expect(route('/api/updates/manifests')).toEqual({ kind: 'updates', path: 'manifests' })
     expect(route('/api/updates/')).toEqual({ kind: 'not-found' })
     expect(route('/api/updates/../secret')).toEqual({ kind: 'not-found' })
   })
 
-  test('serves only the three install files under a token', () => {
-    expect(route(`/ios/${token}/`)).toEqual({ kind: 'ios', key: `${token}/index.html` })
-    expect(route(`/ios/${token}/manifest.plist`)).toEqual({ kind: 'ios', key: `${token}/manifest.plist` })
-    expect(route(`/ios/${token}/RemoteHarness.ipa`)).toEqual({
-      kind: 'ios',
-      key: `${token}/RemoteHarness.ipa`,
-    })
+  test('install link: the page and the three build files under a token, at /app/ and /ios/', () => {
+    for (const prefix of ['app', 'ios']) {
+      expect(route(`/${prefix}/${token}/`)).toEqual({ kind: 'app-page', token })
+      expect(route(`/${prefix}/${token}/index.html`)).toEqual({ kind: 'app-page', token })
+      for (const name of ['manifest.plist', 'RemoteHarness.ipa', 'RemoteHarness.apk']) {
+        expect(route(`/${prefix}/${token}/${name}`)).toEqual({
+          kind: 'app-file',
+          key: `${token}/${name}`,
+          name,
+        })
+      }
+      expect(route(`/${prefix}/${token}/builds.json`)).toEqual({ kind: 'not-found' })
+      expect(route(`/${prefix}/${token}/toString`)).toEqual({ kind: 'not-found' })
+    }
+    expect(route(`/app/${token}`)).toEqual({ kind: 'not-found' })
+    expect(route('/app/short/')).toEqual({ kind: 'not-found' })
     expect(route(`/ios/${token}/other.txt`)).toEqual({ kind: 'not-found' })
     expect(route(`/ios/${token}`)).toEqual({ kind: 'not-found' })
     expect(route('/ios/short/')).toEqual({ kind: 'not-found' })
@@ -58,15 +63,24 @@ describe('route', () => {
     expect(route('/robots.txt')).toEqual({ kind: 'robots' })
     expect(route('/favicon.svg')).toEqual({ kind: 'favicon' })
     expect(route('/favicon.ico')).toEqual({ kind: 'favicon' })
-    expect(route('/install.sh')).toEqual({
-      kind: 'installer',
-      url: 'https://raw.githubusercontent.com/maarkN/remote-harness/main/install.sh',
-    })
-    expect(route('/install.ps1')).toEqual({
-      kind: 'installer',
-      url: 'https://raw.githubusercontent.com/maarkN/remote-harness/main/install.ps1',
-    })
+    expect(route('/og.png')).toEqual({ kind: 'og-image' })
     expect(route('/install.sh/x')).toEqual({ kind: 'not-found' })
     expect(route('/anything-else')).toEqual({ kind: 'not-found' })
+  })
+
+  test('installers: /install picks by client, the named scripts stay, ?ref= is checked', () => {
+    expect(route('/install')).toEqual({ kind: 'install', ref: null })
+    expect(route('/install/')).toEqual({ kind: 'install', ref: null })
+    expect(route('/install', '?ref=development')).toEqual({ kind: 'install', ref: 'development' })
+    expect(route('/install.sh')).toEqual({ kind: 'script', name: 'install.sh', ref: null })
+    expect(route('/install.ps1', '?ref=v0.13.0')).toEqual({
+      kind: 'script',
+      name: 'install.ps1',
+      ref: 'v0.13.0',
+    })
+    expect(route('/install', '?ref=..%2Fx')).toEqual({ kind: 'bad-ref' })
+    expect(route('/install.sh', "?ref=x'y")).toEqual({ kind: 'bad-ref' })
+    expect(route('/install/x')).toEqual({ kind: 'not-found' })
+    expect(route('/installer')).toEqual({ kind: 'not-found' })
   })
 })

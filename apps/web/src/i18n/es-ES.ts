@@ -290,6 +290,48 @@ export const esES: WebMessages = {
     applies: 'Válido para {{version}}',
     fallback: 'Esta página aún no está traducida; aquí tienes la versión en inglés.',
   },
+  installPage: {
+    title: 'Instalar Remote Harness',
+    description:
+      'Un comando instala Remote Harness en macOS, Linux o Windows (WSL2): comprueba el sistema, compila el daemon y abre la configuración guiada.',
+    eyebrow: 'Instalar',
+    heading: 'Una línea en una terminal de tu ordenador.',
+    lead: 'La misma dirección sirve para todos: curl y wget reciben el script de macOS · Linux, PowerShell recibe el de Windows y el navegador recibe esta página.',
+    unix: 'macOS · Linux · WSL',
+    windows: 'Windows (PowerShell)',
+    detected: 'Para tu sistema',
+    others: 'Otros sistemas',
+    phone:
+      'Ejecútalo en una terminal del ordenador en el que se ejecuta tu agente de código, no en el móvil.',
+    version: 'Instalando `{{ref}}` en lugar de la última versión.',
+    next: 'Paso a paso, con qué hacer después de la configuración: [primeros pasos]({{docs}}).',
+  },
+  appLink: {
+    title: 'Instalar la app',
+    lead: 'Remote Harness para tu móvil, compilado y publicado desde tu ordenador.',
+    version: 'Versión {{version}} ({{build}}) · {{date}}',
+    notPublished: 'Todavía no publicado.',
+    size: '{{size}} MB',
+    ios: {
+      title: 'iPhone y iPad',
+      install: 'Instalar',
+      registered:
+        'Solo los iPhone y iPad registrados en el equipo de desarrollador pueden instalar este build. Abre esta página en Safari.',
+      developerMode:
+        'La primera vez, iOS pide activar el Modo de desarrollador: Ajustes → Privacidad y seguridad → Modo de desarrollador, y reiniciar.',
+    },
+    android: {
+      title: 'Android',
+      download: 'Descargar el APK',
+      unknownApps:
+        'El navegador pide permitir instalar apps desconocidas (Ajustes → Aplicaciones → Acceso especial → Instalar aplicaciones desconocidas). Después abre el archivo descargado.',
+      updates: 'Un APK más nuevo se instala encima del anterior y mantiene el emparejamiento.',
+    },
+    qr: 'Escanéalo con la cámara del móvil para abrir esta página allí.',
+    qrLabel: 'Código QR de esta página',
+    showAll: '¿No es tu dispositivo? Mostrar todas las opciones',
+    private: 'Enlace privado: quien lo tenga puede descargar estos builds. No lo publiques.',
+  },
   notFound: {
     title: 'Página no encontrada',
     body: 'No hay nada en esta dirección. La página de inicio explica la app; el repositorio tiene el código y la documentación.',

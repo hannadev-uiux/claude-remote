@@ -62,6 +62,7 @@ describe('localLiveProps', () => {
       glyphs: [],
       pending: null,
       hint: '',
+      tasks: '',
     })
   })
 
