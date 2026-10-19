@@ -58,6 +58,7 @@ const clientSamples: ClientMessage[] = [
   { type: 'queue.remove', id: '1', sessionId: 's', itemId: 'q1' },
   { type: 'queue.sendNow', id: '1', sessionId: 's', itemId: 'q1' },
   { type: 'queue.flush', id: '1', sessionId: 's' },
+  { type: 'pane.focus', id: '1', sessionId: 's' },
   {
     type: 'device.register',
     id: '1',

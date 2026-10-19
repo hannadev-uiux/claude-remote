@@ -239,7 +239,7 @@ async function registerFeatures(
   registerAutocompleteFeature(ctx, sessions.store)
   registerPaneFeature(ctx, sessions.store)
   const checkout = registerCheckoutFeature(ctx, sessions.store)
-  registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver, {
+  const lifecycle = registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver, {
     lock: sessionLock,
     denyPending: (id) => void permissions.broker.denyAll(id),
   })
@@ -257,6 +257,21 @@ async function registerFeatures(
       store: sessions.store,
       hasPendingPermission: (id) => permissions.broker.hasPending(id),
       options: desktop,
+      shell: {
+        profiles: ctx.profiles,
+        pendingPermissions: () => permissions.broker.list(),
+        respond: (requestId, decision, always) => {
+          const info = permissions.broker.list().find((p) => p.requestId === requestId)
+          permissions.broker.respond(requestId, {
+            behavior: decision,
+            ...(always && decision === 'allow' && info?.suggestedRule
+              ? { always: { rule: info.suggestedRule, scope: info.defaultScope } }
+              : {}),
+          })
+        },
+        phones: () => ({ count: push.devices.list().length, push: push.mode() !== 'off' }),
+        closeSession: (id) => lifecycle.closer.close(id),
+      },
     })
   }
   await sessions.start()

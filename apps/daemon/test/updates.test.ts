@@ -88,6 +88,10 @@ describe('buildTrayMenu', () => {
     expect(menu.items[0]).toEqual({ id: 'status', label: 'Running · 0.10.0', enabled: false })
     expect(ids(menu.items)).toEqual([
       'status',
+      'new',
+      'pair',
+      'docs',
+      'prefs',
       'check',
       'auto',
       'channel:main',
@@ -117,7 +121,7 @@ describe('buildTrayMenu', () => {
 
   test('development clone and no service manager', () => {
     const menu = buildTrayMenu({ ...base, canUpdate: false, canRestart: false }, t)
-    expect(ids(menu.items)).toEqual(['status', 'logs', 'doctor', 'quit'])
+    expect(ids(menu.items)).toEqual(['status', 'new', 'pair', 'docs', 'prefs', 'logs', 'doctor', 'quit'])
   })
 
   test('translated', () => {
@@ -217,7 +221,7 @@ function fakeProcess() {
 }
 
 describe('TrayHost', () => {
-  const menu = { type: 'menu' as const, tooltip: 'x', items: [] }
+  const menu = { type: 'menu' as const, tooltip: 'x', icon: 'idle' as const, items: [] }
 
   test('sends the menu and reports clicks', async () => {
     const fake = fakeProcess()
