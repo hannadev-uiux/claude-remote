@@ -6,7 +6,7 @@ TBD - created by archiving change 69-docs-site. Update Purpose after archive.
 ## Requirements
 
 ### Requirement: Documentation pages
-The `apps/web` Worker SHALL serve user documentation under `/docs/`, rendered from Markdown pages kept in the repository (`apps/web/content/<locale>/<slug>.md`) with a front matter of `title`, `description` and an optional `applies` version note. The pages SHALL be, in this order: overview (`/docs/`), getting started, using the app, the daemon, security & privacy, troubleshooting, contributing. Each page SHALL show a sidebar with the pages, the current page's headings as anchors, previous / next links, and SHALL use the landing's tokens and fonts (dark first, light by system preference). Headings MUST have stable ids so anchors can be linked.
+The `apps/web` Worker SHALL serve user documentation under `/docs/`, rendered from Markdown pages kept in the repository (`apps/web/content/<locale>/<slug>.md`) with a front matter of `title`, `description` and an optional `applies` version note. The pages SHALL be, in this order: overview (`/docs/`), getting started, using the app, the daemon, security & privacy, privacy policy, troubleshooting, contributing. Each page SHALL show a sidebar with the pages, the current page's headings as anchors, previous / next links, and SHALL use the landing's tokens and fonts (dark first, light by system preference). Headings MUST have stable ids so anchors can be linked.
 
 #### Scenario: Open a page
 - **WHEN** a visitor opens `/en/docs/getting-started/`
@@ -15,6 +15,10 @@ The `apps/web` Worker SHALL serve user documentation under `/docs/`, rendered fr
 #### Scenario: Version note
 - **WHEN** a page's front matter has `applies: 0.7+`
 - **THEN** the note "Applies to 0.7+" (translated) is shown under the title
+
+#### Scenario: Privacy policy
+- **WHEN** a visitor opens `/pt-br/docs/privacy/`
+- **THEN** the privacy policy renders in Portuguese between security & privacy and troubleshooting in the sidebar
 
 ### Requirement: Documentation languages
 Docs SHALL follow the landing's language model: `/docs/…` negotiates from `Accept-Language` (with `Vary: Accept-Language`), `/en/docs/…`, `/pt-br/docs/…` and `/es/docs/…` are fixed, each page carries the language switcher, `hreflang` alternates and a canonical link. The three languages MUST have the same set of pages; a page missing in a language SHALL be rendered from en-US with a notice saying so.
