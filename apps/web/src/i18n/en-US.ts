@@ -298,6 +298,32 @@ export const enUS = {
     version: 'Installing `{{ref}}` instead of the latest release.',
     next: 'Step by step, with what to do after the setup: [getting started]({{docs}}).',
   },
+  appLink: {
+    title: 'Install the app',
+    lead: 'Remote Harness for your phone, built and published from your computer.',
+    version: 'Version {{version}} ({{build}}) · {{date}}',
+    notPublished: 'Not published yet.',
+    size: '{{size}} MB',
+    ios: {
+      title: 'iPhone & iPad',
+      install: 'Install',
+      registered:
+        'Only iPhones and iPads registered in the developer team can install this build. Open this page in Safari.',
+      developerMode:
+        'The first time, iOS asks to turn on Developer Mode: Settings → Privacy & Security → Developer Mode, then restart.',
+    },
+    android: {
+      title: 'Android',
+      download: 'Download the APK',
+      unknownApps:
+        'Your browser asks to allow installing unknown apps (Settings → Apps → Special app access → Install unknown apps). Then open the downloaded file.',
+      updates: 'A newer APK installs over the previous one and keeps your pairing.',
+    },
+    qr: 'Scan with the phone’s camera to open this page there.',
+    qrLabel: 'QR code of this page',
+    showAll: 'Not your device? Show all options',
+    private: 'Private link: anyone who has it can download these builds. Do not post it publicly.',
+  },
   notFound: {
     title: 'Page not found',
     body: 'There is nothing at this address. The landing page explains the app; the repository has the code and the docs.',

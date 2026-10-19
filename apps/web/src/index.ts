@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers'
 import installPs1 from '../../../install.ps1?raw'
 import installSh from '../../../install.sh?raw'
+import { APP_FILES, BUILDS, classifyDevice, LEGACY_PAGE, parseBuilds, renderAppLinkPage } from './app-link.ts'
 import { isDocSlug, negotiatedDocPath } from './docs/content.ts'
 import { renderDoc } from './docs/page.ts'
 import { pickLocale } from './i18n/locale.ts'
@@ -16,15 +17,57 @@ import { renderLanding, renderNotFound } from './landing.ts'
 import { route } from './routes.ts'
 import { faviconSvg, robotsTxt, sitemapXml } from './site.ts'
 
-async function iosFile(request: Request, key: string): Promise<Response> {
+/** A build file of an install link, from R2, with the content type of its name. */
+async function appFile(request: Request, key: string, name: string): Promise<Response> {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405 })
   const object = await env.IOS_BUILDS.get(key)
   if (!object) return new Response('Not found', { status: 404 })
   const headers = new Headers({ 'cache-control': 'no-cache', 'x-robots-tag': 'noindex' })
   object.writeHttpMetadata(headers)
+  headers.set('content-type', APP_FILES[name] ?? 'application/octet-stream')
   headers.set('etag', object.httpEtag)
   headers.set('content-length', String(object.size))
   return new Response(request.method === 'HEAD' ? null : object.body, { headers })
+}
+
+/**
+ * The install page of a token folder: rendered from `builds.json` for the device that asks, or the
+ * `index.html` an older publisher uploaded. Private (the token is the only protection): never
+ * cached, indexed or sent on as a referrer.
+ */
+async function appPage(request: Request, url: URL, token: string): Promise<Response> {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405 })
+  const headers = new Headers({
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-cache',
+    'x-robots-tag': 'noindex',
+    'referrer-policy': 'no-referrer',
+    'x-content-type-options': 'nosniff',
+  })
+  const stored = await env.IOS_BUILDS.get(`${token}/${BUILDS}`)
+  let body: string
+  if (stored) {
+    let json: unknown = null
+    try {
+      json = JSON.parse(await stored.text())
+    } catch {
+      // A broken builds.json shows both platforms as not published rather than an error.
+    }
+    const locale = pickLocale(request.headers.get('accept-language'))
+    body = renderAppLinkPage({
+      locale,
+      device: url.searchParams.has('all') ? 'all' : classifyDevice(request.headers.get('user-agent')),
+      builds: parseBuilds(json),
+      pageUrl: `${url.origin}${url.pathname.replace(/index\.html$/, '')}`,
+    })
+    headers.set('content-language', locale)
+    headers.set('vary', 'Accept-Language, User-Agent')
+  } else {
+    const legacy = await env.IOS_BUILDS.get(`${token}/${LEGACY_PAGE}`)
+    if (!legacy) return new Response('Not found', { status: 404 })
+    body = await legacy.text()
+  }
+  return new Response(request.method === 'HEAD' ? null : body, { headers })
 }
 
 /** An HTML page; `negotiated` marks the ones whose language came from the request headers. */
@@ -70,7 +113,8 @@ export default {
       // Same method, headers and body; redirects and errors go back to the client unchanged.
       return fetch(new Request(target.url, request), { redirect: 'manual' })
     }
-    if (target.kind === 'ios') return iosFile(request, target.key)
+    if (target.kind === 'app-file') return appFile(request, target.key, target.name)
+    if (target.kind === 'app-page') return appPage(request, url, target.token)
     if (target.kind === 'bad-ref') {
       // Plain text: piped into bash it is a harmless "command not found", never a script.
       return new Response('invalid ref\n', {

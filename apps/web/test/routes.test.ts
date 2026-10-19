@@ -16,13 +16,22 @@ describe('route', () => {
     expect(route('/api/updates/../secret')).toEqual({ kind: 'not-found' })
   })
 
-  test('serves only the three install files under a token', () => {
-    expect(route(`/ios/${token}/`)).toEqual({ kind: 'ios', key: `${token}/index.html` })
-    expect(route(`/ios/${token}/manifest.plist`)).toEqual({ kind: 'ios', key: `${token}/manifest.plist` })
-    expect(route(`/ios/${token}/RemoteHarness.ipa`)).toEqual({
-      kind: 'ios',
-      key: `${token}/RemoteHarness.ipa`,
-    })
+  test('install link: the page and the three build files under a token, at /app/ and /ios/', () => {
+    for (const prefix of ['app', 'ios']) {
+      expect(route(`/${prefix}/${token}/`)).toEqual({ kind: 'app-page', token })
+      expect(route(`/${prefix}/${token}/index.html`)).toEqual({ kind: 'app-page', token })
+      for (const name of ['manifest.plist', 'RemoteHarness.ipa', 'RemoteHarness.apk']) {
+        expect(route(`/${prefix}/${token}/${name}`)).toEqual({
+          kind: 'app-file',
+          key: `${token}/${name}`,
+          name,
+        })
+      }
+      expect(route(`/${prefix}/${token}/builds.json`)).toEqual({ kind: 'not-found' })
+      expect(route(`/${prefix}/${token}/toString`)).toEqual({ kind: 'not-found' })
+    }
+    expect(route(`/app/${token}`)).toEqual({ kind: 'not-found' })
+    expect(route('/app/short/')).toEqual({ kind: 'not-found' })
     expect(route(`/ios/${token}/other.txt`)).toEqual({ kind: 'not-found' })
     expect(route(`/ios/${token}`)).toEqual({ kind: 'not-found' })
     expect(route('/ios/short/')).toEqual({ kind: 'not-found' })
