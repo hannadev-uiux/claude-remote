@@ -3,11 +3,14 @@ import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { homedir, userInfo } from 'node:os'
 import { join } from 'node:path'
+import { text } from 'node:stream/consumers'
 import { fileURLToPath } from 'node:url'
+import { password } from '@inquirer/prompts'
 import {
   LOCALES,
   type Locale,
   LocaleSchema,
+  PROVIDER_NAMES,
   type PushMode,
   PushTestResultSchema,
 } from '@remote-harness/protocol'
@@ -23,6 +26,7 @@ import {
   ensureHookSecret,
   ensureToken,
   generateToken,
+  providerKeyStore,
   type SelectedTokenStore,
   selectTokenStore,
   type TokenStore,
@@ -115,11 +119,11 @@ async function tokenStore(): Promise<TokenStore> {
   return (await selectStore()).store
 }
 
-function tokenStoreLabel(kind: TokenStoreKind): string {
+function tokenStoreLabel(kind: TokenStoreKind, file = paths.tokenFile()): string {
   const names = m.cli.doctor.tokenStores
   if (kind === 'keychain') return names.keychain
   if (kind === 'secret-tool') return names.secretTool
-  return names.file(paths.tokenFile())
+  return names.file(file)
 }
 
 /** Absolute path of the bundled CLI (dist/cli.js), whether running from source or from dist. */
@@ -214,6 +218,7 @@ program
         logger,
         exec: execaExecutor,
         tokenStore: store,
+        providerKey: (profileId) => providerKeyStore(kind, execaExecutor, profileId).get(),
         dev: opts.dev,
         host: opts.host,
         waitForTailscale: opts.waitTailscale,
@@ -355,6 +360,15 @@ program
           profile.configDir.replace(/^~/, process.env.HOME ?? '~'),
         ])
         check(result.exitCode === 0, d.profile(profile.id, profile.configDir), d.dirMissing)
+      }
+      const { kind: storeKind } = await selectStore()
+      for (const profile of config.profiles) {
+        if (!profile.provider) continue
+        const stored = await providerKeyStore(storeKind, execaExecutor, profile.id)
+          .get()
+          .catch(() => null)
+        const name = PROVIDER_NAMES[profile.provider.kind]
+        check(stored !== null, d.providerKey(profile.id, name), d.runProviderKey(profile.id))
       }
       try {
         const response = await fetch(`http://127.0.0.1:${config.hookPort}/health`, {
@@ -698,6 +712,37 @@ push
     }
     console.error(`✗ ${m.cli.push.testResult[result]}`)
     process.exit(1)
+  })
+
+const provider = program.command('provider').description(m.cli.provider.description)
+provider
+  .command('key <profile>')
+  .description(m.cli.provider.key)
+  .option('--stdin', m.cli.provider.stdin)
+  .action(async (profileId: string, opts: { stdin?: boolean }) => {
+    const p = m.cli.provider
+    const config = await loadConfig(createLogger({ level: 'silent' }))
+    const profile = config.profiles.find((candidate) => candidate.id === profileId)
+    if (!profile) {
+      console.error(p.unknownProfile(profileId))
+      process.exit(1)
+    }
+    if (!profile.provider) {
+      console.error(p.noProvider(profileId))
+      process.exit(1)
+    }
+    const name = PROVIDER_NAMES[profile.provider.kind]
+    // The key is read from a hidden prompt (or stdin) and goes straight to the store: never an argument.
+    const key = (
+      opts.stdin ? await text(process.stdin) : await password({ message: p.prompt(name), mask: '•' })
+    ).trim()
+    if (!key) {
+      console.error(p.empty)
+      process.exit(1)
+    }
+    const { kind } = await selectStore()
+    await providerKeyStore(kind, execaExecutor, profileId).set(key)
+    console.log(p.saved(profileId, tokenStoreLabel(kind, paths.providerKey(profileId))))
   })
 
 const rules = program.command('rules').description(m.cli.rules.description)

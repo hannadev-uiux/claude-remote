@@ -2,8 +2,8 @@ import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { ChevronDown, EllipsisVertical, PanelRight, Terminal } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Keyboard, Pressable, StyleSheet, View } from 'react-native'
-import { useConnectionStore } from '@/core/connection'
+import { Alert, Keyboard, Pressable, StyleSheet, View } from 'react-native'
+import { useConnectionStore, useDaemonClient } from '@/core/connection'
 import { useLayout } from '@/core/layout'
 import { makeStyles, space, useTheme } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
@@ -12,12 +12,14 @@ import { ConversationScreen } from '@/features/conversation/ConversationScreen'
 import { setFollow, useFollowStore } from '@/features/conversation/follow-store'
 import { setKeyBarVisible, useKeyBarStore } from '@/features/conversation/key-bar-store'
 import { type SessionMenuAction, sessionMenu } from '@/features/conversation/session-menu'
-import { usePrompt } from '@/features/conversation/use-prompt'
+import { promptErrorMessage, usePrompt } from '@/features/conversation/use-prompt'
 import { toggleInspector } from '@/features/inspector/store'
 import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
 import { ModeSelector } from '@/features/mode/ModeSelector'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
 import { SessionPermissions } from '@/features/permissions/components/SessionPermissions'
+import { providerName } from '@/features/providers/logic'
+import { ModelPickerSheet } from '@/features/providers/ModelPickerSheet'
 import { QueueCard } from '@/features/queue/components/QueueCard'
 import { StatusBar } from '@/features/session-status/StatusBar'
 import { sessionAgent } from '@/features/sessions/agent'
@@ -36,6 +38,8 @@ export default function SessionRoute() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const session = useSessionsStore((s) => s.sessions[id])
   const profile = useConnectionStore((s) => s.hello?.profiles.find((p) => p.id === session?.profileId))
+  const provider = providerName(profile)
+  const client = useDaemonClient()
   const prompt = usePrompt(id)
   const controllable = session?.controllable ?? false
   const keyBarVisible = useKeyBarStore((s) => s.visible)
@@ -44,6 +48,7 @@ export default function SessionRoute() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
   const [subagentsOpen, setSubagentsOpen] = useState(false)
+  const [modelOpen, setModelOpen] = useState(false)
   const subagentStats = subagentCounts(session?.subagents ?? [])
   const agent = session ? sessionAgent(session) : null
   // Two-column tablets reach the inspector (terminal, subagents, details) from the header.
@@ -54,9 +59,23 @@ export default function SessionRoute() {
     Keyboard.dismiss()
     setDetailsOpen(true)
   }
-  const menu = sessionMenu({ controllable, keyBarVisible, following, subagents: subagentStats }, t)
+  const menu = sessionMenu(
+    { controllable, keyBarVisible, following, subagents: subagentStats, provider: provider !== null },
+    t,
+  )
+  // `/model <id>` goes through the same path as a typed slash command, delivered now.
+  const switchModel = (modelId: string) => {
+    setModelOpen(false)
+    client
+      ?.request({ type: 'session.input', sessionId: id, text: `/model ${modelId}`, mode: 'now' })
+      .catch((error: unknown) => Alert.alert(t('modelPicker.switchFailed'), promptErrorMessage(error, t)))
+  }
   const actions: Record<SessionMenuAction, () => void> = {
     terminal: () => router.push({ pathname: '/session/[id]/terminal', params: { id } }),
+    model: () => {
+      Keyboard.dismiss()
+      setModelOpen(true)
+    },
     subagents: () => {
       Keyboard.dismiss()
       setSubagentsOpen(true)
@@ -138,6 +157,15 @@ export default function SessionRoute() {
           onClose={() => setSubagentsOpen(false)}
         />
       ) : null}
+      {session && provider ? (
+        <ModelPickerSheet
+          visible={modelOpen}
+          profileId={session.profileId}
+          selected={null}
+          onChoose={switchModel}
+          onClose={() => setModelOpen(false)}
+        />
+      ) : null}
       <ConversationScreen
         sessionId={id}
         onKey={prompt.sendKey}
@@ -171,6 +199,7 @@ export default function SessionRoute() {
                 status={session.status}
                 profileId={session.profileId}
                 branch={session.checkout?.branch ?? null}
+                provider={provider}
               />
             </>
           ) : null

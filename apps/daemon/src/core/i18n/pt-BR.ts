@@ -41,6 +41,18 @@ export const ptBR = {
       rotatedOffline: 'Token trocado (daemon não está rodando).',
       pairAgain: 'Rode `remote-harness pair` para parear de novo.',
     },
+    provider: {
+      description: 'provedores de modelo dos perfis (chave do OpenRouter)',
+      key: 'guarda a chave do provedor de um perfil no cofre do sistema (nunca em arquivo nosso)',
+      stdin: 'lê a chave da entrada padrão em vez de perguntar',
+      prompt: (provider: string) => `Chave de API do ${provider}:`,
+      unknownProfile: (id: string) => `Não há perfil "${id}" na configuração.`,
+      noProvider: (id: string) =>
+        `O perfil "${id}" não tem provedor. Adicione "provider": { "kind": "openrouter" } a ele no config.json antes.`,
+      empty: 'Nenhuma chave informada; nada foi guardado.',
+      saved: (id: string, store: string) =>
+        `Chave do perfil ${id} guardada ${store}. As novas sessões do perfil passam a usá-la.`,
+    },
     doctor: {
       description: 'verifica dependências e configuração',
       notOnPath: 'não encontrado no PATH',
@@ -56,6 +68,8 @@ export const ptBR = {
         file: (path: string) => `no arquivo ${path} (0600)`,
       },
       runPair: 'rode `remote-harness pair`',
+      providerKey: (id: string, provider: string) => `chave do ${provider} do perfil ${id}`,
+      runProviderKey: (id: string) => `rode \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
       linger: 'lingering (o serviço continua rodando após o logout)',
@@ -177,6 +191,8 @@ export const ptBR = {
     },
   },
   install: {
+    missingProviderKey: (id: string, provider: string) =>
+      `Nenhuma chave do ${provider} guardada para o perfil ${id}: rode \`remote-harness provider key ${id}\`.`,
     shortcut: (path: string) => `atalho ${path}`,
     shellPath: (files: string) => `PATH em ${files}`,
     hooksIn: (path: string) => `hooks em ${path}`,

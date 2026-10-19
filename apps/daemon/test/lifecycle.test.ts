@@ -67,6 +67,8 @@ describe('LifecycleService', () => {
       args: [],
       options: { cwd: project, env: { CLAUDE_REMOTE_NO_ATTACH: '1' } },
     })
+    await service.start('claudin', project, { model: 'anthropic/claude-opus-5.5' })
+    expect(exec.calls[1]?.args).toEqual(['--model', 'anthropic/claude-opus-5.5'])
     await expect(service.start('nope', project)).rejects.toMatchObject({ code: 'not_found' })
   })
 

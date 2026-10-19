@@ -18,6 +18,23 @@ export type SelectableMode = z.infer<typeof SelectableModeSchema>
 export const AgentIdSchema = z.enum(['claude', 'codex', 'kimi', 'qwen'])
 export type AgentId = z.infer<typeof AgentIdSchema>
 
+/** Model gateways a profile can route Claude Code through; a profile without one uses the Anthropic account. */
+export const ProviderKindSchema = z.enum(['openrouter'])
+export type ProviderKind = z.infer<typeof ProviderKindSchema>
+
+/** Product names of the providers (not translated); shown in the dashed `via …` chip. */
+export const PROVIDER_NAMES: Record<ProviderKind, string> = { openrouter: 'OpenRouter' }
+
+export const ProviderSchema = z.object({
+  kind: ProviderKindSchema,
+  /** Anthropic-compatible endpoint; absent = the provider's own (`https://openrouter.ai/api`). */
+  baseUrl: z.string().url().optional(),
+  /** Default model of new sessions; absent = whatever the gateway serves for Claude Code's default. */
+  model: z.string().min(1).optional(),
+  smallFastModel: z.string().min(1).optional(),
+})
+export type Provider = z.infer<typeof ProviderSchema>
+
 export const ProfileSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -25,8 +42,30 @@ export const ProfileSchema = z.object({
   color: z.string().min(1),
   /** The agent this profile launches; absent means Claude Code (older configs and daemons). */
   agent: AgentIdSchema.optional(),
+  /** The model provider; absent means the Anthropic account logged into Claude Code. */
+  provider: ProviderSchema.optional(),
 })
 export type Profile = z.infer<typeof ProfileSchema>
+
+/** A model a provider lists; prices in USD per million tokens, `null` when the provider does not say. */
+export const ModelInfoSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  contextLength: z.number().int().positive().nullable(),
+  promptPrice: z.number().nonnegative().nullable(),
+  completionPrice: z.number().nonnegative().nullable(),
+  /** Tool use (Claude Code needs it). */
+  tools: z.boolean(),
+  /** Extended thinking / reasoning. */
+  reasoning: z.boolean(),
+  /** Prompt caching. */
+  caching: z.boolean(),
+})
+export type ModelInfo = z.infer<typeof ModelInfoSchema>
+
+/** Credits of a provider account, in USD: bought and used so far. */
+export const ProviderCreditsSchema = z.object({ total: z.number(), used: z.number() })
+export type ProviderCredits = z.infer<typeof ProviderCreditsSchema>
 
 export const SessionStateSchema = z.enum(['running', 'waiting', 'idle', 'ended'])
 export type SessionState = z.infer<typeof SessionStateSchema>

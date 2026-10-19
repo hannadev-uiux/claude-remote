@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { Folder, FolderGit2, FolderSearch, GitBranch } from 'lucide-react-native'
+import { ChevronRight, Folder, FolderGit2, FolderSearch, GitBranch } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native'
@@ -8,6 +8,9 @@ import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } f
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { useDebounced } from '@/core/utils/use-debounced'
+import { providerName } from '@/features/providers/logic'
+import { ModelPickerSheet } from '@/features/providers/ModelPickerSheet'
+import { ProfileProviderChip } from '@/features/providers/ProfileProviderChip'
 import { AgentBadge, Button, Card, Screen, Text } from '@/ui'
 import { DirectoryPickerSheet } from './DirectoryPickerSheet'
 import {
@@ -41,6 +44,11 @@ export function NewSessionScreen() {
   // Set synchronously so a second tap during the inspection or the launch is ignored.
   const starting = useRef(false)
   const [error, setError] = useState<string | null>(null)
+  // Model picked for a profile with a provider; cleared when the profile changes.
+  const [model, setModel] = useState<string | null>(null)
+  const [modelPicking, setModelPicking] = useState(false)
+  const selectedProfile = profiles.find((p) => p.id === profileId) ?? null
+  const provider = providerName(selectedProfile)
 
   useEffect(() => {
     if (!profileId && profiles[0]) setProfileId(profiles[0].id)
@@ -118,6 +126,7 @@ export function NewSessionScreen() {
         profileId,
         cwd: cwd.trim(),
         ...(inWorktree ? { worktree: true } : {}),
+        ...(model ? { model } : {}),
       })
       router.back()
     } catch (e) {
@@ -164,7 +173,10 @@ export function NewSessionScreen() {
                 key={p.id}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                onPress={() => setProfileId(p.id)}
+                onPress={() => {
+                  if (p.id !== profileId) setModel(null)
+                  setProfileId(p.id)
+                }}
                 style={({ pressed }) => [
                   styles.profile,
                   selected && styles.selected,
@@ -173,9 +185,16 @@ export function NewSessionScreen() {
               >
                 <AgentBadge agent={profileAgent(p)} />
                 <View style={styles.flex}>
-                  <Text weight="medium" numberOfLines={1} style={{ color: p.color || colors.text }}>
-                    {p.name}
-                  </Text>
+                  <View style={styles.nameRow}>
+                    <Text
+                      weight="medium"
+                      numberOfLines={1}
+                      style={[styles.shrink, { color: p.color || colors.text }]}
+                    >
+                      {p.name}
+                    </Text>
+                    <ProfileProviderChip profile={p} />
+                  </View>
                   <Text size="xs" color="textMuted" numberOfLines={1}>
                     {profileDetail(p)}
                   </Text>
@@ -185,7 +204,24 @@ export function NewSessionScreen() {
             )
           })}
         </View>
-        {/* The Model row goes here once the selected profile's provider lists models (#109). */}
+        {provider && selectedProfile ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('newSession.model')}
+            onPress={() => setModelPicking(true)}
+            style={({ pressed }) => [styles.modelRow, pressed && styles.pressed]}
+          >
+            <View style={styles.flex}>
+              <Text size="xs" color="textMuted">
+                {t('newSession.model')}
+              </Text>
+              <Text size="sm" numberOfLines={1}>
+                {model ?? selectedProfile.provider?.model ?? t('newSession.modelDefault')}
+              </Text>
+            </View>
+            <ChevronRight size={16} color={colors.textDim} />
+          </Pressable>
+        ) : null}
 
         <Text size="xs" color="textMuted" style={styles.section}>
           {t('newSession.directory')}
@@ -339,6 +375,18 @@ export function NewSessionScreen() {
           onClose={() => setPicking(false)}
         />
       ) : null}
+      {provider && profileId ? (
+        <ModelPickerSheet
+          visible={modelPicking}
+          profileId={profileId}
+          selected={model ?? selectedProfile?.provider?.model ?? null}
+          onChoose={(id) => {
+            setModel(id)
+            setModelPicking(false)
+          }}
+          onClose={() => setModelPicking(false)}
+        />
+      ) : null}
     </Screen>
   )
 }
@@ -384,6 +432,19 @@ const useStyles = makeStyles((theme) => ({
     fontSize: fontSize.md,
   },
   section: { marginTop: space.md },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  shrink: { flexShrink: 1 },
+  modelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.md,
+    marginTop: space.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
   branch: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   option: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs },
   project: {
