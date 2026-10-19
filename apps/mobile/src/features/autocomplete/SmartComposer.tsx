@@ -6,12 +6,14 @@ import { useTranslation } from 'react-i18next'
 import { Alert, type TextInput } from 'react-native'
 import { addListener, constants } from 'react-native-key-command'
 import { useShallow } from 'zustand/react/shallow'
+import { useLayout } from '@/core/layout'
 import { useBackHandler } from '@/core/platform/use-back-handler'
 import { IconButton } from '@/ui'
 import { AttachmentChips } from '../attachments/components/AttachmentChips'
 import { remainingSlots } from '../attachments/limits'
 import { type ImageSource, useImagePicker } from '../attachments/use-image-picker'
 import { PromptComposer } from '../conversation/components/PromptComposer'
+import { keyboardHints } from '../conversation/keyboard-hints'
 import type { usePrompt } from '../conversation/use-prompt'
 import { selectPendingFor, usePermissionsStore } from '../permissions/store'
 import { willQueue } from '../queue/logic'
@@ -55,6 +57,7 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
   const queued = useQueueStore(selectQueueFor(sessionId)).length
   // Send holds the prompt while the agent is busy; the hint tells how to paste it mid-turn instead.
   const queueing = willQueue(session, pendingPermissions, queued)
+  const { layout } = useLayout()
   const suggestions = useSuggestions(sessionId, trigger)
   const commands = useCommands(sessionId)
 
@@ -130,6 +133,8 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
       agent={agent}
       onSendNow={() => void send('now')}
       hint={queueing ? t('queue.holdHint') : null}
+      tablet={layout !== 'compact'}
+      hints={keyboardHints({ pendingPermission: pendingPermissions > 0 }, t)}
       onKey={prompt.sendKey}
       keysDisabled={disabled}
       accessory={

@@ -4,15 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { Modal, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { makeStyles, radius, space } from '@/core/theme'
-import { formatElapsed } from '@/core/utils/time'
-import { useNow } from '@/core/utils/use-now'
-import { Badge, Button, Text } from '@/ui'
-import { sortSubagents, subagentCounts, subagentElapsed, subagentLabel } from './sort'
+import { Button, Text } from '@/ui'
+import { SubagentRows } from './SubagentRows'
+import { subagentCounts } from './sort'
 
-/**
- * Bottom sheet with a session's subagents, running first: label, state pill, elapsed time (live
- * while running, total once done) and tool count. A row opens that subagent's conversation.
- */
+/** Bottom sheet with a session's subagents (the same rows as the tablet inspector); a row opens the conversation. */
 export function SubagentsSheet({
   sessionId,
   subagents,
@@ -27,7 +23,6 @@ export function SubagentsSheet({
   const { t } = useTranslation()
   const styles = useStyles()
   const insets = useSafeAreaInsets()
-  const now = useNow(1_000)
   const { count, running } = subagentCounts(subagents)
   const open = (agentId: string) => {
     onClose()
@@ -48,38 +43,7 @@ export function SubagentsSheet({
             </Text>
           </View>
           <ScrollView style={styles.list} contentContainerStyle={styles.rows}>
-            {sortSubagents(subagents).map((sub) => {
-              const live = sub.state === 'running'
-              const elapsed = subagentElapsed(sub, now)
-              const detail = [
-                elapsed === null ? null : formatElapsed(elapsed),
-                sub.toolCount > 0 ? t('subagents.tools', { count: sub.toolCount }) : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')
-              return (
-                <Pressable
-                  key={sub.agentId}
-                  accessibilityRole="button"
-                  onPress={() => open(sub.agentId)}
-                  style={({ pressed }) => [styles.row, live && styles.live, pressed && styles.pressed]}
-                >
-                  <View style={styles.text}>
-                    <Text numberOfLines={1}>{subagentLabel(sub)}</Text>
-                    {detail ? (
-                      <Text size="xs" color={live ? 'accentText' : 'textMuted'} numberOfLines={1}>
-                        {detail}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Badge
-                    label={live ? t('subagents.state.running') : t('subagents.state.done')}
-                    tone={live ? 'accent' : 'muted'}
-                    dot={live}
-                  />
-                </Pressable>
-              )
-            })}
+            <SubagentRows subagents={subagents} onOpen={open} />
           </ScrollView>
           <Button label={t('common.close')} variant="ghost" onPress={onClose} />
         </Pressable>
@@ -104,18 +68,4 @@ const useStyles = makeStyles((theme) => ({
   header: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm, paddingBottom: space.xs },
   list: { flexGrow: 0 },
   rows: { gap: space.xs },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-  },
-  live: { borderColor: theme.colors.accent },
-  pressed: { opacity: 0.7 },
-  text: { flex: 1, gap: 2 },
 }))

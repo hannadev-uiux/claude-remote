@@ -589,6 +589,28 @@ const esES = {
     withPhotos_one: '+{{count}} foto',
     withPhotos_other: '+{{count}} fotos',
   },
+  tablet: {
+    sidebar: 'Mostrar sesiones',
+    inspector: 'Inspector',
+    terminal: 'Terminal',
+    subagents: 'Subagentes',
+    /** `n` es un número simple entre paréntesis, sin plural. */
+    subagentsCount: 'Subagentes ({{n}})',
+    details: 'Detalles',
+    noSubagents: 'No hay subagentes en esta sesión.',
+    resize: 'Cambiar el tamaño del inspector',
+  },
+  /** Etiquetas de la fila de atajos del teclado físico (cortas, en minúsculas). */
+  keys: {
+    queue: 'cola',
+    sendNow: 'enviar ahora',
+    session: 'sesión',
+    search: 'buscar',
+    terminal: 'terminal',
+    esc: 'esc',
+    mode: 'modo',
+    answer: 'responder',
+  },
   subagents: {
     title: 'Subagentes',
     summary_one: '{{count}} subagente',

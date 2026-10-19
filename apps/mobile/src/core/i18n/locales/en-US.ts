@@ -589,6 +589,28 @@ const enUS = {
     withPhotos_one: '+{{count}} photo',
     withPhotos_other: '+{{count}} photos',
   },
+  tablet: {
+    sidebar: 'Show sessions',
+    inspector: 'Inspector',
+    terminal: 'Terminal',
+    subagents: 'Subagents',
+    /** `n` is a plain number in parentheses, so no plural form applies. */
+    subagentsCount: 'Subagents ({{n}})',
+    details: 'Details',
+    noSubagents: 'No subagents in this session.',
+    resize: 'Resize the inspector',
+  },
+  /** Labels of the hardware keyboard hints row (short, lowercase). */
+  keys: {
+    queue: 'queue',
+    sendNow: 'send now',
+    session: 'session',
+    search: 'search',
+    terminal: 'terminal',
+    esc: 'esc',
+    mode: 'mode',
+    answer: 'answer',
+  },
   subagents: {
     title: 'Subagents',
     summary_one: '{{count}} subagent',

@@ -11,8 +11,10 @@ import type { AgentId } from '@/core/theme/agents'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
 import { composerPlaceholder } from '../composer-placeholder'
-import { keyboardToolbar } from '../keyboard-toolbar'
+import type { KeyboardHint } from '../keyboard-hints'
+import { hardwareKeyboard, keyboardToolbar } from '../keyboard-toolbar'
 import { hideKeyBar, releaseKeyBar, useKeyboardToolbarStore } from '../keyboard-toolbar-store'
+import { KeyboardHints } from './KeyboardHints'
 import { KeyboardToolbar } from './KeyboardToolbar'
 
 type Props = {
@@ -45,6 +47,12 @@ type Props = {
   onSendNow?: () => void
   /** Shown over the send button while the prompt would be queued (`Hold: send now · ⌘⏎`). */
   hint?: string | null
+  /**
+   * Tablet: with a hardware keyboard, Return sends instead of inserting a newline and the shortcut
+   * hints row shows under the field.
+   */
+  tablet?: boolean
+  hints?: KeyboardHint[]
 }
 
 // Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
@@ -71,6 +79,8 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
   const keyboardHeight = useKeyboardHeight()
   const expanded = useKeyboardToolbarStore((s) => s.expanded)
   const toolbar = keyboardToolbar({ os: Platform.OS, focused, keyboardHeight, expanded })
+  // Tablet with a hardware keyboard: Return sends and the shortcut hints show.
+  const hardware = (props.tablet ?? false) && hardwareKeyboard({ focused, keyboardHeight })
   const hidesKeyBar = props.onKey != null && toolbar.hideKeyBar
   const [owner] = useState(() => Symbol('composer'))
   // Layout effect: the key bar under the conversation leaves in the same frame the toolbar's keys
@@ -108,6 +118,8 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           onBlur={() => setFocused(false)}
           editable={!props.disabled}
           multiline
+          submitBehavior={hardware ? 'submit' : 'newline'}
+          onSubmitEditing={hardware && canSend ? props.onSend : undefined}
           placeholder={composerPlaceholder(props.agent ?? null, props.disabled, t)}
           placeholderTextColor={colors.textDim}
           autoCapitalize="none"
@@ -157,6 +169,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           ) : null}
         </LayoutAnimationConfig>
       </View>
+      {hardware && props.hints && props.hints.length > 0 ? <KeyboardHints hints={props.hints} /> : null}
       {props.onKey && toolbar.visible ? (
         <KeyboardToolbar
           onKey={props.onKey}
