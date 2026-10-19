@@ -114,6 +114,11 @@ const ptBR = {
     newMessages: '↓ novas mensagens',
     thinking: '✻ pensando…',
     unknownEntry: '· entrada desconhecida (toque para ver)',
+    task: {
+      label: 'Tarefa em segundo plano',
+      status: { completed: 'concluída', failed: 'falhou', stopped: 'interrompida', killed: 'encerrada' },
+    },
+    tagged: '· {{tag}} (toque para ver)',
     toolResult: 'resultado',
     noOutput: '(sem saída)',
     truncated: '… (truncado)',
