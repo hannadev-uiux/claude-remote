@@ -398,6 +398,7 @@ describe('client messages', () => {
       glyphs: ['⌘'],
       pending: { requestId: 'r1', tool: 'Bash', allow: 'Allow', deny: 'Deny' },
       hint: '',
+      tasks: '2 tasks running',
     }
     expect(LiveStatusPropsSchema.parse({ ...full, prompt: 'secret' })).toEqual(full)
     // The pending request carries identifiers and labels only.
@@ -442,6 +443,7 @@ describe('client messages', () => {
       glyphs: [],
       pending: null,
       hint: '',
+      tasks: '',
     })
   })
 

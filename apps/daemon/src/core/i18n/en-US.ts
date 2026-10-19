@@ -437,6 +437,8 @@ export const enUS = {
       permission: 'permission pending',
     },
     tools: (count: number) => (count === 1 ? '1 tool' : `${count} tools`),
+    /** Background tasks and running subagents of the session, shown when there is at least one. */
+    tasks: (count: number) => (count === 1 ? '1 task running' : `${count} tasks running`),
     /** Time since the state changed; the widget puts a live counter in `{time}`. */
     ago: '{time} ago',
     /** Lock screen buttons while a tool permission waits. */

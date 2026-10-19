@@ -9,6 +9,7 @@ import {
   initialLiveStatus,
   type LiveEvent,
   liveProps,
+  parallelTasks,
   planSend,
   reduceLiveStatus,
   STEP_INTERVAL_MS,
@@ -129,7 +130,10 @@ describe('live status reducer', () => {
       glyphs: ['·', '·', '·', '⌘'],
       pending: null,
       hint: '',
+      tasks: '',
     })
+    expect(liveProps({ ...status, tasks: 1 }, info, en).tasks).toBe('1 task running')
+    expect(liveProps({ ...status, tasks: 2 }, info, pt).tasks).toBe('2 tarefas rodando')
     expect(liveProps({ ...status, toolCount: 3 }, info, pt)).toMatchObject({
       status: 'Trabalhando',
       step: 'pensando',
@@ -137,6 +141,26 @@ describe('live status reducer', () => {
       recent: ['Pensando ×2', 'create_issue · usando uma ferramenta', 'Bash · executando um comando'],
       ago: 'há {time}',
     })
+  })
+
+  test('tasks in parallel: background tasks plus running subagents, kept across turns', () => {
+    const subagent = (state: 'running' | 'done') => ({ state }) as never
+    expect(parallelTasks({ backgroundTasks: 1, subagents: [subagent('running'), subagent('done')] })).toBe(2)
+    expect(parallelTasks({ backgroundTasks: 0, subagents: [] })).toBe(0)
+    let status = reduceLiveStatus(initialLiveStatus(1), { type: 'tasks', count: 2 }, 2)
+    expect(status.tasks).toBe(2)
+    status = reduceLiveStatus(status, { type: 'stop' }, 3)
+    // Background tasks outlive the turn: the done status still follows the count.
+    status = reduceLiveStatus(status, { type: 'tasks', count: 1 }, 4)
+    expect(status).toMatchObject({ state: 'done', tasks: 1 })
+    expect(reduceLiveStatus(status, { type: 'prompt' }, 5)).toMatchObject({ state: 'working', tasks: 1 })
+    // The session closing during the done window closes it (and ends the activity at once).
+    const closed = reduceLiveStatus(status, { type: 'end' }, 6)
+    expect(closed).toMatchObject({ state: 'closed', endedAt: 6 })
+    expect(reduceLiveStatus(closed, { type: 'tasks', count: 3 }, 7)).toBe(closed)
+    // A count change is throttled like a step.
+    const sent = initialLiveStatus(1)
+    expect(planSend(sent, { ...sent, tasks: 1 }, 1, 2)).toMatchObject({ when: 'later' })
   })
 
   test('folder and host names', () => {
@@ -263,6 +287,11 @@ describe('buildLiveMessage', () => {
     ).toBe(false)
     const named = { ...message, platform: 'android' as const, props: { ...props, session: 'Fix login' } }
     expect(buildLiveMessage(named).android?.notification.title).toBe('Fix login · Working')
+    // The finished turn can be swiped away while it waits; the body names the tasks in parallel.
+    const done = { ...message, platform: 'android' as const, props: { ...props, state: 'done' as const } }
+    expect(buildLiveMessage(done).android?.notification.sticky).toBe(false)
+    const tasks = { ...message, platform: 'android' as const, props: { ...props, tasks: '2 tasks running' } }
+    expect(buildLiveMessage(tasks).android?.notification.body).toBe('2 tasks running')
   })
 })
 
@@ -271,7 +300,7 @@ describe('LiveStatusService', () => {
     vi.useRealTimers()
   })
 
-  function setup(opts: { muted?: boolean; invalid?: boolean } = {}) {
+  function setup(opts: { muted?: boolean; invalid?: boolean; tasks?: { count: number } } = {}) {
     let now = 1_000
     let onEvent: ((event: LiveEvent) => void) | null = null
     const unfollow = vi.fn()
@@ -290,6 +319,7 @@ describe('LiveStatusService', () => {
       profileOf: () => 'p1',
       info: () => ({ title: 'Work', host: 'mac', session: 'Fix login', path: '~/app' }),
       isMuted: () => opts.muted ?? false,
+      ...(opts.tasks ? { tasksOf: () => opts.tasks?.count ?? 0 } : {}),
       follow: async (_sessionId, listener) => {
         onEvent = listener
         return unfollow
@@ -328,7 +358,7 @@ describe('LiveStatusService', () => {
     expect(sent.at(-1)?.props.palette).toBeUndefined()
   })
 
-  test('sends the state on register, throttles steps and ends on Stop', async () => {
+  test('sends the state on register, throttles steps and ends 15 minutes after Stop', async () => {
     vi.useFakeTimers()
     const { service, sent, unfollow, emit, advance } = setup()
     await service.register(register)
@@ -344,12 +374,67 @@ describe('LiveStatusService', () => {
     expect(sent.at(-1)?.props.state).toBe('waiting')
 
     service.handle('s1', { type: 'stop' })
+    // Done is an update: the activity stays, and so does the registration.
+    expect(sent.at(-1)).toMatchObject({ event: 'update', props: { state: 'done', hint: 'total' } })
+    expect(service.has('s1')).toBe(true)
+    advance(DONE_DISMISS_MS - 1)
+    expect(sent.at(-1)?.event).toBe('update')
+    advance(1)
     await vi.runAllTimersAsync()
     const last = sent.at(-1)!
     expect(last).toMatchObject({ event: 'end', props: { state: 'done' } })
-    expect(last.dismissAt).toBe(last.at + DONE_DISMISS_MS)
+    expect(last.dismissAt).toBe(last.at)
     expect(service.has('s1')).toBe(false)
     expect(unfollow).toHaveBeenCalled()
+  })
+
+  test('a new turn within the done window updates the same activity and is not ended', async () => {
+    vi.useFakeTimers()
+    const { service, sent, advance } = setup()
+    await service.register(register)
+    service.handle('s1', { type: 'stop' })
+    advance(5 * 60_000)
+    service.handle('s1', { type: 'prompt' })
+    expect(sent.at(-1)).toMatchObject({ event: 'update', activityToken: 'act', props: { state: 'working' } })
+    advance(DONE_DISMISS_MS)
+    await vi.runAllTimersAsync()
+    expect(sent.some((m) => m.event === 'end')).toBe(false)
+    expect(service.has('s1')).toBe(true)
+  })
+
+  test('re-registering a finished turn keeps it done and its window', async () => {
+    vi.useFakeTimers()
+    const { service, sent, advance } = setup()
+    await service.register(register)
+    service.handle('s1', { type: 'stop' })
+    advance(10 * 60_000)
+    // The app adopted the activity again after a restart.
+    await service.register(register)
+    expect(sent.at(-1)).toMatchObject({ event: 'update', props: { state: 'done' } })
+    advance(5 * 60_000)
+    await vi.runAllTimersAsync()
+    expect(sent.at(-1)?.event).toBe('end')
+  })
+
+  test('the task count comes with the registration and follows the session', async () => {
+    vi.useFakeTimers()
+    const tasks = { count: 2 }
+    const { service, sent, advance } = setup({ tasks })
+    await service.register(register)
+    expect(sent.at(-1)?.props.tasks).toBe('2 tasks running')
+    service.handle('s1', { type: 'tasks', count: 0 })
+    advance(STEP_INTERVAL_MS)
+    expect(sent.at(-1)?.props.tasks).toBe('')
+  })
+
+  test('a closed session still ends at once', async () => {
+    const { service, sent } = setup()
+    await service.register(register)
+    service.handle('s1', { type: 'end' })
+    await Promise.resolve()
+    expect(sent.at(-1)).toMatchObject({ event: 'end', props: { state: 'closed' } })
+    expect(sent.at(-1)?.dismissAt).toBe(sent.at(-1)?.at)
+    expect(service.has('s1')).toBe(false)
   })
 
   test('muted sessions get an immediate end and no more updates', async () => {

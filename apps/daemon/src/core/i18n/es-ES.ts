@@ -441,6 +441,7 @@ export const esES = {
       permission: 'permiso pendiente',
     },
     tools: (count: number) => (count === 1 ? '1 herramienta' : `${count} herramientas`),
+    tasks: (count: number) => (count === 1 ? '1 tarea en curso' : `${count} tareas en curso`),
     ago: 'hace {time}',
     allow: 'Permitir',
     deny: 'Denegar',

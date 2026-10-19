@@ -338,6 +338,8 @@ const esES = {
     title: 'Estado en vivo',
     hint: 'Mientras una sesión trabaja, síguela en la pantalla de bloqueo y en la Dynamic Island (iPhone) o en una notificación silenciosa (Android). Muestra el ordenador, el nombre y la carpeta de la sesión, el estado, los últimos tipos de paso y el tiempo, nunca la conversación en sí.',
     ago: 'hace {time}',
+    tasks_one: '{{count}} tarea en curso',
+    tasks_other: '{{count}} tareas en curso',
     enabled: 'Mostrar estado en vivo',
     channelName: 'Estado en vivo',
     channelDescription: 'Progreso de las sesiones mientras trabajan (silencioso).',

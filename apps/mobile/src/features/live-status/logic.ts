@@ -9,7 +9,10 @@ import type {
 import type { TFunction } from '../../core/i18n/create'
 import type { Theme } from '../../core/theme/palettes'
 
-/** A finished turn stays on the lock screen this long (same as the daemon's end). */
+/**
+ * A finished turn stays on the lock screen this long, as "done" (same window as the daemon); a new
+ * turn in that window reuses its activity.
+ */
 export const DONE_DISMISS_MS = 15 * 60_000
 
 export function liveStateFor(state: SessionState): LiveState {
@@ -71,13 +74,21 @@ export type LocalLiveInfo = {
   palette?: LivePalette
 }
 
+/** Tasks a session runs in parallel: its background tasks plus the subagents still running. */
+export function parallelTasks(session: Partial<Pick<Session, 'backgroundTasks' | 'subagents'>>): number {
+  return (
+    (session.backgroundTasks ?? 0) + (session.subagents ?? []).filter((s) => s.state === 'running').length
+  )
+}
+
 /** Props for an update made by the app itself (no steps: only the daemon follows the transcript). */
 export function localLiveProps(
-  session: Pick<Session, 'state' | 'title' | 'cwd'>,
+  session: Pick<Session, 'state' | 'title' | 'cwd'> & Partial<Pick<Session, 'backgroundTasks' | 'subagents'>>,
   info: LocalLiveInfo,
   t: TFunction,
 ): LiveStatusProps {
   const state = liveStateFor(session.state)
+  const tasks = parallelTasks(session)
   return {
     title: info.title,
     state,
@@ -95,7 +106,74 @@ export function localLiveProps(
     glyphs: [],
     pending: null,
     hint: '',
+    tasks: tasks > 0 ? t('liveStatus.tasks', { count: tasks }) : '',
     ...(info.palette ? { palette: info.palette } : {}),
+  }
+}
+
+/** Which Live Activity belongs to a session, persisted so restarts never lose track of it. */
+export type ActivityRecord = {
+  activityId: string
+  /** When the turn finished (the done window starts), epoch milliseconds; null while working. */
+  doneAt: number | null
+}
+export type ActivityMap = Record<string, ActivityRecord>
+
+export type Reconciled = {
+  /** Session id → activity id to keep tracking (and register again). */
+  adopt: Record<string, string>
+  /** Activities of the app to end now: unknown ones and those of sessions no longer live. */
+  end: string[]
+  /** The record to persist: only adopted activities. */
+  map: ActivityMap
+}
+
+/**
+ * Matches the activities iOS still has (`alive`) with the saved record. An activity is adopted when
+ * its session exists and is running or waiting, or is idle inside the done window (from `doneAt`,
+ * else the session's last change). Every other alive activity is ended: one live status per session.
+ */
+export function reconcileActivities(
+  map: Readonly<ActivityMap>,
+  alive: readonly string[],
+  sessions: Readonly<Record<string, Pick<Session, 'state' | 'updatedAt'>>>,
+  now: number,
+): Reconciled {
+  const aliveIds = new Set(alive)
+  const adopt: Record<string, string> = {}
+  const kept: ActivityMap = {}
+  const claimed = new Set<string>()
+  for (const [sessionId, record] of Object.entries(map)) {
+    if (!aliveIds.has(record.activityId) || claimed.has(record.activityId)) continue
+    const session = sessions[sessionId]
+    if (!session) continue
+    const live = session.state === 'running' || session.state === 'waiting'
+    const doneAt = record.doneAt ?? Date.parse(session.updatedAt)
+    const inWindow = session.state === 'idle' && Number.isFinite(doneAt) && now - doneAt < DONE_DISMISS_MS
+    if (!live && !inWindow) continue
+    adopt[sessionId] = record.activityId
+    kept[sessionId] = live ? { activityId: record.activityId, doneAt: null } : { ...record, doneAt }
+    claimed.add(record.activityId)
+  }
+  return { adopt, end: alive.filter((id) => !claimed.has(id)), map: kept }
+}
+
+/** The saved record, whatever was stored (unreadable → empty, malformed entries dropped). */
+export function parseActivityMap(raw: string | null): ActivityMap {
+  if (!raw) return {}
+  try {
+    const value: unknown = JSON.parse(raw)
+    if (!value || typeof value !== 'object') return {}
+    const map: ActivityMap = {}
+    for (const [sessionId, record] of Object.entries(value as Record<string, unknown>)) {
+      const r = record as Partial<ActivityRecord> | null
+      if (r && typeof r.activityId === 'string' && (typeof r.doneAt === 'number' || r.doneAt === null)) {
+        map[sessionId] = { activityId: r.activityId, doneAt: r.doneAt }
+      }
+    }
+    return map
+  } catch {
+    return {}
   }
 }
 
