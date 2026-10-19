@@ -144,10 +144,30 @@ describe('SubagentTracker', () => {
     // The hook may land before the last change event: the count is settled afterwards.
     await appendFile(file, `${toolLine}\n`)
     tracker!.handleHook(hookEvent('SubagentStop', { session_id: 'sess', agent_id: 't1' }))
-    await waitFor(() => store.get('sess')?.subagents.find((s) => s.agentId === 't1')?.toolCount === total + 2)
+    await waitFor(() => {
+      const sub = store.get('sess')?.subagents.find((s) => s.agentId === 't1')
+      return sub?.toolCount === total + 2 && sub.state === 'done'
+    })
     expect(store.get('sess')?.subagents.find((s) => s.agentId === 't1')).toMatchObject({
       state: 'done',
       startedAt: first?.startedAt,
+    })
+  })
+
+  test('a transcript read in flight when SubagentStop lands never flips the subagent back to running', async () => {
+    const { store, add, dir } = setup()
+    add()
+    await mkdir(dir, { recursive: true })
+    const lines = (await readFile(fixture, 'utf8')).split('\n').filter(Boolean)
+    await writeFile(join(dir, 'agent-t2.jsonl'), `${lines.join('\n')}\n`)
+    await tracker!.touch('sess', 't2')
+    // `touch` has read the running record and is awaiting the transcript when the hook arrives.
+    const inFlight = tracker!.touch('sess', 't2')
+    tracker!.handleHook(hookEvent('SubagentStop', { session_id: 'sess', agent_id: 't2' }))
+    await inFlight
+    expect(store.get('sess')?.subagents.find((s) => s.agentId === 't2')).toMatchObject({
+      state: 'done',
+      toolCount: countToolUses(lines),
     })
   })
 
