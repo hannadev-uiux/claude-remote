@@ -295,6 +295,32 @@ export const ptBR: WebMessages = {
     version: 'Instalando `{{ref}}` em vez da última versão.',
     next: 'Passo a passo, com o que fazer depois do setup: [primeiros passos]({{docs}}).',
   },
+  appLink: {
+    title: 'Instalar o app',
+    lead: 'O Remote Harness para o seu celular, compilado e publicado do seu computador.',
+    version: 'Versão {{version}} ({{build}}) · {{date}}',
+    notPublished: 'Ainda não publicado.',
+    size: '{{size}} MB',
+    ios: {
+      title: 'iPhone e iPad',
+      install: 'Instalar',
+      registered:
+        'Só iPhones e iPads cadastrados no time de desenvolvedor instalam este build. Abra esta página no Safari.',
+      developerMode:
+        'Na primeira vez, o iOS pede para ligar o Modo de Desenvolvedor: Ajustes → Privacidade e Segurança → Modo de Desenvolvedor, e reiniciar.',
+    },
+    android: {
+      title: 'Android',
+      download: 'Baixar o APK',
+      unknownApps:
+        'O navegador pede para permitir a instalação de apps desconhecidos (Configurações → Apps → Acesso especial → Instalar apps desconhecidos). Depois abra o arquivo baixado.',
+      updates: 'Um APK mais novo instala por cima do anterior e mantém o pareamento.',
+    },
+    qr: 'Aponte a câmera do celular para abrir esta página nele.',
+    qrLabel: 'QR code desta página',
+    showAll: 'Não é o seu aparelho? Mostrar todas as opções',
+    private: 'Link privado: quem tiver o link baixa estes builds. Não publique em lugar aberto.',
+  },
   notFound: {
     title: 'Página não encontrada',
     body: 'Não há nada neste endereço. A página inicial explica o app; o repositório tem o código e a documentação.',

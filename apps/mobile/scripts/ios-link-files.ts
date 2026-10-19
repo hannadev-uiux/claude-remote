@@ -111,9 +111,3 @@ export function servedFile(url: string): { name: string; type: string } | undefi
   const type = SERVED[name]
   return type ? { name, type } : undefined
 }
-
-/** Install pages published on the web (`IOS_LINK=web`): a Worker serves them from R2. */
-export const WEB_BASE = 'https://remoteharness.app/ios'
-export const WEB_BUCKET = 'remote-harness-ios'
-/** The token is the only protection of the web link (the IPA embeds the registered device IDs). */
-export const WEB_TOKEN = /^[A-Za-z0-9_-]{24,64}$/
