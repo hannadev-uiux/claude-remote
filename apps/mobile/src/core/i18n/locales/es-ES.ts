@@ -727,7 +727,44 @@ const esES = {
       'Las actualizaciones por aire están desactivadas en este build: instala un build nuevo para actualizar.',
     daemonOutdated:
       'El ordenador ejecuta Remote Harness {{version}}; esta app necesita la {{minimum}} o más reciente. En el ordenador, ejecuta `remote-harness update`.',
+    daemonOutdatedApp:
+      'El ordenador ejecuta Remote Harness {{version}}; esta app necesita la {{minimum}} o más nueva. Actualízalo en Ajustes → Ordenador.',
     dismiss: 'Descartar',
+  },
+  daemonUpdate: {
+    title: 'Ordenador',
+    version: 'daemon',
+    channel: 'canal',
+    channels: { main: 'estable', development: 'development' },
+    check: 'Buscar actualizaciones',
+    update: 'Actualizar el ordenador',
+    checking: 'Buscando una versión nueva…',
+    upToDate: 'El daemon está actualizado.',
+    available: 'La {{version}} está disponible.',
+    older: 'La {{version}} está disponible: una versión anterior, porque el canal cambió.',
+    steps: {
+      fetching: 'Descargando la versión nueva… (1/3)',
+      building: 'Compilando… (2/3)',
+      restarting: 'Reiniciando el daemon… (3/3)',
+    },
+    updated: 'Actualizado a la {{version}}.',
+    failed: 'La actualización falló: {{error}}.',
+    rolledBack: '{{Machine}} volvió a la {{version}} y sigue funcionando.',
+    blocked: {
+      'not-built': 'El daemon funciona desde el código fuente: actualízalo allí (git pull y un build).',
+      'not-installer':
+        'El daemon funciona desde un clon de desarrollo: actualízalo allí (git pull y un build).',
+      'no-service':
+        'El daemon no funciona como servicio en segundo plano y no puede reiniciarse: ejecuta `remote-harness update` en {{machine}}.',
+    },
+    unsupported:
+      'Este daemon se actualiza desde el ordenador: ejecuta `remote-harness update` en {{machine}}.',
+    confirmTitle: '¿Actualizar {{machine}}?',
+    confirmBody:
+      'El daemon se reinicia y la app se reconecta en un minuto aproximadamente. Las sesiones siguen en tmux.',
+    confirmOlder: 'Esto instala la {{version}}, anterior a la {{current}}, porque el canal cambió.',
+    confirmBusy: 'Hay una sesión en marcha o esperándote ahora mismo.',
+    confirm: 'Actualizar',
   },
   terminal: {
     space: 'espacio',

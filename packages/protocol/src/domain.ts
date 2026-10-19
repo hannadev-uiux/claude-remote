@@ -509,3 +509,47 @@ export const ErrorCodeSchema = z.enum([
   'internal',
 ])
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>
+
+/** Branches the daemon's installer can follow: `main` (stable) or `development`. */
+export const DaemonUpdateChannelSchema = z.enum(['main', 'development'])
+export type DaemonUpdateChannel = z.infer<typeof DaemonUpdateChannelSchema>
+
+/** Steps of a daemon update run; `done` and `failed` are final. */
+export const DaemonUpdateStepSchema = z.enum(['fetching', 'building', 'restarting', 'done', 'failed'])
+export type DaemonUpdateStep = z.infer<typeof DaemonUpdateStepSchema>
+
+/** One `remote-harness update` run, wherever it was started (app, tray, terminal). */
+export const DaemonUpdateRunSchema = z.object({
+  channel: DaemonUpdateChannelSchema,
+  /** Version that was running when the run started. */
+  from: z.string(),
+  /** Version installed (known once fetched; the running one when done). */
+  to: z.string().nullable(),
+  commit: z.string().nullable(),
+  step: DaemonUpdateStepSchema,
+  error: z.string().optional(),
+  /** The build failed and the previous version was rebuilt. */
+  rolledBack: z.boolean().optional(),
+  startedAt: z.string(),
+  finishedAt: z.string().nullable(),
+})
+export type DaemonUpdateRun = z.infer<typeof DaemonUpdateRunSchema>
+
+/** Why this daemon cannot update itself: run from sources, a development clone, no service manager. */
+export const DaemonUpdateBlockerSchema = z.enum(['not-built', 'not-installer', 'no-service'])
+export type DaemonUpdateBlocker = z.infer<typeof DaemonUpdateBlockerSchema>
+
+export const DaemonUpdateInfoSchema = z.object({
+  current: z.string(),
+  channel: DaemonUpdateChannelSchema,
+  checkedAt: z.string().nullable(),
+  checking: z.boolean(),
+  available: z
+    .object({ version: z.string().nullable(), commit: z.string(), downgrade: z.boolean() })
+    .nullable(),
+  blocked: DaemonUpdateBlockerSchema.nullable(),
+  /** A session is running or waiting, or a permission is pending (the restart interrupts the app). */
+  busy: z.boolean(),
+  run: DaemonUpdateRunSchema.nullable(),
+})
+export type DaemonUpdateInfo = z.infer<typeof DaemonUpdateInfoSchema>

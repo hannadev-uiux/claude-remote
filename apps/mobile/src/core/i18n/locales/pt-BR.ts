@@ -725,7 +725,42 @@ const ptBR = {
     disabled: 'As atualizações pelo ar estão desligadas neste build: instale um build novo para atualizar.',
     daemonOutdated:
       'O computador roda o Remote Harness {{version}}; este app precisa da {{minimum}} ou mais nova. No computador, rode `remote-harness update`.',
+    daemonOutdatedApp:
+      'O computador roda o Remote Harness {{version}}; este app precisa da {{minimum}} ou mais nova. Atualize em Ajustes → Computador.',
     dismiss: 'Dispensar',
+  },
+  daemonUpdate: {
+    title: 'Computador',
+    version: 'daemon',
+    channel: 'canal',
+    channels: { main: 'estável', development: 'development' },
+    check: 'Procurar atualizações',
+    update: 'Atualizar o computador',
+    checking: 'Procurando uma versão nova…',
+    upToDate: 'O daemon está atualizado.',
+    available: 'A {{version}} está disponível.',
+    older: 'A {{version}} está disponível: uma versão anterior, porque o canal mudou.',
+    steps: {
+      fetching: 'Baixando a versão nova… (1/3)',
+      building: 'Compilando… (2/3)',
+      restarting: 'Reiniciando o daemon… (3/3)',
+    },
+    updated: 'Atualizado para a {{version}}.',
+    failed: 'A atualização falhou: {{error}}.',
+    rolledBack: '{{Machine}} voltou para a {{version}} e continua funcionando.',
+    blocked: {
+      'not-built': 'O daemon roda a partir do código-fonte: atualize por lá (git pull e um build).',
+      'not-installer': 'O daemon roda de um clone de desenvolvimento: atualize por lá (git pull e um build).',
+      'no-service':
+        'O daemon não roda como serviço em segundo plano e não consegue se reiniciar: rode `remote-harness update` em {{machine}}.',
+    },
+    unsupported: 'Este daemon se atualiza pelo computador: rode `remote-harness update` em {{machine}}.',
+    confirmTitle: 'Atualizar {{machine}}?',
+    confirmBody:
+      'O daemon reinicia e o app reconecta em cerca de um minuto. As sessões continuam rodando no tmux.',
+    confirmOlder: 'Isto instala a {{version}}, anterior à {{current}}, porque o canal mudou.',
+    confirmBusy: 'Há uma sessão rodando ou esperando por você agora.',
+    confirm: 'Atualizar',
   },
   terminal: {
     space: 'espaço',

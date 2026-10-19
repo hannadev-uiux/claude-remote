@@ -84,4 +84,15 @@ export class SourceUpdater {
   async checkout(): Promise<boolean> {
     return (await this.git(['checkout', '--quiet', '--detach', 'FETCH_HEAD'])).exitCode === 0
   }
+
+  /** The checked-out commit, or null. */
+  async head(): Promise<string | null> {
+    const result = await this.git(['rev-parse', 'HEAD'])
+    return result.exitCode === 0 ? result.stdout.trim() || null : null
+  }
+
+  /** Back to `commit` after a failed update (discarding what the failed build left in tracked files). */
+  async restore(commit: string): Promise<boolean> {
+    return (await this.git(['checkout', '--quiet', '--force', '--detach', commit])).exitCode === 0
+  }
 }

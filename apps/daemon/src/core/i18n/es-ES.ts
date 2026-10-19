@@ -152,6 +152,9 @@ export const esES = {
       dirty: (dir: string) => `${dir} tiene cambios locales. Haz commit o descártalos y vuelve a ejecutarlo.`,
       fetchFailed: (error: string) => `No pude descargar la versión nueva: ${error}`,
       checkoutFailed: 'No pude cambiar a la versión nueva.',
+      rolledBack: (version: string) =>
+        `Volví a la ${version} y la recompilé: el ordenador queda como estaba.`,
+      rollBackFailed: 'No pude volver a la versión anterior: ejecuta `remote-harness update` de nuevo.',
       upToDate: (version: string, commit: string) => `Ya está actualizado (${version}, ${commit}).`,
       available: (version: string, commit: string) => `Versión nueva: ${version} (${commit})`,
       failed:

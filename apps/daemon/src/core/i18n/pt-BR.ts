@@ -151,6 +151,9 @@ export const ptBR = {
       dirty: (dir: string) => `${dir} tem mudanças locais. Faça commit ou descarte e rode de novo.`,
       fetchFailed: (error: string) => `Não consegui baixar a versão nova: ${error}`,
       checkoutFailed: 'Não consegui trocar para a versão nova.',
+      rolledBack: (version: string) =>
+        `Voltei para a ${version} e recompilei: o computador fica como estava.`,
+      rollBackFailed: 'Não consegui voltar para a versão anterior: rode `remote-harness update` de novo.',
       upToDate: (version: string, commit: string) => `Já está atualizado (${version}, ${commit}).`,
       available: (version: string, commit: string) => `Versão nova: ${version} (${commit})`,
       failed: 'A atualização falhou (veja acima). A versão anterior continua rodando até o próximo reinício.',

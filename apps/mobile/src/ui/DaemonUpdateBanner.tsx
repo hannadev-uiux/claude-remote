@@ -11,12 +11,17 @@ export function DaemonUpdateBanner() {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const version = useConnectionStore((s) => s.hello?.daemonVersion)
+  // Daemons that update from the app point there instead of the terminal.
+  const fromApp = useConnectionStore((s) => Boolean(s.hello?.update))
   const dismissed = useUpdatesStore((s) => s.dismissedDaemonVersion)
   if (!version || version === dismissed || !daemonOutdated(version, MIN_DAEMON_VERSION)) return null
   return (
     <View style={[styles.base, { backgroundColor: colors.infoSoft }]}>
       <Text size="xs" color="info" style={styles.text}>
-        {t('updates.daemonOutdated', { version, minimum: MIN_DAEMON_VERSION })}
+        {t(fromApp ? 'updates.daemonOutdatedApp' : 'updates.daemonOutdated', {
+          version,
+          minimum: MIN_DAEMON_VERSION,
+        })}
       </Text>
       <Pressable
         accessibilityRole="button"

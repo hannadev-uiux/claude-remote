@@ -153,6 +153,9 @@ export const enUS = {
       dirty: (dir: string) => `${dir} has local changes. Commit or discard them and run again.`,
       fetchFailed: (error: string) => `Could not fetch the new version: ${error}`,
       checkoutFailed: 'Could not switch to the new version.',
+      rolledBack: (version: string) =>
+        `Went back to ${version} and rebuilt it: the computer stays as it was.`,
+      rollBackFailed: 'Could not go back to the previous version: run `remote-harness update` again.',
       upToDate: (version: string, commit: string) => `Already up to date (${version}, ${commit}).`,
       available: (version: string, commit: string) => `New version: ${version} (${commit})`,
       failed: 'Update failed (see above). The previous version keeps running until the next restart.',

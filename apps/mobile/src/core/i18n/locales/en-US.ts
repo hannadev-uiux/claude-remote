@@ -727,7 +727,42 @@ const enUS = {
     disabled: 'Over-the-air updates are off in this build: install a new build to update.',
     daemonOutdated:
       'The computer runs Remote Harness {{version}}; this app needs {{minimum}} or newer. On the computer, run `remote-harness update`.',
+    daemonOutdatedApp:
+      'The computer runs Remote Harness {{version}}; this app needs {{minimum}} or newer. Update it in Settings → Computer.',
     dismiss: 'Dismiss',
+  },
+  daemonUpdate: {
+    title: 'Computer',
+    version: 'daemon',
+    channel: 'channel',
+    channels: { main: 'stable', development: 'development' },
+    check: 'Check for updates',
+    update: 'Update the computer',
+    checking: 'Checking for a new version…',
+    upToDate: 'The daemon is up to date.',
+    available: '{{version}} is available.',
+    older: '{{version}} is available: an older version, because the channel changed.',
+    steps: {
+      fetching: 'Fetching the new version… (1/3)',
+      building: 'Building it… (2/3)',
+      restarting: 'Restarting the daemon… (3/3)',
+    },
+    updated: 'Updated to {{version}}.',
+    failed: 'The update failed: {{error}}.',
+    rolledBack: '{{Machine}} went back to {{version}} and keeps working.',
+    blocked: {
+      'not-built': 'The daemon runs from the source code: update it there (git pull and a build).',
+      'not-installer': 'The daemon runs from a development clone: update it there (git pull and a build).',
+      'no-service':
+        'The daemon is not running as a background service, so it cannot restart itself: run `remote-harness update` on {{machine}}.',
+    },
+    unsupported: 'This daemon updates from the computer: run `remote-harness update` on {{machine}}.',
+    confirmTitle: 'Update {{machine}}?',
+    confirmBody:
+      'The daemon restarts and the app reconnects in about a minute. Sessions keep running in tmux.',
+    confirmOlder: 'This installs {{version}}, older than {{current}}, because the channel changed.',
+    confirmBusy: 'A session is running or waiting for you right now.',
+    confirm: 'Update',
   },
   terminal: {
     space: 'space',

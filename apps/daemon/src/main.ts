@@ -1,4 +1,9 @@
-import { PROTOCOL_VERSION, type Profile, type PushMode } from '@remote-harness/protocol'
+import {
+  type DaemonUpdateChannel,
+  PROTOCOL_VERSION,
+  type Profile,
+  type PushMode,
+} from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
 import { type Config, loadConfig, resolveProfiles } from './core/config.ts'
@@ -30,7 +35,11 @@ import { registerSessionsFeature } from './features/sessions/index.ts'
 import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
-import { type DesktopOptions, registerUpdatesFeature } from './features/updates/index.ts'
+import {
+  type DesktopOptions,
+  registerBlockedRemoteUpdates,
+  registerUpdatesFeature,
+} from './features/updates/index.ts'
 import type { Executor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolvePlatform } from './infra/platform.ts'
@@ -204,6 +213,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),
       push: { mode: features.pushMode() },
+      update: { channel: features.updateChannel() },
     }),
   })
   const wsAddress = wss.address()
@@ -233,7 +243,7 @@ async function registerFeatures(
   ctx: DaemonContext,
   desktop: DesktopOptions | undefined,
   sleepInhibitor: SleepInhibitor | null,
-): Promise<{ mute: MuteStore; pushMode: () => PushMode }> {
+): Promise<{ mute: MuteStore; pushMode: () => PushMode; updateChannel: () => DaemonUpdateChannel }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
   const transcript = registerTranscriptFeature(ctx, sessions.store, (id, at) =>
     sessions.service.noteActivity(id, at),
@@ -264,8 +274,9 @@ async function registerFeatures(
     isMuted,
     follow: transcript.follow,
   })
+  let updateChannel = () => ctx.config.update.channel
   if (desktop) {
-    await registerUpdatesFeature(ctx, {
+    const updates = await registerUpdatesFeature(ctx, {
       store: sessions.store,
       hasPendingPermission: (id) => permissions.broker.hasPending(id),
       options: desktop,
@@ -285,10 +296,13 @@ async function registerFeatures(
         closeSession: (id) => lifecycle.closer.close(id),
       },
     })
+    updateChannel = updates.channel
+  } else {
+    await registerBlockedRemoteUpdates(ctx)
   }
   await sessions.start()
   registerPowerFeature(ctx, sessions.store, sleepInhibitor)
   // After the sessions, so prompts queued for sessions that ended meanwhile are dropped.
   await queue.service.load().catch((error) => ctx.logger.warn({ err: error }, 'queue restore failed'))
-  return { mute: mute.store, pushMode: push.mode }
+  return { mute: mute.store, pushMode: push.mode, updateChannel: () => updateChannel() }
 }
