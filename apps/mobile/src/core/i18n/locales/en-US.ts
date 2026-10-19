@@ -118,6 +118,11 @@ const enUS = {
     newMessages: '↓ new messages',
     thinking: '✻ thinking…',
     unknownEntry: '· unknown entry (tap to see)',
+    task: {
+      label: 'Background task',
+      status: { completed: 'completed', failed: 'failed', stopped: 'stopped', killed: 'killed' },
+    },
+    tagged: '· {{tag}} (tap to see)',
     toolResult: 'result',
     noOutput: '(no output)',
     truncated: '… (truncated)',

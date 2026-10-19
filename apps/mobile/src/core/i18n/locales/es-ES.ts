@@ -114,6 +114,11 @@ const esES = {
     newMessages: '↓ mensajes nuevos',
     thinking: '✻ pensando…',
     unknownEntry: '· entrada desconocida (toca para verla)',
+    task: {
+      label: 'Tarea en segundo plano',
+      status: { completed: 'completada', failed: 'falló', stopped: 'detenida', killed: 'terminada' },
+    },
+    tagged: '· {{tag}} (toca para ver)',
     toolResult: 'resultado',
     noOutput: '(sin salida)',
     truncated: '… (truncado)',

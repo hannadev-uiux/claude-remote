@@ -242,6 +242,12 @@ export const TranscriptEntrySchema = z.discriminatedUnion('kind', [
     text: z.string(),
     /** `turn_duration` only: lets the app write the text in its own language. */
     durationMs: z.number().optional(),
+    /** `task_notification` only: `completed`, `failed`, `stopped`, `killed` or another value. */
+    status: z.string().optional(),
+    /** `task_notification` only: extra explanation, when Claude Code gives one. */
+    note: z.string().optional(),
+    /** `tagged` only: the first tag name of an entry made of tags the daemon does not know. */
+    tag: z.string().optional(),
   }),
   z.object({ ...entryBase, kind: z.literal('unknown'), raw: z.string() }),
 ])

@@ -7,6 +7,7 @@ import {
   base64Bytes,
   findImage,
   MAX_TOOL_RESULT_CHARS,
+  onlyTagsName,
   parseImageId,
   parseMetaLine,
   parseTranscriptLine,
@@ -99,6 +100,86 @@ describe('parser', () => {
     })
     expect(parseMetaLine('{"type":"custom-title","customTitle":"T"}')).toEqual({ customTitle: 'T' })
     expect(parseMetaLine('{"type":"user"}')).toBeNull()
+  })
+})
+
+describe('tagged user entries', () => {
+  const user = (content: unknown) =>
+    JSON.stringify({ type: 'user', uuid: 'u', message: { role: 'user', content } })
+  const notification = [
+    '<task-notification>',
+    '<task-id>t1</task-id>',
+    '<tool-use-id>toolu_1</tool-use-id>',
+    '<output-file>/tmp/example/tasks/t1.output</output-file>',
+    '<status>stopped</status>',
+    '<summary>Background agent "Review" didn\'t finish before the previous session ended</summary>',
+    '<result>long result</result>',
+    '<usage><total_tokens>10</total_tokens></usage>',
+    '<note>No completion record was found for it.</note>',
+    '</task-notification>',
+  ].join('\n')
+
+  test('a task notification is a system entry with status, summary and note only', () => {
+    const [entry, ...rest] = parseTranscriptLine(user(notification), 0)
+    expect(rest).toEqual([])
+    expect(entry).toMatchObject({
+      kind: 'system',
+      subtype: 'task_notification',
+      status: 'stopped',
+      text: 'Background agent "Review" didn\'t finish before the previous session ended',
+      note: 'No completion record was found for it.',
+    })
+    const json = JSON.stringify(entry)
+    for (const hidden of ['/tmp/example', 'toolu_1', 'long result', 'total_tokens'])
+      expect(json).not.toContain(hidden)
+  })
+
+  test('several notifications in one entry, in a text part, without a note', () => {
+    const done = '<task-notification><status>completed</status><summary>Done</summary></task-notification>'
+    const entries = parseTranscriptLine(user([{ type: 'text', text: `${done}\n${notification}` }]), 0)
+    expect(entries.map((e) => e.kind === 'system' && e.status)).toEqual(['completed', 'stopped'])
+    expect(entries[0]).not.toHaveProperty('note')
+  })
+
+  test('a notification without a summary shows its status', () => {
+    const [entry] = parseTranscriptLine(
+      user('<task-notification><status>failed</status></task-notification>'),
+      0,
+    )
+    expect(entry).toMatchObject({ subtype: 'task_notification', status: 'failed', text: 'failed' })
+  })
+
+  test('shell commands run with ! are system entries', () => {
+    expect(parseTranscriptLine(user('<bash-input>git status</bash-input>'), 0)[0]).toMatchObject({
+      kind: 'system',
+      subtype: 'bash_input',
+      text: 'git status',
+    })
+    const output = '<bash-stdout>On branch main\n</bash-stdout><bash-stderr>warning: x</bash-stderr>'
+    expect(parseTranscriptLine(user(output), 0)[0]).toMatchObject({
+      subtype: 'bash_output',
+      text: 'On branch main\nwarning: x',
+    })
+    expect(parseTranscriptLine(user('<bash-stdout></bash-stdout><bash-stderr></bash-stderr>'), 0)).toEqual([])
+  })
+
+  test('unknown entries made only of tags are tagged system entries, not prompts', () => {
+    const raw = '<new-thing>\n<detail a="1">x</detail>\n</new-thing>\n<other>y</other>\n'
+    expect(parseTranscriptLine(user(raw), 0)[0]).toMatchObject({
+      kind: 'system',
+      subtype: 'tagged',
+      tag: 'new-thing',
+      text: raw.trim(),
+    })
+    expect(parseTranscriptLine(user('use <b>bold</b> here'), 0)[0]).toMatchObject({ kind: 'user' })
+  })
+
+  test('onlyTagsName', () => {
+    expect(onlyTagsName('<a>1</a> <b-2 x="y">2</b-2>')).toBe('a')
+    expect(onlyTagsName('<a>1</a> trailing')).toBeNull()
+    expect(onlyTagsName('<a>never closed')).toBeNull()
+    expect(onlyTagsName('plain')).toBeNull()
+    expect(onlyTagsName(`${'<a>x</a>'.repeat(5_000)}junk`)).toBeNull()
   })
 })
 
