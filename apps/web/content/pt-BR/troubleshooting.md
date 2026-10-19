@@ -29,6 +29,10 @@ O daemon só escuta num endereço 100.x. Se o `doctor` disser que não há nenhu
 
 O daemon só funciona com o computador acordado. Num MacBook, deixe na tomada e desative a suspensão com energia ligada, ou use `caffeinate`; no Linux confira os ajustes de energia. Bloquear a tela não atrapalha. As sessões no tmux sobrevivem a uma desconexão do app e reconectam quando ele volta.
 
+## O macOS pede acesso a pastas
+
+Na primeira vez que uma sessão trabalha em Documentos, Mesa, Downloads ou num disco externo, o macOS pergunta se o **Remote Harness** pode acessar essa pasta: permita uma vez e vale de vez, também depois de `remote-harness update`. Para não ter um pedido por pasta, adicione o Remote Harness em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco. Se o pedido mostrar **node**, faltam as Command Line Tools: rode `xcode-select --install` e depois `remote-harness service install` (o `doctor` mostra essa verificação).
+
 ## As sessões estão somente leitura
 
 Uma sessão aberta com `claude` puro fora do tmux aparece no app mas não aceita digitação. Toque em **Retomar** para reabri-la dentro do tmux, totalmente controlável, com o mesmo histórico. Abra as sessões sempre pelo seu alias para evitar isso.

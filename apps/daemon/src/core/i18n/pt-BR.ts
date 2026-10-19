@@ -72,6 +72,12 @@ export const ptBR = {
       runProviderKey: (id: string) => `rode \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
+      launcherNative: 'pedidos de acesso a pastas mostram "Remote Harness"',
+      launcherScript: 'pedidos de acesso a pastas mostram "node" (sem launcher compilado)',
+      launcherHint:
+        'instale as Command Line Tools (`xcode-select --install`) e rode `remote-harness service install`',
+      fullDiskAccess:
+        'dica: para não ter um pedido por pasta, adicione "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco',
       linger: 'lingering (o serviço continua rodando após o logout)',
       lingerHint: 'rode `loginctl enable-linger $USER`',
       devices: (platforms: string) => `celulares registrados para push: ${platforms}`,
@@ -361,6 +367,10 @@ export const ptBR = {
     mirroredAlready: (path: string) => `networkingMode=mirrored já estava em ${path}`,
     mirroredNoConfig:
       '  Não encontrei o %UserProfile%\\.wslconfig (a interoperabilidade com o Windows está desligada?). Adicione [wsl2] networkingMode=mirrored nele à mão.',
+  },
+  bundle: {
+    folderAccess:
+      'O Remote Harness roda as sessões do seu agente de código nesta pasta e precisa ler e gravar os arquivos dela.',
   },
   machine: { darwin: 'Mac', linux: 'computador' },
   profiles: {

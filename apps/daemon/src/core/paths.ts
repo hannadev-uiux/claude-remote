@@ -66,5 +66,9 @@ export const paths = {
   /** Compiled tray helper (macOS). */
   tray: () => join(dataHome(), 'tray'),
   /** App bundle launched by the LaunchAgent (gives the background item its name and icon). */
-  app: () => join(dataHome(), 'Claude Remote.app'),
+  app: () => join(dataHome(), 'Remote Harness.app'),
+  /** Bundle written by versions before the rename; removed when the service is (un)installed. */
+  legacyApp: () => join(dataHome(), 'Claude Remote.app'),
+  /** Compiled launcher of the app bundle (macOS), by source hash. */
+  launcher: () => join(dataHome(), 'launcher'),
 }
