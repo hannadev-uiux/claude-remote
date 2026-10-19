@@ -14,7 +14,7 @@ Self-hosted: a small daemon on your computer, a native app on your phone, a priv
 ![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000020.svg)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-98C379.svg)](CONTRIBUTING.md)
 
-[Português](README.pt-BR.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Documentation](https://remoteharness.app/docs/) · [Português](README.pt-BR.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 </div>
 

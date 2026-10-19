@@ -1,4 +1,6 @@
 import { env } from 'cloudflare:workers'
+import { isDocSlug, negotiatedDocPath } from './docs/content.ts'
+import { renderDoc } from './docs/page.ts'
 import { pickLocale } from './i18n/locale.ts'
 import { renderLanding, renderNotFound } from './landing.ts'
 import { route } from './routes.ts'
@@ -46,10 +48,21 @@ export default {
     if (target.kind === 'robots') return file(robotsTxt(), 'text/plain; charset=utf-8')
     if (target.kind === 'favicon') return file(faviconSvg(), 'image/svg+xml')
     const negotiated = pickLocale(request.headers.get('accept-language'))
+    const notFound = () => page(renderNotFound(negotiated), 404, negotiated, true)
     if (target.kind === 'page') {
       const locale = target.locale ?? negotiated
       return page(renderLanding(locale, target.locale ? undefined : '/'), 200, locale, target.locale === null)
     }
-    return page(renderNotFound(negotiated), 404, negotiated, true)
+    if (target.kind === 'doc') {
+      if (!isDocSlug(target.slug)) return notFound()
+      const locale = target.locale ?? negotiated
+      const html = renderDoc(
+        locale,
+        target.slug,
+        target.locale ? {} : { path: negotiatedDocPath(target.slug) },
+      )
+      return html ? page(html, 200, locale, target.locale === null) : notFound()
+    }
+    return notFound()
   },
 } satisfies ExportedHandler

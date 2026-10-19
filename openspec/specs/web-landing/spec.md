@@ -32,7 +32,7 @@ The Worker SHALL render the page in pt-BR, en-US or es-ES. `/` SHALL pick the la
 - **THEN** the page comes in en-US
 
 ### Requirement: Discoverability
-Each page SHALL have a translated `<title>` and meta description, Open Graph and Twitter card tags (type, title, description, URL, image `docs/brand/og.png`, locale), and a favicon (the mark as SVG at `/favicon.svg`, also served at `/favicon.ico`). The Worker SHALL serve `/sitemap.xml` listing `/`, `/en/`, `/pt-br/` and `/es/`, and `/robots.txt` allowing everything and naming the sitemap.
+Each page SHALL have a translated `<title>` and meta description, Open Graph and Twitter card tags (type, title, description, URL, image `docs/brand/og.png`, locale), and a favicon (the mark as SVG at `/favicon.svg`, also served at `/favicon.ico`). The Worker SHALL serve `/sitemap.xml` listing `/`, `/en/`, `/pt-br/`, `/es/` and every documentation page in every language, and `/robots.txt` allowing everything and naming the sitemap.
 
 #### Scenario: Social preview
 - **WHEN** a chat app unfurls `https://remoteharness.app/pt-br/`
@@ -40,7 +40,7 @@ Each page SHALL have a translated `<title>` and meta description, Open Graph and
 
 #### Scenario: Sitemap
 - **WHEN** a crawler fetches `/sitemap.xml`
-- **THEN** it receives XML with the four URLs
+- **THEN** it receives XML with the four landing URLs and the docs pages
 
 ### Requirement: Install section
 The install section SHALL show the install command per operating system in tabs (macOS · Linux with `curl -fsSL https://remoteharness.app/install.sh | bash`, Windows with `irm https://remoteharness.app/install.ps1 | iex`), each with a copy button, the Windows tab preselected on Windows browsers, the requirements as chips (Node 24+ bundled when missing, tmux, git, ripgrep, Tailscale, `claude` on PATH), and the app cards (iPhone & iPad, Android) with the current way to get each build. Both commands MUST be present in the markup so the section works without JavaScript.

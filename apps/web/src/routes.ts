@@ -14,16 +14,27 @@ const TOKEN = /^[A-Za-z0-9_-]{24,64}$/
 /** The installers the zone rules redirect to `main`; the Worker mirrors them when a request gets through. */
 export const INSTALLERS = ['install.sh', 'install.ps1'] as const
 
+const DOCS = /^\/docs(?:\/([A-Za-z0-9-]+))?\/?$/
+const LOCALIZED_DOCS = /^\/([^/]+)\/docs(?:\/([A-Za-z0-9-]+))?\/?$/
+
 export type Route =
   | { kind: 'updates'; url: string }
   | { kind: 'ios'; key: string }
   /** The landing page; `locale: null` negotiates from `Accept-Language`. */
   | { kind: 'page'; locale: Locale | null }
+  /** A documentation page (`index` is `/docs/` itself); whether the slug exists is the renderer's call. */
+  | { kind: 'doc'; locale: Locale | null; slug: string }
   | { kind: 'sitemap' }
   | { kind: 'robots' }
   | { kind: 'favicon' }
   | { kind: 'installer'; url: string }
   | { kind: 'not-found' }
+
+/** The slug a docs path names; the index has no segment, and `index` spelled out is not a page. */
+function docSlug(segment: string | undefined): string | null {
+  if (segment === undefined) return 'index'
+  return segment === 'index' ? null : segment
+}
 
 /** Where a request to remoteharness.app goes, from its path and query. */
 export function route(pathname: string, search = ''): Route {
@@ -42,6 +53,17 @@ export function route(pathname: string, search = ''): Route {
     return { kind: 'not-found' }
   }
   if (pathname === '/' || pathname === '/index.html') return { kind: 'page', locale: null }
+  const docs = DOCS.exec(pathname)
+  if (docs) {
+    const slug = docSlug(docs[1])
+    return slug ? { kind: 'doc', locale: null, slug } : { kind: 'not-found' }
+  }
+  const localizedDocs = LOCALIZED_DOCS.exec(pathname)
+  if (localizedDocs) {
+    const locale = localeFromPath(`/${localizedDocs[1] ?? ''}`)
+    const slug = docSlug(localizedDocs[2])
+    return locale && slug ? { kind: 'doc', locale, slug } : { kind: 'not-found' }
+  }
   const locale = localeFromPath(pathname)
   if (locale) return { kind: 'page', locale }
   if (pathname === '/sitemap.xml') return { kind: 'sitemap' }

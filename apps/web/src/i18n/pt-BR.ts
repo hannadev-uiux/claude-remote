@@ -15,6 +15,7 @@ export const ptBR: WebMessages = {
     docs: 'Docs',
     github: 'GitHub',
     language: 'Idioma',
+    menu: 'Menu',
   },
   hero: {
     eyebrow: 'Self-hosted · Tailscale · tmux',
@@ -229,7 +230,7 @@ export const ptBR: WebMessages = {
   faq: {
     eyebrow: 'Docs e FAQ',
     title: 'As primeiras perguntas',
-    lead: 'O guia completo está no [README](https://github.com/maarkN/remote-harness#readme) por enquanto: primeiros passos, uso do app, a CLI do daemon, segurança, solução de problemas.',
+    lead: 'O guia completo está na [documentação](/pt-br/docs/): primeiros passos, uso do app, a CLI do daemon, segurança, solução de problemas.',
     items: [
       {
         q: 'Funciona fora de casa?',
@@ -265,6 +266,18 @@ export const ptBR: WebMessages = {
     license: 'MIT',
     legal:
       'Remote Harness é um projeto independente, sem afiliação, endosso ou patrocínio da Anthropic ou da OpenAI. “Claude” e “Claude Code” são marcas da Anthropic, PBC; “Codex” é marca da OpenAI. As capturas mostram sessões de demonstração.',
+  },
+  docs: {
+    title: 'Documentação',
+    home: 'Início',
+    pages: 'Páginas',
+    search: 'Buscar na documentação',
+    noResults: 'Nenhum resultado',
+    onThisPage: 'Nesta página',
+    previous: 'Anterior',
+    next: 'Próxima',
+    applies: 'Vale para {{version}}',
+    fallback: 'Esta página ainda não foi traduzida; aqui está a versão em inglês.',
   },
   notFound: {
     title: 'Página não encontrada',

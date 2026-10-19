@@ -1,4 +1,5 @@
-import { LOCALE_PATHS } from './i18n/locale.ts'
+import { DOC_SLUGS, docPath } from './docs/content.ts'
+import { LOCALE_PATHS, WEB_LOCALES } from './i18n/locale.ts'
 
 export const SITE_URL = 'https://remoteharness.app'
 export const REPO_URL = 'https://github.com/maarkN/remote-harness'
@@ -34,7 +35,8 @@ export function faviconSvg(): string {
 }
 
 export function sitemapXml(): string {
-  const paths = ['/', ...Object.values(LOCALE_PATHS)]
+  const docs = WEB_LOCALES.flatMap((locale) => DOC_SLUGS.map((slug) => docPath(locale, slug)))
+  const paths = ['/', ...Object.values(LOCALE_PATHS), ...docs]
   const urls = paths.map((path) => `  <url><loc>${SITE_URL}${path}</loc></url>`).join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
 }

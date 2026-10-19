@@ -40,6 +40,19 @@ describe('route', () => {
     expect(route('/fr/')).toEqual({ kind: 'not-found' })
   })
 
+  test('docs: negotiated under /docs, fixed under the language paths; index has no segment', () => {
+    expect(route('/docs')).toEqual({ kind: 'doc', locale: null, slug: 'index' })
+    expect(route('/docs/')).toEqual({ kind: 'doc', locale: null, slug: 'index' })
+    expect(route('/docs/getting-started')).toEqual({ kind: 'doc', locale: null, slug: 'getting-started' })
+    expect(route('/docs/getting-started/')).toEqual({ kind: 'doc', locale: null, slug: 'getting-started' })
+    expect(route('/pt-br/docs/')).toEqual({ kind: 'doc', locale: 'pt-BR', slug: 'index' })
+    expect(route('/es/docs/daemon/')).toEqual({ kind: 'doc', locale: 'es-ES', slug: 'daemon' })
+    expect(route('/en/docs/whatever/')).toEqual({ kind: 'doc', locale: 'en-US', slug: 'whatever' })
+    expect(route('/docs/index/')).toEqual({ kind: 'not-found' })
+    expect(route('/fr/docs/')).toEqual({ kind: 'not-found' })
+    expect(route('/docs/a/b/')).toEqual({ kind: 'not-found' })
+  })
+
   test('site files, installer redirects and the rest', () => {
     expect(route('/sitemap.xml')).toEqual({ kind: 'sitemap' })
     expect(route('/robots.txt')).toEqual({ kind: 'robots' })
