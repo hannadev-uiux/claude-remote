@@ -33,6 +33,7 @@ const enUS = {
       connecting: 'connecting to {{machine}}…',
       authenticating: 'authenticating…',
       reconnecting: 'reconnecting…',
+      asleep: "{{machine}} isn't answering: it may be asleep or offline. Reconnecting…",
       unauthorized: 'token rejected — pair again',
       closed: 'disconnected',
     },

@@ -29,6 +29,7 @@ const esES = {
       connecting: 'conectando con {{machine}}…',
       authenticating: 'autenticando…',
       reconnecting: 'reconectando…',
+      asleep: '{{machine}} no responde: puede estar dormido o sin conexión. Reconectando…',
       unauthorized: 'token rechazado — vuelve a vincular',
       closed: 'desconectado',
     },

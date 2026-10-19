@@ -53,6 +53,21 @@ export const ptBR = {
       saved: (id: string, store: string) =>
         `Chave do perfil ${id} guardada ${store}. As novas sessões do perfil passam a usá-la.`,
     },
+    keepAwake: {
+      description: 'mostra ou define quando o computador fica acordado: off, sessions ou always',
+      modes: {
+        off: 'desligado',
+        sessions: 'enquanto há sessões ativas (e 10 min depois)',
+        always: 'sempre, enquanto o daemon roda',
+      },
+      current: (mode: string) => `manter acordado: ${mode}`,
+      holding: 'segurando o computador acordado agora',
+      notHolding: 'sem segurar agora',
+      unavailable: (reason: string) => `o auxiliar de energia não está disponível: ${reason}`,
+      invalid: (value: string, valid: string) => `"${value}" não é um modo; use um destes: ${valid}`,
+      applied: 'aplicado ao daemon em execução',
+      notRunning: 'o daemon não está rodando; vale no próximo início',
+    },
     doctor: {
       description: 'verifica dependências e configuração',
       notOnPath: 'não encontrado no PATH',
@@ -80,6 +95,11 @@ export const ptBR = {
         'dica: para não ter um pedido por pasta, adicione "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco',
       linger: 'lingering (o serviço continua rodando após o logout)',
       lingerHint: 'rode `loginctl enable-linger $USER`',
+      keepAwake: (mode: string, state: string) => `manter acordado: ${mode} (${state})`,
+      keepAwakeHeld: 'ativo agora',
+      keepAwakeIdle: 'não é preciso agora',
+      keepAwakeFailed: (reason: string) => `o auxiliar de energia falhou: ${reason}`,
+      lidNote: 'num notebook, fechar a tampa ainda suspende, a não ser na tomada e com monitor externo',
       devices: (platforms: string) => `celulares registrados para push: ${platforms}`,
       noDevices: 'nenhum celular registrado para push',
       noDevicesHint: 'abra o app e permita as notificações',
@@ -367,6 +387,9 @@ export const ptBR = {
     mirroredAlready: (path: string) => `networkingMode=mirrored já estava em ${path}`,
     mirroredNoConfig:
       '  Não encontrei o %UserProfile%\\.wslconfig (a interoperabilidade com o Windows está desligada?). Adicione [wsl2] networkingMode=mirrored nele à mão.',
+  },
+  power: {
+    why: 'Há sessões do Remote Harness em execução',
   },
   bundle: {
     folderAccess:

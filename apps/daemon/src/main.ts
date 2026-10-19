@@ -21,6 +21,7 @@ import { registerMuteFeature } from './features/mute/index.ts'
 import type { MuteStore } from './features/mute/store.ts'
 import { registerPaneFeature } from './features/pane/index.ts'
 import { registerPermissionsFeature } from './features/permissions/index.ts'
+import { registerPowerFeature } from './features/power/index.ts'
 import { registerProvidersFeature } from './features/providers/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
@@ -33,6 +34,7 @@ import { type DesktopOptions, registerUpdatesFeature } from './features/updates/
 import type { Executor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolvePlatform } from './infra/platform.ts'
+import type { SleepInhibitor } from './infra/power.ts'
 import { TmuxClient } from './infra/tmux.ts'
 import { ClientHub, type Connection } from './transport/connection.ts'
 import { createHooksServer } from './transport/hooks-server.ts'
@@ -56,6 +58,8 @@ export type DaemonOptions = {
   pushSender?: PushSender | null
   /** Update checks and the tray icon: only for the service daemon (`start` without `--dev`). */
   desktop?: DesktopOptions
+  /** Prevents idle sleep per `keepAwake`: only for the service daemon. */
+  sleepInhibitor?: SleepInhibitor
   /** A profile's provider key from the OS secret store (`null` when none); absent = no keys (tests). */
   providerKey?: (profileId: string) => Promise<string | null>
 }
@@ -166,7 +170,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     return { ok: true }
   })
 
-  const features = await registerFeatures(context, options.desktop)
+  const features = await registerFeatures(context, options.desktop, options.sleepInhibitor ?? null)
 
   await hooks.listen({ host: '127.0.0.1', port: options.hookPort ?? config.hookPort })
   const hookAddress = hooks.server.address()
@@ -228,6 +232,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
 async function registerFeatures(
   ctx: DaemonContext,
   desktop: DesktopOptions | undefined,
+  sleepInhibitor: SleepInhibitor | null,
 ): Promise<{ mute: MuteStore; pushMode: () => PushMode }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
   const transcript = registerTranscriptFeature(ctx, sessions.store, (id, at) =>
@@ -282,6 +287,7 @@ async function registerFeatures(
     })
   }
   await sessions.start()
+  registerPowerFeature(ctx, sessions.store, sleepInhibitor)
   // After the sessions, so prompts queued for sessions that ended meanwhile are dropped.
   await queue.service.load().catch((error) => ctx.logger.warn({ err: error }, 'queue restore failed'))
   return { mute: mute.store, pushMode: push.mode }

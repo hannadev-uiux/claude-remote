@@ -29,6 +29,7 @@ const ptBR = {
       connecting: 'conectando a {{machine}}…',
       authenticating: 'autenticando…',
       reconnecting: 'reconectando…',
+      asleep: '{{machine}} não responde: pode estar dormindo ou offline. Reconectando…',
       unauthorized: 'token recusado — pareie novamente',
       closed: 'desconectado',
     },

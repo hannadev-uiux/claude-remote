@@ -17,7 +17,14 @@ import {
 import { Command, InvalidArgumentError, Option } from 'commander'
 import qrcode from 'qrcode-terminal'
 import { z } from 'zod'
-import { configuredLocaleSync, loadConfig, resolveProfiles, updateConfigFile } from './core/config.ts'
+import {
+  configuredLocaleSync,
+  KEEP_AWAKE_MODES,
+  KeepAwakeModeSchema,
+  loadConfig,
+  resolveProfiles,
+  updateConfigFile,
+} from './core/config.ts'
 import { envVar } from './core/env.ts'
 import { type Messages, messagesFor } from './core/i18n/index.ts'
 import { createLogger } from './core/logger.ts'
@@ -43,6 +50,7 @@ import {
 } from './features/hooks/installer.ts'
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
+import type { PowerState } from './features/power/index.ts'
 import { DeviceRegistry, describeDevices } from './features/push/devices.ts'
 import { resolvePushMode } from './features/push/mode.ts'
 import { bundleLauncherKind, LaunchdService } from './features/service/launchd.ts'
@@ -72,6 +80,7 @@ import {
   resolvePlatform,
   UnsupportedPlatformError,
 } from './infra/platform.ts'
+import { ProcessSleepInhibitor, sleepHelperCommand } from './infra/power.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
 
@@ -181,6 +190,25 @@ async function adminRequest(path: string): Promise<unknown | null> {
   }
 }
 
+/** GET on the running daemon's hooks server; null when it is not running. */
+async function daemonGet(path: string): Promise<unknown | null> {
+  const config = await loadConfig(createLogger({ level: 'silent' }))
+  try {
+    const response = await fetch(`http://127.0.0.1:${config.hookPort}${path}`, {
+      headers: { [SECRET_HEADER]: await ensureHookSecret() },
+    })
+    return response.ok ? ((await response.json()) as unknown) : null
+  } catch {
+    return null
+  }
+}
+
+/** Keep-awake state of the running daemon, or null. */
+async function daemonPower(): Promise<PowerState | null> {
+  const reply = await daemonGet('/power')
+  return reply && typeof reply === 'object' && 'mode' in reply ? (reply as PowerState) : null
+}
+
 /** Push mode for this computer as the daemon resolves it at start. */
 async function localPushMode(): Promise<PushMode> {
   const config = await loadConfig(createLogger({ level: 'silent' }))
@@ -230,6 +258,11 @@ program
         // Update checks and the tray belong to the service daemon, not to development runs.
         // Restarting is exiting: launchd (KeepAlive) / systemd (Restart=always) start it again.
         desktop: opts.dev ? undefined : { cliPath: builtCliPath(), restart: () => void shutdown() },
+        sleepInhibitor: opts.dev
+          ? undefined
+          : new ProcessSleepInhibitor(
+              sleepHelperCommand({ platform, wsl: wsl !== null, pid: process.pid, why: m.power.why }),
+            ),
       })
       stopDaemon = () => daemon.stop()
       process.on('SIGINT', shutdown)
@@ -400,6 +433,21 @@ program
       d.serviceHint,
     )
     if (status?.loaded && manager.linger) check(await manager.linger.enabled(), d.linger, d.lingerHint)
+    const power = await daemonPower()
+    if (power) {
+      const mode = m.cli.keepAwake.modes[power.mode]
+      if (power.mode === 'off') console.log(`· ${d.keepAwake(mode, m.cli.keepAwake.notHolding)}`)
+      else {
+        const state = power.holding ? d.keepAwakeHeld : d.keepAwakeIdle
+        check(power.available, d.keepAwake(mode, state), d.keepAwakeFailed(power.reason ?? '?'))
+      }
+    }
+    if (
+      platform === 'darwin' &&
+      (await execaExecutor('pmset', ['-g', 'batt'])).stdout.includes('InternalBattery')
+    ) {
+      console.log(`· ${d.lidNote}`)
+    }
     if (status?.loaded && manager.kind === 'launchd') {
       const native = (await bundleLauncherKind(paths.app())) === 'native'
       check(native, native ? d.launcherNative : d.launcherScript, d.launcherHint)
@@ -594,6 +642,31 @@ async function finishUpdate(from: string | undefined): Promise<void> {
     `\n✓ ${from && from !== DAEMON_VERSION ? u.updated(from, DAEMON_VERSION) : u.rebuilt(DAEMON_VERSION)}`,
   )
 }
+
+program
+  .command('keep-awake [mode]')
+  .description(m.cli.keepAwake.description)
+  .action(async (value: string | undefined) => {
+    const k = m.cli.keepAwake
+    const config = await loadConfig(createLogger({ level: 'silent' }))
+    if (value === undefined) {
+      const power = await daemonPower()
+      console.log(k.current(k.modes[power?.mode ?? config.keepAwake]))
+      if (!power) console.log(`  ${k.notRunning}`)
+      else if (!power.available) console.log(`  ✗ ${k.unavailable(power.reason ?? '?')}`)
+      else console.log(`  ${power.holding ? k.holding : k.notHolding}`)
+      return
+    }
+    const parsed = KeepAwakeModeSchema.safeParse(value)
+    if (!parsed.success) {
+      console.error(`✗ ${k.invalid(value, KEEP_AWAKE_MODES.join(', '))}`)
+      process.exit(1)
+    }
+    await updateConfigFile({ keepAwake: parsed.data })
+    const reply = await adminRequest('/admin/keep-awake-reload')
+    console.log(`✓ ${k.current(k.modes[parsed.data])}`)
+    console.log(`  ${reply ? k.applied : k.notRunning}`)
+  })
 
 const updates = program.command('updates').description(m.cli.updates.description)
 updates

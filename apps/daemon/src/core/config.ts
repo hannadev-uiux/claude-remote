@@ -14,6 +14,10 @@ import { messagesFor, systemLocale } from './i18n/index.ts'
 import type { Logger } from './logger.ts'
 import { expandHome, paths } from './paths.ts'
 
+export const KEEP_AWAKE_MODES = ['off', 'sessions', 'always'] as const
+export const KeepAwakeModeSchema = z.enum(KEEP_AWAKE_MODES)
+export type KeepAwakeMode = z.infer<typeof KeepAwakeModeSchema>
+
 export const ConfigSchema = z.object({
   profiles: z.array(ProfileSchema).min(1),
   wsPort: z.number().int().positive().default(7337),
@@ -40,6 +44,8 @@ export const ConfigSchema = z.object({
     .default({ channel: 'main', auto: false }),
   /** Menu bar / tray icon of the service daemon (where a helper is available). */
   tray: z.boolean().default(true),
+  /** When the service daemon prevents idle sleep: never, while sessions are active, or always. */
+  keepAwake: KeepAwakeModeSchema.default('sessions'),
 })
 export type Config = z.infer<typeof ConfigSchema>
 

@@ -27,7 +27,7 @@ El daemon solo escucha en una dirección 100.x. Si `doctor` dice que no hay ning
 
 ## El ordenador se suspende o se bloquea
 
-El daemon solo funciona con el ordenador despierto. En un MacBook, déjalo enchufado y desactiva la suspensión con corriente, o usa `caffeinate`; en Linux revisa los ajustes de energía. Bloquear la pantalla no molesta. Las sesiones en tmux sobreviven a una desconexión de la app y se reconectan cuando vuelve.
+El daemon solo funciona con el ordenador despierto. Bloquear la pantalla no molesta. Por defecto, el servicio en segundo plano impide la suspensión por inactividad mientras una sesión está en marcha o esperando, y durante 10 minutos después; la pantalla sigue apagándose y bloqueándose. Cámbialo con `remote-harness keep-awake off`, `sessions` o `always`; `doctor` muestra si lo está manteniendo. Un portátil sigue suspendiéndose al cerrar la tapa, salvo enchufado y con monitor externo. Cuando la app dice que el ordenador no responde, probablemente está dormido: despiértalo y la app se reconecta sola. Las sesiones en tmux sobreviven a una desconexión de la app.
 
 ## macOS pide acceso a carpetas
 
