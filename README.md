@@ -321,6 +321,7 @@ pnpm --filter @remote-harness/mobile xterm              # regenerate the termina
 
 - The daemon runs on macOS, Linux and Windows through WSL2; the app runs on iOS and Android 10+ (built locally or with EAS, not published to the stores yet). On Android the Allow/Deny buttons are not shown on the notification: tap it to answer in the app.
 - Sessions must run inside tmux to be controllable; others are read-only until resumed.
+- The computer must be awake. The service keeps it from idle-sleeping while sessions run (`remote-harness keep-awake`), but the app cannot wake a computer that already sleeps: Wake-on-LAN does not cross Tailscale, so it needs another always-on device on the same network ([design notes](docs/design/remote-wake.md)).
 - Permission-mode switching reads the Claude Code status line, so a TUI change may need a label update (they live in one tested table).
 - The UI is in Brazilian Portuguese for now — translations are welcome.
 

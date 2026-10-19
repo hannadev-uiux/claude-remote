@@ -29,6 +29,8 @@ O daemon só escuta num endereço 100.x. Se o `doctor` disser que não há nenhu
 
 O daemon só funciona com o computador acordado. Bloquear a tela não atrapalha. Por padrão, o serviço em segundo plano impede a suspensão por inatividade enquanto uma sessão está rodando ou esperando, e por 10 minutos depois; a tela continua apagando e bloqueando. Mude com `remote-harness keep-awake off`, `sessions` ou `always`; o `doctor` mostra se está segurando. Um notebook ainda suspende ao fechar a tampa, a não ser na tomada e com monitor externo. Quando o app diz que o computador não responde, ele provavelmente está dormindo: acorde-o e o app reconecta sozinho. As sessões no tmux sobrevivem a uma desconexão do app.
 
+O app não consegue acordar um computador dormindo: os pacotes de Wake-on-LAN não atravessam o Tailscale. Se o computador aceita Wake-on-LAN (em geral pelo cabo de rede) e outro aparelho da mesma rede fica sempre ligado e está no seu tailnet (um Raspberry Pi, um NAS, um roteador com WoL), dá para acordá-lo por ele, por exemplo `ssh pi@raspberrypi wakeonlan AA:BB:CC:DD:EE:FF` com o endereço MAC do computador.
+
 ## O macOS pede acesso a pastas
 
 Na primeira vez que uma sessão trabalha em Documentos, Mesa, Downloads ou num disco externo, o macOS pergunta se o **Remote Harness** pode acessar essa pasta: permita uma vez e vale de vez, também depois de `remote-harness update`. Para não ter um pedido por pasta, adicione o Remote Harness em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco. Se o pedido mostrar **node**, faltam as Command Line Tools: rode `xcode-select --install` e depois `remote-harness service install` (o `doctor` mostra essa verificação).
