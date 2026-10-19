@@ -253,6 +253,18 @@ The function runs with the project's default credentials, so no service account 
 
 On Android 13+ the app asks for the notification permission; notifications use the high-priority `claude-remote` channel (it can be tuned in the system settings) and, like on iOS, carry only the event and the profile.
 
+### Error reports (optional)
+
+The app keeps a small log of its own errors on the phone (the last 50: JS crashes, unhandled promise rejections, screens that failed to render, and daemon requests that were rejected or timed out). Nothing leaves the phone by itself. With Firebase in the build, errors can go to **Firebase Crashlytics** in the same project as push, according to **Settings → Error reports**:
+
+- **Ask each time** (default): after a crash, the next launch shows exactly what would be sent and asks first.
+- **Send automatically**: crashes and errors are sent as they happen.
+- **Never**: nothing is sent, Crashlytics collection stays off and crash reports waiting on the phone are deleted.
+
+Crashlytics collection is off in the native config (`apps/mobile/firebase.json`) and is only turned on by "Send automatically". **Settings → Report a problem** lets you describe a bug and send the recent log (and, if you want, the computer's recently rejected requests), share it as a file, or open a prefilled GitHub issue; Send is hidden with "Never" and in builds without Firebase.
+
+What a report contains, and nothing else: time, kind of error, error name, a scrubbed message and stack (quoted text, URLs, emails, paths, ids, IP addresses and token-like strings replaced by placeholders), the request type and error code, the screen's route pattern (`(main)/session/[id]`, never the values), and the app version, runtime, OTA update id and channel, platform, OS version and daemon version. Crashlytics adds the device model and an installation id. Reports never include prompts, conversation, terminal output, commands, file paths, project or session names, tokens or pairing data. JS stacks reference the bundle by OTA update id; symbolicate them with the source maps of that update's `expo export`.
+
 ### App updates over the air (optional)
 
 Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, the app uses a self-hosted [Expo Updates](https://docs.expo.dev/technical-specs/expo-updates-1/) server — the project's, at `remoteharness.app/api/updates` (no EAS account or fees), or any other implementation of the protocol.

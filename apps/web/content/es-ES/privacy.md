@@ -1,14 +1,16 @@
 ---
 title: Política de privacidad
-description: Qué recopila Remote Harness (nada), qué se queda en tus dispositivos, qué sale de tu máquina y cuándo, y cómo contactarnos.
+description: Qué recopila Remote Harness (solo los informes de errores que aceptes enviar), qué se queda en tus dispositivos, qué sale de tu máquina y cuándo, y cómo contactarnos.
 applies: 0.7+
 ---
 
-Remote Harness es software autoalojado: el daemon se ejecuta en tu ordenador, la app en tu móvil, y ambos hablan por tu propia red Tailscale. Esta página es la política de privacidad de la app distribuida por las tiendas, del daemon y de este sitio web. Última actualización: 2026-10-18.
+Remote Harness es software autoalojado: el daemon se ejecuta en tu ordenador, la app en tu móvil, y ambos hablan por tu propia red Tailscale. Esta página es la política de privacidad de la app distribuida por las tiendas, del daemon y de este sitio web. Última actualización: 2026-10-19.
 
 ## Qué recopilamos
 
-Nada. No hay cuenta, ni analítica, ni informes de fallos, ni telemetría en la app, en el daemon ni en este sitio. Los mantenedores nunca reciben tus conversaciones, tus archivos, tus prompts, tus tokens ni tus claves.
+Solo los informes de errores que aceptes enviar. No hay cuenta, ni analítica, ni telemetría en la app, en el daemon ni en este sitio. Los mantenedores nunca reciben tus conversaciones, tus archivos, tus prompts, tus tokens ni tus claves.
+
+**Informes de errores (opcionales).** La app guarda en el móvil un pequeño registro de sus propios errores. Los envía a Firebase Crashlytics (Google) solo como elijas en Ajustes → Informes de errores: tras preguntarte, que es lo predeterminado, automáticamente, o nunca. Un informe contiene la hora y el tipo de error, el nombre del error, el mensaje y la pila ya filtrados, el tipo de la petición que falló y el código de error, el patrón de ruta de la pantalla, y las versiones de la app, de la actualización, del sistema y del daemon; Crashlytics añade el modelo del dispositivo y un id de instalación. Los informes nunca incluyen prompts, conversación, salida del terminal, comandos, rutas de archivos, nombres de proyectos o sesiones, tokens ni datos de emparejamiento. En Ajustes → Informar de un problema también puedes compartir un informe o publicarlo como issue en GitHub. El tratamiento de los datos de Crashlytics por parte de Google se rige por la política de privacidad de Google.
 
 ## Qué se queda en tus dispositivos
 

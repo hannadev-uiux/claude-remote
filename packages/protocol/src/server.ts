@@ -20,6 +20,7 @@ import {
   PushModeSchema,
   PushTestResultSchema,
   QueuedMessageSchema,
+  RejectedRequestSchema,
   RuleScopeSchema,
   SessionSchema,
   SessionStateSchema,
@@ -122,6 +123,13 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     hasKey: z.boolean(),
     /** `null` without a key or when the provider did not answer. */
     credits: ProviderCreditsSchema.nullable(),
+  }),
+  z.object({
+    type: z.literal('diagnostics.result'),
+    replyTo,
+    daemonVersion: z.string(),
+    /** Most recent first, at most `DIAGNOSTICS_LIMIT`. */
+    errors: z.array(RejectedRequestSchema),
   }),
   z.object({
     type: z.literal('directories.results'),

@@ -110,6 +110,29 @@ describe('DaemonClient', () => {
     await expect(pending).rejects.toBeInstanceOf(DaemonRequestError)
   })
 
+  test('reports error replies and timeouts with the request type, not lost connections', async () => {
+    const client = makeClient({ requestTimeoutMs: 15_000 })
+    const failures: Array<[string, string]> = []
+    client.onRequestError((type, error) => failures.push([type, error.code]))
+    client.connect()
+    const socket = FakeSocket.instances[0]!
+    authenticate(socket)
+    await Promise.resolve()
+    const start = client.request({ type: 'session.start', profileId: 'p', cwd: '/x' })
+    socket.receive({ type: 'error', replyTo: socket.last().id, code: 'invalid_cwd', message: 'nope' })
+    await expect(start).rejects.toMatchObject({ code: 'invalid_cwd' })
+    const ping = client.request({ type: 'ping' })
+    vi.advanceTimersByTime(15_001)
+    await expect(ping).rejects.toMatchObject({ code: 'timeout' })
+    const list = client.request({ type: 'sessions.list' })
+    socket.drop()
+    await expect(list).rejects.toMatchObject({ code: 'disconnected' })
+    expect(failures).toEqual([
+      ['session.start', 'invalid_cwd'],
+      ['ping', 'timeout'],
+    ])
+  })
+
   test('reconnects with exponential backoff and resubscribes', async () => {
     const client = makeClient()
     const ready = vi.fn()
