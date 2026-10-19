@@ -128,6 +128,8 @@ export const SessionSchema = z.object({
   title: z.string(),
   state: SessionStateSchema,
   permissionMode: PermissionModeSchema.nullable(),
+  /** Codex: the approval policy (`on-request`, `never`, …); `null` for Claude Code, until known and from older daemons. */
+  approvalPolicy: z.string().nullable().default(null),
   controllable: z.boolean(),
   paneId: z.string().nullable(),
   updatedAt: z.string(),

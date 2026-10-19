@@ -114,6 +114,7 @@ const enUS = {
   conversation: {
     turnDuration: 'Turn completed in {{duration}}',
     compacted: 'Conversation compacted',
+    interrupted: 'Interrupted',
     loading: 'loading conversation…',
     newMessages: '↓ new messages',
     thinking: '✻ thinking…',
@@ -369,6 +370,8 @@ const enUS = {
       todos: 'Items',
       skill: 'Skill',
       args: 'Arguments',
+      folder: 'Folder',
+      files: 'Files',
     },
   },
   permissions: {
@@ -558,6 +561,8 @@ const enUS = {
     autoConfirmBody:
       '{{agent}} will decide on its own which actions to run, without asking for approval, while nobody is watching the computer.',
     autoConfirm: 'Turn on auto',
+    approvalPolicy: 'Approval policy: {{policy}}',
+    unknownPolicy: 'unknown',
     labels: {
       default: 'default',
       acceptEdits: 'accept edits',

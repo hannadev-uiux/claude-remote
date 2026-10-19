@@ -78,6 +78,18 @@ Un perfil puede enrutar Claude Code por OpenRouter en vez de la cuenta de Anthro
 
 Después, `remote-harness install` regenera los lanzadores y `remote-harness provider key openrouter` guarda la clave en el mismo sitio que el token de emparejamiento (Llavero en macOS, Secret Service o archivo `0600` en Linux). El lanzador lee la clave solo dentro de la ventana de tmux, nunca en una línea de comandos, y el daemon solo la usa para mostrar tus créditos en la app. `doctor` informa de si cada perfil con proveedor tiene clave.
 
+## Perfiles de Codex
+
+Un perfil puede ejecutar OpenAI Codex CLI en vez de Claude Code: define `"agent": "codex"` y apunta `configDir` a la carpeta de Codex (`CODEX_HOME`, `~/.codex` por defecto). `remote-harness setup` ofrece `~/.codex` cuando Codex ya lo ha usado.
+
+```json
+{ "id": "cdx", "name": "Codex", "configDir": "~/.codex", "color": "#2FBF8F", "agent": "codex" }
+```
+
+`remote-harness install` escribe el lanzador del perfil (abre `codex` con el `CODEX_HOME` correcto) y fusiona los hooks del daemon en `<CODEX_HOME>/hooks.json`, junto a los tuyos y con copia de seguridad; tu `config.toml` no se toca. **Codex pide una vez confiar en los hooks nuevos**: abre `codex` y elige "Trust all and continue" (o revísalos en `/hooks`). Hasta entonces sus sesiones aparecen de solo lectura y las aprobaciones se quedan en el terminal. `doctor` comprueba que `codex` está en el `PATH` y que los hooks están instalados.
+
+Lo que funciona como en Claude Code: la lista de sesiones (rollouts recientes en `sessions/`), la conversación, prompts, fotos y teclas, iniciar y reanudar desde el móvil, push, estado en vivo y aprobaciones con Permitir / Denegar. Diferencias: el chip de modo muestra la política de aprobación y solo cambia con `/permissions` en el terminal, no hay "Siempre" (los hooks de Codex no crean reglas), ni opción de worktree, ni proveedor.
+
 ## Lanzadores y alias
 
 Cada perfil recibe un pequeño lanzador en zsh en `~/.remote-harness/bin/<alias>` (añadido al `PATH` en `~/.zshrc` y `~/.bashrc`). Ejecuta el alias en vez de `claude`, con los mismos argumentos: abre Claude Code en una ventana de la sesión `claude-remote` de tmux con el `CLAUDE_CONFIG_DIR` correcto y conecta tu terminal a ella. El comando `claude` a secas nunca se modifica.

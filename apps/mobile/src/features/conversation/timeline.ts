@@ -92,6 +92,7 @@ export function systemText(
   if (item.subtype === 'turn_duration' && item.durationMs !== undefined)
     return t('conversation.turnDuration', { duration: formatDuration(item.durationMs) })
   if (item.subtype === 'compact_boundary') return t('conversation.compacted')
+  if (item.subtype === 'turn_aborted' && item.text === 'Interrupted') return t('conversation.interrupted')
   return item.text
 }
 

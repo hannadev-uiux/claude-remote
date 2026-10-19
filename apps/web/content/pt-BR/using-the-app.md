@@ -58,6 +58,8 @@ As notificações push avisam quando uma sessão precisa de permissão, termina 
 
 Um perfil é uma conta do Claude Code, ou seja um `CLAUDE_CONFIG_DIR`, com nome, cor e alias. Um perfil também pode rotear o Claude Code pelo **OpenRouter**: as linhas dele mostram um chip tracejado `via OpenRouter`, **Nova sessão** ganha uma linha **Modelo** com um seletor pesquisável (tamanho do contexto, preços por milhão de tokens, suporte a ferramentas, raciocínio e cache, créditos restantes), e **Trocar modelo…** no menu da sessão troca uma sessão em andamento. A chave fica no computador: veja [o daemon](/pt-br/docs/daemon/#perfis-e-openrouter).
 
+Um perfil também pode rodar o **Codex** (selo `cx`, verde): as sessões dele mostram a política de aprovação (`on-request`, `never`…) no lugar do chip de modo, chamadas `exec(…)` e `apply_patch(…)` com saída e diff, e aprovações com Permitir / Negar. Veja [Perfis do Codex](/pt-br/docs/daemon/#perfis-do-codex).
+
 ## Ajustes
 
 - **Máquina**: a conexão, o nome da máquina (um apelido à sua escolha, senão o hostname), a versão do daemon e **Esquecer esta máquina**.

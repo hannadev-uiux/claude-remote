@@ -11,6 +11,7 @@ import { ensureHookSecret } from '../../core/secrets.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory } from '../../infra/fs.ts'
 import type { Platform } from '../../infra/platform.ts'
+import { agentFor, hasAgentAdapter, profileAgentId } from '../agents/index.ts'
 import {
   installHooks,
   installLaunchers,
@@ -92,9 +93,12 @@ export async function installAll(
       permissionTimeoutSec: config.hookPermissionTimeoutSec,
     })
     lines.push({ status: changed ? 'done' : 'skip', text: m.hooksIn(settingsPath(profile)) })
+    if (!agentFor(profile).statusLine) continue
     const wrapped = await installStatusLine(profile, statusLineScript)
     lines.push({ status: wrapped ? 'done' : 'skip', text: m.statusLineIn(settingsPath(profile)) })
   }
+  if (profiles.some((p) => agentFor(p).hooks.style === 'codex-hooks'))
+    lines.push({ status: 'skip', text: m.codexTrust })
   return lines
 }
 
@@ -110,9 +114,11 @@ export async function removeProfiles(
   }))
   for (const profile of remove.hooks) {
     const resolved = { ...profile, configDir: expandHome(profile.configDir) }
-    if (!(await isDirectory(resolved.configDir))) continue
+    // A profile of an agent without an adapter never got hooks.
+    if (!hasAgentAdapter(profileAgentId(resolved)) || !(await isDirectory(resolved.configDir))) continue
     const removed = await uninstallHooks(resolved)
     lines.push({ status: removed ? 'done' : 'skip', text: m.hooksRemovedFrom(settingsPath(resolved)) })
+    if (!agentFor(resolved).statusLine) continue
     const restored = await uninstallStatusLine(resolved)
     lines.push({ status: restored ? 'done' : 'skip', text: m.statusLineRestored(settingsPath(resolved)) })
   }

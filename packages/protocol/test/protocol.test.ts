@@ -117,6 +117,7 @@ const session: Session = {
   title: 'x',
   state: 'idle',
   permissionMode: 'default',
+  approvalPolicy: null,
   controllable: true,
   paneId: '%1',
   updatedAt: '2026-10-14T00:00:00Z',
@@ -576,6 +577,22 @@ describe('session status', () => {
     const status = { model: null, effort: null, context: null }
     const result = parseServerMessage({ type: 'session.updated', session: { ...session, status } })
     expect(result).toMatchObject({ ok: true, value: { session: { status } } })
+  })
+})
+
+describe('session approval policy', () => {
+  test('defaults to null for older daemons', () => {
+    const { approvalPolicy: _omit, ...old } = session
+    const result = parseServerMessage({ type: 'session.updated', session: old })
+    expect(result).toMatchObject({ ok: true, value: { session: { approvalPolicy: null } } })
+  })
+
+  test('carries the Codex policy', () => {
+    const result = parseServerMessage({
+      type: 'session.updated',
+      session: { ...session, agent: 'codex', approvalPolicy: 'on-request' },
+    })
+    expect(result).toMatchObject({ ok: true, value: { session: { approvalPolicy: 'on-request' } } })
   })
 })
 

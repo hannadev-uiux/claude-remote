@@ -1,6 +1,7 @@
 import type { Profile, Session } from '@remote-harness/protocol'
 import type { TFunction } from '../../core/i18n/create'
 import { relativeTime } from '../../core/utils/time'
+import { hasSwitchableModes } from '../mode/modes'
 
 export type SessionDetailKey =
   | 'folder'
@@ -28,11 +29,19 @@ type DetailsSession = Pick<
   | 'cwd'
   | 'state'
   | 'permissionMode'
+  | 'approvalPolicy'
+  | 'agent'
   | 'controllable'
   | 'paneId'
   | 'updatedAt'
   | 'checkout'
 >
+
+/** Claude Code's permission mode, or Codex's approval policy as Codex names it. */
+function modeText(session: DetailsSession, t: TFunction): string {
+  if (!hasSwitchableModes(session.agent ?? null)) return session.approvalPolicy ?? t('sessionDetails.unknown')
+  return session.permissionMode ? t(`mode.labels.${session.permissionMode}`) : t('sessionDetails.unknown')
+}
 
 /**
  * Rows of the session details sheet, in display order. Rows without data (no git checkout, no tmux
@@ -63,10 +72,7 @@ export function sessionDetails(
     row('profile', profile?.name ?? session.profileId),
     ...(profile ? [row('alias', session.profileId), row('configDir', profile.configDir)] : []),
     row('state', t(`sessions.states.${session.state}`)),
-    row(
-      'mode',
-      session.permissionMode ? t(`mode.labels.${session.permissionMode}`) : t('sessionDetails.unknown'),
-    ),
+    row('mode', modeText(session, t)),
     row('access', session.controllable ? t('sessionDetails.controllable') : t('common.readOnly')),
     ...(session.paneId ? [row('pane', session.paneId)] : []),
     copyable('id', session.id),

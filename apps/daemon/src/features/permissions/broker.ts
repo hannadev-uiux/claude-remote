@@ -9,6 +9,7 @@ import type {
 } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { Broadcaster } from '../../transport/connection.ts'
+import { adapterOf } from '../agents/index.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import { answerDecision, parseInteraction } from './interaction.ts'
 import { parseRule, suggestRule } from './rules.ts'
@@ -25,7 +26,13 @@ export type Decision = {
 }
 type Outcome = { kind: 'decision'; decision: Decision } | { kind: 'expired' } | { kind: 'cancelled' }
 
-type Pending = { info: PermissionRequestInfo; cwd: string; settle: (outcome: Outcome) => void }
+type Pending = {
+  info: PermissionRequestInfo
+  cwd: string
+  /** The agent accepts rules and mode changes in the answer (Claude Code). */
+  rules: boolean
+  settle: (outcome: Outcome) => void
+}
 
 export type BrokerOptions = {
   timeoutMs: number
@@ -116,14 +123,16 @@ export class PermissionBroker {
     const tool = typeof payload.tool_name === 'string' ? payload.tool_name : 'tool'
     const input = isRecord(payload.tool_input) ? payload.tool_input : {}
     const now = Date.now()
-    const interaction = parseInteraction(tool, input)
+    const profile = this.options.profiles.find((p) => p.id === hook.profileId)
+    const rules = adapterOf(profile?.agent).permissionRules
+    const interaction = rules ? parseInteraction(tool, input) : null
     const info: PermissionRequestInfo = {
       requestId: randomUUID(),
       sessionId: payload.session_id,
       profileId: hook.profileId ?? 'unknown',
       tool,
       input,
-      suggestedRule: suggestRule(tool, input, payload.permission_suggestions),
+      suggestedRule: rules ? suggestRule(tool, input, payload.permission_suggestions) : null,
       defaultScope: this.options.defaultScope,
       createdAt: new Date(now).toISOString(),
       expiresAt: new Date(now + this.options.timeoutMs).toISOString(),
@@ -139,7 +148,7 @@ export class PermissionBroker {
         signal.removeEventListener('abort', onAbort)
         resolve(result)
       }
-      this.pending.set(info.requestId, { info, cwd: payload.cwd ?? '', settle })
+      this.pending.set(info.requestId, { info, cwd: payload.cwd ?? '', rules, settle })
       if (signal.aborted) return settle({ kind: 'cancelled' })
       signal.addEventListener('abort', onAbort)
       this.broadcaster.broadcast({ type: 'permission.request', request: info })
@@ -161,7 +170,13 @@ export class PermissionBroker {
     this.options.onResolved?.(info, resolved)
 
     if (outcome.kind !== 'decision') return {}
-    const { decision } = outcome
+    // Codex takes rules or a mode change in the answer as a failed hook: send the bare decision.
+    const decision: Decision = rules
+      ? outcome.decision
+      : {
+          behavior: outcome.decision.behavior,
+          ...(outcome.decision.message ? { message: outcome.decision.message } : {}),
+        }
     if (decision.behavior === 'allow' && decision.always) {
       const file = this.ruleFile(info, payload.cwd ?? '', decision.always.scope)
       if (file)
@@ -178,6 +193,8 @@ export class PermissionBroker {
   respond(requestId: string, decision: Decision): void {
     const pending = this.pending.get(requestId)
     if (!pending) throw new DaemonError('already_resolved', 'request already resolved or expired')
+    if (decision.always && !pending.rules)
+      throw new DaemonError('bad_request', 'this agent does not take permission rules')
     if (decision.always && !parseRule(decision.always.rule))
       throw new DaemonError('bad_request', 'invalid rule')
     // Allowing a menu without its answer would only show it again in the terminal.

@@ -42,6 +42,7 @@ function record(id: string, patch: Partial<SessionRecord> = {}): SessionRecord {
     title: id,
     state: 'idle',
     permissionMode: null,
+    approvalPolicy: null,
     controllable: true,
     paneId: '%1',
     updatedAt: '2026-10-15T10:00:00Z',

@@ -58,6 +58,8 @@ Push notifications tell you when a session needs a permission, finishes a turn o
 
 A profile is a Claude Code account, that is a `CLAUDE_CONFIG_DIR`, with a name, a color and an alias. A profile can also route Claude Code through **OpenRouter**: its rows show a dashed `via OpenRouter` chip, **New session** gets a **Model** row with a searchable picker (context size, prices per million tokens, tool use, thinking and caching support, credits left), and **Change model…** in the session menu switches a running session. The key stays on the computer: see [the daemon](/en/docs/daemon/#profiles-and-openrouter).
 
+A profile can also run **Codex** (`cx` badge, green): its sessions show the approval policy (`on-request`, `never`…) in place of the mode chip, `exec(…)` and `apply_patch(…)` calls with their output and diff, and approvals with Allow / Deny. See [Codex profiles](/en/docs/daemon/#codex-profiles).
+
 ## Settings
 
 - **Machine**: the connection, the machine's name (an alias of your choice, else its hostname), the daemon version, and **Forget this machine**.

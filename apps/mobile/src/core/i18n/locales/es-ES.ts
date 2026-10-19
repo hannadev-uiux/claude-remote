@@ -110,6 +110,7 @@ const esES = {
   conversation: {
     turnDuration: 'Turno completado en {{duration}}',
     compacted: 'Conversación compactada',
+    interrupted: 'Interrumpido',
     loading: 'cargando conversación…',
     newMessages: '↓ mensajes nuevos',
     thinking: '✻ pensando…',
@@ -368,6 +369,8 @@ const esES = {
       todos: 'Elementos',
       skill: 'Skill',
       args: 'Argumentos',
+      folder: 'Carpeta',
+      files: 'Archivos',
     },
   },
   permissions: {
@@ -557,6 +560,8 @@ const esES = {
     autoConfirmBody:
       '{{agent}} decidirá por su cuenta qué acciones ejecutar, sin pedir aprobación, mientras nadie mira el ordenador.',
     autoConfirm: 'Activar auto',
+    approvalPolicy: 'Política de aprobación: {{policy}}',
+    unknownPolicy: 'desconocida',
     labels: {
       default: 'predeterminado',
       acceptEdits: 'aceptar ediciones',

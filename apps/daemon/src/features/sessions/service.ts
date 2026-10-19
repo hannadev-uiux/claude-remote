@@ -8,11 +8,11 @@ import {
 } from '@remote-harness/protocol'
 import type { Logger } from '../../core/logger.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
-import { profileAgentId } from '../agents/index.ts'
+import { type AgentAdapter, adapterOf, profileAgentId, type TranscriptSummary } from '../agents/index.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import { scanRecentTranscripts } from './recent-scan.ts'
 import type { SessionStore } from './store.ts'
-import { oneLine, readTranscriptMeta } from './transcript-meta.ts'
+import { oneLine } from './transcript-meta.ts'
 import type { SessionRecord } from './types.ts'
 
 export type SessionServiceOptions = {
@@ -51,6 +51,21 @@ export class SessionService {
     return profileAgentId(this.profiles.find((p) => p.id === profileId))
   }
 
+  private adapterFor(profileId: string | null | undefined): AgentAdapter {
+    return adapterOf(this.agentOf(profileId))
+  }
+
+  /** The transcript's title, folder and mode as the profile's agent writes them; null when unreadable. */
+  private async summary(
+    profileId: string | null | undefined,
+    path: string,
+  ): Promise<TranscriptSummary | null> {
+    const configDir = this.profiles.find((p) => p.id === profileId)?.configDir ?? ''
+    return this.adapterFor(profileId)
+      .readSummary(path, configDir)
+      .catch(() => null)
+  }
+
   private defaults(id: string, hook: HookEvent): SessionRecord {
     const cwd = hook.payload.cwd ?? ''
     return {
@@ -61,6 +76,7 @@ export class SessionService {
       title: cwd ? basename(cwd) : 'Session',
       state: 'idle',
       permissionMode: null,
+      approvalPolicy: null,
       controllable: false,
       paneId: null,
       updatedAt: hook.receivedAt,
@@ -75,7 +91,8 @@ export class SessionService {
   async handleHook(hook: HookEvent): Promise<void> {
     const id = hook.payload.session_id
     const patch: Partial<SessionRecord> = {}
-    const mode = parseMode(hook.payload.permission_mode)
+    // Codex reports `default` / `bypassPermissions` here too; its mode is the approval policy instead.
+    const mode = this.adapterFor(hook.profileId).modes ? parseMode(hook.payload.permission_mode) : undefined
     if (mode) patch.permissionMode = mode
     if (hook.payload.cwd) patch.cwd = hook.payload.cwd
     if (hook.payload.transcript_path) patch.transcriptPath = hook.payload.transcript_path
@@ -91,8 +108,10 @@ export class SessionService {
     switch (hook.event) {
       case 'SessionStart': {
         if (hook.paneId) this.releasePane(hook.paneId, id)
-        const title = await this.titleFromTranscript(hook.payload.transcript_path)
-        if (title) patch.title = title
+        const path = hook.payload.transcript_path
+        const summary = path ? await this.summary(hook.profileId, path) : null
+        if (summary?.title) patch.title = summary.title
+        if (summary?.approvalPolicy) patch.approvalPolicy = summary.approvalPolicy
         break
       }
       case 'UserPromptSubmit': {
@@ -141,15 +160,6 @@ export class SessionService {
     }
   }
 
-  private async titleFromTranscript(path: string | undefined): Promise<string | null> {
-    if (!path) return null
-    try {
-      return (await readTranscriptMeta(path)).title
-    } catch {
-      return null
-    }
-  }
-
   /**
    * Transcript activity (new entries read for the session or one of its subagents) advances
    * `updatedAt`, at most once per `ACTIVITY_THROTTLE_MS` per session so streaming output does
@@ -187,9 +197,7 @@ export class SessionService {
     const alive = new Set((await this.tmux.listPanes()).map((p) => p.paneId))
     for (const link of links) {
       if (!alive.has(link.paneId)) continue
-      const meta = link.transcriptPath
-        ? await readTranscriptMeta(link.transcriptPath).catch(() => null)
-        : null
+      const meta = link.transcriptPath ? await this.summary(link.profileId, link.transcriptPath) : null
       // Last activity survives the restart: the persisted stamp, else the transcript's mtime.
       const updatedAt =
         link.updatedAt ??
@@ -204,10 +212,12 @@ export class SessionService {
       this.store.upsert(link.id, { updatedAt }, () => ({
         id: link.id,
         profileId: link.profileId,
+        agent: this.agentOf(link.profileId),
         cwd: link.cwd,
         title: meta?.title ?? link.title,
         state: 'idle',
         permissionMode: meta?.permissionMode ?? null,
+        approvalPolicy: meta?.approvalPolicy ?? null,
         controllable: true,
         paneId: link.paneId,
         updatedAt,
@@ -231,7 +241,7 @@ export class SessionService {
     })
     for (const file of files) {
       if (this.store.get(file.sessionId)) continue
-      const meta = await readTranscriptMeta(file.path).catch(() => null)
+      const meta = await this.summary(file.profileId, file.path)
       if (!meta?.cwd) continue
       this.store.upsert(file.sessionId, { updatedAt: file.mtime.toISOString() }, () => ({
         id: file.sessionId,
@@ -241,6 +251,7 @@ export class SessionService {
         title: meta.title ?? basename(meta.cwd ?? ''),
         state: 'ended',
         permissionMode: meta.permissionMode,
+        approvalPolicy: meta.approvalPolicy,
         controllable: false,
         paneId: null,
         updatedAt: file.mtime.toISOString(),

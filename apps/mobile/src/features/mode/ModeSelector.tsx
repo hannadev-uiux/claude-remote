@@ -8,7 +8,7 @@ import { errorMessage } from '@/core/connection/error-message'
 import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { agentLabel } from '@/features/sessions/agent'
 import { Button, Text } from '@/ui'
-import { SELECTABLE_MODES } from './modes'
+import { approvalPolicyTone, SELECTABLE_MODES } from './modes'
 
 export function ModeSelector({
   sessionId,
@@ -108,6 +108,30 @@ export function ModeSelector({
         </Pressable>
       </Modal>
     </>
+  )
+}
+
+/**
+ * Codex's approval policy (`on-request`, `never`, …) in the place of the mode chip. Read-only: Codex
+ * permissions change with `/permissions` in the terminal.
+ */
+export function ApprovalPolicyChip({ policy }: { policy: string | null }) {
+  const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
+  const tone = approvalPolicyTone(policy)
+  const color = tone === 'danger' ? colors.danger : tone === 'accent' ? colors.accentText : colors.textMuted
+  const label = policy ?? '—'
+  return (
+    <View
+      accessible
+      accessibilityLabel={t('mode.approvalPolicy', { policy: policy ?? t('mode.unknownPolicy') })}
+      style={[styles.pill, { borderColor: tone === 'accent' ? colors.accent : color }]}
+    >
+      <Text size="xs" weight="medium" style={{ color }}>
+        {label}
+      </Text>
+    </View>
   )
 }
 

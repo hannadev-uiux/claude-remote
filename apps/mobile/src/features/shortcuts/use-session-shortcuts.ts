@@ -5,6 +5,7 @@ import { addListener, constants } from 'react-native-key-command'
 import { useConnectionStore } from '@/core/connection'
 import type { LayoutClass } from '@/core/layout'
 import { setInspectorOpen, setInspectorTab } from '@/features/inspector/store'
+import { hasSwitchableModes } from '@/features/mode/modes'
 import { buildRespond } from '@/features/permissions/describe'
 import { usePermissionsStore } from '@/features/permissions/store'
 import { listSessions, NO_FILTER } from '@/features/sessions/filter'
@@ -86,7 +87,7 @@ export function useSessionShortcuts(selectedSessionId: string | null, layout: La
         const c = client()
         if (!id || !c) return
         const session = useSessionsStore.getState().sessions[id]
-        if (!session?.controllable) return
+        if (!session?.controllable || !hasSwitchableModes(session.agent ?? null)) return
         c.request({ type: 'session.setMode', sessionId: id, mode: cycleMode(session.permissionMode) }).catch(
           () => undefined,
         )
