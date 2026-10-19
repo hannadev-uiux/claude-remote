@@ -6,7 +6,7 @@ import type { PushSender } from '../push/sender.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import type { EntryListener } from '../transcript/service.ts'
 import { LiveStatusService } from './service.ts'
-import { stepForEntry } from './status.ts'
+import { parallelTasks, stepForEntry } from './status.ts'
 
 /** Notification types that do not mean "waiting for you" (permissions come from PermissionRequest). */
 const NOT_WAITING = new Set(['auth_success'])
@@ -34,6 +34,10 @@ export function registerLiveStatusFeature(
       }
     },
     isMuted: options.isMuted,
+    tasksOf: (sessionId) => {
+      const session = options.store.get(sessionId)
+      return session ? parallelTasks(session) : 0
+    },
     follow: (sessionId, onEvent) =>
       options.follow(sessionId, (_id, entry) => {
         const event = stepForEntry(entry)
@@ -52,6 +56,14 @@ export function registerLiveStatusFeature(
     })
     return undefined
   })
+  // Background tasks and subagents change outside the hooks: the count follows the session store.
+  const offStore = options.store.onChange((session, previous) => {
+    const count = parallelTasks(session)
+    if (service.has(session.id) && (!previous || parallelTasks(previous) !== count)) {
+      service.handle(session.id, { type: 'tasks', count })
+    }
+  })
+
   ctx.router.register('live.unregister', (msg) => {
     service.unregister(msg.sessionId)
     return undefined
@@ -82,6 +94,9 @@ export function registerLiveStatusFeature(
     }),
   )
   ctx.bus.on('permission.resolved', ({ info }) => service.handle(info.sessionId, { type: 'resumed' }))
-  ctx.onStop(() => service.dispose())
+  ctx.onStop(() => {
+    offStore()
+    service.dispose()
+  })
   return { service }
 }

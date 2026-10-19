@@ -443,6 +443,7 @@ export const ptBR = {
       permission: 'permissão pendente',
     },
     tools: (count: number) => (count === 1 ? '1 ferramenta' : `${count} ferramentas`),
+    tasks: (count: number) => (count === 1 ? '1 tarefa rodando' : `${count} tarefas rodando`),
     ago: 'há {time}',
     allow: 'Permitir',
     deny: 'Negar',

@@ -338,6 +338,8 @@ const ptBR = {
     title: 'Status ao vivo',
     hint: 'Enquanto uma sessão trabalha, acompanhe na tela bloqueada e na Dynamic Island (iPhone) ou numa notificação silenciosa (Android). Aparecem o computador, o nome e a pasta da sessão, o estado, os últimos tipos de etapa e o tempo, nunca a conversa em si.',
     ago: 'há {time}',
+    tasks_one: '{{count}} tarefa rodando',
+    tasks_other: '{{count}} tarefas rodando',
     enabled: 'Mostrar status ao vivo',
     channelName: 'Status ao vivo',
     channelDescription: 'Progresso das sessões enquanto trabalham (silencioso).',

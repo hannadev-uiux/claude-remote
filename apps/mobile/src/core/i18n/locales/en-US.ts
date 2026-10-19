@@ -339,6 +339,8 @@ const enUS = {
     hint: 'While a session works, follow it on the lock screen and in the Dynamic Island (iPhone) or in a silent notification (Android). It shows the computer, the session name and folder, the state, the latest step types and the time, never the conversation itself.',
     /** The widget puts a live counter in `{time}` (single braces: not an i18next placeholder). */
     ago: '{time} ago',
+    tasks_one: '{{count}} task running',
+    tasks_other: '{{count}} tasks running',
     enabled: 'Show live status',
     channelName: 'Live status',
     channelDescription: 'Progress of sessions while they work (silent).',

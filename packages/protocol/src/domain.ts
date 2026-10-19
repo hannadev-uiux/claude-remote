@@ -355,6 +355,8 @@ export const LiveStatusPropsSchema = z.object({
   pending: LivePendingSchema.nullable().default(null),
   /** Short translated line: "total" when done, "transcript kept · resume from the app" when closed. */
   hint: z.string().default(''),
+  /** Translated count of tasks running in parallel (background tasks and running subagents), empty when none. */
+  tasks: z.string().default(''),
   /** Theme colors of the app that registered; absent from older daemons (the widget uses dark). */
   palette: LivePaletteSchema.optional(),
 })

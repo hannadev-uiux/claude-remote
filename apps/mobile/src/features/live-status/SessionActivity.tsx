@@ -43,7 +43,11 @@ function SessionActivityLayout(props: LiveStatusProps) {
   const glyphs = props.glyphs ?? []
   const pending = props.pending ?? null
   const hint = props.hint ?? ''
-  const stateLine = [props.status, props.step, props.tools].filter((part) => part.length > 0).join(' · ')
+  // Tasks running in parallel ("2 tasks running"); older daemons do not send the field.
+  const tasks = props.tasks ?? ''
+  const stateLine = [props.status, props.step, props.tools, tasks]
+    .filter((part) => part.length > 0)
+    .join(' · ')
   // Oldest on the left, the current step on the right; repeated glyphs get their own stable key.
   const seen: Record<string, number> = {}
   const ordered = [...glyphs].reverse().map((glyph) => {
