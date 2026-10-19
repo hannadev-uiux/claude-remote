@@ -289,7 +289,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Remote Harness',
   slug: 'claude-remote',
-  version: '0.11.0',
+  version: '0.12.0',
   scheme: 'claude-remote',
   orientation: 'portrait',
   icon: './assets/icon.png',
