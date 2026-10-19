@@ -516,6 +516,16 @@ export const ErrorCodeSchema = z.enum([
 ])
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>
 
+/** A request the daemon rejected, for `diagnostics.result`: never its payload or message. */
+export const RejectedRequestSchema = z.object({
+  at: z.string(),
+  type: z.string().max(64),
+  code: ErrorCodeSchema,
+})
+export type RejectedRequest = z.infer<typeof RejectedRequestSchema>
+/** How many rejections the daemon keeps for `diagnostics.errors`. */
+export const DIAGNOSTICS_LIMIT = 50
+
 /** Branches the daemon's installer can follow: `main` (stable) or `development`. */
 export const DaemonUpdateChannelSchema = z.enum(['main', 'development'])
 export type DaemonUpdateChannel = z.infer<typeof DaemonUpdateChannelSchema>

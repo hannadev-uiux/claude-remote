@@ -17,6 +17,7 @@ import { DAEMON_VERSION } from './core/version.ts'
 import { registerAttachmentsFeature } from './features/attachments/index.ts'
 import { registerAutocompleteFeature } from './features/autocomplete/index.ts'
 import { registerCheckoutFeature } from './features/checkout/index.ts'
+import { registerDiagnosticsFeature } from './features/diagnostics/index.ts'
 import { HookReceiver } from './features/hooks/receiver.ts'
 import { registerInputFeature } from './features/input/index.ts'
 import { registerLifecycleFeature } from './features/lifecycle/index.ts'
@@ -258,6 +259,7 @@ async function registerFeatures(
   const queue = registerQueueFeature(ctx, sessions.store, input.service, hasPendingPermission)
   registerModeFeature(ctx, sessions.store, sessionLock, hasPendingPermission)
   registerAutocompleteFeature(ctx, sessions.store)
+  registerDiagnosticsFeature(ctx)
   registerPaneFeature(ctx, sessions.store)
   registerProvidersFeature(ctx, { key: ctx.providerKey })
   const checkout = registerCheckoutFeature(ctx, sessions.store)

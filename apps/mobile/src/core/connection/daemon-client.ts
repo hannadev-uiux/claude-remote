@@ -57,11 +57,14 @@ export type DaemonClientOptions = {
 }
 
 type Pending = {
+  type: ClientRequest['type']
   resolve: (message: ServerMessage) => void
   reject: (error: Error) => void
   timer: ReturnType<typeof setTimeout>
 }
 type AnyHandler = (message: ServerMessage) => void
+/** A request answered with `error`, or never answered: its message type and the error (code). */
+export type RequestErrorListener = (type: ClientRequest['type'], error: DaemonRequestError) => void
 
 const OPEN = 1
 /** Close codes after which retrying is pointless (bad token, rotated token, protocol mismatch). */
@@ -82,6 +85,7 @@ export class DaemonClient {
   private readonly handlers = new Map<ServerMessageType | '*', Set<AnyHandler>>()
   private readonly statusListeners = new Set<(status: ConnectionStatus, error?: string) => void>()
   private readyListeners = new Set<(hello: Hello) => void>()
+  private readonly requestErrorListeners = new Set<RequestErrorListener>()
   private seq = 0
   private attempt = 0
   private retryTimer: ReturnType<typeof setTimeout> | null = null
@@ -175,6 +179,20 @@ export class DaemonClient {
     return this.sendRequest(message, options.timeoutMs)
   }
 
+  /**
+   * Called when a request is answered with `error` or times out (not for requests dropped because
+   * the connection was lost, which the connection status already reports).
+   */
+  onRequestError(listener: RequestErrorListener): () => void {
+    this.requestErrorListeners.add(listener)
+    return () => this.requestErrorListeners.delete(listener)
+  }
+
+  private requestFailed(type: ClientRequest['type'], error: DaemonRequestError): DaemonRequestError {
+    for (const listener of this.requestErrorListeners) listener(type, error)
+    return error
+  }
+
   /** Fire-and-forget variant that ignores the reply. */
   send(message: ClientRequest): void {
     this.request(message).catch(() => undefined)
@@ -201,11 +219,16 @@ export class DaemonClient {
       const timer = setTimeout(
         () => {
           this.pending.delete(id)
-          reject(new DaemonRequestError('timeout', `no reply to ${message.type}`))
+          reject(
+            this.requestFailed(
+              message.type,
+              new DaemonRequestError('timeout', `no reply to ${message.type}`),
+            ),
+          )
         },
         timeoutMs ?? this.options.requestTimeoutMs ?? 15_000,
       )
-      this.pending.set(id, { resolve, reject, timer })
+      this.pending.set(id, { type: message.type, resolve, reject, timer })
       this.socket?.send(JSON.stringify({ ...message, id }))
     })
   }
@@ -299,7 +322,10 @@ export class DaemonClient {
       if (pending) {
         this.pending.delete(replyTo)
         clearTimeout(pending.timer)
-        if (message.type === 'error') pending.reject(new DaemonRequestError(message.code, message.message))
+        if (message.type === 'error')
+          pending.reject(
+            this.requestFailed(pending.type, new DaemonRequestError(message.code, message.message)),
+          )
         else pending.resolve(message)
       }
     }

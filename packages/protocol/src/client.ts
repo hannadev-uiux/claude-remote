@@ -168,6 +168,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   /** Updates the daemon to the channel's latest version; it restarts at the end. */
   z.object({ type: z.literal('daemon.update.start'), id, channel: DaemonUpdateChannelSchema }),
+  /** The daemon's recent rejected requests (type and code only), for "Report a problem". */
+  z.object({ type: z.literal('diagnostics.errors'), id }),
   z.object({
     type: z.literal('settings.mute'),
     id,

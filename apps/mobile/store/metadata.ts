@@ -58,7 +58,7 @@ HOW IT WORKS
 A small daemon on your macOS, Linux or Windows (WSL2) computer bridges the agent's own hooks and tmux to the phone over a WebSocket bound to the Tailscale interface. One command installs it: curl -fsSL https://remoteharness.app/install.sh | bash. Scan the QR code it shows, and you are paired.
 
 PRIVACY
-Everything stays on your devices and your tailnet. Push notifications carry a title, a profile and a session id, never the content. No analytics, no telemetry. The code is open source (MIT) at github.com/maarkN/remote-harness; the documentation lives at remoteharness.app/docs.
+Everything stays on your devices and your tailnet. Push notifications carry a title, a profile and a session id, never the content. No analytics, no telemetry; error reports only if you opt in, never with your sessions. The code is open source (MIT) at github.com/maarkN/remote-harness; the documentation lives at remoteharness.app/docs.
 
 REQUIREMENTS
 Tailscale on the phone and on the computer; Claude Code, tmux, git and ripgrep on the computer (the installer adds what is missing).
@@ -106,7 +106,7 @@ COMO FUNCIONA
 Um daemon pequeno no seu computador macOS, Linux ou Windows (WSL2) faz a ponte entre os hooks do próprio agente, o tmux e o celular, por um WebSocket preso à interface do Tailscale. Um comando instala: curl -fsSL https://remoteharness.app/install.sh | bash. Escaneie o QR code que ele mostra e está pareado.
 
 PRIVACIDADE
-Tudo fica nos seus aparelhos e na sua tailnet. As notificações push levam um título, um perfil e um id de sessão, nunca o conteúdo. Sem analytics, sem telemetria. O código é aberto (MIT) em github.com/maarkN/remote-harness; a documentação está em remoteharness.app/docs.
+Tudo fica nos seus aparelhos e na sua tailnet. As notificações push levam um título, um perfil e um id de sessão, nunca o conteúdo. Sem analytics, sem telemetria; relatórios de erro só se você aceitar, nunca com as suas sessões. O código é aberto (MIT) em github.com/maarkN/remote-harness; a documentação está em remoteharness.app/docs.
 
 REQUISITOS
 Tailscale no celular e no computador; Claude Code, tmux, git e ripgrep no computador (o instalador adiciona o que falta).
@@ -154,7 +154,7 @@ CÓMO FUNCIONA
 Un pequeño daemon en tu ordenador macOS, Linux o Windows (WSL2) hace de puente entre los hooks del propio agente, tmux y el móvil, por un WebSocket atado a la interfaz de Tailscale. Un comando lo instala: curl -fsSL https://remoteharness.app/install.sh | bash. Escanea el código QR que muestra y ya estás emparejado.
 
 PRIVACIDAD
-Todo se queda en tus dispositivos y en tu tailnet. Las notificaciones push llevan un título, un perfil y un id de sesión, nunca el contenido. Sin analítica, sin telemetría. El código es abierto (MIT) en github.com/maarkN/remote-harness; la documentación está en remoteharness.app/docs.
+Todo se queda en tus dispositivos y en tu tailnet. Las notificaciones push llevan un título, un perfil y un id de sesión, nunca el contenido. Sin analítica, sin telemetría; informes de errores solo si los aceptas, nunca con tus sesiones. El código es abierto (MIT) en github.com/maarkN/remote-harness; la documentación está en remoteharness.app/docs.
 
 REQUISITOS
 Tailscale en el móvil y en el ordenador; Claude Code, tmux, git y ripgrep en el ordenador (el instalador añade lo que falte).

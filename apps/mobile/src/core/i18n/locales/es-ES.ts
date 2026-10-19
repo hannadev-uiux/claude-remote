@@ -718,6 +718,42 @@ const esES = {
     documentation: 'Documentación',
     reportProblem: 'Informar de un problema',
   },
+  errorReports: {
+    title: 'Informes de errores',
+    hint: 'Ayuda a corregir fallos enviando informes de errores. Nunca incluyen tus sesiones: ni prompts, ni conversación, ni salida del terminal, rutas o nombres.',
+    preferences: { auto: 'Enviar automáticamente', ask: 'Preguntar cada vez', never: 'Nunca' },
+    unavailable:
+      'Esta compilación no tiene Firebase: los informes solo se pueden compartir o publicar como issue en GitHub.',
+    recorded_one: '{{count}} error registrado en este teléfono',
+    recorded_other: '{{count}} errores registrados en este teléfono',
+    crash: {
+      title: 'La app se cerró inesperadamente',
+      body: '¿Enviar el informe para ayudar a corregirlo? Esto es exactamente lo que se enviará:',
+      native:
+        'Además del informe de fallo del sistema: modelo del dispositivo, versión del sistema y la pila nativa.',
+      send: 'Enviar',
+      dontSend: 'No enviar',
+      nextTime: 'La próxima vez',
+    },
+    problem: {
+      title: 'Informar de un problema',
+      description: '¿Qué ha pasado?',
+      placeholder: 'p. ej., el botón de iniciar sesión no hace nada',
+      descriptionHint: 'Se envía tal cual: no incluyas nada privado.',
+      includeComputer: 'Incluir los errores recientes del ordenador',
+      preview: 'Lo que se enviará',
+      send: 'Enviar',
+      share: 'Compartir',
+      github: 'Abrir una issue en GitHub',
+      sent: 'Informe enviado. ¡Gracias!',
+      failed: 'No se pudo enviar el informe.',
+    },
+    fallback: {
+      title: 'Algo salió mal',
+      body: 'El error se ha registrado en este teléfono. Puedes enviarlo en Ajustes → Informar de un problema.',
+      retry: 'Reintentar',
+    },
+  },
   updates: {
     title: 'App',
     version: 'versión',

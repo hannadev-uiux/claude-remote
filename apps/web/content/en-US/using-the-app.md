@@ -63,7 +63,8 @@ A profile is a Claude Code account, that is a `CLAUDE_CONFIG_DIR`, with a name, 
 - **Profiles**: each profile with its agent, alias, config dir, notifications switch and, with a provider, the provider, the default model and the credits.
 - **Notifications**: push for this phone, test, live status, the muted profiles and sessions.
 - **Voice**: the transcription language.
-- **App**: version, over-the-air updates and their channel, **Check for updates**, **Documentation**, **Report a problem**.
+- **App**: version, over-the-air updates and their channel, **Check for updates**, **Documentation**.
+- **Error reports**: send automatically, ask each time (default) or never, and **Report a problem** (describe the bug, preview exactly what is sent, then send, share or open a GitHub issue). Reports never carry the content of your sessions; see the [privacy policy](/en/docs/privacy/).
 
 ## iPad and keyboards
 

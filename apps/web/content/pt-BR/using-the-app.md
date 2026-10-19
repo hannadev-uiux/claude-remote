@@ -63,7 +63,8 @@ Um perfil é uma conta do Claude Code, ou seja um `CLAUDE_CONFIG_DIR`, com nome,
 - **Perfis**: cada perfil com agente, alias, pasta de config, interruptor de notificações e, com provedor, o provedor, o modelo padrão e os créditos.
 - **Notificações**: push para este celular, teste, status ao vivo, os perfis e sessões silenciados.
 - **Voz**: o idioma da transcrição.
-- **App**: versão, atualizações over-the-air e o canal delas, **Verificar atualizações**, **Documentação**, **Relatar um problema**.
+- **App**: versão, atualizações over-the-air e o canal delas, **Verificar atualizações**, **Documentação**.
+- **Relatórios de erro**: enviar automaticamente, perguntar sempre (padrão) ou nunca, e **Relatar um problema** (descreva o bug, veja exatamente o que será enviado e envie, compartilhe ou abra uma issue no GitHub). Os relatórios nunca levam o conteúdo das suas sessões; veja a [política de privacidade](/pt-br/docs/privacy/).
 
 ## iPad e teclados
 

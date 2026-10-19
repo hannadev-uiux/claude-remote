@@ -99,6 +99,7 @@ const clientSamples: ClientMessage[] = [
   { type: 'provider.status', id: '1', profileId: 'work' },
   { type: 'directories.list', id: '1', path: '~', limit: 200 },
   { type: 'directories.list', id: '1', path: '~/work', prefix: 'ap', hidden: true, limit: 20 },
+  { type: 'diagnostics.errors', id: '1' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'session.start', id: '1', profileId: 'work', cwd: '/tmp', model: 'anthropic/claude-opus-5.5' },
@@ -267,6 +268,13 @@ const serverSamples: ServerMessage[] = [
     items: [],
     truncated: true,
   },
+  {
+    type: 'diagnostics.result',
+    replyTo: '1',
+    daemonVersion: '0.12.0',
+    errors: [{ at: '2026-10-19T12:00:00.000Z', type: 'session.start', code: 'invalid_cwd' }],
+  },
+  { type: 'diagnostics.result', replyTo: '1', daemonVersion: '0.12.0', errors: [] },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
   {
     type: 'daemon.update.info',
