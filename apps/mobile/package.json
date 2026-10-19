@@ -68,6 +68,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "icons": "tsx scripts/icons.mts",
+    "store:metadata": "tsx scripts/store-metadata.mts",
     "doctor": "expo-doctor",
     "xterm": "tsx scripts/build-xterm-html.mts"
   },

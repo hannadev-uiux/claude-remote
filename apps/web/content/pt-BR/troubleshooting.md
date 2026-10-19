@@ -52,6 +52,10 @@ O app avisa quando o daemon é mais antigo do que precisa. Rode `remote-harness 
 
 O atalho se recusa a abrir uma janela quando o perfil não tem chave e imprime o comando para rodar: `remote-harness provider key <perfil>`. O `doctor` lista os perfis com provedor e se cada um tem chave. Sessões abertas mantêm a chave com que começaram; as novas leem de novo.
 
+## Migrando de um development build para a build da loja
+
+Quando a build do TestFlight ou do Google Play estiver disponível, instale-a ao lado da build que você mesmo fez: ela tem outra assinatura, então começa vazia. Pareie de novo escaneando `remote-harness pair`; o pareamento antigo continua funcionando até você tocar em **Esquecer esta máquina** naquela build ou trocar o token. O push se registra sozinho na primeira abertura da nova build, e o computador descarta o registro antigo quando ele para de conectar. Depois apague o development build.
+
 ## Pedindo ajuda
 
 Abra uma issue com a saída de `remote-harness doctor`, as versões (sistema, Node, Claude Code, app) e os logs do daemon em `~/.remote-harness/logs`, depois de remover tokens e conteúdo de sessões. Problemas de segurança vão para [Segurança e privacidade](/pt-br/docs/security/#relatar-uma-vulnerabilidade), nunca para issues públicas.

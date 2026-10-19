@@ -52,6 +52,10 @@ The app says when the daemon is older than it needs. Run `remote-harness update`
 
 The launcher refuses to open a window when the profile has no key and prints the command to run: `remote-harness provider key <profile>`. `doctor` lists the provider profiles and whether each has a key. Open sessions keep the key they started with; new ones read it again.
 
+## Moving from a development build to the store build
+
+When the TestFlight or Google Play build is available, install it next to the build you made yourself: it has a different signature, so it starts empty. Pair it again by scanning `remote-harness pair`; the old pairing keeps working until you tap **Forget this machine** in that build or rotate the token. Push registers itself on the first launch of the new build, and the computer drops the old registration once it stops connecting. Then delete the development build.
+
 ## Getting help
 
 Open an issue with the output of `remote-harness doctor`, the versions (OS, Node, Claude Code, the app) and the daemon logs from `~/.remote-harness/logs`, after removing tokens and session content. Security problems go to [Security & privacy](/en/docs/security/#reporting-a-vulnerability), never to public issues.
