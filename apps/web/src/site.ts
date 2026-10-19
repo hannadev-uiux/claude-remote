@@ -3,6 +3,10 @@ import { LOCALE_PATHS, WEB_LOCALES } from './i18n/locale.ts'
 
 export const SITE_URL = 'https://remoteharness.app'
 export const REPO_URL = 'https://github.com/maarkN/remote-harness'
+/** The author, credited at the bottom of every page. */
+export const AUTHOR = { name: 'maarkn', url: 'https://maarkn.dev' } as const
+/** GitHub logins shown in the footer's contributors line, in order. */
+export const CONTRIBUTORS = ['maarkN', 'hannadev-uiux'] as const
 /** Brand image for link previews (`docs/brand/og.png`), bundled into the Worker and served here. */
 export const OG_IMAGE_PATH = '/og.png'
 export const OG_IMAGE_URL = `${SITE_URL}${OG_IMAGE_PATH}`

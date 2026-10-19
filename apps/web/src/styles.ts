@@ -139,7 +139,14 @@ footer .row a { color: var(--muted); }
 footer .row .brand { display: flex; align-items: center; gap: 8px; color: var(--fg); font-weight: 700; margin-right: auto; }
 footer .row .brand svg { width: 20px; height: 20px; color: var(--accent); }
 footer .row .langs { color: var(--dim); }
-footer small { font-size: 11.5px; color: var(--dim); max-width: 80ch; }
+footer .fine { display: flex; gap: 24px 48px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+footer small { font-size: 11.5px; color: var(--dim); max-width: 72ch; flex: 1 1 420px; }
+footer .contrib { display: flex; gap: 6px 14px; align-items: center; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; color: var(--dim); }
+footer .contrib a { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+footer .contrib i { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border-strong); font-style: normal; font-size: 10px; color: var(--muted); }
+footer .by { padding-top: 16px; border-top: 1px solid var(--border); text-align: center; font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+footer .by a { color: var(--muted); }
+footer a:hover { color: var(--fg); }
 @media (prefers-reduced-motion: no-preference) { .hero .shot .phone { animation: rise .7s ease-out both; } @keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } } }
 
 /* phone mock (always the app's dark theme) */

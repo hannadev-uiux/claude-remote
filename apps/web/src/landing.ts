@@ -2,7 +2,7 @@ import { agentMark } from './agent-marks.ts'
 import { esc, inline } from './html.ts'
 import { LOCALE_PATHS, type Locale, messagesFor, WEB_LOCALES, type WebMessages } from './i18n/index.ts'
 import { INSTALL_COMMANDS } from './install.ts'
-import { MARK_REGULAR, OG_IMAGE_URL, REPO_URL, SITE_URL } from './site.ts'
+import { AUTHOR, CONTRIBUTORS, MARK_REGULAR, OG_IMAGE_URL, REPO_URL, SITE_URL } from './site.ts'
 import { STYLES } from './styles.ts'
 
 const OG_LOCALES: Record<Locale, string> = { 'en-US': 'en_US', 'pt-BR': 'pt_BR', 'es-ES': 'es_ES' }
@@ -106,9 +106,17 @@ export function siteHeader(
 export function siteFooter(locale: Locale, m: WebMessages): string {
   const f = m.footer
   const languages = WEB_LOCALES.map((l) => LANG_NAMES[l]).join(' · ')
+  const contributors = CONTRIBUTORS.map(
+    (login) =>
+      `<a href="https://github.com/${login}"><i aria-hidden="true">${login.charAt(0).toUpperCase()}</i>${login.toLowerCase()}</a>`,
+  ).join('')
   return `<footer>
   <div class="row"><span class="brand">${mark(20)}Remote Harness</span><a href="${docsPath(locale)}">${esc(f.docs)}</a><a href="${REPO_URL}">${esc(f.github)}</a><a href="${LINKS.releases}">${esc(f.releases)}</a><a href="${LINKS.security}">${esc(f.security)}</a><a href="${docsPath(locale)}privacy/">${esc(f.privacy)}</a><a href="${LINKS.license}">${esc(f.license)}</a><span class="langs">${languages}</span></div>
-  <small>${esc(f.legal)}</small>
+  <div class="fine">
+    <small>${esc(f.legal)}</small>
+    <div class="contrib"><span>${esc(f.contributors)}</span>${contributors}</div>
+  </div>
+  <div class="by">${esc(f.madeBy)} <a href="${AUTHOR.url}">${AUTHOR.name}</a></div>
 </footer>`
 }
 

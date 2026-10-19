@@ -277,6 +277,8 @@ export const esES: WebMessages = {
     license: 'MIT',
     legal:
       'Remote Harness es un proyecto independiente, sin afiliación, respaldo ni patrocinio de Anthropic, OpenAI, Moonshot AI, Alibaba Cloud ni OpenRouter. “Claude” y “Claude Code” son marcas de Anthropic, PBC; “Codex” es marca de OpenAI; Kimi, Qwen y OpenRouter y sus logotipos pertenecen a sus dueños. Las capturas muestran sesiones de demostración.',
+    contributors: 'Colaboradores',
+    madeBy: 'Hecho por',
   },
   docs: {
     title: 'Documentación',
