@@ -1,7 +1,8 @@
 import { join } from 'node:path'
+import type { PermissionRequestInfo, Profile } from '@remote-harness/protocol'
 import { effectiveLocale, loadConfig, updateConfigFile } from '../../core/config.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
-import { paths } from '../../core/paths.ts'
+import { hostName, paths, shortenHome } from '../../core/paths.ts'
 import { DAEMON_VERSION } from '../../core/version.ts'
 import { createDesktop, runDetachedUpdate } from '../../infra/desktop.ts'
 import { currentWsl, resolvePlatform } from '../../infra/platform.ts'
@@ -11,7 +12,15 @@ import type { SessionStore } from '../sessions/store.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from '../update/update.ts'
 import { isQuietMoment, isUpdateChannel, underServiceManager, updateLabel } from './channel.ts'
 import { type AvailableUpdate, UpdateChecker } from './checker.ts'
-import { buildTrayMenu, CHANNEL_ACTION_PREFIX, TRAY_ACTIONS } from './menu.ts'
+import {
+  buildTrayMenu,
+  CHANNEL_ACTION_PREFIX,
+  pendingSummary,
+  TRAY_ACTIONS,
+  TRAY_PREFIXES,
+  type TrayPending,
+  type TraySession,
+} from './menu.ts'
 import { TrayHost } from './tray-host.ts'
 
 /** Given only to the service daemon (`start` without `--dev`). */
@@ -22,9 +31,25 @@ export type DesktopOptions = {
   restart: () => void
 }
 
+/** What the tray shell needs besides the update state. */
+export type TrayShellDeps = {
+  profiles: readonly Profile[]
+  /** Pending permission requests, oldest first by `createdAt` after sorting. */
+  pendingPermissions: () => PermissionRequestInfo[]
+  /** Answers a request like the app does; `always` saves the suggested rule. */
+  respond: (requestId: string, decision: 'allow' | 'deny', always: boolean) => void
+  /** Registered phones and whether push is configured. */
+  phones: () => { count: number; push: boolean }
+  /** Graceful close of a session (change 57). */
+  closeSession: (sessionId: string) => Promise<unknown>
+}
+
 /** First check after start, then how often due checks and automatic updates are evaluated. */
 const FIRST_CHECK_MS = 2 * 60 * 1000
 const TICK_MS = 10 * 60 * 1000
+/** Session and permission changes rebuild the menu at most this often. */
+const MENU_REFRESH_MS = 300
+const DOCS_URL = 'https://remoteharness.app/docs'
 
 export async function registerUpdatesFeature(
   ctx: DaemonContext,
@@ -32,17 +57,21 @@ export async function registerUpdatesFeature(
     store: SessionStore
     hasPendingPermission: (sessionId: string) => boolean
     options: DesktopOptions
+    shell?: TrayShellDeps
   },
 ) {
   const platform = resolvePlatform()
   const wsl = currentWsl(platform) !== null
   const desktop = createDesktop(ctx.exec, platform, { wsl })
-  const m = messagesFor(effectiveLocale(ctx.config)).updates
+  const locale = effectiveLocale(ctx.config)
+  const m = messagesFor(locale).updates
   const source = updateSource(deps.options.cliPath, installerSourceDir())
   let settings = { update: ctx.config.update, tray: ctx.config.tray }
   let updating = false
   /** Commit whose update failed: automatic updates do not retry it (the menu still can). */
   let failedCommit: string | null = null
+  const startedAt = new Date()
+  const machine = hostName()
 
   const notifyAvailable = (available: AvailableUpdate) => {
     const version = updateLabel(available, DAEMON_VERSION)
@@ -86,6 +115,44 @@ export async function registerUpdatesFeature(
       )
     : null
 
+  /** The shell sections: sessions by recency, the oldest pending tool permission, the phones. */
+  const shellState = () => {
+    const shell = deps.shell
+    if (!shell) return {}
+    const profileName = (id: string) => shell.profiles.find((p) => p.id === id)?.name ?? id
+    const sessions: TraySession[] = deps.store.all().map((s) => ({
+      id: s.id,
+      title: s.title || s.cwd,
+      folder: shortenHome(s.cwd),
+      profile: profileName(s.profileId),
+      state: s.state,
+      worktree: s.cwd.includes('/.claude/worktrees/'),
+      controllable: s.controllable,
+    }))
+    const oldest = shell
+      .pendingPermissions()
+      .filter((p) => !p.interaction)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0]
+    const pending: TrayPending | null = oldest
+      ? {
+          requestId: oldest.requestId,
+          sessionId: oldest.sessionId,
+          title: deps.store.get(oldest.sessionId)?.title || profileName(oldest.profileId),
+          profile: profileName(oldest.profileId),
+          summary: pendingSummary(oldest),
+          canAlways: oldest.suggestedRule !== null,
+        }
+      : null
+    return {
+      machine,
+      since: startedAt.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+      sessions,
+      pending,
+      phones: shell.phones(),
+      canStart: shell.profiles.length > 0,
+    }
+  }
+
   const refreshMenu = () =>
     tray?.update(
       buildTrayMenu(
@@ -103,10 +170,22 @@ export async function registerUpdatesFeature(
           updating,
           canUpdate: checker !== null,
           canRestart: underServiceManager(),
+          ...shellState(),
         },
         m.tray,
       ),
     )
+
+  // A busy session must not flood the helper: changes coalesce into one rebuild.
+  let refreshTimer: NodeJS.Timeout | undefined
+  const scheduleRefresh = () => {
+    if (!tray || refreshTimer) return
+    refreshTimer = setTimeout(() => {
+      refreshTimer = undefined
+      refreshMenu()
+    }, MENU_REFRESH_MS)
+    refreshTimer.unref()
+  }
 
   const runUpdate = () => {
     const available = checker?.state.available
@@ -170,20 +249,43 @@ export async function registerUpdatesFeature(
     await reload()
   }
 
+  const focusSession = async (sessionId: string) => {
+    const session = deps.store.get(sessionId)
+    if (session?.paneId) await ctx.tmux.focusPane(session.paneId)
+  }
+
+  const quote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`
+
   async function onTrayClick(id: string) {
+    const shell = deps.shell
     try {
       if (id === TRAY_ACTIONS.check) await check(true)
       else if (id === TRAY_ACTIONS.update) runUpdate()
       else if (id === TRAY_ACTIONS.auto) await saveUpdateSettings({ auto: !settings.update.auto })
       else if (id === TRAY_ACTIONS.logs) await desktop.open(paths.logs())
       else if (id === TRAY_ACTIONS.doctor)
-        await desktop.runInTerminal(`'${join(paths.bin(), 'remote-harness')}' doctor`)
+        await desktop.runInTerminal(`${quote(join(paths.bin(), 'remote-harness'))} doctor`)
       else if (id === TRAY_ACTIONS.restart && underServiceManager()) deps.options.restart()
       else if (id === TRAY_ACTIONS.quit) tray?.stop()
+      else if (id === TRAY_ACTIONS.newSession) {
+        const profile = shell?.profiles[0]
+        if (profile) await desktop.runInTerminal(quote(join(paths.bin(), profile.id)))
+      } else if (id === TRAY_ACTIONS.pair)
+        await desktop.runInTerminal(`${quote(join(paths.bin(), 'remote-harness'))} pair`)
+      else if (id === TRAY_ACTIONS.docs) await desktop.open(DOCS_URL)
+      else if (id === TRAY_ACTIONS.prefs) await desktop.open(paths.config())
       else if (id.startsWith(CHANNEL_ACTION_PREFIX)) {
         const channel = id.slice(CHANNEL_ACTION_PREFIX.length)
         if (isUpdateChannel(channel)) await saveUpdateSettings({ channel })
-      }
+      } else if (id.startsWith(TRAY_PREFIXES.allow))
+        shell?.respond(id.slice(TRAY_PREFIXES.allow.length), 'allow', false)
+      else if (id.startsWith(TRAY_PREFIXES.always))
+        shell?.respond(id.slice(TRAY_PREFIXES.always.length), 'allow', true)
+      else if (id.startsWith(TRAY_PREFIXES.deny))
+        shell?.respond(id.slice(TRAY_PREFIXES.deny.length), 'deny', false)
+      else if (id.startsWith(TRAY_PREFIXES.focus)) await focusSession(id.slice(TRAY_PREFIXES.focus.length))
+      else if (id.startsWith(TRAY_PREFIXES.close))
+        await shell?.closeSession(id.slice(TRAY_PREFIXES.close.length))
     } catch (error) {
       ctx.logger.warn({ err: error, action: id }, 'tray action failed')
     }
@@ -198,6 +300,12 @@ export async function registerUpdatesFeature(
     return { state: result?.state ?? null }
   })
 
+  if (deps.shell) {
+    deps.store.onChange(scheduleRefresh)
+    ctx.bus.on('permission.requested', scheduleRefresh)
+    ctx.bus.on('permission.resolved', scheduleRefresh)
+  }
+
   void tray?.launch().then(refreshMenu)
   refreshMenu()
   const first = setTimeout(() => void check(), FIRST_CHECK_MS)
@@ -207,6 +315,7 @@ export async function registerUpdatesFeature(
   ctx.onStop(() => {
     clearTimeout(first)
     clearInterval(tick)
+    clearTimeout(refreshTimer)
     tray?.stop()
   })
   return { checker, tray }

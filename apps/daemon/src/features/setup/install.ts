@@ -70,6 +70,7 @@ export async function installAll(
     binDir: paths.bin(),
     tmuxSession: config.tmuxSession,
     tmuxBin,
+    missingKey: m.missingProviderKey,
   })
   for (const path of launchers) lines.push({ status: 'done', text: `launcher ${path}` })
   if (o.cliPath) {

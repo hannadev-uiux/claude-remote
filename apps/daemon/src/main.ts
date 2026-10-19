@@ -21,8 +21,10 @@ import { registerMuteFeature } from './features/mute/index.ts'
 import type { MuteStore } from './features/mute/store.ts'
 import { registerPaneFeature } from './features/pane/index.ts'
 import { registerPermissionsFeature } from './features/permissions/index.ts'
+import { registerProvidersFeature } from './features/providers/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
+import { registerQueueFeature } from './features/queue/index.ts'
 import { registerSessionsFeature } from './features/sessions/index.ts'
 import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
@@ -54,6 +56,8 @@ export type DaemonOptions = {
   pushSender?: PushSender | null
   /** Update checks and the tray icon: only for the service daemon (`start` without `--dev`). */
   desktop?: DesktopOptions
+  /** A profile's provider key from the OS secret store (`null` when none); absent = no keys (tests). */
+  providerKey?: (profileId: string) => Promise<string | null>
 }
 
 export type RunningDaemon = {
@@ -83,6 +87,8 @@ export type DaemonContext = {
   onClientConnected(fn: (connection: Connection) => void): void
   /** Overrides the Firebase sender (tests); undefined = load from the service account file. */
   pushSender?: PushSender | null
+  /** A profile's provider key from the OS secret store; only ever handed to the provider itself. */
+  providerKey: (profileId: string) => Promise<string | null>
 }
 
 export function resolveWsHost(options: Pick<DaemonOptions, 'dev' | 'host'>): string {
@@ -148,6 +154,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     onStop: (fn) => stopHandlers.push(fn),
     onClientConnected: (fn) => connectHandlers.push(fn),
     pushSender: options.pushSender,
+    providerKey: options.providerKey ?? (async () => null),
   }
 
   router.register('ping', () => ({ type: 'pong' }))
@@ -223,18 +230,26 @@ async function registerFeatures(
   desktop: DesktopOptions | undefined,
 ): Promise<{ mute: MuteStore; pushMode: () => PushMode }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
-  const transcript = registerTranscriptFeature(ctx, sessions.store)
+  const transcript = registerTranscriptFeature(ctx, sessions.store, (id, at) =>
+    sessions.service.noteActivity(id, at),
+  )
   registerSubagentsFeature(ctx, sessions.store, transcript.addResolver)
   registerStatusLineFeature(ctx, sessions.store)
   const sessionLock = new KeyedMutex()
   const attachments = registerAttachmentsFeature(ctx, sessions.store)
-  registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
   const permissions = registerPermissionsFeature(ctx)
-  registerModeFeature(ctx, sessions.store, sessionLock, (id) => permissions.broker.hasPending(id))
+  const hasPendingPermission = (id: string) => permissions.broker.hasPending(id)
+  const input = registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
+  const queue = registerQueueFeature(ctx, sessions.store, input.service, hasPendingPermission)
+  registerModeFeature(ctx, sessions.store, sessionLock, hasPendingPermission)
   registerAutocompleteFeature(ctx, sessions.store)
   registerPaneFeature(ctx, sessions.store)
+  registerProvidersFeature(ctx, { key: ctx.providerKey })
   const checkout = registerCheckoutFeature(ctx, sessions.store)
-  registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver)
+  const lifecycle = registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver, {
+    lock: sessionLock,
+    denyPending: (id) => void permissions.broker.denyAll(id),
+  })
   const mute = await registerMuteFeature(ctx)
   const isMuted = (profileId: string | null, sessionId: string) => mute.store.isMuted(profileId, sessionId)
   const push = await registerPushFeature(ctx, { isMuted, sender: ctx.pushSender })
@@ -249,8 +264,25 @@ async function registerFeatures(
       store: sessions.store,
       hasPendingPermission: (id) => permissions.broker.hasPending(id),
       options: desktop,
+      shell: {
+        profiles: ctx.profiles,
+        pendingPermissions: () => permissions.broker.list(),
+        respond: (requestId, decision, always) => {
+          const info = permissions.broker.list().find((p) => p.requestId === requestId)
+          permissions.broker.respond(requestId, {
+            behavior: decision,
+            ...(always && decision === 'allow' && info?.suggestedRule
+              ? { always: { rule: info.suggestedRule, scope: info.defaultScope } }
+              : {}),
+          })
+        },
+        phones: () => ({ count: push.devices.list().length, push: push.mode() !== 'off' }),
+        closeSession: (id) => lifecycle.closer.close(id),
+      },
     })
   }
   await sessions.start()
+  // After the sessions, so prompts queued for sessions that ended meanwhile are dropped.
+  await queue.service.load().catch((error) => ctx.logger.warn({ err: error }, 'queue restore failed'))
   return { mute: mute.store, pushMode: push.mode }
 }

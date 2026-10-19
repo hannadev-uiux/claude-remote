@@ -1,3 +1,4 @@
+import { stat } from 'node:fs/promises'
 import { basename } from 'node:path'
 import {
   type PermissionMode,
@@ -7,6 +8,7 @@ import {
 } from '@remote-harness/protocol'
 import type { Logger } from '../../core/logger.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
+import { profileAgentId } from '../agents/index.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import { scanRecentTranscripts } from './recent-scan.ts'
 import type { SessionStore } from './store.ts'
@@ -22,6 +24,9 @@ export type SessionServiceOptions = {
 
 const NOTIFICATIONS_NOT_WAITING = new Set(['auth_success', 'agent_completed'])
 
+/** Minimum interval between two `updatedAt` touches from transcript activity, per session. */
+export const ACTIVITY_THROTTLE_MS = 5_000
+
 function parseMode(value: unknown): PermissionMode | undefined {
   const parsed = PermissionModeSchema.safeParse(value)
   return parsed.success ? parsed.data : undefined
@@ -30,6 +35,8 @@ function parseMode(value: unknown): PermissionMode | undefined {
 /** Keeps the session registry in sync with hooks, tmux panes and transcripts on disk. */
 export class SessionService {
   private lastScan = 0
+  /** Last `updatedAt` touch from transcript activity, per session (epoch ms). */
+  private readonly lastTouch = new Map<string, number>()
 
   constructor(
     private readonly store: SessionStore,
@@ -39,11 +46,17 @@ export class SessionService {
     private readonly options: SessionServiceOptions,
   ) {}
 
+  /** The agent of a profile (Claude Code when unknown): stamped on every record the registry creates. */
+  private agentOf(profileId: string | null | undefined) {
+    return profileAgentId(this.profiles.find((p) => p.id === profileId))
+  }
+
   private defaults(id: string, hook: HookEvent): SessionRecord {
     const cwd = hook.payload.cwd ?? ''
     return {
       id,
       profileId: hook.profileId ?? 'unknown',
+      agent: this.agentOf(hook.profileId),
       cwd,
       title: cwd ? basename(cwd) : 'Session',
       state: 'idle',
@@ -137,6 +150,18 @@ export class SessionService {
     }
   }
 
+  /**
+   * Transcript activity (new entries read for the session or one of its subagents) advances
+   * `updatedAt`, at most once per `ACTIVITY_THROTTLE_MS` per session so streaming output does
+   * not re-sort the list on every token. Unknown sessions are ignored.
+   */
+  noteActivity(sessionId: string, at: number = Date.now()): void {
+    const last = this.lastTouch.get(sessionId) ?? 0
+    if (at - last < ACTIVITY_THROTTLE_MS || !this.store.get(sessionId)) return
+    this.lastTouch.set(sessionId, at)
+    this.store.upsert(sessionId, { updatedAt: new Date(at).toISOString() })
+  }
+
   /** Marks sessions whose tmux pane disappeared as ended. */
   async reconcilePanes(): Promise<void> {
     const linked = this.store.all().filter((s) => s.paneId)
@@ -165,7 +190,18 @@ export class SessionService {
       const meta = link.transcriptPath
         ? await readTranscriptMeta(link.transcriptPath).catch(() => null)
         : null
-      this.store.upsert(link.id, {}, () => ({
+      // Last activity survives the restart: the persisted stamp, else the transcript's mtime.
+      const updatedAt =
+        link.updatedAt ??
+        (link.transcriptPath
+          ? await stat(link.transcriptPath).then(
+              (s) => s.mtime.toISOString(),
+              () => null,
+            )
+          : null) ??
+        new Date().toISOString()
+      // The stamp goes in the patch: the store only keeps an explicit `updatedAt`.
+      this.store.upsert(link.id, { updatedAt }, () => ({
         id: link.id,
         profileId: link.profileId,
         cwd: link.cwd,
@@ -174,7 +210,7 @@ export class SessionService {
         permissionMode: meta?.permissionMode ?? null,
         controllable: true,
         paneId: link.paneId,
-        updatedAt: new Date().toISOString(),
+        updatedAt,
         subagents: [],
         backgroundTasks: 0,
         checkout: null,
@@ -200,6 +236,7 @@ export class SessionService {
       this.store.upsert(file.sessionId, { updatedAt: file.mtime.toISOString() }, () => ({
         id: file.sessionId,
         profileId: file.profileId,
+        agent: this.agentOf(file.profileId),
         cwd: meta.cwd ?? '',
         title: meta.title ?? basename(meta.cwd ?? ''),
         state: 'ended',

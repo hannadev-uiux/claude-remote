@@ -1,5 +1,5 @@
-import type { LiveStatusProps, Session, SessionState } from '@remote-harness/protocol'
-import { after, type LiveActivity } from 'expo-widgets'
+import type { LivePalette, LiveStatusProps, Session, SessionState } from '@remote-harness/protocol'
+import { addUserInteractionListener, after, type LiveActivity } from 'expo-widgets'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppState, Platform } from 'react-native'
@@ -7,11 +7,21 @@ import { useConnectionStore } from '@/core/connection'
 import { DaemonRequestError } from '@/core/connection/daemon-client'
 import type { TFunction } from '@/core/i18n/create'
 import { devicePlatform } from '@/core/platform/platform'
+import { currentTheme } from '@/core/theme'
 import { useMuteStore } from '../mute/store'
 import { loadMessaging } from '../push/firebase'
 import { relayFor } from '../push/push-relay'
+import { respondInBackground } from '../push/respond-in-background'
 import { useSessionsStore } from '../sessions/store'
-import { DONE_DISMISS_MS, isMutedSession, type LocalLiveInfo, localLiveProps, sessionsToStart } from './logic'
+import {
+  DONE_DISMISS_MS,
+  isMutedSession,
+  type LocalLiveInfo,
+  liveAction,
+  livePalette,
+  localLiveProps,
+  sessionsToStart,
+} from './logic'
 import { SessionActivity } from './SessionActivity'
 import { useLiveStatusSettings } from './settings-store'
 
@@ -30,13 +40,24 @@ type Tracked = LocalLiveInfo & {
 /**
  * Starts the live status of sessions that begin working while the app is open, registers it with
  * the daemon (which keeps it updated through FCM) and, on iOS, updates or ends the activity locally
- * while the app is active and the daemon does not.
+ * while the app is active and the daemon does not. The theme colors travel with the registration
+ * and the local props, since the widget cannot read the app theme.
  */
 export function useLiveStatus() {
   const client = useConnectionStore((s) => s.client)
   const { t } = useTranslation()
   const tRef = useRef<TFunction>(t)
   tRef.current = t
+
+  // Deny / Allow tapped on the activity (lock screen or Dynamic Island): answered like a
+  // notification action, over a short-lived connection, whether or not the app is in front.
+  useEffect(() => {
+    const subscription = addUserInteractionListener((event) => {
+      const action = liveAction(event.target)
+      if (action) void respondInBackground(action.requestId, action.decision)
+    })
+    return () => subscription.remove()
+  }, [])
 
   useEffect(() => {
     if (!client) return
@@ -48,7 +69,7 @@ export function useLiveStatus() {
     const profileName = (profileId: string) =>
       client.hello?.profiles.find((p) => p.id === profileId)?.name ?? profileId
 
-    const register = async (sessionId: string, activityToken?: string) => {
+    const register = async (sessionId: string, palette: LivePalette, activityToken?: string) => {
       const messaging = loadMessaging()
       if (!daemonSupportsLive || !messaging || !platform) return
       try {
@@ -59,6 +80,7 @@ export function useLiveStatus() {
           sessionId,
           platform,
           fcmToken,
+          palette,
           ...(activityToken ? { activityToken } : {}),
           ...(relay ? { relay } : {}),
         })
@@ -89,6 +111,7 @@ export function useLiveStatus() {
     const start = (session: Session) => {
       stop(session.id)
       const now = Date.now()
+      const palette = livePalette(currentTheme())
       const entry: Tracked = {
         instance: null,
         title: profileName(session.profileId),
@@ -96,6 +119,7 @@ export function useLiveStatus() {
         startedAt: now,
         changedAt: now,
         endedAt: null,
+        palette,
         state: session.state,
         remote: false,
         subscription: null,
@@ -108,17 +132,17 @@ export function useLiveStatus() {
           )
           entry.instance = instance
           entry.subscription = instance.addPushTokenListener(
-            ({ pushToken }) => void register(session.id, pushToken),
+            ({ pushToken }) => void register(session.id, palette, pushToken),
           )
           void instance.getPushToken().then((token) => {
-            if (token) void register(session.id, token)
+            if (token) void register(session.id, palette, token)
           })
         } catch {
           // Live Activities turned off for the app in iOS Settings.
           return
         }
       } else {
-        void register(session.id)
+        void register(session.id, palette)
       }
       tracked.set(session.id, entry)
     }

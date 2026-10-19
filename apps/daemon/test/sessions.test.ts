@@ -225,6 +225,54 @@ describe('panes and persistence', () => {
     expect(second.store.get('b')).toBeUndefined()
   })
 
+  test('a restart keeps each session’s last activity, so the order does not change', async () => {
+    const first = setup(['%1', '%2'])
+    await first.service.handleHook(
+      hookEvent('SessionStart', { session_id: 'a', cwd: '/w/a' }, { paneId: '%1' }),
+    )
+    await first.service.handleHook(
+      hookEvent('SessionStart', { session_id: 'b', cwd: '/w/b' }, { paneId: '%2' }),
+    )
+    // Stamps only move forward: give each session a distinct later activity.
+    const later = Date.now() + 60_000
+    first.store.upsert('a', { updatedAt: new Date(later).toISOString() })
+    first.store.upsert('b', { updatedAt: new Date(later + 5_000).toISOString() })
+    await first.store.save()
+    const second = setup(['%1', '%2'])
+    await second.service.restore()
+    expect(second.store.get('a')?.updatedAt).toBe(new Date(later).toISOString())
+    expect(second.store.get('b')?.updatedAt).toBe(new Date(later + 5_000).toISOString())
+    expect(second.store.all().map((s) => s.id)).toEqual(['b', 'a'])
+  })
+
+  test('transcript activity touches updatedAt at most every 5 s and only for known sessions', async () => {
+    const { service, store, sent } = setup()
+    await service.handleHook(hookEvent('SessionStart', { session_id: 's', cwd: '/w' }, { paneId: '%1' }))
+    // Activity stamps only move forward: start after the session's creation time.
+    const t0 = Date.now() + 60_000
+    const broadcasts = () => sent.filter((m) => m.type === 'session.updated').length
+    const before = broadcasts()
+    service.noteActivity('s', t0)
+    expect(store.get('s')?.updatedAt).toBe(new Date(t0).toISOString())
+    service.noteActivity('s', t0 + 2_000)
+    expect(store.get('s')?.updatedAt).toBe(new Date(t0).toISOString())
+    service.noteActivity('s', t0 + 5_000)
+    expect(store.get('s')?.updatedAt).toBe(new Date(t0 + 5_000).toISOString())
+    expect(broadcasts()).toBe(before + 2)
+    service.noteActivity('ghost', t0 + 10_000)
+    expect(store.get('ghost')).toBeUndefined()
+  })
+
+  test('an older stamp or a metadata refresh does not move updatedAt', async () => {
+    const { service, store } = setup()
+    await service.handleHook(hookEvent('SessionStart', { session_id: 's', cwd: '/w' }, { paneId: '%1' }))
+    const stamp = store.get('s')!.updatedAt
+    store.upsert('s', { updatedAt: '2000-01-01T00:00:00.000Z' })
+    expect(store.get('s')?.updatedAt).toBe(stamp)
+    store.upsert('s', { status: { model: 'Opus', effort: null, context: null }, updatedAt: stamp })
+    expect(store.get('s')).toMatchObject({ status: { model: 'Opus' }, updatedAt: stamp })
+  })
+
   test('recent transcripts appear as read-only sessions', async () => {
     const { service, store, profiles } = setup([])
     const dir = join(profiles[0]!.configDir, 'projects', '-w-api')

@@ -14,6 +14,12 @@ export function registerPaneFeature(ctx: DaemonContext, store: SessionStore) {
     streamer.unsubscribe(msg.sessionId, connection)
     return undefined
   })
+  // "Focus in tmux": the window and pane come to the front of the tmux client on the computer.
+  ctx.router.register('pane.focus', async (msg) => {
+    const { paneId } = requireControllable(store, msg.sessionId)
+    await ctx.tmux.focusPane(paneId)
+    return undefined
+  })
   ctx.onStop(() => streamer.dispose())
   return { streamer }
 }

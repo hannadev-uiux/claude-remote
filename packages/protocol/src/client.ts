@@ -3,11 +3,14 @@ import {
   AttachmentMimeTypeSchema,
   DevicePlatformSchema,
   DIRECTORY_LIST_LIMIT,
+  InputModeSchema,
+  LivePaletteSchema,
   MAX_ATTACHMENTS,
   MAX_DIRECTORY_LIST_LIMIT,
   PermissionAnswerSchema,
   PushRelaySchema,
   RuleScopeSchema,
+  WorktreeActionSchema,
 } from './domain.ts'
 
 const id = z.string().min(1)
@@ -54,6 +57,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     // May be empty when the prompt only carries images (the daemon rejects an empty prompt).
     text: z.string(),
     attachmentIds: z.array(z.string().min(1)).min(1).max(MAX_ATTACHMENTS).optional(),
+    /** `now` pastes right away (default); `queue` holds it; `auto` holds it only while the session is busy. */
+    mode: InputModeSchema.default('now'),
   }),
   /** One image per message; answered with `attachment.uploaded`. Size and bytes are checked by the daemon. */
   z.object({
@@ -65,6 +70,11 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   // Validated by the daemon against ALLOWED_KEYS so it can answer `invalid_key`.
   z.object({ type: z.literal('session.key'), id, sessionId, key: z.string().min(1) }),
+  /** Queued prompts: edit the text (clears a delivery error), drop one, deliver one now, deliver all now. */
+  z.object({ type: z.literal('queue.update'), id, sessionId, itemId: z.string().min(1), text: z.string() }),
+  z.object({ type: z.literal('queue.remove'), id, sessionId, itemId: z.string().min(1) }),
+  z.object({ type: z.literal('queue.sendNow'), id, sessionId, itemId: z.string().min(1) }),
+  z.object({ type: z.literal('queue.flush'), id, sessionId }),
   z.object({ type: z.literal('session.setMode'), id, sessionId, mode: z.string() }),
   z.object({
     type: z.literal('permission.respond'),
@@ -87,6 +97,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     platform: DevicePlatformSchema.optional(),
     relay: PushRelaySchema.optional(),
   }),
+  /** This phone turned push off: the daemon forgets its token. */
+  z.object({ type: z.literal('device.unregister'), id, fcmToken: z.string().min(1) }),
   z.object({ type: z.literal('app.visibility'), id, foreground: z.boolean() }),
   /** Sends a test push to this phone only (its registered token); answered with `push.testResult`. */
   z.object({ type: z.literal('push.test'), id, fcmToken: z.string().min(1) }),
@@ -99,6 +111,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     /** iOS Live Activity push token (hex); absent on Android. */
     activityToken: z.string().min(1).optional(),
     relay: PushRelaySchema.optional(),
+    /** App theme colors for the live status, echoed by the daemon in every update. */
+    palette: LivePaletteSchema.optional(),
   }),
   z.object({ type: z.literal('live.unregister'), id, sessionId }),
   z.object({
@@ -110,6 +124,10 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('commands.list'), id, sessionId }),
   z.object({ type: z.literal('projects.list'), id, profileId: z.string().min(1) }),
+  /** Models of the profile's provider (cached by the daemon); `bad_request` for a profile without one. */
+  z.object({ type: z.literal('models.list'), id, profileId: z.string().min(1) }),
+  /** Whether the profile's provider key is stored, and the credits left. */
+  z.object({ type: z.literal('provider.status'), id, profileId: z.string().min(1) }),
   /** Subdirectories of `path` (`~`, `~/…` or absolute, inside the home folder), filtered by name `prefix`. */
   z.object({
     type: z.literal('directories.list'),
@@ -127,10 +145,18 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     cwd: z.string().min(1),
     /** Runs Claude Code with `--worktree`: its own git worktree and branch. */
     worktree: z.boolean().optional(),
+    /** Model of the new session (`--model <id>`); the profile's provider default when absent. */
+    model: z.string().min(1).optional(),
   }),
   z.object({ type: z.literal('checkout.inspect'), id, profileId: z.string().min(1), cwd: z.string().min(1) }),
   z.object({ type: z.literal('session.resume'), id, profileId: z.string().min(1), sessionId }),
+  /** Ends the session gracefully (deny pending, Escape, /exit, then the pane); optional worktree cleanup. */
+  z.object({ type: z.literal('session.close'), id, sessionId, worktree: WorktreeActionSchema.optional() }),
+  z.object({ type: z.literal('worktree.inspect'), id, sessionId }),
+  z.object({ type: z.literal('worktree.cleanup'), id, sessionId, action: WorktreeActionSchema }),
   z.object({ type: z.literal('pane.subscribe'), id, sessionId }),
+  /** Selects the session's tmux window and pane on the computer (tray "Focus in tmux"). */
+  z.object({ type: z.literal('pane.focus'), id, sessionId }),
   z.object({ type: z.literal('pane.unsubscribe'), id, sessionId }),
   z.object({
     type: z.literal('settings.mute'),

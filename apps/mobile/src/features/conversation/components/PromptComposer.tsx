@@ -1,23 +1,20 @@
 import type { Key } from '@remote-harness/protocol'
+import * as Haptics from 'expo-haptics'
 import { ArrowUp } from 'lucide-react-native'
 import { forwardRef, type ReactNode, useLayoutEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  type TextInputProps,
-  View,
-} from 'react-native'
+import { ActivityIndicator, Platform, Pressable, TextInput, type TextInputProps, View } from 'react-native'
 import Animated, { LayoutAnimationConfig, ReduceMotion, ZoomIn, ZoomOut } from 'react-native-reanimated'
 import { useKeyboardHeight } from '@/core/platform/use-keyboard-height'
-import { colors, fontSize, fonts, radius, space } from '@/core/theme'
+import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
+import type { AgentId } from '@/core/theme/agents'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
-import { keyboardToolbar } from '../keyboard-toolbar'
+import { composerPlaceholder } from '../composer-placeholder'
+import type { KeyboardHint } from '../keyboard-hints'
+import { hardwareKeyboard, keyboardToolbar } from '../keyboard-toolbar'
 import { hideKeyBar, releaseKeyBar, useKeyboardToolbarStore } from '../keyboard-toolbar-store'
+import { KeyboardHints } from './KeyboardHints'
 import { KeyboardToolbar } from './KeyboardToolbar'
 
 type Props = {
@@ -44,6 +41,18 @@ type Props = {
   /** Sends a special key; with it, a toolbar with the keys is attached to the keyboard. */
   onKey?: (key: Key) => void
   keysDisabled?: boolean
+  /** The session's agent, named in the placeholder when known. */
+  agent?: AgentId | null
+  /** Long press on Send: paste mid-turn instead of queueing (Claude Code's Ctrl+Enter). */
+  onSendNow?: () => void
+  /** Shown over the send button while the prompt would be queued (`Hold: send now · ⌘⏎`). */
+  hint?: string | null
+  /**
+   * Tablet: with a hardware keyboard, Return sends instead of inserting a newline and the shortcut
+   * hints row shows under the field.
+   */
+  tablet?: boolean
+  hints?: KeyboardHint[]
 }
 
 // Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
@@ -53,6 +62,8 @@ const exiting = ZoomOut.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const hasText = props.value.trim().length > 0
   const hasAttachments = props.hasAttachments === true
   const canSend = !props.disabled && !props.sending && (hasText || hasAttachments)
@@ -68,6 +79,8 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
   const keyboardHeight = useKeyboardHeight()
   const expanded = useKeyboardToolbarStore((s) => s.expanded)
   const toolbar = keyboardToolbar({ os: Platform.OS, focused, keyboardHeight, expanded })
+  // Tablet with a hardware keyboard: Return sends and the shortcut hints show.
+  const hardware = (props.tablet ?? false) && hardwareKeyboard({ focused, keyboardHeight })
   const hidesKeyBar = props.onKey != null && toolbar.hideKeyBar
   const [owner] = useState(() => Symbol('composer'))
   // Layout effect: the key bar under the conversation leaves in the same frame the toolbar's keys
@@ -86,8 +99,13 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
         </Text>
       ) : null}
       {props.attachments}
+      {props.hint && hasText ? (
+        <Text size="xs" color="textDim" style={styles.hint}>
+          {props.hint}
+        </Text>
+      ) : null}
       <View style={styles.row}>
-        <Text color="accent" weight="bold" style={styles.prompt}>
+        <Text color="accentText" weight="bold" style={styles.prompt}>
           {'>'}
         </Text>
         <TextInput
@@ -100,7 +118,9 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           onBlur={() => setFocused(false)}
           editable={!props.disabled}
           multiline
-          placeholder={props.disabled ? t('conversation.placeholderReadOnly') : t('conversation.placeholder')}
+          submitBehavior={hardware ? 'submit' : 'newline'}
+          onSubmitEditing={hardware && canSend ? props.onSend : undefined}
+          placeholder={composerPlaceholder(props.agent ?? null, props.disabled, t)}
           placeholderTextColor={colors.textDim}
           autoCapitalize="none"
           autoCorrect={false}
@@ -122,23 +142,34 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
             <Animated.View key="send" entering={entering} exiting={exiting}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('common.send')}
+                accessibilityLabel={props.hint ? t('queue.queueLabel') : t('common.send')}
+                accessibilityHint={props.hint ?? undefined}
                 accessibilityState={{ disabled: !canSend, busy: props.sending }}
                 hitSlop={6}
                 disabled={!canSend}
                 onPress={props.onSend}
+                onLongPress={
+                  props.onSendNow
+                    ? () => {
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                        props.onSendNow?.()
+                      }
+                    : undefined
+                }
+                delayLongPress={400}
                 style={[styles.send, { backgroundColor: canSend ? colors.accent : colors.surfaceRaised }]}
               >
                 {props.sending ? (
-                  <ActivityIndicator size="small" color={colors.background} />
+                  <ActivityIndicator size="small" color={colors.accentInk} />
                 ) : (
-                  <ArrowUp size={18} color={canSend ? colors.background : colors.textDim} />
+                  <ArrowUp size={18} color={canSend ? colors.accentInk : colors.textDim} />
                 )}
               </Pressable>
             </Animated.View>
           ) : null}
         </LayoutAnimationConfig>
       </View>
+      {hardware && props.hints && props.hints.length > 0 ? <KeyboardHints hints={props.hints} /> : null}
       {props.onKey && toolbar.visible ? (
         <KeyboardToolbar
           onKey={props.onKey}
@@ -150,8 +181,12 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
   )
 })
 
-const styles = StyleSheet.create({
-  wrap: { borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+const useStyles = makeStyles((theme) => ({
+  wrap: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+  },
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, padding: space.sm },
   prompt: { paddingBottom: 9 },
   input: {
@@ -162,12 +197,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
   },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   error: { paddingHorizontal: space.md, paddingTop: space.xs },
-})
+  hint: { alignSelf: 'flex-end', paddingHorizontal: space.md, paddingTop: space.xs },
+}))

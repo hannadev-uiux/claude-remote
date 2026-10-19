@@ -51,6 +51,11 @@ export const paths = {
   rulesLog: () => join(dataHome(), 'rules-log.jsonl'),
   devices: () => join(dataHome(), 'devices.json'),
   mute: () => join(dataHome(), 'mute.json'),
+  queue: () => join(dataHome(), 'queue.json'),
+  /** A profile's provider key when the secret store is the file one (0600, in a 0700 folder). */
+  providerKey: (profileId: string) => join(dataHome(), 'secrets', `provider-${profileId}`),
+  /** Model catalogs fetched from the providers, by base URL. */
+  modelsCache: () => join(dataHome(), 'models-cache.json'),
   firebaseServiceAccount: () => join(dataHome(), 'firebase-service-account.json'),
   /** Images uploaded from the app (0700), pruned after a day. */
   attachments: () => join(dataHome(), 'attachments'),

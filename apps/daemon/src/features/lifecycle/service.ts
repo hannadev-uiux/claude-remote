@@ -4,6 +4,7 @@ import type { Checkout, Profile, ProjectItem } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory } from '../../infra/fs.ts'
+import { agentFor } from '../agents/index.ts'
 import { worktreeName } from '../checkout/resolver.ts'
 import type { SessionStore } from '../sessions/store.ts'
 
@@ -58,19 +59,25 @@ export class LifecycleService {
     return result.stdout.trim()
   }
 
-  /** `worktree` runs Claude Code with `--worktree <name>`: its own git worktree and branch. */
+  /**
+   * `worktree` runs Claude Code with `--worktree <name>` (its own git worktree and branch); `model`
+   * adds `--model <id>` (a provider model picked in the app).
+   */
   async start(
     profileId: string,
     rawCwd: string,
-    options: { worktree?: boolean } = {},
+    options: { worktree?: boolean; model?: string } = {},
   ): Promise<{ paneId: string }> {
     const profile = this.profile(profileId)
     const cwd = await validateCwd(rawCwd, this.home)
     const args: string[] = []
     if (options.worktree) {
       if (!(await this.checkout(cwd))) throw new DaemonError('bad_request', `not a git checkout: ${cwd}`)
-      args.push('--worktree', worktreeName(this.now()))
+      const worktreeArgs = agentFor(profile).worktreeArgs(worktreeName(this.now()))
+      if (!worktreeArgs) throw new DaemonError('bad_request', 'this agent cannot start in a worktree')
+      args.push(...worktreeArgs)
     }
+    if (options.model) args.push('--model', options.model)
     const paneId = await this.launch(profile, cwd, args)
     // The launcher only reports the window it created; a window whose command exits closes at once.
     if (this.settleMs > 0) {
@@ -107,7 +114,7 @@ export class LifecycleService {
       if (this.resuming.get(sessionId) !== pending) return this.resume(profileId, sessionId)
     }
     const launch = validateCwd(session.cwd, this.home).then((cwd) =>
-      this.launch(profile, cwd, ['--resume', sessionId]),
+      this.launch(profile, cwd, agentFor(profile).resumeArgs(sessionId)),
     )
     this.resuming.set(sessionId, launch)
     try {
@@ -136,16 +143,34 @@ export class LifecycleService {
   }
 
   /** Recent working directories of a profile, most recent first. */
+  /**
+   * The profile's directories by most recent use, each with the branch of its latest session and
+   * how many sessions were used there in the last 7 days.
+   */
   projects(profileId: string): ProjectItem[] {
     this.profile(profileId)
-    const latest = new Map<string, string>()
+    const weekAgo = new Date(this.now().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const latest = new Map<string, ProjectItem>()
     for (const s of this.store.all()) {
       if (s.profileId !== profileId || !s.cwd) continue
+      const recent = s.updatedAt >= weekAgo ? 1 : 0
       const current = latest.get(s.cwd)
-      if (!current || s.updatedAt > current) latest.set(s.cwd, s.updatedAt)
+      if (!current) {
+        latest.set(s.cwd, {
+          cwd: s.cwd,
+          lastUsedAt: s.updatedAt,
+          branch: s.checkout?.branch ?? null,
+          sessions: recent,
+        })
+        continue
+      }
+      current.sessions += recent
+      if (s.updatedAt > current.lastUsedAt) {
+        current.lastUsedAt = s.updatedAt
+        current.branch = s.checkout?.branch ?? current.branch
+      }
     }
-    return [...latest.entries()]
-      .map(([cwd, lastUsedAt]) => ({ cwd, lastUsedAt }))
+    return [...latest.values()]
       .sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))
       .slice(0, MAX_PROJECTS)
   }

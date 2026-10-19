@@ -67,6 +67,8 @@ describe('LifecycleService', () => {
       args: [],
       options: { cwd: project, env: { CLAUDE_REMOTE_NO_ATTACH: '1' } },
     })
+    await service.start('claudin', project, { model: 'anthropic/claude-opus-5.5' })
+    expect(exec.calls[1]?.args).toEqual(['--model', 'anthropic/claude-opus-5.5'])
     await expect(service.start('nope', project)).rejects.toMatchObject({ code: 'not_found' })
   })
 
@@ -193,12 +195,29 @@ describe('LifecycleService', () => {
     expect(exec.calls).toHaveLength(1)
   })
 
-  test('lists recent directories per profile', async () => {
-    const { store, service } = await setup()
-    store.upsert('a', {}, () => record('a', { cwd: '/w/a', updatedAt: '2026-10-14T10:00:00Z' }))
-    store.upsert('b', { updatedAt: '2026-10-14T12:00:00Z' }, () => record('b', { cwd: '/w/b' }))
-    store.upsert('c', { updatedAt: '2026-10-14T13:00:00Z' }, () => record('c', { cwd: '/w/a' }))
-    store.upsert('d', {}, () => record('d', { cwd: '/w/x', profileId: 'other' }))
-    expect(service.projects('claudin').map((p) => p.cwd)).toEqual(['/w/a', '/w/b'])
+  test('lists recent directories per profile with the latest branch and the sessions this week', async () => {
+    const { exec, store } = await setup()
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      undefined,
+      undefined,
+      () => new Date('2026-10-18T12:00:00Z'),
+    )
+    const at = (id: string, updatedAt: string, patch: Partial<SessionRecord>) =>
+      store.upsert(id, { updatedAt }, () => record(id, patch))
+    at('a', '2026-10-14T10:00:00Z', { cwd: '/w/a', checkout: { root: '/w/a', branch: 'old' } })
+    at('b', '2026-10-14T12:00:00Z', { cwd: '/w/b' })
+    at('c', '2026-10-14T13:00:00Z', { cwd: '/w/a', checkout: { root: '/w/a', branch: 'main' } })
+    // A month ago: still a recent directory, not a session of this week.
+    at('e', '2026-09-18T13:00:00Z', { cwd: '/w/a' })
+    at('d', '2026-10-14T14:00:00Z', { cwd: '/w/x', profileId: 'other' })
+    expect(service.projects('claudin')).toEqual([
+      { cwd: '/w/a', lastUsedAt: '2026-10-14T13:00:00Z', branch: 'main', sessions: 2 },
+      { cwd: '/w/b', lastUsedAt: '2026-10-14T12:00:00Z', branch: null, sessions: 1 },
+    ])
   })
 })

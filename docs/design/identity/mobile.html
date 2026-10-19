@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Remote Harness Mobile</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .themebar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .themebar button { font: 600 12px var(--mono); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--muted); cursor: pointer; }
+  .themebar button.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .themebar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .themerow { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .themerow .frame { zoom: 0.5; }
+  .themerow .cap { zoom: 2; }
+  .banner-top { background: var(--a-raised); color: var(--a-muted); font-size: 12px; text-align: center; padding: 6px; border-bottom: 1px solid var(--a-border); }
+  .banner-top.err { color: var(--a-danger); }
+  .qr { width: 230px; height: 230px; margin: 10px auto; border-radius: 16px; background: #000; position: relative; display: grid; place-items: center; }
+  .qr::before { content: ""; position: absolute; inset: 14px; border: 2px solid var(--a-accent); border-radius: 10px; mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; -webkit-mask: linear-gradient(#000 0 0) top/100% 22px no-repeat, linear-gradient(#000 0 0) bottom/100% 22px no-repeat, linear-gradient(#000 0 0) left/22px 100% no-repeat, linear-gradient(#000 0 0) right/22px 100% no-repeat; }
+  .qr i { width: 120px; height: 120px; background:
+    conic-gradient(from 90deg at 50% 50%, #fff 25%, transparent 0) 0 0/20px 20px,
+    conic-gradient(from 0deg at 50% 50%, transparent 25%, #fff 0) 10px 10px/20px 20px; opacity: 0.85; border-radius: 4px; }
+  .tabs2 { display: flex; gap: 0; margin: 0 14px 10px; background: var(--a-surface); border: 1px solid var(--a-border); border-radius: 10px; padding: 3px; }
+  .tabs2 span { flex: 1; text-align: center; padding: 7px; border-radius: 8px; font-size: 12.5px; color: var(--a-muted); }
+  .tabs2 span.on { background: var(--a-raised); color: var(--a-fg); font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in">
+  <a class="brand" href="index.html"><svg><use href="#rh-mark"/></svg>Remote Harness <small>· identidade</small></a>
+  <div class="links">
+    <a href="index.html">Visão geral</a><a href="icons.html">Ícones</a><a class="cur" href="mobile.html">Mobile</a><a href="tablet.html">Tablet</a><a href="live.html">Live status</a><a href="tray.html">Tray</a><a href="landing.html">Landing</a>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="sec-head">
+      <span class="eyebrow">App mobile · iPhone e Android</span>
+      <h1>Uma lista, todos os agentes, e a máquina pelo nome</h1>
+      <p class="lead">O que muda: a marca no cabeçalho, o acento âmbar, badges de agente em cada sessão, ordem por atividade recente com faixa de "waiting for you", ações por swipe, fila de mensagens, "Subagents" no menu, e "machine" no lugar de "daemon". O que fica: o terminal escuro, a JetBrains Mono, a conversa estruturada.</p>
+    </div>
+    <div class="notes" style="grid-template-columns:1fr">
+      <div class="note"><span class="n">1</span><div><b>Textos em en-US</b> nos mockups (catálogo de referência). Os três catálogos continuam em paridade (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/87">#87</a>, <a class="issue" href="https://github.com/maarkN/remote-harness/issues/94">#94</a>).</div></div>
+      <div class="note"><span class="n">2</span><div><b>Dados de exemplo</b>: projetos fictícios (acme-*), nunca sessões reais.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ SESSIONS ============ -->
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Sessões · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/104">#104</a> <a class="issue" href="https://github.com/maarkN/remote-harness/issues/106">#106</a> <a class="issue" href="https://github.com/maarkN/remote-harness/issues/108">#108</a></span><h2>Lista de sessões</h2></div>
+    <div class="themebar" data-theme-switch="#sessions-frame">
+      <button class="on" data-theme="t-dark">Dark</button><button data-theme="t-light">Light</button><button data-theme="t-dracula">Dracula</button><button data-theme="t-mocha">Catppuccin Mocha</button><button data-theme="t-latte">Catppuccin Latte</button>
+    </div>
+    <div class="frames">
+      <div class="frame z85">
+        <div class="phone t-dark" id="sessions-frame">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app" id="sessions-screen">
+            <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+            <div class="mline"><span class="dot" style="background:var(--a-success);margin:0"></span><span class="host">MacBook Pro</span><span>· 7 sessions</span><span class="sp"></span><span>3 agents</span></div>
+            <div class="chips"><span class="chip on">all</span><span class="chip">Personal</span><span class="chip">Work</span><span class="chip">Codex</span><span class="chip ghost">Recent ▾</span></div>
+            <div class="scroll">
+              <div class="attn">
+                <div class="h">⚠ Waiting for you · 1 <span>4:36</span></div>
+                <div class="t" style="display:flex;gap:8px;align-items:center;font-weight:600;font-size:13.5px"><span class="agent claude">cl</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Add rate limit on login</span><span class="ptag" style="color:#61afef">Work</span></div>
+                <div style="font-size:12px;color:var(--a-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bash · <span style="color:var(--a-fg)">gh pr create --fill --base main</span></div>
+                <div class="ans"><span class="btn sm no" style="flex:1">Deny</span><span class="btn sm" style="flex:1">Always</span><span class="btn sm ok" style="flex:1">Allow</span></div>
+              </div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span><span>⎇ main</span></div><div class="m"><span class="pill running">running</span><span class="ptag" style="color:#56b6c2">Personal</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow waiting"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span><span>⎇ feat/rate-limit</span><span>⌂ worktree</span></div><div class="m"><span class="pill waiting">waiting</span><span class="ptag" style="color:#61afef">Work</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Fix crash on onboarding</span><span class="ago">12 min</span></div><div class="p"><span>~/projects/acme-mobile</span><span>⎇ fix/onboarding</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#61afef">Work</span><span class="mute-ic">🔕</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Write post about tmux + agents</span><span class="ago">40 min</span></div><div class="p"><span>~/projects/blog</span><span>⎇ main</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#56b6c2">Personal</span><span class="pill plain">+2 subagents</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Review deploy pipeline</span><span class="ago">2 h</span></div><div class="p"><span>~/projects/acme-infra</span><span>⎇ main</span><span style="color:var(--a-warning)">shared checkout (2)</span></div><div class="m"><span class="pill">ended</span><span class="pill plain">read-only</span><span class="ptag" style="color:#2fbf8f">Codex</span><span class="chev" style="margin-left:auto">›</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Rename daemon strings to machine</span><span class="ago">yesterday</span></div><div class="p"><span>~/projects/remote-harness</span><span>⎇ feat/94-machine</span></div><div class="m"><span class="pill">ended</span><span class="ptag" style="color:#56b6c2">Personal</span><span class="chev" style="margin-left:auto">›</span></div></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Lista.</b> Ordem global por última atividade real; a faixa "Waiting for you" fica no topo com a permissão respondível ali mesmo, sem quebrar a ordem do resto. Troque o tema acima.</p>
+      </div>
+
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+            <div class="mline"><span class="dot" style="background:var(--a-success);margin:0"></span><span class="host">MacBook Pro</span><span>· 7 sessions</span></div>
+            <div class="chips"><span class="chip on">all</span><span class="chip">Personal</span><span class="chip">Work</span><span class="chip">Codex</span><span class="chip ghost">Recent ▾</span></div>
+            <div class="scroll">
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span><span>⎇ main</span></div><div class="m"><span class="pill running">running</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+              <div class="swipe"><div class="acts"><span class="act more"><i>⋯</i>More</span><span class="act close"><i>⏻</i>Close</span></div>
+                <div class="srow waiting"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span><span>⎇ feat/rate-limit</span></div><div class="m"><span class="pill waiting">waiting</span><span class="ptag" style="color:#61afef">Work</span></div></div>
+              </div>
+              <div class="swipe r"><div class="acts l"><span class="act mute"><i>🔔</i>Unmute</span><span class="act pin"><i>📌</i>Pin</span></div>
+                <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Fix crash on onboarding</span><span class="ago">12 min</span></div><div class="p"><span>~/projects/acme-mobile</span><span>⎇ fix/onboarding</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#61afef">Work</span><span class="mute-ic">🔕</span></div></div>
+              </div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Write post about tmux + agents</span><span class="ago">40 min</span></div><div class="p"><span>~/projects/blog</span><span>⎇ main</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Review deploy pipeline</span><span class="ago">2 h</span></div><div class="p"><span>~/projects/acme-infra</span><span>⎇ main</span></div><div class="m"><span class="pill">ended</span><span class="pill plain">read-only</span><span class="ptag" style="color:#2fbf8f">Codex</span></div></div>
+            </div>
+            <div class="dimmer" style="top:auto;height:300px;background:linear-gradient(transparent,rgba(0,0,0,.6))"></div>
+            <div class="sheet">
+              <div class="st"><span class="agent claude">cl</span>Add rate limit on login <small>· Work</small></div>
+              <div class="mi"><span class="ic">⏻</span><span class="tx">Close session</span></div>
+              <div class="mi"><span class="ic">🔕</span><span class="tx">Mute notifications</span></div>
+              <div class="mi"><span class="ic">📌</span><span class="tx">Pin to top</span></div>
+              <div class="mi"><span class="ic">⌂</span><span class="tx">Clean up worktree<small>.claude/worktrees/rate-limit · 2 changes</small></span></div>
+              <div class="mi"><span class="ic">⧉</span><span class="tx">Copy folder path</span></div>
+              <div class="mi"><span class="ic">◌</span><span class="tx">Hide from list</span></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Swipe e menu.</b> Esquerda: Close (vermelho) e More; direita: Mute/Unmute (âmbar) e Pin. Swipe completo dispara a primeira ação com haptic. Long press abre a mesma sheet (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/106">#106</a>).</p>
+      </div>
+
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+            <div class="mline"><span class="dot" style="background:var(--a-success);margin:0"></span><span class="host">MacBook Pro</span><span>· 7 sessions</span></div>
+            <div class="chips"><span class="chip on">all</span><span class="chip">Personal</span><span class="chip">Work</span><span class="chip">Codex</span><span class="chip ghost">Recent ▾</span></div>
+            <div class="scroll">
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span><span>⎇ main</span></div><div class="m"><span class="pill running">running</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+              <div class="srow waiting"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span><span>⎇ feat/rate-limit</span></div><div class="m"><span class="pill waiting">waiting</span><span class="ptag" style="color:#61afef">Work</span></div></div>
+            </div>
+            <div class="dimmer"></div>
+            <div class="sheet">
+              <div class="st">Close session?</div>
+              <div class="body">"Add rate limit on login" is <b style="color:var(--a-warning)">waiting for a permission</b>. The agent gets Esc, then <code>/exit</code>; if it has not ended in 10 s, its tmux window is closed. The transcript stays and you can resume it later.</div>
+              <div class="mi"><span class="chk on"></span><span class="tx">Also delete the worktree<small>.claude/worktrees/rate-limit · branch feat/rate-limit</small></span></div>
+              <div class="warn"><span>⚠</span><span><b>2 modified files</b> and <b>3 commits not pushed</b> (no upstream). Nothing is deleted without a choice below.</span></div>
+              <div class="opts">
+                <span class="btn primary block">Commit &amp; push, then delete</span>
+                <span class="btn block no">Discard changes and delete…</span>
+                <span class="btn block">Keep the worktree, just close</span>
+                <span class="btn block" style="border-color:transparent;background:transparent;color:var(--a-muted)">Cancel</span>
+              </div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Fechar com limpeza do worktree.</b> O daemon inspeciona o worktree antes; "Discard" pede uma segunda confirmação; push falhou → mantém o worktree e mostra o erro.</p>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><span class="n">1</span><div><b>Cabeçalho.</b> Marca (22 px, âmbar) + "Sessions". O nome do produto não precisa aparecer: já está sob o ícone. A linha abaixo diz a máquina pelo nome e o estado da conexão.</div></div>
+      <div class="note"><span class="n">2</span><div><b>Linha da sessão.</b> Badge do agente (20 px, cor do agente, sigla de duas letras) · título · tempo relativo. Pasta · branch · worktree. Estado · perfil (texto na cor do perfil) · mudo · subagentes.</div></div>
+      <div class="note"><span class="n">3</span><div><b>Ordenação.</b> "Recent ▾" alterna para "By state" (comportamento atual). Guardado no aparelho. Grupos por perfil viram filtro (chips), não cabeçalhos.</div></div>
+      <div class="note"><span class="n">4</span><div><b>Estados.</b> running = âmbar, waiting = amarelo-limão (borda da linha também), idle = verde, ended = cinza. O ícone da sessão nunca muda de cor com o estado: cor de agente é identidade, não status.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ THEMES ============ -->
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Temas · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/111">#111</a></span><h2>A mesma tela em cinco paletas</h2><p>Tokens semânticos: cada tema define os mesmos nomes. Nos temas de editor o acento segue o tema (roxo Dracula, peach Catppuccin); a marca no cabeçalho usa o acento do tema, e as cores de agente são fixas.</p></div>
+    <div class="themerow" id="themerow"></div>
+  </section>
+
+  <!-- ============ CONVERSATION ============ -->
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Conversa · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/110">#110</a> <a class="issue" href="https://github.com/maarkN/remote-harness/issues/107">#107</a> <a class="issue" href="https://github.com/maarkN/remote-harness/issues/109">#109</a></span><h2>Conversa, fila e permissões</h2></div>
+    <div class="frames">
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app" style="--agent-color:var(--codex)">
+            <div class="ah"><div class="ib back">‹</div><div class="title">Migrate landing to Tailwind 4</div><div class="ib">🔔</div><div class="ib">⌨</div><div class="ib">⋯<span class="badge"></span></div></div>
+            <div class="mline"><span class="agent codex">cx</span><span class="ptag" style="color:#56b6c2">Personal</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">~/projects/landing</span><span class="sp"></span><span class="pill running">running</span><span class="pill plain" style="border:1px solid var(--a-accent-fg);color:var(--a-accent-fg);background:transparent">on-request</span></div>
+            <div class="scroll">
+              <div class="umsg">Upgrade the landing to Tailwind 4 with the official codemod and make sure the build passes</div>
+              <div class="think">› ✻ thinking…</div>
+              <div class="amsg">I'll run the upgrade tool first, then fix what it can't migrate.</div>
+              <div class="tool"><div class="n">exec(pnpm dlx @tailwindcss/upgrade)<span class="chev">›</span></div><div class="r">└ ✓ 14 files migrated, 2 need review</div></div>
+              <div class="tool"><div class="n">apply_patch(tailwind.config.ts → src/app.css)<span class="chev">›</span></div><div class="r">└ ok</div>
+                <div class="diff"><div class="d">- module.exports = { theme: { extend: {</div><div class="a">+ @import "tailwindcss";</div><div class="a">+ @theme { --color-accent: #e8a33d; }</div></div></div>
+              <div class="tool"><div class="n run">exec(pnpm build)<span class="chev">›</span></div><div class="r">└ running… 0:42</div></div>
+            </div>
+            <div class="queue">
+              <div class="h">Queued · 2 <a>Send all now</a></div>
+              <div class="qi"><span class="no">1</span><span class="tx">Also update the README install section</span><span class="ops"><span>✎</span><span>✕</span><span class="go">▶</span></span></div>
+              <div class="qi"><span class="no">2</span><span class="tx">Then open a PR against main</span><span class="ops"><span>✎</span><span>✕</span><span class="go">▶</span></span></div>
+            </div>
+            <div class="keybar"><span class="k on">esc</span><span class="k">^C</span><span class="k">↑</span><span class="k">↓</span><span class="k">←</span><span class="k">→</span><span class="k">⏎</span><span class="k">tab</span><span class="k">⇧tab</span></div>
+            <div class="composer"><span class="gt">&gt;</span><div class="in live">Check the dark mode of the pricing table</div><div class="send on">↑<div class="tip">Hold: send now · ⌘⏎</div></div></div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Sessão Codex com fila.</b> Com a sessão ocupada, Send enfileira; a fila vive no daemon e aparece como cartões compactos acima do composer, cada um com editar, remover e "send now". Segurar o botão (ou ⌘⏎ no teclado físico) envia já, como Ctrl+Enter no terminal. O ponto da mensagem do assistente usa a cor do agente.</p>
+      </div>
+
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app" style="--agent-color:var(--claude)">
+            <div class="ah"><div class="ib back">‹</div><div class="title">Add rate limit on login</div><div class="ib">🔔</div><div class="ib">⌨</div><div class="ib">⋯</div></div>
+            <div class="mline"><span class="agent claude">cl</span><span class="ptag" style="color:#61afef">Work</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">~/projects/acme-api</span><span class="sp"></span><span class="pill waiting">waiting</span><span class="pill plain" style="border:1px solid var(--a-accent-fg);color:var(--a-accent-fg);background:transparent">accept edits</span></div>
+            <div class="mline" style="padding-top:0"><span class="pill plain" style="border:1px solid var(--a-border-strong);background:transparent">sonnet-5.5</span><span class="pill plain" style="border:1px dashed var(--router);color:var(--router);background:transparent">via OpenRouter</span><span class="sp"></span><span>⎇ feat/rate-limit</span></div>
+            <div class="scroll">
+              <div class="umsg">Add rate limiting to the login endpoint (5 attempts per minute per IP) and cover it with tests</div>
+              <div class="amsg">I'll start by finding how the login route is registered.</div>
+              <div class="tool"><div class="n">Grep("/auth/login" in src)<span class="chev">›</span></div><div class="r">└ src/routes/auth.ts:42: app.post("/auth/login", …</div></div>
+              <div class="tool"><div class="n">Edit(auth.ts)<span class="chev">›</span></div><div class="r">└ ok</div>
+                <div class="diff"><div class="d">-   app.post('/auth/login', loginHandler)</div><div class="a">+   app.post('/auth/login', {</div><div class="a">+     config: { rateLimit: { max: 5, timeWindow: '1 minute' } },</div><div class="a">+   }, loginHandler)</div></div></div>
+              <div class="tool"><div class="n">Bash(pnpm vitest run test/auth.test.ts)<span class="chev">›</span></div><div class="r">└ ✓ test/auth.test.ts (7 tests) 412ms</div></div>
+            </div>
+            <div class="perm">
+              <div class="h"><span style="color:var(--a-warning)">⛨</span><span class="who">Bash(gh pr create --fill --base main)</span><span class="tm">4:36</span></div>
+              <div class="lbl">command</div>
+              <div class="cmd">gh pr create --fill --base main</div>
+              <div class="ans"><span class="btn no">Deny</span><span class="btn">Always</span><span class="btn ok">Allow</span></div>
+            </div>
+            <div class="keybar"><span class="k on">esc</span><span class="k">^C</span><span class="k">↑</span><span class="k">↓</span><span class="k">←</span><span class="k">→</span><span class="k">⏎</span><span class="k">tab</span></div>
+            <div class="composer"><span class="gt">&gt;</span><div class="in">message the agent… (@ files, / commands)</div><div class="send">↑</div></div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Permissão, agent-neutral.</b> O cartão não diz "Claude": diz a ferramenta e o comando. A linha de contexto mostra modelo e provedor (OpenRouter como chip tracejado neutro). Placeholder: "message the agent…".</p>
+      </div>
+
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app" style="--agent-color:var(--claude)">
+            <div class="ah"><div class="ib back">‹</div><div class="title">Write post about tmux + agents</div><div class="ib">🔔</div><div class="ib">⌨</div><div class="ib" style="color:var(--a-accent-fg)">⋯</div></div>
+            <div class="mline"><span class="agent claude">cl</span><span class="ptag" style="color:#56b6c2">Personal</span><span>~/projects/blog</span><span class="sp"></span><span class="pill idle">idle</span></div>
+            <div class="scroll">
+              <div class="umsg">Draft a post on running several coding agents in tmux and following them from the phone</div>
+              <div class="amsg">Here is a first draft. I kept it under 900 words and used your usual headings.</div>
+              <div class="tool"><div class="n">Agent(Explore: previous posts on tmux)<span class="chev">›</span></div><div class="r">└ 3 posts found, tone notes collected</div></div>
+              <div class="tool"><div class="n">Write(content/posts/agents-in-tmux.md)<span class="chev">›</span></div><div class="r">└ 118 lines</div></div>
+              <div class="turn">Turn completed in 2 m 14 s</div>
+            </div>
+            <div class="dimmer"></div>
+            <div class="sheet">
+              <div class="st">More options</div>
+              <div class="mi"><span class="ic">▣</span><span class="tx">View terminal</span></div>
+              <div class="mi"><span class="ic">⌥</span><span class="tx">Subagents <span class="cnt">(5 · <span class="run">2 running</span>)</span></span><span class="chev">›</span></div>
+              <div class="mi"><span class="ic">≡</span><span class="tx">Conversation history</span></div>
+              <div class="mi"><span class="ic">↓</span><span class="tx">Follow output</span></div>
+              <div class="mi"><span class="ic">⇧</span><span class="tx">Permission mode<small>default · asks according to the rules</small></span><span class="cnt">›</span></div>
+              <div class="mi"><span class="ic">🔔</span><span class="tx">Notifications</span><span class="tg on"></span></div>
+              <div class="mi"><span class="ic">ⓘ</span><span class="tx">Session details</span></div>
+              <div class="mi danger"><span class="ic">⏻</span><span class="tx">Close session</span></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>More options.</b> A faixa horizontal de subagentes sai da tela; "Subagents (N · running)" entra no menu, com um ponto âmbar no botão ⋯ enquanto algum roda (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/107">#107</a>). "Close session" fecha o menu em vermelho.</p>
+      </div>
+
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="ib back">‹</div><div class="title">Write post about tmux + agents</div><div class="ib">🔔</div><div class="ib">⌨</div><div class="ib">⋯</div></div>
+            <div class="scroll"></div>
+            <div class="dimmer"></div>
+            <div class="sheet">
+              <div class="st">Subagents <small>· 5 · 2 running</small></div>
+              <div class="mi"><span class="pill running" style="padding:2px 6px"></span><span class="tx">Explore: previous posts on tmux<small>running · 1:12 · 4 tools</small></span><span class="chev">›</span></div>
+              <div class="mi"><span class="pill running" style="padding:2px 6px"></span><span class="tx">Plan: outline and section order<small>running · 0:40</small></span><span class="chev">›</span></div>
+              <div class="mi"><span class="pill idle" style="padding:2px 6px"></span><span class="tx">general: collect reader questions<small>done · 3 m 05 s</small></span><span class="chev">›</span></div>
+              <div class="mi"><span class="pill idle" style="padding:2px 6px"></span><span class="tx">Explore: screenshots folder<small>done · 0:58</small></span><span class="chev">›</span></div>
+              <div class="mi"><span class="pill idle" style="padding:2px 6px"></span><span class="tx">code-review: snippets in the draft<small>done · 1:31</small></span><span class="chev">›</span></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Lista de subagentes.</b> Ordenada com <code>sortSubagents</code> (rodando primeiro); cada linha abre <code>/session/[id]/agent/[agentId]</code> como hoje.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ NEW SESSION ============ -->
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Nova sessão · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/108">#108</a> <a class="issue" href="https://github.com/maarkN/remote-harness/issues/109">#109</a></span><h2>Escolher agente, perfil e modelo</h2></div>
+    <div class="frames">
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="ib back">‹</div><div class="title">New session</div><div class="ib"></div></div>
+            <div class="scroll">
+              <div class="field"><label>Agent &amp; profile</label>
+                <div class="plist">
+                  <div class="prow"><span class="agent lg claude">cl</span><span class="l"><b>Personal</b><small>Claude Code · ~/.claude</small></span><span class="radio"></span></div>
+                  <div class="prow on"><span class="agent lg claude">cl</span><span class="l"><b>Work · OpenRouter</b><small>Claude Code · ~/.claude-work · gateway</small></span><span class="radio on"></span></div>
+                  <div class="prow"><span class="agent lg codex">cx</span><span class="l"><b>Codex</b><small>Codex CLI · ~/.codex</small></span><span class="radio"></span></div>
+                </div>
+              </div>
+              <div class="field"><label>Model</label><div class="input"><span style="flex:1">anthropic/claude-sonnet-5.5</span><span class="ac">Change ▾</span></div></div>
+              <div class="field"><label>Directory</label><div class="input"><span style="flex:1">~/projects/acme-api</span><span class="ac">Browse</span></div></div>
+              <div class="field"><label>Recent</label>
+                <div class="box"><div class="frow"><span class="l">~/projects/acme-api<small>⎇ main · 2 sessions this week</small></span><span class="v">›</span></div><div class="frow"><span class="l">~/projects/acme-mobile<small>⎇ fix/onboarding</small></span><span class="v">›</span></div></div>
+              </div>
+              <div class="box"><div class="frow"><span class="l">Isolated copy (git worktree)<small>The agent works on its own branch in .claude/worktrees</small></span><span class="tg on"></span></div></div>
+              <div class="warn"><span>⚠</span><span>1 session is working in this checkout: <b>Add rate limit on login</b>. The worktree keeps them apart.</span></div>
+              <span class="btn primary block">Start session</span>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Nova sessão.</b> Perfis trazem o agente (badge) e o provedor. "Model" só aparece para perfis OpenRouter. O aviso de checkout ocupado continua, com o worktree já ligado como saída.</p>
+      </div>
+
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="ib back">‹</div><div class="title">New session</div><div class="ib"></div></div>
+            <div class="scroll"></div>
+            <div class="dimmer"></div>
+            <div class="sheet" style="height:620px">
+              <div class="st">Model <small>· OpenRouter · Work</small></div>
+              <div class="input"><span class="ph">⌕ claude</span></div>
+              <div class="tiny" style="padding:6px 4px 2px;color:var(--a-dim)">Example prices · per million tokens, in/out</div>
+              <div class="mi"><span class="radio on"></span><span class="tx">anthropic/claude-sonnet-5.5<small>200k context · $3 / $15 · tools ✓ thinking ✓ cache ✓</small></span></div>
+              <div class="mi"><span class="radio"></span><span class="tx">anthropic/claude-opus-5.5<small>200k context · $15 / $75 · tools ✓ thinking ✓ cache ✓</small></span></div>
+              <div class="mi"><span class="radio"></span><span class="tx">anthropic/claude-haiku-5.5<small>200k context · $1 / $5 · tools ✓</small></span></div>
+              <div class="mi"><span class="radio"></span><span class="tx">openai/gpt-5.1<small>400k context · $1.25 / $10 · <span style="color:var(--a-warning)">tool use untested with Claude Code</span></small></span></div>
+              <div class="mi"><span class="radio"></span><span class="tx">google/gemini-3-pro<small>1M context · $2 / $12 · <span style="color:var(--a-warning)">no prompt caching</span></small></span></div>
+              <div class="tiny" style="padding:10px 4px 0;color:var(--a-dim)">Credits: $42.10 left · fetched 2 min ago</div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Seletor de modelo.</b> Lista do daemon (<code>models.list</code>, cache), busca, contexto e preço; modelos sem suporte conhecido ganham um aviso em amarelo em vez de sumir. A chave nunca chega ao app: só o saldo.</p>
+      </div>
+
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="ib back">‹</div><div class="title">Settings</div><div class="ib"></div></div>
+            <div class="scroll" style="gap:4px">
+              <div class="sect"><div class="sh">Machine</div><div class="box">
+                <div class="frow"><span class="l">MacBook Pro<small>100.101.1.7 · remote-harness 0.11.0 · protocol 9</small></span><span class="pill idle">connected</span></div>
+                <div class="frow"><span class="l" style="color:var(--a-danger)">Forget this machine</span></div>
+              </div></div>
+              <div class="sect"><div class="sh">Appearance</div><div class="box">
+                <div class="themes">
+                  <div class="tsw"><div class="pv" style="background:linear-gradient(90deg,#0d0d0d 50%,#f3f3f1 50%)"><i style="background:#e8a33d;width:40%"></i><i style="background:#8a8784;width:70%"></i></div><span>System</span></div>
+                  <div class="tsw on"><div class="pv" style="background:#0d0d0d"><i style="background:#e8a33d;width:40%"></i><i style="background:#8a8784;width:70%"></i><i style="background:#3a3836;width:55%"></i></div><span>Dark</span></div>
+                  <div class="tsw"><div class="pv" style="background:#f3f3f1"><i style="background:#e8a33d;width:40%"></i><i style="background:#66635f;width:70%"></i><i style="background:#cbc9c4;width:55%"></i></div><span>Light</span></div>
+                  <div class="tsw"><div class="pv" style="background:#282a36"><i style="background:#bd93f9;width:40%"></i><i style="background:#f8f8f2;width:70%"></i><i style="background:#44475a;width:55%"></i></div><span>Dracula</span></div>
+                  <div class="tsw"><div class="pv" style="background:#1e1e2e"><i style="background:#fab387;width:40%"></i><i style="background:#cdd6f4;width:70%"></i><i style="background:#45475a;width:55%"></i></div><span>Mocha</span></div>
+                  <div class="tsw"><div class="pv" style="background:#eff1f5"><i style="background:#fe640b;width:40%"></i><i style="background:#4c4f69;width:70%"></i><i style="background:#ccd0da;width:55%"></i></div><span>Latte</span></div>
+                </div>
+              </div></div>
+              <div class="sect"><div class="sh">Profiles</div><div class="box">
+                <div class="frow"><span class="agent claude">cl</span><span class="l">Personal<small>Claude Code · ~/.claude · alias personal</small></span><span class="v">›</span></div>
+                <div class="frow"><span class="agent claude">cl</span><span class="l">Work<small>Claude Code · ~/.claude-work · alias work</small></span><span class="v">›</span></div>
+                <div class="frow"><span class="agent claude">cl</span><span class="l">Work · OpenRouter<small>Claude Code via gateway · sonnet-5.5</small></span><span class="v">›</span></div>
+                <div class="frow"><span class="agent codex">cx</span><span class="l">Codex<small>Codex CLI · ~/.codex · alias codex</small></span><span class="v">›</span></div>
+              </div></div>
+              <div class="sect"><div class="sh">Notifications</div><div class="box">
+                <div class="frow"><span class="l">Push notifications<small>Only this phone · never the conversation</small></span><span class="tg on"></span></div>
+                <div class="frow"><span class="l">Live status<small>Lock screen and Dynamic Island</small></span><span class="tg on"></span></div>
+                <div class="frow"><span class="l">Muted<small>1 profile · 1 session</small></span><span class="v">›</span></div>
+              </div></div>
+              <div class="sect"><div class="sh">App</div><div class="box">
+                <div class="frow"><span class="l">Version<small>0.11.0 · update 2026-10-17 · channel production</small></span><span class="v acc">Check</span></div>
+                <div class="frow"><span class="l">Documentation<small>remoteharness.app/docs</small></span><span class="v">↗</span></div>
+              </div></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Ajustes.</b> "Machine" nomeia o computador pareado (hostname do daemon, apelido editável). "Appearance" com System/Dark/Light/Dracula/Mocha/Latte. Perfis mostram agente e provedor. "Help" aponta para os docs (<a class="issue" href="https://github.com/maarkN/remote-harness/issues/136">#136</a>).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONNECTION ============ -->
+  <section class="sec">
+    <div class="sec-head"><span class="eyebrow">Pareamento e conexão · <a class="issue" href="https://github.com/maarkN/remote-harness/issues/94">#94</a></span><h2>Falar da máquina, não do daemon</h2></div>
+    <div class="frames">
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Pair with your machine</div></div>
+            <div class="mline" style="padding-bottom:12px">On your computer, run <code style="background:var(--a-raised);color:var(--a-fg)">remote-harness pair</code> and point the camera at the QR code.</div>
+            <div class="tabs2"><span class="on">QR code</span><span>Manual</span></div>
+            <div class="qr"><i></i></div>
+            <div class="scroll" style="gap:8px">
+              <div class="box"><div class="frow"><span class="l"><b>First time? Set up your machine</b><small>Tailscale, a one-line install and pairing, step by step.</small></span><span class="v">›</span></div></div>
+              <div class="empty">Pairing works on your Tailscale network only. The token is stored in the secure enclave of this phone.</div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Pareamento.</b> A marca aparece uma vez, aqui, porque é a primeira tela. Sem a palavra "daemon".</p>
+      </div>
+      <div class="frame z85">
+        <div class="phone t-dark">
+          <div class="sb"><span>9:41</span><span class="ic">▮▮▮ ⌔ ▭</span></div>
+          <div class="app">
+            <div class="banner-top">connecting to MacBook Pro…</div>
+            <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+            <div class="mline"><span class="dot" style="background:var(--a-warning);margin:0"></span><span class="host">MacBook Pro</span><span>· reconnecting</span></div>
+            <div class="scroll">
+              <div class="srow" style="opacity:.6"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span></div><div class="m"><span class="pill running">running</span></div></div>
+              <div class="srow" style="opacity:.6"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span></div><div class="m"><span class="pill waiting">waiting</span></div></div>
+            </div>
+            <div class="dimmer"></div>
+            <div class="sheet">
+              <div class="st">Can't reach MacBook Pro</div>
+              <div class="body">The phone is on Tailscale, but your machine did not answer in 10 s. It may be asleep, or Remote Harness may not be running there.</div>
+              <div class="opts"><span class="btn primary block">Try again</span><span class="btn block">On your machine, run <code>remote-harness doctor</code></span><span class="btn block" style="border-color:transparent;background:transparent;color:var(--a-muted)">Pair another machine</span></div>
+            </div>
+          </div>
+          <div class="home"></div>
+        </div>
+        <p class="cap"><b>Erros com nome.</b> "connecting to MacBook Pro…", "Can't reach MacBook Pro", "MacBook Pro rejected the pairing. Pair again." Comandos ficam como comandos, explicados em palavras simples.</p>
+      </div>
+      <div class="card" style="max-width:420px">
+        <h3>Tabela de troca de termos</h3>
+        <dl class="kv">
+          <dt>connecting to the daemon…</dt><dd>connecting to {machine}…</dd>
+          <dt>No connection to the daemon.</dt><dd>Can't reach {machine}.</dd>
+          <dt>The daemon did not respond.</dt><dd>{machine} did not respond.</dd>
+          <dt>Token rejected by the daemon.</dt><dd>{machine} rejected the pairing. Pair again.</dd>
+          <dt>Daemon (settings)</dt><dd>Machine</dd>
+          <dt>Forget daemon</dt><dd>Forget this machine</dd>
+          <dt>message Claude…</dt><dd>message the agent… / message {agent}…</dd>
+          <dt>Claude has a question</dt><dd>{agent} has a question</dd>
+          <dt>Opening Claude Code in tmux</dt><dd>Opening {agent} in tmux</dd>
+        </dl>
+        <p>pt-BR: "máquina"; es-ES: "máquina". Quando o hostname não chega, cai para "your machine" / "sua máquina" / "tu máquina".</p>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="shared.js"></script>
+<script>
+  // Theme showcase: clone the sessions screen into the four other palettes.
+  (function () {
+    var src = document.getElementById('sessions-frame');
+    var row = document.getElementById('themerow');
+    [['t-light', 'Light'], ['t-dracula', 'Dracula'], ['t-mocha', 'Catppuccin Mocha'], ['t-latte', 'Catppuccin Latte']].forEach(function (t) {
+      var frame = document.createElement('div');
+      frame.className = 'frame';
+      var clone = src.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.className = 'phone ' + t[0];
+      frame.appendChild(clone);
+      var cap = document.createElement('p');
+      cap.className = 'cap';
+      cap.innerHTML = '<b>' + t[1] + '</b>';
+      frame.appendChild(cap);
+      row.appendChild(frame);
+    });
+  })();
+</script>
+</body>
+</html>

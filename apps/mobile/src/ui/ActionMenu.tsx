@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionSheetIOS, findNodeHandle, Modal, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, radius, space } from '@/core/theme'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { IconButton } from './IconButton'
 import { Text } from './Text'
 
@@ -19,13 +19,18 @@ export function ActionMenu({
   label,
   items,
   disabledReason,
+  attention = false,
 }: {
   icon: LucideIcon
   label: string
   items: ActionMenuItem[]
   disabledReason?: string
+  /** Accent dot over the button: something behind the menu deserves a look (running subagents). */
+  attention?: boolean
 }) {
   const { t } = useTranslation()
+  const theme = useTheme()
+  const styles = useStyles()
   const insets = useSafeAreaInsets()
   const anchor = useRef<View>(null)
   const [open, setOpen] = useState(false)
@@ -41,8 +46,8 @@ export function ActionMenu({
         disabledButtonIndices: disabled,
         ...(disabledReason ? { message: disabledReason } : {}),
         ...(handle ? { anchor: handle } : {}),
-        userInterfaceStyle: 'dark',
-        tintColor: colors.accent,
+        userInterfaceStyle: theme.scheme,
+        tintColor: theme.colors.accentText,
       },
       (index) => items[index]?.onPress(),
     )
@@ -57,10 +62,11 @@ export function ActionMenu({
     <>
       <View ref={anchor} collapsable={false}>
         <IconButton icon={icon} label={label} onPress={show} />
+        {attention ? <View pointerEvents="none" style={styles.dot} /> : null}
       </View>
       {Platform.OS === 'ios' ? null : (
         <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+          <Pressable style={layout.backdrop} onPress={() => setOpen(false)}>
             <View style={[styles.menu, { top: insets.top + space.xs }]}>
               {items.map((item) => (
                 <Pressable
@@ -69,13 +75,13 @@ export function ActionMenu({
                   accessibilityState={{ disabled: !!item.disabled }}
                   disabled={item.disabled}
                   onPress={() => choose(item)}
-                  style={({ pressed }) => [styles.item, pressed && styles.pressed]}
+                  style={({ pressed }) => [layout.item, pressed && styles.pressed]}
                 >
                   <Text color={item.disabled ? 'textDim' : 'text'}>{item.label}</Text>
                 </Pressable>
               ))}
               {disabledReason ? (
-                <Text size="xs" color="textMuted" style={styles.reason}>
+                <Text size="xs" color="textMuted" style={layout.reason}>
                   {disabledReason}
                 </Text>
               ) : null}
@@ -87,8 +93,13 @@ export function ActionMenu({
   )
 }
 
-const styles = StyleSheet.create({
+const layout = StyleSheet.create({
   backdrop: { flex: 1 },
+  item: { paddingHorizontal: space.lg, paddingVertical: space.md },
+  reason: { paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.sm },
+})
+
+const useStyles = makeStyles((theme) => ({
   menu: {
     position: 'absolute',
     right: space.sm,
@@ -97,11 +108,20 @@ const styles = StyleSheet.create({
     paddingVertical: space.xs,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
     elevation: 8,
   },
-  item: { paddingHorizontal: space.lg, paddingVertical: space.md },
-  pressed: { backgroundColor: colors.surface },
-  reason: { paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.sm },
-})
+  pressed: { backgroundColor: theme.colors.surface },
+  dot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 9,
+    height: 9,
+    borderRadius: radius.pill,
+    backgroundColor: theme.colors.accent,
+    borderWidth: 1.5,
+    borderColor: theme.colors.background,
+  },
+}))

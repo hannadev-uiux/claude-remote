@@ -18,6 +18,7 @@ import {
 } from './payload'
 import { createTapDeduper, LIVE_STATUS_CHANNEL_ID, NOTIFICATION_CHANNEL_ID } from './platform'
 import { relayFor } from './push-relay'
+import { usePushSettings } from './push-settings-store'
 import { usePushState } from './push-state'
 import { pushRelayUrl } from './relay'
 import { respondInBackground } from './respond-in-background'
@@ -169,18 +170,34 @@ export function usePush() {
           // Push is optional: the app keeps working without it.
         }
       }
-      const offReadyToken = client.onReady(() => void register())
-      const offRefresh = messaging.onTokenRefresh(m, (token) => void sendToken(token))
+      // Push turned off on this phone: the daemon forgets the token instead, and nothing is asked.
+      const unregister = async () => {
+        try {
+          const token = usePushState.getState().token ?? (await messaging.getToken(m))
+          client.send({ type: 'device.unregister', fcmToken: token })
+        } catch {
+          // No token to forget.
+        }
+      }
+      const sync = () => (usePushSettings.getState().enabled ? register() : unregister())
+      const offReadyToken = client.onReady(() => void sync())
+      const offEnabled = usePushSettings.subscribe((state, previous) => {
+        if (state.enabled !== previous.enabled) void sync()
+      })
+      const offRefresh = messaging.onTokenRefresh(m, (token) => {
+        if (usePushSettings.getState().enabled) void sendToken(token)
+      })
       // Back from the system settings with notifications turned on: register without reconnecting.
       // Only checks: asking again here would prompt on every return to the app.
       const retry = AppState.addEventListener('change', (state) => {
         if (state !== 'active' || usePushState.getState().permission !== 'denied') return
         void Notifications.getPermissionsAsync().then((current) => {
-          if (current.granted) void register()
+          if (current.granted) void sync()
         })
       })
       offToken = () => {
         offReadyToken()
+        offEnabled()
         offRefresh()
         retry.remove()
       }

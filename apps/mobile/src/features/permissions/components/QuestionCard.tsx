@@ -2,8 +2,9 @@ import type { PermissionAnswer, Question } from '@remote-harness/protocol'
 import { Check, MessageCircleQuestionMark } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native'
-import { colors, fontSize, fonts, radius, space } from '@/core/theme'
+import { Pressable, ScrollView, TextInput, View } from 'react-native'
+import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
+import { agentLabel } from '@/features/sessions/agent'
 import { Button, Text } from '@/ui'
 import {
   buildAnswers,
@@ -25,6 +26,8 @@ type Props = {
 /** `AskUserQuestion` as a native card: options, free-text "Other", Send and Decline. */
 export function QuestionCard({ questions, title, busy, onAnswer, onDecline }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const [selections, setSelections] = useState<Record<string, Selection>>({})
   const update = (question: string, change: (s: Selection) => Selection) =>
     setSelections((all) => ({ ...all, [question]: change(all[question] ?? EMPTY_SELECTION) }))
@@ -32,9 +35,9 @@ export function QuestionCard({ questions, title, busy, onAnswer, onDecline }: Pr
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <MessageCircleQuestionMark size={16} color={colors.accent} />
-        <Text weight="bold" color="accent" style={styles.flex} numberOfLines={2}>
-          {title ?? t('permissions.question.title')}
+        <MessageCircleQuestionMark size={16} color={colors.accentText} />
+        <Text weight="bold" color="accentText" style={styles.flex} numberOfLines={2}>
+          {title ?? t('permissions.question.title', { agent: agentLabel(null, t, { sentence: true }) })}
         </Text>
       </View>
       <ScrollView style={styles.body} nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -69,7 +72,7 @@ export function QuestionCard({ questions, title, busy, onAnswer, onDecline }: Pr
                     <View
                       style={[styles.mark, !q.multiSelect && styles.markRound, picked && styles.markPicked]}
                     >
-                      {picked ? <Check size={12} color={colors.background} /> : null}
+                      {picked ? <Check size={12} color={colors.accentInk} /> : null}
                     </View>
                     <View style={styles.flex}>
                       <Text size="sm">{option.label}</Text>
@@ -121,15 +124,15 @@ export function QuestionCard({ questions, title, busy, onAnswer, onDecline }: Pr
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     margin: space.sm,
     padding: space.md,
     gap: space.xs,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.surface,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   flex: { flex: 1 },
@@ -142,30 +145,30 @@ const styles = StyleSheet.create({
     padding: space.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
-  optionPicked: { borderColor: colors.accent, backgroundColor: colors.accentMuted },
+  optionPicked: { borderColor: theme.colors.accent, backgroundColor: theme.colors.accentSoft },
   mark: {
     width: 18,
     height: 18,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: theme.colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
   markRound: { borderRadius: 9 },
-  markPicked: { backgroundColor: colors.accent, borderColor: colors.accent },
+  markPicked: { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
   input: {
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.background,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: space.sm,
-    color: colors.text,
+    color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
   },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
-})
+}))

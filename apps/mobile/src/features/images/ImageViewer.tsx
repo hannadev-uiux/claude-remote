@@ -1,12 +1,12 @@
 import type { ImageRef } from '@remote-harness/protocol'
 import { X } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Modal, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, Modal, View } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
-import { colors, space } from '@/core/theme'
+import { makeStyles, space, useTheme } from '@/core/theme'
 import { IconButton, Text } from '@/ui'
 import { useTranscriptImage } from './use-transcript-image'
 
@@ -30,6 +30,8 @@ export function ImageViewer({
 }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const { state } = useTranscriptImage(image)
 
   const scale = useSharedValue(1)
@@ -124,9 +126,9 @@ export function ImageViewer({
   )
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.scrim },
+const useStyles = makeStyles((theme) => ({
+  root: { flex: 1, backgroundColor: theme.colors.scrim },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
   close: { position: 'absolute', padding: space.xs },
-})
+}))

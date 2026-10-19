@@ -41,3 +41,16 @@ export function buildRespond(
 export function secondsLeft(expiresAt: string, now: number = Date.now()): number {
   return Math.max(0, Math.round((Date.parse(expiresAt) - now) / 1000))
 }
+
+/** How long a request has been waiting, and whether it is about to expire (under 30 s left). */
+export function permissionTimer(
+  createdAt: string,
+  expiresAt: string,
+  now: number = Date.now(),
+): { elapsedMs: number; urgent: boolean } {
+  const created = Date.parse(createdAt)
+  return {
+    elapsedMs: Number.isNaN(created) ? 0 : Math.max(0, now - created),
+    urgent: secondsLeft(expiresAt, now) < 30,
+  }
+}

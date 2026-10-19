@@ -14,13 +14,58 @@ export type PermissionMode = z.infer<typeof PermissionModeSchema>
 export const SelectableModeSchema = z.enum(['default', 'acceptEdits', 'plan', 'auto'])
 export type SelectableMode = z.infer<typeof SelectableModeSchema>
 
+/** Coding agents the app knows (badge, color); only those with a daemon adapter can run. */
+export const AgentIdSchema = z.enum(['claude', 'codex', 'kimi', 'qwen'])
+export type AgentId = z.infer<typeof AgentIdSchema>
+
+/** Model gateways a profile can route Claude Code through; a profile without one uses the Anthropic account. */
+export const ProviderKindSchema = z.enum(['openrouter'])
+export type ProviderKind = z.infer<typeof ProviderKindSchema>
+
+/** Product names of the providers (not translated); shown in the dashed `via …` chip. */
+export const PROVIDER_NAMES: Record<ProviderKind, string> = { openrouter: 'OpenRouter' }
+
+export const ProviderSchema = z.object({
+  kind: ProviderKindSchema,
+  /** Anthropic-compatible endpoint; absent = the provider's own (`https://openrouter.ai/api`). */
+  baseUrl: z.string().url().optional(),
+  /** Default model of new sessions; absent = whatever the gateway serves for Claude Code's default. */
+  model: z.string().min(1).optional(),
+  smallFastModel: z.string().min(1).optional(),
+})
+export type Provider = z.infer<typeof ProviderSchema>
+
 export const ProfileSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   configDir: z.string().min(1),
   color: z.string().min(1),
+  /** The agent this profile launches; absent means Claude Code (older configs and daemons). */
+  agent: AgentIdSchema.optional(),
+  /** The model provider; absent means the Anthropic account logged into Claude Code. */
+  provider: ProviderSchema.optional(),
 })
 export type Profile = z.infer<typeof ProfileSchema>
+
+/** A model a provider lists; prices in USD per million tokens, `null` when the provider does not say. */
+export const ModelInfoSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  contextLength: z.number().int().positive().nullable(),
+  promptPrice: z.number().nonnegative().nullable(),
+  completionPrice: z.number().nonnegative().nullable(),
+  /** Tool use (Claude Code needs it). */
+  tools: z.boolean(),
+  /** Extended thinking / reasoning. */
+  reasoning: z.boolean(),
+  /** Prompt caching. */
+  caching: z.boolean(),
+})
+export type ModelInfo = z.infer<typeof ModelInfoSchema>
+
+/** Credits of a provider account, in USD: bought and used so far. */
+export const ProviderCreditsSchema = z.object({ total: z.number(), used: z.number() })
+export type ProviderCredits = z.infer<typeof ProviderCreditsSchema>
 
 export const SessionStateSchema = z.enum(['running', 'waiting', 'idle', 'ended'])
 export type SessionState = z.infer<typeof SessionStateSchema>
@@ -31,6 +76,10 @@ export const SubagentInfoSchema = z.object({
   description: z.string().nullable().default(null),
   state: z.enum(['running', 'done']),
   updatedAt: z.string(),
+  /** When the subagent was first seen (`null` from older daemons). */
+  startedAt: z.string().nullable().default(null),
+  /** Tool uses in its transcript so far. */
+  toolCount: z.number().int().nonnegative().default(0),
 })
 export type SubagentInfo = z.infer<typeof SubagentInfoSchema>
 
@@ -73,6 +122,8 @@ export type AccountLimits = z.infer<typeof AccountLimitsSchema>
 export const SessionSchema = z.object({
   id: z.string(),
   profileId: z.string(),
+  /** The profile's agent; absent means Claude Code (older daemons). */
+  agent: AgentIdSchema.optional(),
   cwd: z.string(),
   title: z.string(),
   state: SessionStateSchema,
@@ -106,6 +157,33 @@ export function checkoutPeers<T extends Pick<Session, 'id' | 'controllable' | 's
 
 export const CheckoutPeerSchema = z.object({ id: z.string(), title: z.string() })
 export type CheckoutPeer = z.infer<typeof CheckoutPeerSchema>
+
+/** A linked git worktree a session works in (never the repository's main checkout). */
+export const WorktreeInfoSchema = z.object({
+  path: z.string(),
+  branch: z.string().nullable(),
+  /** The repository's main checkout. */
+  mainRoot: z.string(),
+  /** Modified or untracked files. */
+  dirty: z.number().int().nonnegative(),
+  /** Commits reachable from HEAD and from no remote ref (also when the branch has no upstream). */
+  unpushed: z.number().int().nonnegative(),
+})
+export type WorktreeInfo = z.infer<typeof WorktreeInfoSchema>
+
+/**
+ * What to do with a session's worktree: `delete` only when clean and pushed; `push-delete` commits
+ * and pushes first; `discard-delete` throws the work away (asked twice in the app).
+ */
+export const WorktreeActionSchema = z.enum(['delete', 'push-delete', 'discard-delete'])
+export type WorktreeAction = z.infer<typeof WorktreeActionSchema>
+
+/** Data of the `ack` to `session.close`. */
+export const CloseResultSchema = z.object({
+  closed: z.enum(['exited', 'killed', 'already']),
+  worktree: z.enum(['deleted', 'kept']).optional(),
+})
+export type CloseResult = z.infer<typeof CloseResultSchema>
 
 /**
  * An image in the transcript, without its data (fetched with `transcript.image`). `id` locates it in
@@ -204,12 +282,40 @@ export type LiveState = z.infer<typeof LiveStateSchema>
 /** Name the app passes to `createLiveActivity` and the daemon puts in `content-state.name`. */
 export const LIVE_ACTIVITY_NAME = 'SessionActivity'
 
+const HexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?$/)
+
+/**
+ * App theme colors the live status is drawn with. The app sends them when it registers; the daemon
+ * echoes them in every update, since the widget cannot read the app's theme.
+ */
+export const LivePaletteSchema = z.object({
+  background: HexColorSchema,
+  text: HexColorSchema,
+  textMuted: HexColorSchema,
+  /** Working state. */
+  accent: HexColorSchema,
+  /** Done state. */
+  success: HexColorSchema,
+  /** Waiting state. */
+  warning: HexColorSchema,
+})
+export type LivePalette = z.infer<typeof LivePaletteSchema>
+
 /**
  * Props of the live status, rendered as they are by the widget (it cannot translate): texts arrive
  * already translated. Besides the session title and folder, never session content: names, state,
  * step categories with tool names, tool count, times. Fields after `startedAt` have defaults because
  * older daemons do not send them.
  */
+/** The tool permission a live status waits for, answerable from the lock screen; labels already translated. */
+export const LivePendingSchema = z.object({
+  requestId: z.string(),
+  tool: z.string(),
+  allow: z.string(),
+  deny: z.string(),
+})
+export type LivePending = z.infer<typeof LivePendingSchema>
+
 export const LiveStatusPropsSchema = z.object({
   /** Profile name. */
   title: z.string(),
@@ -235,6 +341,14 @@ export const LiveStatusPropsSchema = z.object({
   changedAt: z.number().default(0),
   /** End of the turn (done or closed), epoch milliseconds: the elapsed timer stops there. */
   endedAt: z.number().nullable().default(null),
+  /** Glyphs of the last five steps, newest first (`⌘` command, `✎` edit, `⌕` search, `⇄` web, `⌥` subagent, `?` permission, `·` other). */
+  glyphs: z.array(z.string()).default([]),
+  /** The tool permission the session waits for, with its translated button labels; `null` otherwise. */
+  pending: LivePendingSchema.nullable().default(null),
+  /** Short translated line: "total" when done, "transcript kept · resume from the app" when closed. */
+  hint: z.string().default(''),
+  /** Theme colors of the app that registered; absent from older daemons (the widget uses dark). */
+  palette: LivePaletteSchema.optional(),
 })
 export type LiveStatusProps = z.infer<typeof LiveStatusPropsSchema>
 
@@ -299,7 +413,13 @@ export type CommandItem = z.infer<typeof CommandItemSchema>
 export const FileItemSchema = z.object({ path: z.string(), kind: z.enum(['file', 'dir']) })
 export type FileItem = z.infer<typeof FileItemSchema>
 
-export const ProjectItemSchema = z.object({ cwd: z.string(), lastUsedAt: z.string() })
+/** A recent directory of a profile, with the branch of its latest session and the sessions used there this week. */
+export const ProjectItemSchema = z.object({
+  cwd: z.string(),
+  lastUsedAt: z.string(),
+  branch: z.string().nullable().default(null),
+  sessions: z.number().int().nonnegative().default(0),
+})
 export type ProjectItem = z.infer<typeof ProjectItemSchema>
 
 /** A subdirectory listed by `directories.list`; `git` when it holds a `.git` directory or file. */
@@ -321,6 +441,26 @@ export const AttachmentMimeTypeSchema = z.enum(ATTACHMENT_MIME_TYPES)
 export type AttachmentMimeType = z.infer<typeof AttachmentMimeTypeSchema>
 /** Images per prompt. */
 export const MAX_ATTACHMENTS = 4
+
+/** How `session.input` is delivered: right away, held in the queue, or held only while the session is busy. */
+export const InputModeSchema = z.enum(['now', 'queue', 'auto'])
+export type InputMode = z.infer<typeof InputModeSchema>
+export const InputDeliverySchema = z.enum(['sent', 'queued'])
+export type InputDelivery = z.infer<typeof InputDeliverySchema>
+
+/** A prompt waiting for the session to be free; delivered in order once the turn ends. */
+export const QueuedMessageSchema = z.object({
+  id: z.string(),
+  sessionId: z.string(),
+  text: z.string(),
+  attachmentIds: z.array(z.string()).default([]),
+  createdAt: z.string(),
+  /** Why the last delivery failed; the prompt then waits for the user (edit, send now, remove). */
+  error: z.string().nullable().default(null),
+})
+export type QueuedMessage = z.infer<typeof QueuedMessageSchema>
+/** Queued prompts per session. */
+export const MAX_QUEUE = 20
 /** Decoded bytes per image (the Claude API limit). */
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024
 

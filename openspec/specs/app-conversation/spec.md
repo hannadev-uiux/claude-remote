@@ -6,7 +6,7 @@ Shows a session's conversation in real time and allows sending prompts and contr
 ## Requirements
 
 ### Requirement: Entry rendering
-The screen SHALL show user messages, assistant text in markdown, collapsed thinking, collapsible tool calls with a one-line summary, and results; tool errors MUST appear in red.
+The screen SHALL show user messages, assistant text in markdown, collapsed thinking, collapsible tool calls with a one-line summary, and results; tool errors MUST appear in red. The assistant's leading dot SHALL take the session agent's color (Claude Code's until the protocol carries the agent); user messages keep the accent `>`.
 
 #### Scenario: Tool call
 - **WHEN** a `tool_use` entry for `Bash` arrives with `command` "pnpm test"
@@ -15,6 +15,10 @@ The screen SHALL show user messages, assistant text in markdown, collapsed think
 #### Scenario: Unknown entry
 - **WHEN** an `unknown` entry arrives
 - **THEN** a subtle block appears with the raw JSON collapsed
+
+#### Scenario: Agent color
+- **WHEN** an assistant message of a Claude Code session is shown
+- **THEN** its leading dot is in the Claude Code color while the user prompt marker stays in the accent
 
 ### Requirement: Diffs
 `Edit`, `MultiEdit` and `Write` tool calls SHALL show a diff with removed lines in red and added lines in green.
@@ -59,11 +63,27 @@ The screen SHALL follow the end of the conversation while following is on, the u
 - **THEN** the last message stays visible above the keyboard
 
 ### Requirement: Prompt sending
-The prompt field SHALL send `session.input` and clear the field after the `ack`; on error, it MUST keep the text and show the message. In a read-only session the field MUST be disabled.
+The prompt field SHALL send `session.input` with `mode: auto` and clear the field after the `ack`, whether the prompt was sent or queued; on error, it MUST keep the text and show the message. In a read-only session the field MUST be disabled and its placeholder say so. Otherwise the placeholder SHALL name the agent when it is known (`message Claude Code… (@ files, / commands)`) and say `message the agent…` when it is not. While the message would be queued (the session is `running` or `waiting`, a permission is pending or prompts are already queued), the composer SHALL show the hint `Hold: send now · ⌘⏎` and label the send button as queueing; a long press on Send, and ⌘⏎ on a hardware keyboard, SHALL send with `mode: now`. The session's queued prompts SHALL be shown in a dashed `QUEUED · N` card above the composer, numbered in order, each with its text, a photo count when it has attachments, the delivery error when one failed, and Edit (a sheet that keeps the attachments), Remove and Send now actions; the card SHALL offer `Send all now`. The card mirrors `session.queue` and disappears when the queue is empty.
 
 #### Scenario: Successful send
-- **WHEN** the user sends "continue"
+- **WHEN** the user sends "continue" to an idle session
 - **THEN** the field is cleared and the prompt appears in the conversation once written to the transcript
+
+#### Scenario: Queued while busy
+- **WHEN** the user taps Send while the session is running
+- **THEN** the field is cleared, the card shows `QUEUED · 1` with the message, and nothing is pasted until the turn ends
+
+#### Scenario: Send now
+- **WHEN** the user long-presses Send (or presses ⌘⏎) while the session is running
+- **THEN** the prompt is pasted immediately, mid-turn
+
+#### Scenario: Placeholder
+- **WHEN** a Claude Code session is open and the field is empty
+- **THEN** it reads "message Claude Code… (@ files, / commands)"
+
+#### Scenario: Failed delivery shown
+- **WHEN** the daemon could not deliver the first queued prompt
+- **THEN** its row shows the error and Send now retries it
 
 ### Requirement: Controls
 The screen SHALL offer Esc (interrupt) and Ctrl+C (with confirmation), plus a key bar (arrows, Enter, Tab, 1-3). The key bar SHALL be hidden by default and shown or hidden from the session options menu; the choice MUST be remembered on the device across app restarts.
@@ -141,15 +161,19 @@ The composer SHALL show the attach and mic buttons, and no Send button, while th
 - **THEN** the mic (stop) button stays visible
 
 ### Requirement: Session options menu
-The session header SHALL have a single "More options" button that opens a menu with "View terminal", "Show keyboard shortcuts" / "Hide keyboard shortcuts", "Conversation history" and "Stop following output" / "Follow output". The menu MUST be native on iOS and look like the platform overflow menu on Android. In a read-only session, "View terminal" and the shortcuts toggle MUST be disabled and the menu MUST say why; "Conversation history" and the follow toggle stay enabled. All labels MUST be translated.
+The session header SHALL have a "More options" button that opens a menu with "View terminal", "Change model…" when the session's profile has a provider, "Subagents (N)" / "Subagents (N · M running)" when the session has subagents, "Show keyboard shortcuts" / "Hide keyboard shortcuts", "Conversation history", "Stop following output" / "Follow output" and "Close session". "Change model…" SHALL open the model picker and send `/model <id>` to the session as a prompt delivered now. The menu MUST be native on iOS and look like the platform overflow menu on Android. In a read-only session, "View terminal", "Change model…", the shortcuts toggle and "Close session" MUST be disabled and the menu MUST say why; "Conversation history", the follow toggle and "Subagents" stay enabled. The button SHALL show an accent dot while any subagent runs. All labels MUST be translated.
 
 #### Scenario: Open the terminal
 - **WHEN** the user picks "View terminal" in a controllable session
 - **THEN** the raw terminal screen of the session opens
 
+#### Scenario: Change the model
+- **WHEN** the user picks "Change model…" in a controllable OpenRouter session and chooses `anthropic/claude-opus-5.5`
+- **THEN** the session receives `/model anthropic/claude-opus-5.5`
+
 #### Scenario: Read-only session
 - **WHEN** the user opens the menu in a session without a tmux pane
-- **THEN** "View terminal" and the shortcuts toggle are disabled, the follow toggle is enabled, and the menu explains that the session is read-only
+- **THEN** "View terminal", the shortcuts toggle and "Close session" are disabled, the follow toggle is enabled, and the menu explains that the session is read-only
 
 #### Scenario: Toggle following
 - **WHEN** following is on and the user picks "Stop following output"
@@ -228,20 +252,50 @@ The conversation SHALL show the images of user prompts and tool results as thumb
 - **THEN** the viewer closes and the conversation stays open
 
 ### Requirement: Status bar
-The session screen SHALL show a single-line status bar under the session info with, when known: the model, the effort level, the context window usage and the profile's 5-hour and weekly usage limits. Items without data MUST be hidden (never shown as `0%`), and a limit whose reset time has passed MUST be hidden. Percentages SHALL use secondary text below 70%, Claude orange from 70% and red from 90%. Tapping the bar SHALL open a sheet with the details (tokens used and window size, reset times in the device's locale). All texts MUST be translated.
+The session screen SHALL show a second context line under the first with, when known: the model as an outlined chip (with the effort level after a dot, `sonnet-5.5 · high`), the provider as a dashed chip (`via OpenRouter`, from the session's profile), the git branch (`⎇`), and then the context window usage and the profile's 5-hour and weekly usage limits. Items without data MUST be hidden (never shown as `0%`), a limit whose reset time has passed MUST be hidden, and the whole line MUST be hidden when nothing is known. Percentages SHALL use secondary text below 70%, Claude orange from 70% and red from 90%. Tapping the line SHALL open a sheet with the details (tokens used and window size, reset times in the device's locale). All texts MUST be translated.
 
 #### Scenario: Full data
-- **WHEN** the session reports Opus 5.5, effort high, context 62% and the profile reports 41% (5 h) and 73% (week)
-- **THEN** the bar shows the model, `high`, the context percentage and both limits
+- **WHEN** the session reports Opus 5.5, effort high, context 62%, the folder is on branch `feat/rate-limit` and the profile reports 41% (5 h) and 73% (week)
+- **THEN** the line shows the chip `Opus 5.5 · high`, `⎇ feat/rate-limit`, the context percentage and both limits
+
+#### Scenario: OpenRouter session
+- **WHEN** the session belongs to a profile whose provider is OpenRouter
+- **THEN** the line shows the dashed chip `via OpenRouter` after the model chip
 
 #### Scenario: No data
-- **WHEN** the session has no status
-- **THEN** no status bar is shown
+- **WHEN** the session has no status and its folder is not in git
+- **THEN** no second context line is shown
 
 #### Scenario: Near the limit
 - **WHEN** the weekly limit reaches 92%
 - **THEN** its percentage is shown in red
 
 #### Scenario: Details
-- **WHEN** the user taps the status bar
+- **WHEN** the user taps the line
 - **THEN** a sheet shows `124k / 200k` tokens and when each limit resets
+
+### Requirement: Context line
+Under the header, the session screen SHALL show a first context line with the agent badge, the profile tag (name in the profile color), the folder (truncating; opens the session details), the state pill and the permission mode chip. The header itself SHALL show, after the title, the notifications bell, a terminal button (disabled in read-only sessions) and the More options button.
+
+#### Scenario: Live session
+- **WHEN** a controllable Claude Code session in `~/projects/acme-api` is open
+- **THEN** the context line shows the Claude Code badge, the profile tag, `~/projects/acme-api`, the state pill and the mode chip, and the header's terminal button opens the raw terminal
+
+#### Scenario: Read-only session
+- **WHEN** the session has no tmux pane
+- **THEN** the terminal button is disabled and the mode chip is dimmed
+
+### Requirement: Keyboard hints
+While a hardware keyboard is attached on a tablet (the composer is focused and the keyboard on screen is shorter than a software one), the composer SHALL show a hints row under the field with `⏎ queue`, `⌘⏎ send now`, `⌘1–9 session`, `⌘K search`, `⌘T terminal`, `⌘. esc`, `⌘⇧M mode` and, while a tool permission waits in the session, `⌘A / ⌘D answer`; under the same condition Return in the composer SHALL send the prompt (queued while the session is busy) instead of inserting a newline. On phones and with a software keyboard nothing changes. All labels MUST be translated.
+
+#### Scenario: Hardware keyboard on iPad
+- **WHEN** the composer is focused on an iPad with a hardware keyboard and the session is working
+- **THEN** the hints row is visible and pressing Return queues the typed prompt
+
+#### Scenario: Software keyboard
+- **WHEN** the software keyboard is up
+- **THEN** no hints row is shown and Return inserts a newline
+
+#### Scenario: Pending permission
+- **WHEN** a tool permission is pending while the hints row is visible
+- **THEN** the row also shows `⌘A / ⌘D answer`

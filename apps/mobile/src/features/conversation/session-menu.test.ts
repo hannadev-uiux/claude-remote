@@ -56,6 +56,7 @@ describe('sessionMenu', () => {
       ['toggleKeyBar', false],
       ['history', false],
       ['toggleFollow', false],
+      ['close', false],
     ])
     expect(hidden.items[1]?.label).toBe('Show keyboard shortcuts')
     expect(hidden.disabledReason).toBeUndefined()
@@ -73,9 +74,39 @@ describe('sessionMenu', () => {
     expect(label(false)).toBe('Follow output')
   })
 
-  test('read-only session disables terminal and keys, keeps history and follow, and explains why', () => {
+  test('a provider session offers "Change model…" after the terminal, disabled when read-only', () => {
+    const items = (controllable: boolean) =>
+      sessionMenu({ controllable, keyBarVisible: false, following: true, provider: true }, en).items
+    expect(items(true)[1]).toEqual({ key: 'model', label: 'Change model…', disabled: false })
+    expect(items(false)[1]?.disabled).toBe(true)
+    const plain = sessionMenu({ controllable: true, keyBarVisible: false, following: true }, en).items
+    expect(plain.some((i) => i.key === 'model')).toBe(false)
+  })
+
+  test('read-only session disables terminal, keys and close, keeps history and follow, and explains why', () => {
     const menu = sessionMenu({ controllable: false, keyBarVisible: false, following: false }, en)
-    expect(menu.items.filter((i) => i.disabled).map((i) => i.key)).toEqual(['terminal', 'toggleKeyBar'])
+    expect(menu.items.filter((i) => i.disabled).map((i) => i.key)).toEqual([
+      'terminal',
+      'toggleKeyBar',
+      'close',
+    ])
     expect(menu.disabledReason).toMatch(/read-only/i)
+  })
+
+  test('subagents appear after the terminal only when the session has some, with their counts', () => {
+    const base = { controllable: true, keyBarVisible: false, following: false }
+    expect(sessionMenu(base, en).items.map((i) => i.key)).not.toContain('subagents')
+    const quiet = sessionMenu({ ...base, subagents: { count: 3, running: 0 } }, en).items
+    expect(quiet[1]).toEqual({ key: 'subagents', label: 'Subagents (3)', disabled: false })
+    const busy = sessionMenu({ ...base, subagents: { count: 5, running: 2 } }, en).items
+    expect(busy[1]?.label).toBe('Subagents (5 · 2 running)')
+    // Read-only sessions can still browse their subagents.
+    const readOnly = sessionMenu({ ...base, controllable: false, subagents: { count: 1, running: 0 } }, en)
+    expect(readOnly.items.find((i) => i.key === 'subagents')?.disabled).toBe(false)
+  })
+
+  test('close is the last item and reads "Close session"', () => {
+    const menu = sessionMenu({ controllable: true, keyBarVisible: false, following: false }, en)
+    expect(menu.items.at(-1)).toEqual({ key: 'close', label: 'Close session', disabled: false })
   })
 })

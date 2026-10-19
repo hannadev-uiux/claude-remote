@@ -2,8 +2,8 @@ import type { ImageRef } from '@remote-harness/protocol'
 import { useRecyclingState } from '@shopify/flash-list'
 import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native'
-import { colors, radius, space } from '@/core/theme'
+import { ActivityIndicator, Image, Pressable, View } from 'react-native'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Text } from '@/ui'
 import { ImageViewer } from './ImageViewer'
 import { formatBytes } from './image-cache'
@@ -17,6 +17,7 @@ const THUMB_WIDTH = 160
 export const ImageStrip = memo(function ImageStrip({ images }: { images: readonly ImageRef[] }) {
   // List cells are recycled for other items: the open viewer must not carry over to them.
   const [open, setOpen] = useRecyclingState<number | null>(null, [images])
+  const styles = useStyles()
   if (images.length === 0) return null
   const current = open === null ? undefined : images[open]
   return (
@@ -49,6 +50,8 @@ function Thumbnail({
   onOpen: () => void
 }) {
   const { t, i18n } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const { state, retry } = useTranscriptImage(image)
   const tooLarge = t('images.tooLarge', { size: formatBytes(image.bytes, i18n.language) })
   const label = {
@@ -80,7 +83,7 @@ function Thumbnail({
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   strip: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingTop: space.xs },
   thumb: {
     width: THUMB_WIDTH,
@@ -89,11 +92,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
     overflow: 'hidden',
   },
-  pressed: { borderColor: colors.accent },
+  pressed: { borderColor: theme.colors.accent },
   image: { width: '100%', height: '100%' },
   note: { padding: space.sm, textAlign: 'center' },
-})
+}))

@@ -23,3 +23,6 @@ apps/mobile/certs/*key*.pem
 
 # Local env (build-time settings such as REMOTE_HARNESS_UPDATES_URL)
 .env*.local
+
+# Design annotations (local only)
+.annotations/

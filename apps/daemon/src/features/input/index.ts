@@ -20,10 +20,7 @@ export function registerInputFeature(
     },
     attachments,
   )
-  ctx.router.register('session.input', async (msg) => {
-    await service.sendText(msg.sessionId, msg.text, msg.attachmentIds)
-    return undefined
-  })
+  // `session.input` is handled by the queue feature, which owns the delivery policy.
   ctx.router.register('session.key', async (msg) => {
     await service.sendKey(msg.sessionId, msg.key)
     return undefined

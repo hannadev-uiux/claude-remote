@@ -8,20 +8,24 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ConnectionProvider, useConnectionStore } from '@/core/connection'
 import '@/core/i18n'
-import { colors, fonts } from '@/core/theme'
+import { restoreThemePreference, ThemeProvider, useTheme } from '@/core/theme'
 import { useBackgroundUpdates } from '@/core/updates'
 import { restoreFollow } from '@/features/conversation/follow-store'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
 import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
+import { restorePushSettings } from '@/features/push/push-settings-store'
+import { restoreSessionPrefs } from '@/features/sessions/prefs-store'
+import { restoreSessionSort } from '@/features/sessions/sort-store'
+import { restoreMachineAlias, useMachineNameSync } from '@/features/settings/machine-store'
+import { stackScreenOptions } from '@/ui'
 
 void SplashScreen.preventAutoHideAsync()
 
@@ -36,12 +40,16 @@ export default function RootLayout() {
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   })
-  const { t } = useTranslation()
   const credentialsLoaded = useConnectionStore((s) => s.credentialsLoaded)
   const ready = fontsLoaded && credentialsLoaded
   useBackgroundUpdates()
 
   useEffect(() => {
+    void restoreThemePreference()
+    void restoreMachineAlias()
+    void restoreSessionSort()
+    void restoreSessionPrefs()
+    void restorePushSettings()
     void restoreKeyBar()
     void restoreKeyboardToolbar()
     void restoreFollow()
@@ -54,22 +62,24 @@ export default function RootLayout() {
   }, [ready])
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+    <ThemeProvider>
+      <Shell ready={ready} />
+    </ThemeProvider>
+  )
+}
+
+/** Providers and the root navigator, painted with the current theme. */
+function Shell({ ready }: { ready: boolean }) {
+  const { t } = useTranslation()
+  const theme = useTheme()
+  useMachineNameSync()
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ConnectionProvider>
-            <StatusBar style="light" />
             {ready ? (
-              <Stack
-                screenOptions={{
-                  headerStyle: { backgroundColor: colors.background },
-                  headerTintColor: colors.text,
-                  headerTitleStyle: { fontFamily: fonts.bold, fontSize: 16 },
-                  headerShadowVisible: false,
-                  contentStyle: { backgroundColor: colors.background },
-                  headerBackButtonDisplayMode: 'minimal',
-                }}
-              >
+              <Stack screenOptions={stackScreenOptions(theme)}>
                 <Stack.Screen name="(main)" options={{ headerShown: false }} />
                 <Stack.Screen name="pair" options={{ title: t('nav.pair'), presentation: 'modal' }} />
                 <Stack.Screen

@@ -1,9 +1,9 @@
 import { ChevronRight, CornerLeftUp, Folder, FolderGit2 } from 'lucide-react-native'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Switch, View } from 'react-native'
+import { ActivityIndicator, FlatList, Modal, Pressable, Switch, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, radius, space } from '@/core/theme'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, Text } from '@/ui'
 import { tildify } from './directory-input'
 import { useDirectories } from './use-directories'
@@ -24,6 +24,8 @@ export function DirectoryPickerSheet({
   onClose: () => void
 }) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const insets = useSafeAreaInsets()
   const [path, setPath] = useState(initialPath)
   // Folders visited before the current one, for "go back" when a folder cannot be opened.
@@ -97,7 +99,7 @@ export function DirectoryPickerSheet({
                 <Row
                   icon={
                     item.git ? (
-                      <FolderGit2 size={16} color={colors.accent} />
+                      <FolderGit2 size={16} color={colors.accentText} />
                     ) : (
                       <Folder size={16} color={colors.info} />
                     )
@@ -156,6 +158,8 @@ function Row({
   muted?: boolean
   onPress: () => void
 }) {
+  const { colors } = useTheme()
+  const styles = useStyles()
   return (
     <Pressable
       accessibilityRole="button"
@@ -172,18 +176,18 @@ function Row({
   )
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+const useStyles = makeStyles((theme) => ({
+  backdrop: { flex: 1, backgroundColor: theme.colors.backdrop, justifyContent: 'flex-end' },
   sheet: {
     height: '80%',
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingHorizontal: space.xl,
     paddingTop: space.xl,
     gap: space.sm,
     borderTopWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   list: { flex: 1 },
   content: { gap: space.xs, paddingVertical: space.sm },
@@ -194,12 +198,12 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
   },
-  pressed: { borderColor: colors.accent },
+  pressed: { borderColor: theme.colors.accent },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
   centerText: { textAlign: 'center', padding: space.md },
   option: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs },
   flex: { flex: 1 },
-})
+}))

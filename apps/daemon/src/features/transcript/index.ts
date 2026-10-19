@@ -8,14 +8,23 @@ import { type EntryListener, type StreamTarget, TranscriptService } from './serv
 /** Resolves the transcript file for a session or one of its subagents. */
 export type TranscriptPathResolver = (sessionId: string, agentId?: string) => string | null
 
-export function registerTranscriptFeature(ctx: DaemonContext, store: SessionStore) {
-  const service = new TranscriptService(ctx.logger, (sessionId, update) => {
-    const mode = PermissionModeSchema.safeParse(update.permissionMode)
-    store.upsert(sessionId, {
-      ...(mode.success ? { permissionMode: mode.data } : {}),
-      ...(update.customTitle ? { title: oneLine(update.customTitle) } : {}),
-    })
-  })
+export function registerTranscriptFeature(
+  ctx: DaemonContext,
+  store: SessionStore,
+  /** Called when new transcript lines were read for a session (last activity). */
+  onActivity: (sessionId: string, at: number) => void = () => {},
+) {
+  const service = new TranscriptService(
+    ctx.logger,
+    (sessionId, update) => {
+      const mode = PermissionModeSchema.safeParse(update.permissionMode)
+      store.upsert(sessionId, {
+        ...(mode.success ? { permissionMode: mode.data } : {}),
+        ...(update.customTitle ? { title: oneLine(update.customTitle) } : {}),
+      })
+    },
+    onActivity,
+  )
 
   const resolvers: TranscriptPathResolver[] = [
     (sessionId, agentId) => (agentId ? null : (store.get(sessionId)?.transcriptPath ?? null)),

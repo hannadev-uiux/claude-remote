@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
+import { dirname } from 'node:path'
 import type { Executor } from '../infra/exec.ts'
 import { writeFileAtomic } from '../infra/fs.ts'
 import type { Platform } from '../infra/platform.ts'
@@ -10,15 +11,27 @@ export interface TokenStore {
   set(token: string): Promise<void>
 }
 
-const SERVICE = 'claude-remote'
+/** Keychain service / Secret Service attribute shared by every secret of ours (the launchers read it too). */
+export const SECRET_SERVICE = 'claude-remote'
+const SERVICE = SECRET_SERVICE
 const ACCOUNT = 'pairing-token'
 
-/** Stores the pairing token in the macOS login Keychain via the `security` CLI. */
+/** Stores a secret (the pairing token by default) in the macOS login Keychain via the `security` CLI. */
 export class KeychainTokenStore implements TokenStore {
-  constructor(private readonly exec: Executor) {}
+  constructor(
+    private readonly exec: Executor,
+    private readonly account = ACCOUNT,
+  ) {}
 
   async get(): Promise<string | null> {
-    const result = await this.exec('security', ['find-generic-password', '-s', SERVICE, '-a', ACCOUNT, '-w'])
+    const result = await this.exec('security', [
+      'find-generic-password',
+      '-s',
+      SERVICE,
+      '-a',
+      this.account,
+      '-w',
+    ])
     if (result.exitCode !== 0) return null
     const token = result.stdout.trim()
     return token.length > 0 ? token : null
@@ -30,7 +43,7 @@ export class KeychainTokenStore implements TokenStore {
    */
   async set(token: string): Promise<void> {
     if (!/^[\w-]+$/.test(token)) throw new Error('keychain write failed: unexpected token format')
-    const command = `add-generic-password -U -s ${SERVICE} -a ${ACCOUNT} -w "${token}"\n`
+    const command = `add-generic-password -U -s ${SERVICE} -a ${this.account} -w "${token}"\n`
     const result = await this.exec('security', ['-i'], { input: command })
     if (result.exitCode !== 0 || (await this.get()) !== token)
       throw new Error(`keychain write failed: ${result.stderr.trim()}`)
@@ -42,10 +55,14 @@ export class KeychainTokenStore implements TokenStore {
  * on stdin, never in the arguments, so it does not show up in `ps`.
  */
 export class SecretToolTokenStore implements TokenStore {
-  constructor(private readonly exec: Executor) {}
+  constructor(
+    private readonly exec: Executor,
+    private readonly account = ACCOUNT,
+    private readonly label = 'Claude Remote pairing token',
+  ) {}
 
   async get(): Promise<string | null> {
-    const result = await this.exec('secret-tool', ['lookup', 'service', SERVICE, 'account', ACCOUNT])
+    const result = await this.exec('secret-tool', ['lookup', 'service', SERVICE, 'account', this.account])
     if (result.exitCode === 0) return result.stdout.trim() || null
     // Not found is a silent exit 1; anything on stderr means the Secret Service itself failed, and
     // answering null would make the caller generate (and lose) a new token.
@@ -56,7 +73,7 @@ export class SecretToolTokenStore implements TokenStore {
   async set(token: string): Promise<void> {
     const result = await this.exec(
       'secret-tool',
-      ['store', '--label=Claude Remote pairing token', 'service', SERVICE, 'account', ACCOUNT],
+      ['store', `--label=${this.label}`, 'service', SERVICE, 'account', this.account],
       { input: token },
     )
     if (result.exitCode !== 0) throw new Error(`secret-tool store failed: ${result.stderr.trim()}`)
@@ -77,6 +94,8 @@ export class FileTokenStore implements TokenStore {
   }
 
   async set(token: string): Promise<void> {
+    // Secrets of ours share a 0700 folder (`secrets/`); the data dir itself keeps its mode.
+    await mkdir(dirname(this.path), { recursive: true, mode: 0o700 })
     await writeFileAtomic(this.path, token, 0o600)
   }
 }
@@ -133,6 +152,35 @@ export function createTokenStore(
   if (kind === 'keychain') return new KeychainTokenStore(exec)
   if (kind === 'secret-tool') return new SecretToolTokenStore(exec)
   return new FileTokenStore(tokenFile)
+}
+
+/** Account of a profile's provider key in the secret store (and its file name in the file store). */
+export function providerKeyAccount(profileId: string): string {
+  return `provider-${profileId}`
+}
+
+/** A store for another secret of ours, in the same backend as the pairing token. */
+export function createSecretStore(
+  kind: TokenStoreKind,
+  exec: Executor,
+  account: string,
+  file: string,
+  label?: string,
+): TokenStore {
+  if (kind === 'keychain') return new KeychainTokenStore(exec, account)
+  if (kind === 'secret-tool') return new SecretToolTokenStore(exec, account, label)
+  return new FileTokenStore(file)
+}
+
+/** The provider key of a profile: read by the daemon for credits, written by `remote-harness provider key`. */
+export function providerKeyStore(kind: TokenStoreKind, exec: Executor, profileId: string): TokenStore {
+  return createSecretStore(
+    kind,
+    exec,
+    providerKeyAccount(profileId),
+    paths.providerKey(profileId),
+    `Remote Harness provider key (${profileId})`,
+  )
 }
 
 async function readChoice(path: string): Promise<TokenStoreKind | null> {

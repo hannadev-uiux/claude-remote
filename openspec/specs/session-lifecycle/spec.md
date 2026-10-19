@@ -6,11 +6,15 @@ Allows starting new sessions and resuming ended sessions from the app, always in
 ## Requirements
 
 ### Requirement: New session
-`session.start` SHALL open a tmux window in the `claude-remote` session running the profile's launcher in the given `cwd` and reply with an `ack` containing the created pane. A nonexistent directory MUST produce `error` `invalid_cwd`. When the pane is gone shortly after the launcher returns (Claude Code exited), the daemon MUST reply `error` `internal` with the reason instead of `ack`. Every `session.start` MUST be logged by the daemon: accepted starts with the profile and pane, rejected ones with the error code and reason.
+`session.start` SHALL open a tmux window in the `claude-remote` session running the profile's launcher in the given `cwd` and reply with an `ack` containing the created pane. With a `model`, the daemon SHALL pass `--model <id>` to the launcher. A nonexistent directory MUST produce `error` `invalid_cwd`. When the pane is gone shortly after the launcher returns (Claude Code exited), the daemon MUST reply `error` `internal` with the reason instead of `ack`. Every `session.start` MUST be logged by the daemon: accepted starts with the profile and pane, rejected ones with the error code and reason.
 
 #### Scenario: Start in a project
 - **WHEN** the app requests a new session on `drclaude` in the `~/workspaces/api` directory
 - **THEN** a window is created and the session appears in the list after `SessionStart`
+
+#### Scenario: Start with a model
+- **WHEN** the app requests a new session with `model` `anthropic/claude-opus-5.5`
+- **THEN** the launcher receives `--model anthropic/claude-opus-5.5`
 
 #### Scenario: Claude Code exits right away
 - **WHEN** the launcher creates the window but Claude Code exits before the settle check
@@ -28,11 +32,15 @@ Allows starting new sessions and resuming ended sessions from the app, always in
 - **THEN** the session becomes controllable again with the same history
 
 ### Requirement: Recent directories
-`projects.list { profileId }` SHALL return the `cwd` values of the profile's sessions ordered by most recent use, up to 30.
+`projects.list { profileId }` SHALL return the `cwd` values of the profile's sessions ordered by most recent use, up to 30, each with `lastUsedAt`, the `branch` of the most recent session in that directory (`null` when unknown or outside git) and `sessions`, the number of the profile's sessions in that directory updated in the last 7 days.
 
 #### Scenario: Choose a directory
 - **WHEN** the user opens "New session"
-- **THEN** they see the recent directories of the chosen profile
+- **THEN** they see the recent directories of the chosen profile, with branch and weekly usage when known
+
+#### Scenario: Weekly count
+- **WHEN** a directory had three sessions, one of them a month ago
+- **THEN** its item reports `sessions: 2`
 
 ### Requirement: Checkout inspection
 `checkout.inspect { profileId, cwd }` SHALL validate the directory like `session.start` (`invalid_cwd`) and reply `checkout.info { checkout, peers }`, where `peers` are the live sessions (controllable and not ended) whose checkout root equals the directory's, with id and title.
@@ -53,7 +61,7 @@ Allows starting new sessions and resuming ended sessions from the app, always in
 - **THEN** Claude Code runs in `~/work/api/.claude/worktrees/remote-<timestamp>` on its own branch and the session has its own checkout
 
 ### Requirement: Shared checkout warning on start
-The new-session screen SHALL inspect the chosen directory; for a git checkout it SHALL show the branch and offer "Isolated copy (git worktree)", and when the checkout has live sessions it SHALL list them and ask for confirmation before starting in the same checkout. When the daemon does not support inspection, or the inspection does not answer within a few seconds of tapping start, the screen MUST start without the warning and MUST NOT offer the worktree option. From the tap until the start succeeds, fails or is cancelled, the start button MUST show progress and ignore further taps. Failures MUST be shown under the button as translated messages.
+The new-session screen SHALL inspect the chosen directory; for a git checkout it SHALL show the branch and offer "Isolated copy (git worktree)" with an agent-neutral hint ("The agent works on its own branch in .claude/worktrees…"), and when the checkout has live sessions it SHALL list them, add that the worktree keeps them apart, and ask for confirmation before starting in the same checkout. When the daemon does not support inspection, or the inspection does not answer within a few seconds of tapping start, the screen MUST start without the warning and MUST NOT offer the worktree option. From the tap until the start succeeds, fails or is cancelled, the start button MUST show progress and ignore further taps. Failures MUST be shown under the button as translated messages.
 
 #### Scenario: Confirm a shared start
 - **WHEN** the user starts a session in a checkout with a live session and the worktree option off
@@ -100,3 +108,56 @@ The new-session screen SHALL suggest the subfolders matching the typed directory
 #### Scenario: Older daemon
 - **WHEN** the daemon does not know `directories.list`
 - **THEN** no suggestions and no "Browse" button are shown, and typing the directory still works
+
+### Requirement: Close session
+`session.close { sessionId, worktree? }` SHALL end a controllable session gracefully: the daemon denies the session's pending permission requests, sends Escape, types `/exit` and Enter in its pane, and waits up to 10 seconds for the session to be `ended` or its pane to disappear. If the pane is still there after that, the daemon SHALL kill it, but only when the registry still maps that pane to this session. The session MUST end as read-only (`ended`, no pane), its transcript MUST be kept and it MUST remain resumable. The reply is an `ack` whose data says how it ended (`exited`, `killed` or `already`) and, when a worktree action was requested, its outcome. A read-only session MUST produce `error` `not_controllable`.
+
+#### Scenario: Idle session
+- **WHEN** the app closes an idle session and Claude Code exits on `/exit`
+- **THEN** the session becomes `ended` within the timeout and the ack says `exited`
+
+#### Scenario: Session that ignores /exit
+- **WHEN** the session has not ended 10 seconds after `/exit`
+- **THEN** the daemon kills its pane, marks it `ended` and the ack says `killed`
+
+#### Scenario: Waiting session
+- **WHEN** the session waits for a permission when it is closed
+- **THEN** the pending request is denied first, so the agent is not left blocked in the hook
+
+#### Scenario: Pane reused by another session
+- **WHEN** the pane was taken over by a new session id before the timeout elapsed
+- **THEN** the daemon does not kill it and reports the old session as `already` ended
+
+### Requirement: Worktree cleanup
+`worktree.inspect { sessionId }` SHALL reply `worktree.info { worktree }`, where `worktree` is `null` unless the session's folder is inside a linked git worktree (never the repository's main checkout), and otherwise carries its `path`, `branch`, `mainRoot`, the number of modified or untracked files (`dirty`) and the number of commits reachable from HEAD and from no remote ref (`unpushed`). `worktree.cleanup { sessionId, action }` and the `worktree` option of `session.close` SHALL apply one action: `delete` only when the worktree is clean and pushed (otherwise `error` `bad_request`); `push-delete` commits any changes ("WIP from Remote Harness"), pushes the branch to `origin` creating the upstream when missing, then deletes; `discard-delete` removes the worktree and its branch without pushing. After a successful push or on a clean worktree the daemon removes the worktree with git and deletes the local branch when it is merged. A failed push MUST keep the worktree and report `error` `internal` with git's message. Git MUST be called only from `infra/`.
+
+#### Scenario: Clean worktree
+- **WHEN** the app closes a session whose worktree has no changes and no unpushed commits with `worktree: "delete"`
+- **THEN** the session ends and the worktree and its merged branch are removed
+
+#### Scenario: Unpushed commits
+- **WHEN** the worktree has 3 commits not on any remote and the user chooses push-delete
+- **THEN** the daemon pushes the branch (creating the upstream) and then removes the worktree
+
+#### Scenario: Push fails
+- **WHEN** the push is rejected
+- **THEN** the worktree stays, the branch stays, and the app shows git's error
+
+#### Scenario: Main checkout
+- **WHEN** the session runs in the repository's main checkout
+- **THEN** `worktree.inspect` replies `null` and no cleanup is offered
+
+### Requirement: New session screen
+The new-session screen SHALL be laid out as: an "Agent & profile" radio list, a Model row, the Directory field, the Recent list, the worktree toggle and the `Start session` primary button. Each profile row SHALL show the agent badge, the profile name in the profile color with the dashed `via <provider>` chip when the profile has a provider, `<agent> · <config dir>` (for example `Claude Code · ~/.claude`), and a selected mark on the chosen one. The Model row SHALL be shown only when the selected profile has a provider; it shows the chosen model, else the profile's default model, else "Provider default", and tapping it opens the model picker; the chosen model is sent as `model` in `session.start` and is reset when the profile changes. Each Recent row SHALL show the directory, its branch (`⎇`) and the number of sessions used there in the last 7 days when known, and the relative time of the last use. All texts MUST be translated.
+
+#### Scenario: One Claude Code profile
+- **WHEN** the computer has the profile "Personal" with config dir `~/.claude`
+- **THEN** the list shows its row with the Claude Code badge, "Personal" and `Claude Code · ~/.claude`, selected, and no Model row
+
+#### Scenario: OpenRouter profile selected
+- **WHEN** the user selects the profile "Work" whose provider is OpenRouter with default model `anthropic/claude-sonnet-5.5`
+- **THEN** its row shows the `via OpenRouter` chip, the Model row reads `anthropic/claude-sonnet-5.5`, and picking `anthropic/claude-opus-5.5` makes `Start session` send that model
+
+#### Scenario: Recent directory details
+- **WHEN** `~/projects/acme-api` was used by two sessions this week on branch `main`
+- **THEN** its Recent row reads `⎇ main · 2 sessions this week`

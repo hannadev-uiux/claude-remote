@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Harness · Tray: preferences window</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .desk { position: relative; width: 100%; max-width: 980px; height: 830px; border-radius: 14px; overflow: hidden; background: radial-gradient(120% 90% at 70% 100%, #3a2a1c 0%, #1b1b22 50%, #0f1016 100%); border: 1px solid var(--border); }
+  .mb { position: absolute; top: 0; left: 0; right: 0; height: 28px; background: rgba(30,30,34,.78); backdrop-filter: blur(16px); display: flex; align-items: center; padding: 0 14px; gap: 18px; font: 500 12.5px -apple-system, system-ui, sans-serif; color: #f2f2f2; }
+  .mb .sp { flex: 1; }
+  .mb .g { width: 20px; height: 20px; display: grid; place-items: center; position: relative; border-radius: 5px; }
+  .mb .g svg { width: 16px; height: 16px; color: #fff; }
+  .mb .g.open { background: rgba(255,255,255,.22); }
+  .mb .g.wait::after { content: ""; position: absolute; top: 1px; right: 1px; width: 7px; height: 7px; border-radius: 4px; background: #e8a33d; border: 1.5px solid #2a2a2e; }
+  .pop { position: absolute; top: 34px; right: 164px; width: 372px; background: rgba(30,30,33,.96); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.6); color: #e8e6e3; font-family: var(--mono); font-size: 12.5px; display: flex; flex-direction: column; overflow: hidden; }
+  .pop::before { content: ""; position: absolute; top: -7px; right: 24px; width: 12px; height: 12px; background: rgba(30,30,33,.96); border-left: 1px solid rgba(255,255,255,.1); border-top: 1px solid rgba(255,255,255,.1); transform: rotate(45deg); }
+  .pop .ph { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .pop .ph svg { width: 22px; height: 22px; color: var(--accent); }
+  .pop .ph .n { flex: 1; min-width: 0; }
+  .pop .ph .n b { display: block; font-size: 13px; }
+  .pop .ph .n small { color: #8a8784; font-size: 11px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pop .ph .pill { font-size: 11px; }
+  .pop .sec-l { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #8a8784; font-weight: 700; padding: 10px 14px 4px; display: flex; align-items: center; }
+  .pop .sec-l span { margin-left: auto; letter-spacing: 0; text-transform: none; font-weight: 400; color: #5e5a56; }
+  .pop .row { display: flex; align-items: center; gap: 9px; padding: 7px 14px; min-width: 0; }
+  .pop .row:hover { background: rgba(255,255,255,.06); }
+  .pop .row .tx { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pop .row .tx small { color: #8a8784; display: block; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pop .row .ago { font-size: 11px; }
+  .pop .row .go { color: #8a8784; font-size: 12px; opacity: 0; }
+  .pop .row:hover .go { opacity: 1; }
+  .pop .row.hov { background: rgba(255,255,255,.06); }
+  .pop .row.hov .go { opacity: 1; }
+  .pop .perm { margin: 4px 14px 6px; border: 1px solid var(--warning); border-radius: 10px; padding: 9px 11px; display: flex; flex-direction: column; gap: 7px; background: rgba(243,220,122,.06); }
+  .pop .perm .t { display: flex; gap: 8px; align-items: center; font-weight: 700; min-width: 0; }
+  .pop .perm .t .tt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pop .perm .c { background: #0d0d0d; border-radius: 6px; padding: 6px 9px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pop .perm .a { display: flex; gap: 6px; }
+  .pop .perm .a span { flex: 1; text-align: center; padding: 6px; border-radius: 7px; border: 1px solid #3a3836; font-size: 11.5px; font-weight: 600; }
+  .pop .perm .a .ok { border-color: var(--success); color: var(--success); }
+  .pop .perm .a .no { border-color: var(--danger); color: var(--danger); }
+  .pop .ft { border-top: 1px solid rgba(255,255,255,.08); padding: 6px 6px; display: flex; flex-direction: column; }
+  .pop .ft .it { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; }
+  .pop .ft .it:hover { background: rgba(255,255,255,.06); }
+  .pop .ft .it kbd { margin-left: auto; color: #5e5a56; background: transparent; font-size: 11px; }
+  .pop .ft hr { border: 0; border-top: 1px solid rgba(255,255,255,.08); margin: 4px 6px; }
+  .pop .agent { width: 18px; height: 18px; font-size: 8.5px; border-radius: 4px; }
+  .pop .pill { padding: 1px 7px; font-size: 11px; }
+  .win { width: 520px; background: #1e1e21; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.6); overflow: hidden; color: #e8e6e3; font-family: var(--mono); font-size: 12.5px; }
+  .win .tb { height: 38px; display: flex; align-items: center; padding: 0 12px; gap: 8px; background: #2a2a2e; border-bottom: 1px solid rgba(255,255,255,.08); font: 600 12px -apple-system, system-ui, sans-serif; }
+  .win .tb i { width: 12px; height: 12px; border-radius: 6px; display: inline-block; }
+  .win .tb .ttl { flex: 1; text-align: center; margin-right: 56px; }
+  .win .tabs { display: flex; gap: 2px; justify-content: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .win .tabs span { padding: 5px 12px; border-radius: 7px; color: #8a8784; font-size: 11.5px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .win .tabs span.on { color: #e8e6e3; background: rgba(255,255,255,.08); }
+  .win .body { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .win .frow { border: 0; padding: 6px 0; }
+  .win .frow .l small { color: #8a8784; }
+  .win .tg { width: 36px; height: 22px; } .win .tg::after { width: 16px; height: 16px; } .win .tg.on::after { left: 17px; }
+  .win .box { background: transparent; border: 1px solid rgba(255,255,255,.1); }
+  .win .box .frow { padding: 8px 12px; border-top: 1px solid rgba(255,255,255,.08); }
+  .win .box .frow:first-child { border-top: 0; }
+  .gnome { width: 100%; max-width: 520px; height: 360px; border-radius: 12px; overflow: hidden; position: relative; background: linear-gradient(135deg, #2b2f3a, #16181f); border: 1px solid var(--border); }
+  .gnome .bar { height: 28px; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font: 600 12px system-ui, sans-serif; position: relative; }
+  .gnome .bar .r { position: absolute; right: 14px; display: flex; align-items: center; gap: 12px; }
+  .gnome .bar svg { width: 15px; height: 15px; }
+  .gnome .menu { position: absolute; top: 34px; right: 12px; width: 260px; background: #1e1e22; border-radius: 12px; padding: 6px; font: 13px system-ui, sans-serif; color: #eee; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  .gnome .menu div { padding: 7px 12px; border-radius: 8px; display: flex; gap: 8px; }
+  .gnome .menu div.h { color: #999; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .gnome .menu div:hover { background: rgba(255,255,255,.08); }
+  .gnome .menu hr { border: 0; border-top: 1px solid rgba(255,255,255,.1); margin: 4px 8px; }
+  .win11 { width: 100%; max-width: 520px; height: 360px; border-radius: 12px; overflow: hidden; position: relative; background: linear-gradient(135deg, #1b3a5c, #0b1626); border: 1px solid var(--border); }
+  .win11 .tb { position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: rgba(32,32,36,.9); display: flex; align-items: center; justify-content: flex-end; padding: 0 12px; gap: 12px; color: #fff; font: 12px "Segoe UI", system-ui, sans-serif; }
+  .win11 .tb svg { width: 15px; height: 15px; }
+  .win11 .fly { position: absolute; bottom: 48px; right: 12px; width: 300px; background: #202024; border-radius: 10px; padding: 10px; color: #eee; font: 12.5px "Segoe UI", system-ui, sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 6px; }
+  .win11 .fly .h { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .win11 .fly .h svg { width: 16px; height: 16px; color: var(--accent); }
+  .win11 .fly .r { display: flex; gap: 8px; align-items: center; padding: 4px 2px; color: #ccc; }
+  .win11 .fly .r .agent { width: 16px; height: 16px; font-size: 8px; }
+</style>
+<style>
+  body { padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .proto-h { font-size: 12px; color: var(--muted); }
+  .proto-h b { color: var(--fg); }
+  .proto-h a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="proto-h"><b>Remote Harness</b> · prototype · Tray: preferences window · <a href="../index.html">identity hub</a></div>
+<div class="win">
+        <div class="tb"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="ttl">Remote Harness Preferences</span></div>
+        <div class="tabs"><span class="on">⚙<br>General</span><span>⌥<br>Profiles</span><span>🔔<br>Notifications</span><span>⌁<br>Network</span><span>↻<br>Updates</span></div>
+        <div class="body">
+          <div class="box">
+            <div class="frow"><span class="l">Start at login<small>Login Item "Remote Harness" (launchd)</small></span><span class="tg on"></span></div>
+            <div class="frow"><span class="l">Show in menu bar<small>The daemon keeps running without it</small></span><span class="tg on"></span></div>
+            <div class="frow"><span class="l">Show permission requests here<small>Answer from the Mac as well as the phone</small></span><span class="tg on"></span></div>
+            <div class="frow"><span class="l">Machine name<small>Shown in the app and the live status</small></span><span class="v" style="color:#e8e6e3">MacBook Pro ✎</span></div>
+          </div>
+          <div class="box">
+            <div class="frow"><span class="l">Terminal for "Focus in tmux"</span><span class="v" style="color:#e8e6e3">Ghostty ▾</span></div>
+            <div class="frow"><span class="l">Update channel</span><span class="v" style="color:#e8e6e3">production ▾</span></div>
+          </div>
+          <div class="tiny" style="color:#5e5a56">Config: ~/.remote-harness/config.json · Logs: ~/.remote-harness/logs · <span style="color:var(--accent)">Run doctor</span></div>
+        </div>
+      </div>
+<script src="../shared.js"></script>
+</body>
+</html>

@@ -1,51 +1,92 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { ChevronDown, EllipsisVertical } from 'lucide-react-native'
+import { ChevronDown, EllipsisVertical, PanelRight, Terminal } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Keyboard, Pressable, StyleSheet, View } from 'react-native'
-import { useConnectionStore } from '@/core/connection'
-import { colors, space } from '@/core/theme'
+import { Alert, Keyboard, Pressable, StyleSheet, View } from 'react-native'
+import { useConnectionStore, useDaemonClient } from '@/core/connection'
+import { useLayout } from '@/core/layout'
+import { makeStyles, space, useTheme } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
 import { SmartComposer } from '@/features/autocomplete/SmartComposer'
 import { ConversationScreen } from '@/features/conversation/ConversationScreen'
 import { setFollow, useFollowStore } from '@/features/conversation/follow-store'
 import { setKeyBarVisible, useKeyBarStore } from '@/features/conversation/key-bar-store'
 import { type SessionMenuAction, sessionMenu } from '@/features/conversation/session-menu'
-import { usePrompt } from '@/features/conversation/use-prompt'
+import { promptErrorMessage, usePrompt } from '@/features/conversation/use-prompt'
+import { toggleInspector } from '@/features/inspector/store'
 import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
 import { ModeSelector } from '@/features/mode/ModeSelector'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
 import { SessionPermissions } from '@/features/permissions/components/SessionPermissions'
+import { providerName } from '@/features/providers/logic'
+import { ModelPickerSheet } from '@/features/providers/ModelPickerSheet'
+import { QueueCard } from '@/features/queue/components/QueueCard'
 import { StatusBar } from '@/features/session-status/StatusBar'
+import { sessionAgent } from '@/features/sessions/agent'
+import { CloseSessionSheet } from '@/features/sessions/components/CloseSessionSheet'
 import { SessionDetailsSheet } from '@/features/sessions/components/SessionDetailsSheet'
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
-import { SubagentStrip } from '@/features/subagents/SubagentList'
-import { ActionMenu, headerActions, Text } from '@/ui'
+import { SubagentsSheet } from '@/features/subagents/SubagentsSheet'
+import { subagentCounts } from '@/features/subagents/sort'
+import { ActionMenu, AgentBadge, headerActions, IconButton, ProfileTag, Text } from '@/ui'
 
 export default function SessionRoute() {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const { id } = useLocalSearchParams<{ id: string }>()
   const session = useSessionsStore((s) => s.sessions[id])
   const profile = useConnectionStore((s) => s.hello?.profiles.find((p) => p.id === session?.profileId))
+  const provider = providerName(profile)
+  const client = useDaemonClient()
   const prompt = usePrompt(id)
   const controllable = session?.controllable ?? false
   const keyBarVisible = useKeyBarStore((s) => s.visible)
   const following = useFollowStore((s) => s.follow)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [closeOpen, setCloseOpen] = useState(false)
+  const [subagentsOpen, setSubagentsOpen] = useState(false)
+  const [modelOpen, setModelOpen] = useState(false)
+  const subagentStats = subagentCounts(session?.subagents ?? [])
+  const agent = session ? sessionAgent(session) : null
+  // Two-column tablets reach the inspector (terminal, subagents, details) from the header.
+  const { layout } = useLayout()
   const title = session?.title || t('common.session')
   // A focused composer would keep the keyboard over the sheet's lower rows.
   const openDetails = () => {
     Keyboard.dismiss()
     setDetailsOpen(true)
   }
-  const menu = sessionMenu({ controllable, keyBarVisible, following }, t)
+  const menu = sessionMenu(
+    { controllable, keyBarVisible, following, subagents: subagentStats, provider: provider !== null },
+    t,
+  )
+  // `/model <id>` goes through the same path as a typed slash command, delivered now.
+  const switchModel = (modelId: string) => {
+    setModelOpen(false)
+    client
+      ?.request({ type: 'session.input', sessionId: id, text: `/model ${modelId}`, mode: 'now' })
+      .catch((error: unknown) => Alert.alert(t('modelPicker.switchFailed'), promptErrorMessage(error, t)))
+  }
   const actions: Record<SessionMenuAction, () => void> = {
     terminal: () => router.push({ pathname: '/session/[id]/terminal', params: { id } }),
+    model: () => {
+      Keyboard.dismiss()
+      setModelOpen(true)
+    },
+    subagents: () => {
+      Keyboard.dismiss()
+      setSubagentsOpen(true)
+    },
     toggleKeyBar: () => void setKeyBarVisible(!keyBarVisible),
     history: () => setHistoryOpen(true),
     toggleFollow: () => void setFollow(!following),
+    close: () => {
+      Keyboard.dismiss()
+      setCloseOpen(true)
+    },
   }
 
   return (
@@ -56,11 +97,21 @@ export default function SessionRoute() {
             session ? (
               <View style={styles.actions}>
                 <SessionMuteButton sessionId={id} />
+                <IconButton
+                  icon={Terminal}
+                  label={t('sessionMenu.terminal')}
+                  disabled={!controllable}
+                  onPress={actions.terminal}
+                />
+                {layout === 'regular' ? (
+                  <IconButton icon={PanelRight} label={t('tablet.inspector')} onPress={toggleInspector} />
+                ) : null}
                 <ActionMenu
                   icon={EllipsisVertical}
                   label={t('sessionMenu.moreOptions')}
                   items={menu.items.map((item) => ({ ...item, onPress: actions[item.key] }))}
                   disabledReason={menu.disabledReason}
+                  attention={subagentStats.running > 0}
                 />
               </View>
             ) : null,
@@ -95,6 +146,26 @@ export default function SessionRoute() {
           onClose={() => setDetailsOpen(false)}
         />
       ) : null}
+      {session && closeOpen ? (
+        <CloseSessionSheet session={session} mode="close" onDone={() => setCloseOpen(false)} />
+      ) : null}
+      {session ? (
+        <SubagentsSheet
+          sessionId={id}
+          subagents={session.subagents}
+          visible={subagentsOpen}
+          onClose={() => setSubagentsOpen(false)}
+        />
+      ) : null}
+      {session && provider ? (
+        <ModelPickerSheet
+          visible={modelOpen}
+          profileId={session.profileId}
+          selected={null}
+          onChoose={switchModel}
+          onClose={() => setModelOpen(false)}
+        />
+      ) : null}
       <ConversationScreen
         sessionId={id}
         onKey={prompt.sendKey}
@@ -106,9 +177,8 @@ export default function SessionRoute() {
               {/* Session details live below the header: on iOS 26+ the bar has no room for them. */}
               <View style={styles.info}>
                 <View style={styles.meta}>
-                  <Text size="xs" style={{ color: profile?.color }}>
-                    {profile?.name ?? session.profileId}
-                  </Text>
+                  {agent ? <AgentBadge agent={agent} size={18} /> : null}
+                  <ProfileTag profile={profile ?? { name: session.profileId, color: '' }} />
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('sessionDetails.openFolder', { folder: shortPath(session.cwd) })}
@@ -125,8 +195,12 @@ export default function SessionRoute() {
                 </View>
                 <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
               </View>
-              <StatusBar status={session.status} profileId={session.profileId} />
-              <SubagentStrip sessionId={id} subagents={session.subagents} />
+              <StatusBar
+                status={session.status}
+                profileId={session.profileId}
+                branch={session.checkout?.branch ?? null}
+                provider={provider}
+              />
             </>
           ) : null
         }
@@ -134,6 +208,7 @@ export default function SessionRoute() {
           session ? (
             <>
               <SessionPermissions sessionId={id} cwd={session.cwd} profileId={session.profileId} />
+              <QueueCard sessionId={id} />
               <ResumeBanner session={session} />
             </>
           ) : null
@@ -144,7 +219,7 @@ export default function SessionRoute() {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   title: { maxWidth: 200 },
   titleButton: { maxWidth: 200, flexDirection: 'row', alignItems: 'center', gap: space.xs },
   titleText: { flexShrink: 1 },
@@ -157,9 +232,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: theme.colors.border,
   },
   meta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
   cwd: { flexShrink: 1 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-})
+}))

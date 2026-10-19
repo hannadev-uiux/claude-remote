@@ -1,5 +1,13 @@
-import type { LiveState, LiveStatusProps, MuteState, Session, SessionState } from '@remote-harness/protocol'
+import type {
+  LivePalette,
+  LiveState,
+  LiveStatusProps,
+  MuteState,
+  Session,
+  SessionState,
+} from '@remote-harness/protocol'
 import type { TFunction } from '../../core/i18n/create'
+import type { Theme } from '../../core/theme/palettes'
 
 /** A finished turn stays on the lock screen this long (same as the daemon's end). */
 export const DONE_DISMISS_MS = 15 * 60_000
@@ -44,6 +52,12 @@ export function shortenHome(path: string): string {
   return path.replace(/^\/(?:Users|home)\/[^/]+(?=\/|$)/, '~')
 }
 
+/** The theme colors the live status is drawn with (sent on register and in the app's own props). */
+export function livePalette(theme: Theme): LivePalette {
+  const { background, text, textMuted, accent, success, warning } = theme.colors
+  return { background, text, textMuted, accent, success, warning }
+}
+
 /** What the app knows about a live status besides the session itself. */
 export type LocalLiveInfo = {
   /** Profile name. */
@@ -53,6 +67,8 @@ export type LocalLiveInfo = {
   startedAt: number
   changedAt: number
   endedAt: number | null
+  /** App theme colors when the status started. */
+  palette?: LivePalette
 }
 
 /** Props for an update made by the app itself (no steps: only the daemon follows the transcript). */
@@ -76,5 +92,24 @@ export function localLiveProps(
     ago: t('liveStatus.ago'),
     changedAt: info.changedAt,
     endedAt: info.endedAt,
+    glyphs: [],
+    pending: null,
+    hint: '',
+    ...(info.palette ? { palette: info.palette } : {}),
   }
+}
+
+/**
+ * The decision behind a Live Activity button target (`allow:<requestId>` / `deny:<requestId>`), or
+ * `null` for any other interaction.
+ */
+export function liveAction(target: string): { requestId: string; decision: 'allow' | 'deny' } | null {
+  const match = /^(allow|deny):(.+)$/.exec(target)
+  if (!match?.[1] || !match[2]) return null
+  return { requestId: match[2], decision: match[1] === 'allow' ? 'allow' : 'deny' }
+}
+
+/** Button targets the widget emits for a pending permission. */
+export function liveActionTarget(decision: 'allow' | 'deny', requestId: string): string {
+  return `${decision}:${requestId}`
 }

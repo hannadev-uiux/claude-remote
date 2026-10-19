@@ -2,8 +2,8 @@ import type { PermissionAnswer, PlanDecision } from '@remote-harness/protocol'
 import { ClipboardList } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native'
-import { colors, fontSize, fonts, radius, space } from '@/core/theme'
+import { ScrollView, TextInput, View } from 'react-native'
+import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Button, Text } from '@/ui'
 import { Markdown } from '../../conversation/components/Markdown'
 
@@ -16,6 +16,8 @@ type Props = {
 /** `ExitPlanMode` as a card: the plan, two ways to approve, and "keep planning" with feedback. */
 export function PlanCard({ plan, busy, onAnswer }: Props) {
   const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
   const [planning, setPlanning] = useState(false)
   const [feedback, setFeedback] = useState('')
   const decide = (decision: PlanDecision) =>
@@ -24,8 +26,8 @@ export function PlanCard({ plan, busy, onAnswer }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <ClipboardList size={16} color={colors.accent} />
-        <Text weight="bold" color="accent" style={styles.flex}>
+        <ClipboardList size={16} color={colors.accentText} />
+        <Text weight="bold" color="accentText" style={styles.flex}>
           {t('permissions.plan.title')}
         </Text>
       </View>
@@ -97,31 +99,36 @@ export function PlanCard({ plan, busy, onAnswer }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     margin: space.sm,
     padding: space.md,
     gap: space.xs,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.accent,
-    backgroundColor: colors.surface,
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.surface,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   flex: { flex: 1 },
-  plan: { maxHeight: 280, backgroundColor: colors.background, borderRadius: radius.sm, padding: space.sm },
+  plan: {
+    maxHeight: 280,
+    backgroundColor: theme.colors.background,
+    borderRadius: radius.sm,
+    padding: space.sm,
+  },
   input: {
     minHeight: 64,
-    backgroundColor: colors.background,
-    borderColor: colors.border,
+    backgroundColor: theme.colors.background,
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: space.sm,
-    color: colors.text,
+    color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     textAlignVertical: 'top',
   },
   column: { gap: space.sm, marginTop: space.sm },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
-})
+}))

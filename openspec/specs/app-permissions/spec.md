@@ -6,11 +6,15 @@ Allows responding to permission requests and switching a session's permission mo
 ## Requirements
 
 ### Requirement: Permission card
-For each pending `permission.request`, the app SHALL show a card in the session with the tool, the input detail (command, path or JSON) and the time remaining, with the Allow, Always allow and Deny actions.
+For each pending `permission.request`, the app SHALL show a card in the session with a shield, the tool call in TUI style (`Bash(gh pr create …)`), the time elapsed since the request (red when it is about to expire), the detail label (command, file, url or input), the detail box with the full value, and the Deny, Always and Allow actions in that order. The card MUST NOT name the agent. The same content and order SHALL be used wherever the request is shown (the "Waiting for you" strip, the tray, the lock screen).
 
 #### Scenario: Bash request
 - **WHEN** a `Bash` request arrives with `rm -rf dist`
-- **THEN** the card shows the full command and the three actions
+- **THEN** the card shows `Bash(rm -rf dist)`, the elapsed time, the full command and the three actions
+
+#### Scenario: About to expire
+- **WHEN** fewer than 30 seconds remain before the request expires
+- **THEN** the elapsed time turns red
 
 #### Scenario: Resolved elsewhere
 - **WHEN** `permission.resolved` arrives for the request
@@ -55,3 +59,18 @@ For a pending request with a plan `interaction`, the app SHALL show the plan in 
 #### Scenario: Approve with manual edits
 - **WHEN** the user taps "Approve, review edits"
 - **THEN** the app sends a plan answer with `decision: "default"`
+
+### Requirement: Answers from the list
+The oldest pending tool permission SHALL be answerable from the "Waiting for you" strip on the session list with the same flow as the session screen: Allow and Deny send `permission.respond`; Always opens the always-allow confirmation with the session's folder and profile before sending the rule. A request resolved elsewhere MUST leave the strip and the next pending item takes its place. Question and plan prompts MUST NOT be answered inline from the strip; they offer Open to the session.
+
+#### Scenario: Allow from the list
+- **WHEN** the user taps Allow on the strip
+- **THEN** the app sends `permission.respond` `allow` for that request and the strip moves to the next item or disappears
+
+#### Scenario: Always from the list
+- **WHEN** the user taps Always on the strip and confirms the rule with the "project" scope
+- **THEN** the app sends `permission.respond` with `always { rule, scope: "project" }`
+
+#### Scenario: Question pending
+- **WHEN** the oldest item is a question
+- **THEN** the strip shows "has a question" and Open, and no Deny / Always / Allow buttons

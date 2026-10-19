@@ -1,12 +1,20 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { ServerMessage } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
 import { SessionStore } from '../src/features/sessions/store.ts'
 import type { SessionRecord } from '../src/features/sessions/types.ts'
-import { INACTIVITY_MS, SubagentTracker, subagentsDir } from '../src/features/subagents/tracker.ts'
+import {
+  countToolUses,
+  INACTIVITY_MS,
+  SubagentTracker,
+  subagentsDir,
+} from '../src/features/subagents/tracker.ts'
+import { parseTranscriptLine } from '../src/features/transcript/parser.ts'
 import { hookEvent, useTempHome } from './helpers.ts'
+
+const fixture = join(import.meta.dirname, 'fixtures', 'session.jsonl')
 
 const home = useTempHome()
 let tracker: SubagentTracker | undefined
@@ -105,6 +113,46 @@ describe('SubagentTracker', () => {
     expect(store.get('sess')?.subagents[0]).toMatchObject({ state: 'done', agentType: 'Plan' })
     tracker!.handleHook(hookEvent('Stop', { session_id: 'sess', background_tasks: [{ id: 1 }, { id: 2 }] }))
     expect(store.get('sess')?.backgroundTasks).toBe(2)
+  })
+
+  test('counts tool uses incrementally, keeps the start time and settles the count on SubagentStop', async () => {
+    const { store, add, dir } = setup()
+    add()
+    await mkdir(dir, { recursive: true })
+    const lines = (await readFile(fixture, 'utf8')).split('\n').filter(Boolean)
+    const total = countToolUses(lines)
+    expect(total).toBeGreaterThan(0)
+    const toolLine = lines.find((line) => parseTranscriptLine(line, 0).some((e) => e.kind === 'tool_use'))
+    if (!toolLine) throw new Error('fixture without tool use')
+    const file = join(dir, 'agent-t1.jsonl')
+    await writeFile(file, `${lines.join('\n')}\n`)
+    await tracker!.touch('sess', 't1')
+    const first = store.get('sess')?.subagents.find((s) => s.agentId === 't1')
+    expect(first).toMatchObject({ state: 'running', toolCount: total })
+    expect(first?.startedAt).toBeTruthy()
+    // A partial line (cut mid-way) is not counted until its end arrives.
+    const half = Math.floor(toolLine.length / 2)
+    await appendFile(file, toolLine.slice(0, half))
+    await tracker!.touch('sess', 't1')
+    expect(store.get('sess')?.subagents.find((s) => s.agentId === 't1')).toMatchObject({
+      toolCount: total,
+      startedAt: first?.startedAt,
+    })
+    await appendFile(file, `${toolLine.slice(half)}\n`)
+    await tracker!.touch('sess', 't1')
+    expect(store.get('sess')?.subagents.find((s) => s.agentId === 't1')?.toolCount).toBe(total + 1)
+    // The hook may land before the last change event: the count is settled afterwards.
+    await appendFile(file, `${toolLine}\n`)
+    tracker!.handleHook(hookEvent('SubagentStop', { session_id: 'sess', agent_id: 't1' }))
+    await waitFor(() => store.get('sess')?.subagents.find((s) => s.agentId === 't1')?.toolCount === total + 2)
+    expect(store.get('sess')?.subagents.find((s) => s.agentId === 't1')).toMatchObject({
+      state: 'done',
+      startedAt: first?.startedAt,
+    })
+  })
+
+  test('countToolUses ignores blank and malformed lines', () => {
+    expect(countToolUses(['', '   ', 'not json', '{"type":"nothing"}'])).toBe(0)
   })
 
   test('quiet subagents of idle sessions are swept to done', async () => {

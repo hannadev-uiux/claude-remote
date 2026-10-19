@@ -2,7 +2,7 @@ import type { Messages } from './en-US.ts'
 
 export const ptBR = {
   cli: {
-    description: 'Daemon do Remote Harness: controla sessões do Claude Code no tmux pelo celular',
+    description: 'Daemon do Remote Harness: acompanhe e conduza seus agentes de código pelo celular',
     help: 'mostra a ajuda do comando',
     version: 'mostra a versão',
     buildMissing: 'Build não encontrado: rode `pnpm --filter @remote-harness/daemon build`.',
@@ -41,6 +41,18 @@ export const ptBR = {
       rotatedOffline: 'Token trocado (daemon não está rodando).',
       pairAgain: 'Rode `remote-harness pair` para parear de novo.',
     },
+    provider: {
+      description: 'provedores de modelo dos perfis (chave do OpenRouter)',
+      key: 'guarda a chave do provedor de um perfil no cofre do sistema (nunca em arquivo nosso)',
+      stdin: 'lê a chave da entrada padrão em vez de perguntar',
+      prompt: (provider: string) => `Chave de API do ${provider}:`,
+      unknownProfile: (id: string) => `Não há perfil "${id}" na configuração.`,
+      noProvider: (id: string) =>
+        `O perfil "${id}" não tem provedor. Adicione "provider": { "kind": "openrouter" } a ele no config.json antes.`,
+      empty: 'Nenhuma chave informada; nada foi guardado.',
+      saved: (id: string, store: string) =>
+        `Chave do perfil ${id} guardada ${store}. As novas sessões do perfil passam a usá-la.`,
+    },
     doctor: {
       description: 'verifica dependências e configuração',
       notOnPath: 'não encontrado no PATH',
@@ -56,6 +68,8 @@ export const ptBR = {
         file: (path: string) => `no arquivo ${path} (0600)`,
       },
       runPair: 'rode `remote-harness pair`',
+      providerKey: (id: string, provider: string) => `chave do ${provider} do perfil ${id}`,
+      runProviderKey: (id: string) => `rode \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
       linger: 'lingering (o serviço continua rodando após o logout)',
@@ -177,6 +191,8 @@ export const ptBR = {
     },
   },
   install: {
+    missingProviderKey: (id: string, provider: string) =>
+      `Nenhuma chave do ${provider} guardada para o perfil ${id}: rode \`remote-harness provider key ${id}\`.`,
     shortcut: (path: string) => `atalho ${path}`,
     shellPath: (files: string) => `PATH em ${files}`,
     hooksIn: (path: string) => `hooks em ${path}`,
@@ -199,7 +215,7 @@ export const ptBR = {
     welcome: {
       title: 'Boas-vindas ao Remote Harness!',
       intro1: (machine: string) => `Vamos preparar este ${machine} para você acompanhar e controlar`,
-      intro2: 'o Claude Code pelo celular. Leva uns 2 minutos.',
+      intro2: 'seus agentes de código pelo celular. Leva uns 2 minutos.',
       footer: (version: string) => `v${version} · ↑/↓ para escolher · Enter para confirmar · Ctrl+C sai`,
     },
     steps: {
@@ -388,6 +404,10 @@ export const ptBR = {
     },
     tools: (count: number) => (count === 1 ? '1 ferramenta' : `${count} ferramentas`),
     ago: 'há {time}',
+    allow: 'Permitir',
+    deny: 'Negar',
+    total: 'total',
+    closedHint: 'transcrição mantida · retome pelo app',
   },
   updates: {
     available: (version: string) => `Remote Harness ${version} disponível`,
@@ -411,13 +431,31 @@ export const ptBR = {
       restart: 'Reiniciar daemon',
       doctor: 'Rodar doctor',
       quit: 'Fechar ícone',
+      status: (machine: string, version: string, since: string) => `${machine} · ${version} · desde ${since}`,
+      waiting: 'Esperando você',
+      allow: 'Permitir',
+      always: 'Sempre permitir',
+      deny: 'Negar',
+      focus: 'Focar no tmux',
+      close: 'Encerrar sessão',
+      sessions: (total: number, running: number) =>
+        running > 0 ? `Sessões · ${total} · ${running} rodando` : `Sessões · ${total}`,
+      noSessions: 'Sem sessões',
+      ended: (count: number) => (count === 1 ? '1 sessão encerrada' : `${count} sessões encerradas`),
+      states: { running: 'rodando', waiting: 'esperando', idle: 'ociosa', ended: 'encerrada' },
+      worktree: 'worktree',
+      phones: (count: number, push: boolean) => `Celulares · ${count}${push ? ' · push ✓' : ''}`,
+      newSession: 'Nova sessão…',
+      pair: 'Parear um celular…',
+      docs: 'Abrir a documentação',
+      prefs: 'Preferências…',
     },
   },
   push: {
     sessionDone: 'Sessão concluída',
     sessionWaiting: 'Sessão aguardando você',
     permissionPending: 'Permissão pendente',
-    questionPending: 'O Claude está esperando sua resposta',
+    questionPending: 'O agente está esperando sua resposta',
     planPending: 'Plano pronto para revisão',
     testTitle: 'Notificação de teste',
     testBody: (host: string) => `As notificações de ${host} estão funcionando`,

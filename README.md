@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="apps/mobile/assets/icon.png" width="112" alt="Remote Harness icon" />
+<img src="docs/brand/og.png" width="720" alt="Remote Harness: follow and drive your coding agents from your phone" />
 
 # Remote Harness
 
-**Follow and drive the Claude Code sessions running on your Mac, Linux or Windows (WSL) machine — from your iPhone or Android phone.**
+**Follow and drive your coding agents — Claude Code today, more to come — running on your Mac, Linux or Windows (WSL) machine, from your iPhone or Android phone.**
 
 Self-hosted: a small daemon on your computer, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every Claude Code profile in one list.
 
@@ -14,7 +14,7 @@ Self-hosted: a small daemon on your computer, a native app on your phone, a priv
 ![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000020.svg)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-98C379.svg)](CONTRIBUTING.md)
 
-[Português](README.pt-BR.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Documentation](https://remoteharness.app/docs/) · [Português](README.pt-BR.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 </div>
 
@@ -180,6 +180,23 @@ Profiles and ports live in `~/.remote-harness/config.json` (installs made before
     { "id": "trabalho", "name": "Work", "configDir": "~/.claude-work", "color": "#61AFEF" }
   ]
 }
+```
+
+A profile can route Claude Code through **OpenRouter** instead of the Anthropic account: give it a `provider` (optionally with `baseUrl`, a default `model` and a `smallFastModel`) and store the key in the OS secret store. The key never goes into a file we write, nor to the phone; the app shows `via OpenRouter` on the profile and its sessions, lets you pick the model when starting a session (context, prices, capabilities, credits left) and switch it later from the session menu.
+
+```json
+{
+  "id": "openrouter",
+  "name": "OpenRouter",
+  "configDir": "~/.claude-openrouter",
+  "color": "#8A8784",
+  "provider": { "kind": "openrouter", "model": "anthropic/claude-sonnet-5.5" }
+}
+```
+
+```bash
+remote-harness install                  # regenerates the launchers with the provider variables
+remote-harness provider key openrouter  # asks for the key (hidden); `--stdin` reads it from a pipe
 ```
 
 ### 2. Phone: app

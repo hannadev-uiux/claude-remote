@@ -126,6 +126,9 @@ describe('live status reducer', () => {
       ago: '{time} ago',
       changedAt: 7,
       endedAt: null,
+      glyphs: ['·', '·', '·', '⌘'],
+      pending: null,
+      hint: '',
     })
     expect(liveProps({ ...status, toolCount: 3 }, info, pt)).toMatchObject({
       status: 'Trabalhando',
@@ -143,6 +146,61 @@ describe('live status reducer', () => {
     expect(shortenHome('/srv/app', '/')).toBe('/srv/app')
     expect(hostName('MacBook-Pro.local')).toBe('MacBook-Pro')
     expect(hostName('devbox')).toBe('devbox')
+  })
+})
+
+describe('pending permission and glyphs', () => {
+  const info = { title: 'Work', host: 'mac', session: 'Fix login', path: '~/app' }
+
+  test('a tool permission sets pending with translated labels, cleared when resolved', () => {
+    let status = reduceLiveStatus(initialLiveStatus(0), { type: 'step', step: 'command', tool: 'Bash' }, 1)
+    status = reduceLiveStatus(
+      status,
+      { type: 'waiting', permission: true, pending: { requestId: 'r1', tool: 'mcp__gh__pr' } },
+      2,
+    )
+    expect(status).toMatchObject({ state: 'waiting', step: 'permission', pending: { requestId: 'r1' } })
+    expect(status.glyphs).toEqual(['permission', 'command'])
+    // Hearing about the same wait again neither duplicates the glyph nor loses the request.
+    status = reduceLiveStatus(status, { type: 'waiting', permission: true }, 3)
+    expect(status.glyphs).toEqual(['permission', 'command'])
+    const props = liveProps(status, info, pt)
+    expect(props.pending).toEqual({ requestId: 'r1', tool: 'pr', allow: 'Permitir', deny: 'Negar' })
+    expect(props.glyphs).toEqual(['?', '⌘'])
+    const resumed = reduceLiveStatus(status, { type: 'resumed' }, 4)
+    expect(resumed).toMatchObject({ state: 'working', pending: null })
+    expect(liveProps(resumed, info, en).pending).toBeNull()
+  })
+
+  test('a pending change is sent at once', () => {
+    const working = reduceLiveStatus(initialLiveStatus(0), { type: 'step', step: 'command', tool: 'Bash' }, 0)
+    const waiting = reduceLiveStatus(
+      working,
+      { type: 'waiting', permission: true, pending: { requestId: 'r1', tool: 'Bash' } },
+      1,
+    )
+    const other = { ...waiting, pending: { requestId: 'r2', tool: 'Edit' } }
+    expect(planSend(waiting, other, 1, 2)).toEqual({ when: 'now' })
+  })
+
+  test('glyphs keep the last five steps, newest first; hints for done and closed', () => {
+    let status = initialLiveStatus(0)
+    for (const [step, tool] of [
+      ['command', 'Bash'],
+      ['editing', 'Edit'],
+      ['searching', 'Grep'],
+      ['web', 'WebFetch'],
+      ['agent', 'Task'],
+      ['reading', 'Read'],
+    ] as const) {
+      status = reduceLiveStatus(status, { type: 'step', step, tool }, 1)
+    }
+    expect(liveProps(status, info, en).glyphs).toEqual(['⌕', '⌥', '⇄', '⌕', '✎'])
+    const done = reduceLiveStatus(status, { type: 'stop' }, 2)
+    expect(liveProps(done, info, en).hint).toBe('total')
+    const closed = reduceLiveStatus(status, { type: 'end' }, 2)
+    expect(liveProps(closed, info, en).hint).toBe('transcript kept · resume from the app')
+    expect(liveProps(closed, info, pt).hint).toBe('transcrição mantida · retome pelo app')
   })
 })
 
@@ -251,6 +309,24 @@ describe('LiveStatusService', () => {
   }
 
   const register = { sessionId: 's1', platform: 'ios' as const, fcmToken: 'fcm', activityToken: 'act' }
+
+  test('echoes the app palette in every update of the registration', async () => {
+    const { service, sent } = setup()
+    const palette = {
+      background: '#0D0D0D',
+      text: '#E8E6E3',
+      textMuted: '#8A8784',
+      accent: '#E8A33D',
+      success: '#7FB069',
+      warning: '#F3DC7A',
+    }
+    await service.register({ ...register, palette })
+    service.handle('s1', { type: 'waiting', permission: true })
+    expect(sent.map((m) => m.props.palette)).toEqual([palette, palette])
+    // Older apps register without one: the widget then falls back to its dark colors.
+    await service.register({ ...register, sessionId: 's2' })
+    expect(sent.at(-1)?.props.palette).toBeUndefined()
+  })
 
   test('sends the state on register, throttles steps and ends on Stop', async () => {
     vi.useFakeTimers()

@@ -1,8 +1,8 @@
 import type { PermissionRequestInfo, RuleScope } from '@remote-harness/protocol'
 import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
-import { Modal, StyleSheet, TextInput, View } from 'react-native'
-import { colors, fontSize, fonts, radius, space } from '@/core/theme'
+import { Modal, TextInput, View } from 'react-native'
+import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
 import { Button, Card, Text } from '@/ui'
 
@@ -17,6 +17,7 @@ type Props = {
 /** Shows the exact rule and scope before writing an always-allow rule. */
 export function AlwaysAllowSheet({ request, cwd, profileName, onCancel, onConfirm }: Props) {
   const { t } = useTranslation()
+  const styles = useStyles()
   const [rule, setRule] = useState('')
   const [scope, setScope] = useState<RuleScope>('project')
 
@@ -38,7 +39,7 @@ export function AlwaysAllowSheet({ request, cwd, profileName, onCancel, onConfir
           {t('permissions.alwaysSheet.title')}
         </Text>
         <Text color="textMuted" size="sm">
-          <Trans i18nKey="permissions.alwaysSheet.intro" components={{ code: <Text color="accent" /> }} />
+          <Trans i18nKey="permissions.alwaysSheet.intro" components={{ code: <Text color="accentText" /> }} />
         </Text>
 
         <View style={styles.field}>
@@ -88,6 +89,8 @@ export function AlwaysAllowSheet({ request, cwd, profileName, onCancel, onConfir
 }
 
 function ScopeOption(props: { selected: boolean; title: string; detail: string; onPress: () => void }) {
+  const { colors } = useTheme()
+  const styles = useStyles()
   return (
     <Card accent={props.selected ? colors.accent : undefined} style={styles.option}>
       <Button
@@ -102,20 +105,20 @@ function ScopeOption(props: { selected: boolean; title: string; detail: string; 
   )
 }
 
-const styles = StyleSheet.create({
-  sheet: { flex: 1, backgroundColor: colors.background, padding: space.xl, gap: space.md },
+const useStyles = makeStyles((theme) => ({
+  sheet: { flex: 1, backgroundColor: theme.colors.background, padding: space.xl, gap: space.md },
   field: { gap: space.xs },
   input: {
-    backgroundColor: colors.surface,
-    borderColor: colors.accent,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.accent,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: space.md,
-    color: colors.text,
+    color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
   },
   scopes: { gap: space.sm },
   option: { gap: space.xs, alignItems: 'flex-start' },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: 'auto' },
-})
+}))

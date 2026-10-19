@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Harness · iPad landscape: three columns</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  .tablet .side .ah { padding: 10px 14px 4px; }
+  .tablet .side .scroll { padding: 0 12px; gap: 8px; }
+  .tablet .side .srow { padding: 9px 11px; }
+  .tablet .detail .ah { padding: 8px 16px 4px; border-bottom: 1px solid var(--a-border); }
+  .tablet .detail .ah .title { text-align: left; }
+  .tablet .detail .scroll { padding: 14px 24px 0; }
+  .tablet .detail .composer { padding: 10px 24px 16px; }
+  .tablet .detail .composer .in { min-height: 56px; }
+  .tablet .detail .queue { margin: 0 24px; }
+  .tablet .keybar { padding: 6px 24px 2px; }
+  .insp .ah { padding: 8px 12px 4px; }
+  .insp .scroll { padding: 10px 12px; gap: 8px; }
+  .insp .mi { padding: 9px 2px; font-size: 12.5px; }
+  .overlay-side { position: absolute; top: 30px; left: 0; bottom: 0; width: 360px; background: var(--a-bg); border-right: 1px solid var(--a-border); box-shadow: 20px 0 60px rgba(0,0,0,.5); z-index: 5; display: flex; flex-direction: column; }
+  .bp { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .bp .card b { font-size: 20px; letter-spacing: -0.02em; }
+</style>
+<style>
+  body { padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .proto-h { font-size: 12px; color: var(--muted); }
+  .proto-h b { color: var(--fg); }
+  .proto-h a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="proto-h"><b>Remote Harness</b> · prototype · iPad landscape: three columns · <a href="../index.html">identity hub</a></div>
+<div class="frame z75">
+      <div class="tablet t-dark">
+        <div class="tsb"><span>9:41 · Sat 18 Oct</span><span>⌔ ▮▮▮ 100%</span></div>
+        <div class="cols">
+          <!-- sidebar -->
+          <div class="side">
+            <div class="ah"><div class="title left"><svg><use href="#rh-mark"/></svg>Sessions</div><div class="ib accent">+</div><div class="ib">⚙</div></div>
+            <div class="mline"><span class="dot" style="background:var(--a-success);margin:0"></span><span class="host">MacBook Pro</span><span>· 7 sessions</span><span class="sp"></span><span>⌘K</span></div>
+            <div class="chips" style="padding:2px 12px 8px"><span class="chip on">all</span><span class="chip">Personal</span><span class="chip">Work</span><span class="chip">Codex</span><span class="chip ghost" title="Recent / By state">⇅</span></div>
+            <div class="scroll">
+              <div class="attn">
+                <div class="h">⚠ Waiting for you · 1 <span>4:36</span></div>
+                <div style="display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px"><span class="agent claude">cl</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Add rate limit on login</span></div>
+                <div class="ans"><span class="btn sm no" style="flex:1">Deny</span><span class="btn sm" style="flex:1">Always</span><span class="btn sm ok" style="flex:1">Allow</span></div>
+              </div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Migrate landing to Tailwind 4</span><span class="ago">2 min</span></div><div class="p"><span>~/projects/landing</span><span>⎇ main</span></div><div class="m"><span class="pill running">running</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+              <div class="srow waiting sel"><div class="t"><span class="agent claude">cl</span><span class="title">Add rate limit on login</span><span class="ago">4 min</span></div><div class="p"><span>~/projects/acme-api</span><span>⎇ feat/rate-limit</span></div><div class="m"><span class="pill waiting">waiting</span><span class="ptag" style="color:#61afef">Work</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Fix crash on onboarding</span><span class="ago">12 min</span></div><div class="p"><span>~/projects/acme-mobile</span><span>⎇ fix/onboarding</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#61afef">Work</span><span class="mute-ic">🔕</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Write post about tmux + agents</span><span class="ago">40 min</span></div><div class="p"><span>~/projects/blog</span><span>⎇ main</span></div><div class="m"><span class="pill idle">idle</span><span class="ptag" style="color:#56b6c2">Personal</span><span class="pill plain">+2 subagents</span></div></div>
+              <div class="srow"><div class="t"><span class="agent codex">cx</span><span class="title">Review deploy pipeline</span><span class="ago">2 h</span></div><div class="p"><span>~/projects/acme-infra</span><span>⎇ main</span></div><div class="m"><span class="pill">ended</span><span class="pill plain">read-only</span><span class="ptag" style="color:#2fbf8f">Codex</span></div></div>
+              <div class="srow"><div class="t"><span class="agent claude">cl</span><span class="title">Rename daemon strings to machine</span><span class="ago">yesterday</span></div><div class="p"><span>~/projects/remote-harness</span><span>⎇ feat/94-machine</span></div><div class="m"><span class="pill">ended</span><span class="ptag" style="color:#56b6c2">Personal</span></div></div>
+            </div>
+          </div>
+          <!-- detail -->
+          <div class="detail" style="--agent-color:var(--claude)">
+            <div class="ah"><div class="title">Add rate limit on login</div><div class="ib">🔔</div><div class="ib" style="color:var(--a-accent-fg)">▣</div><div class="ib">⋯</div></div>
+            <div class="mline" style="padding:6px 24px 0"><span class="agent claude">cl</span><span class="ptag" style="color:#61afef">Work</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">~/projects/acme-api · ⎇ feat/rate-limit · ⌂ worktree</span><span class="pill waiting">waiting</span><span class="pill plain" style="border:1px solid var(--a-accent-fg);color:var(--a-accent-fg);background:transparent">accept edits</span></div>
+            <div class="mline" style="padding:4px 24px 0"><span class="pill plain" style="border:1px solid var(--a-border-strong);background:transparent">sonnet-5.5</span><span class="pill plain" style="border:1px dashed var(--router);color:var(--router);background:transparent">via OpenRouter</span></div>
+            <div class="scroll"><div class="conv-wide">
+              <div class="umsg">Add rate limiting to the login endpoint (5 attempts per minute per IP) and cover it with tests</div>
+              <div class="think">› ✻ thinking…</div>
+              <div class="amsg">I'll start by finding how the login route is registered, then add a Fastify rate-limit config on that route only and a test that hits it six times.</div>
+              <div class="tool"><div class="n">Grep("/auth/login" in src)<span class="chev">›</span></div><div class="r">└ src/routes/auth.ts:42: app.post("/auth/login", loginHandler)</div></div>
+              <div class="tool"><div class="n">Read(src/routes/auth.ts)<span class="chev">›</span></div><div class="r">└ (88 lines)</div></div>
+              <div class="tool"><div class="n">Edit(src/routes/auth.ts)<span class="chev">›</span></div><div class="r">└ ok</div>
+                <div class="diff"><div class="d">-   app.post('/auth/login', loginHandler)</div><div class="a">+   app.post('/auth/login', {</div><div class="a">+     config: { rateLimit: { max: 5, timeWindow: '1 minute' } },</div><div class="a">+   }, loginHandler)</div></div></div>
+              <div class="tool"><div class="n">Write(test/auth.rate-limit.test.ts)<span class="chev">›</span></div><div class="r">└ 41 lines</div></div>
+              <div class="tool"><div class="n">Bash(pnpm vitest run test/auth.test.ts test/auth.rate-limit.test.ts)<span class="chev">›</span></div><div class="r">└ ✓ 2 files, 9 tests · 611 ms</div></div>
+              <div class="amsg">Done. The login route now returns 429 after five attempts within a minute from the same IP. Shall I open a PR?</div>
+              <div class="perm" style="margin:0">
+                <div class="h"><span style="color:var(--a-warning)">⛨</span><span class="who">Bash(gh pr create --fill --base main)</span><span class="tm">4:36</span></div>
+                <div class="lbl">command</div>
+                <div class="cmd">gh pr create --fill --base main</div>
+                <div class="ans"><span class="btn no">Deny <kbd style="opacity:.6;font-size:10px">⌘D</kbd></span><span class="btn">Always</span><span class="btn ok">Allow <kbd style="opacity:.6;font-size:10px">⌘A</kbd></span></div>
+              </div>
+            </div></div>
+            <div class="queue" style="max-width:760px;margin-left:auto;margin-right:auto;width:calc(100% - 48px)">
+              <div class="h">Queued · 1 <a>Send now</a></div>
+              <div class="qi"><span class="no">1</span><span class="tx">After the PR, add the same limit to /auth/reset</span><span class="ops"><span>✎</span><span>✕</span><span class="go">▶</span></span></div>
+            </div>
+            <div class="composer" style="max-width:808px;margin:0 auto;width:100%"><span class="gt">&gt;</span><div class="in">message the agent… (@ files, / commands)</div><div class="send">↑</div></div>
+            <div class="khint"><span><kbd>⏎</kbd> queue</span><span><kbd>⌘⏎</kbd> send now</span><span><kbd>⌘1–9</kbd> session</span><span><kbd>⌘K</kbd> search</span><span><kbd>⌘T</kbd> terminal</span><span><kbd>⌘.</kbd> esc</span><span><kbd>⌘⇧M</kbd> mode</span></div>
+          </div>
+          <!-- inspector -->
+          <div class="insp">
+            <div class="tabs"><span>Subagents <small>2</small></span><span class="on">Terminal</span><span>Details</span></div>
+            <div class="term"><span class="m">╭──────────────────────────────────╮</span>
+<span class="m">│</span> <span class="o">✻</span> Welcome to Claude Code         <span class="m">│</span>
+<span class="m">│</span>   ~/projects/acme-api            <span class="m">│</span>
+<span class="m">╰──────────────────────────────────╯</span>
+
+<span class="o">&gt;</span> Add rate limiting to the login
+  endpoint (5 attempts per minute
+  per IP) and cover it with tests
+
+<span class="o">●</span> I'll start by finding how the
+  login route is registered…
+
+<span class="g">●</span> Grep("/auth/login" in src)
+  └ src/routes/auth.ts:42
+<span class="g">●</span> Edit(src/routes/auth.ts)
+  └ ok
+<span class="g">●</span> Bash(pnpm vitest run …)
+  └ ✓ 9 tests · 611 ms
+
+<span class="y">╭─ Bash command ───────────────────╮</span>
+<span class="y">│</span> gh pr create --fill --base main  <span class="y">│</span>
+<span class="y">│</span>                                  <span class="y">│</span>
+<span class="y">│</span> Do you want to proceed?          <span class="y">│</span>
+<span class="y">│</span> <span class="o">❯ 1. Yes</span>                         <span class="y">│</span>
+<span class="y">│</span>   2. Yes, and don't ask again     <span class="y">│</span>
+<span class="y">│</span>   3. No, and tell Claude what…   <span class="y">│</span>
+<span class="y">╰──────────────────────────────────╯</span>
+<span class="m">⏵⏵ accept edits on · shift+tab</span><span class="cur"> </span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+<script src="../shared.js"></script>
+</body>
+</html>

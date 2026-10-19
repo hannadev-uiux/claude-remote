@@ -5,7 +5,7 @@
  */
 export const enUS = {
   cli: {
-    description: 'Remote Harness daemon: control Claude Code sessions in tmux from your phone',
+    description: 'Remote Harness daemon: follow and drive your coding agents from your phone',
     help: 'display help for command',
     version: 'output the version number',
     buildMissing: 'Build not found: run `pnpm --filter @remote-harness/daemon build`.',
@@ -43,6 +43,18 @@ export const enUS = {
       rotatedOffline: 'Token rotated (the daemon is not running).',
       pairAgain: 'Run `remote-harness pair` to pair again.',
     },
+    provider: {
+      description: 'model providers of the profiles (OpenRouter key)',
+      key: 'store the provider key of a profile in the OS secret store (never in a file we write)',
+      stdin: 'read the key from standard input instead of asking',
+      prompt: (provider: string) => `${provider} API key:`,
+      unknownProfile: (id: string) => `No profile "${id}" in the config.`,
+      noProvider: (id: string) =>
+        `Profile "${id}" has no provider. Add "provider": { "kind": "openrouter" } to it in config.json first.`,
+      empty: 'No key given; nothing stored.',
+      saved: (id: string, store: string) =>
+        `Key of profile ${id} stored ${store}. New sessions of the profile use it.`,
+    },
     doctor: {
       description: 'check dependencies and configuration',
       notOnPath: 'not found in PATH',
@@ -58,6 +70,8 @@ export const enUS = {
         file: (path: string) => `in the file ${path} (0600)`,
       },
       runPair: 'run `remote-harness pair`',
+      providerKey: (id: string, provider: string) => `${provider} key for profile ${id}`,
+      runProviderKey: (id: string) => `run \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
       serviceHint: 'optional: `remote-harness service install`',
       linger: 'lingering (the service keeps running after logout)',
@@ -175,6 +189,8 @@ export const enUS = {
     },
   },
   install: {
+    missingProviderKey: (id: string, provider: string) =>
+      `No ${provider} key stored for profile ${id}: run \`remote-harness provider key ${id}\`.`,
     shortcut: (path: string) => `shortcut ${path}`,
     shellPath: (files: string) => `PATH in ${files}`,
     hooksIn: (path: string) => `hooks in ${path}`,
@@ -197,7 +213,7 @@ export const enUS = {
     welcome: {
       title: 'Welcome to Remote Harness!',
       intro1: (machine: string) => `Let's get this ${machine} ready so you can follow and control`,
-      intro2: 'Claude Code from your phone. It takes about 2 minutes.',
+      intro2: 'your coding agents from your phone. It takes about 2 minutes.',
       footer: (version: string) => `v${version} · ↑/↓ to choose · Enter to confirm · Ctrl+C to quit`,
     },
     steps: {
@@ -383,6 +399,13 @@ export const enUS = {
     tools: (count: number) => (count === 1 ? '1 tool' : `${count} tools`),
     /** Time since the state changed; the widget puts a live counter in `{time}`. */
     ago: '{time} ago',
+    /** Lock screen buttons while a tool permission waits. */
+    allow: 'Allow',
+    deny: 'Deny',
+    /** Beside the frozen timer once the turn is done. */
+    total: 'total',
+    /** Under the state once the session closed. */
+    closedHint: 'transcript kept · resume from the app',
   },
   updates: {
     available: (version: string) => `Remote Harness ${version} available`,
@@ -406,13 +429,32 @@ export const enUS = {
       restart: 'Restart daemon',
       doctor: 'Run doctor',
       quit: 'Quit tray',
+      /** Shell sections of the menu (change 65). */
+      status: (machine: string, version: string, since: string) => `${machine} · ${version} · since ${since}`,
+      waiting: 'Waiting for you',
+      allow: 'Allow',
+      always: 'Always allow',
+      deny: 'Deny',
+      focus: 'Focus in tmux',
+      close: 'Close session',
+      sessions: (total: number, running: number) =>
+        running > 0 ? `Sessions · ${total} · ${running} running` : `Sessions · ${total}`,
+      noSessions: 'No sessions',
+      ended: (count: number) => (count === 1 ? '1 ended session' : `${count} ended sessions`),
+      states: { running: 'running', waiting: 'waiting', idle: 'idle', ended: 'ended' },
+      worktree: 'worktree',
+      phones: (count: number, push: boolean) => `Phones · ${count}${push ? ' · push ✓' : ''}`,
+      newSession: 'New session…',
+      pair: 'Pair a phone…',
+      docs: 'Open the docs',
+      prefs: 'Preferences…',
     },
   },
   push: {
     sessionDone: 'Session finished',
     sessionWaiting: 'Session waiting for you',
     permissionPending: 'Permission pending',
-    questionPending: 'Claude is waiting for your answer',
+    questionPending: 'The agent is waiting for your answer',
     planPending: 'Plan ready for review',
     testTitle: 'Test notification',
     testBody: (host: string) => `Notifications from ${host} are working`,

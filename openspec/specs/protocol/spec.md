@@ -28,11 +28,27 @@ The parser SHALL reject malformed messages by returning an error result, without
 - **THEN** the message is accepted and the extra field is discarded
 
 ### Requirement: Message catalog
-The protocol SHALL define the client messages `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input`, `session.key`, `session.setMode`, `attachment.upload`, `permission.respond`, `permission.answer`, `device.register`, `files.search`, `commands.list`, `projects.list`, `directories.list`, `session.start`, `session.resume`, `pane.subscribe`, `pane.unsubscribe`, `settings.mute`, `app.visibility` and `ping`; and the server messages `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `directories.results`, `attachment.uploaded`, `ack`, `error` and `pong`.
+The protocol SHALL define the client messages `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input` (with its delivery `mode`: `now`, `queue` or `auto`), `session.key`, `session.setMode`, `session.close`, `attachment.upload`, `permission.respond`, `permission.answer`, `queue.update`, `queue.remove`, `queue.sendNow`, `queue.flush`, `device.register`, `device.unregister`, `files.search`, `commands.list`, `projects.list`, `directories.list`, `models.list`, `provider.status`, `session.start` (with an optional `model`), `session.resume`, `worktree.inspect`, `worktree.cleanup`, `pane.subscribe`, `pane.unsubscribe`, `pane.focus`, `settings.mute`, `app.visibility` and `ping`; and the server messages `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `session.queue`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `directories.results`, `models.results`, `provider.info`, `attachment.uploaded`, `worktree.info`, `ack`, `error` and `pong`. `models.results` carries the profile id, the `ModelInfo` list (id, name, context length, prompt and completion prices in USD per million tokens, `tools`, `reasoning` and `caching` flags), when it was fetched and whether it is stale; `provider.info` carries the profile id, `hasKey` and the credits (`total`, `used`) or `null`. No message SHALL carry a provider key.
 
 #### Scenario: Unknown type
 - **WHEN** a message arrives with a `type` outside the catalog
 - **THEN** the parser returns an `unknown_type` error
+
+#### Scenario: Queue messages
+- **WHEN** a client sends `queue.sendNow` with a session id and an item id
+- **THEN** the message is accepted, and one with a `mode` outside `now`, `queue`, `auto` on `session.input` is rejected with `bad_request`
+
+#### Scenario: Forget a phone
+- **WHEN** a client sends `device.unregister` with its FCM token
+- **THEN** the message is accepted and the daemon drops that token
+
+#### Scenario: Focus a pane
+- **WHEN** a client sends `pane.focus` with a session id
+- **THEN** the message is accepted and answered with `ack` once the pane is selected
+
+#### Scenario: Provider messages
+- **WHEN** a client sends `models.list` with a profile id
+- **THEN** the message is accepted and the daemon answers `models.results` with the models, `fetchedAt` and `stale`
 
 ### Requirement: Protocol version
 The `auth` handshake SHALL include `protocolVersion`; the daemon MUST reject versions with a different major with a `protocol_mismatch` error.
@@ -66,3 +82,25 @@ The `auth` handshake SHALL include `protocolVersion`; the daemon MUST reject ver
 #### Scenario: Image request
 - **WHEN** the client sends `transcript.image` with `sessionId` "s1" and `imageId` "12.0"
 - **THEN** the message is valid and the daemon answers `transcript.image` with the image's media type and data
+
+### Requirement: Live status palette
+`LiveStatusProps` SHALL accept an optional `palette` object with the hex colors `background`, `text`, `textMuted`, `accent`, `success` and `warning`, and `live.register` SHALL accept the same optional `palette`. Messages without it MUST keep parsing.
+
+#### Scenario: Registration with a palette
+- **WHEN** the app sends `live.register` with `palette.accent` "#E8A33D"
+- **THEN** the message parses and the palette is available to the daemon
+
+#### Scenario: Props without a palette
+- **WHEN** a daemon sends `LiveStatusProps` without `palette`
+- **THEN** the props parse with `palette` undefined
+
+### Requirement: Close and worktree messages
+The protocol SHALL define the client messages `session.close { sessionId, worktree? }` (answered with `ack` carrying `{ closed: 'exited' | 'killed' | 'already', worktree?: 'deleted' | 'kept' }`), `worktree.inspect { sessionId }` (answered with `worktree.info { worktree: WorktreeInfo | null }`) and `worktree.cleanup { sessionId, action }` (answered with `ack`). `WorktreeInfo` SHALL carry `path`, `branch` (nullable), `mainRoot`, `dirty` and `unpushed` (non-negative integers). `action` and the `worktree` option SHALL be one of `delete`, `push-delete`, `discard-delete`.
+
+#### Scenario: Close with cleanup
+- **WHEN** the client sends `session.close` with `worktree: "push-delete"`
+- **THEN** the message parses
+
+#### Scenario: Unknown action
+- **WHEN** the client sends `worktree.cleanup` with `action: "wipe"`
+- **THEN** the parser returns a `bad_request` error

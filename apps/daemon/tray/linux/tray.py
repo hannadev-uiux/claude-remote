@@ -3,6 +3,7 @@
 on stdin; clicks go back as JSON lines on stdout. It quits when stdin closes (the daemon stopped).
 Exits with status 3 when the toolkit is missing, so the daemon stays headless."""
 import json
+import os
 import sys
 import threading
 
@@ -55,6 +56,15 @@ def build(items):
 indicator = AppIndicator.Indicator.new(
     "remote-harness", "utilities-terminal", AppIndicator.IndicatorCategory.APPLICATION_STATUS
 )
+# The Remote Harness mark (symbolic SVG generated next to this script); the theme icon above stays
+# as the fallback when the file is missing. The same mark serves as the attention icon: the
+# indicator's attention status is what signals "waiting for you" on Linux.
+ICON_DIR = os.path.dirname(os.path.abspath(__file__))
+ICON_NAME = "remote-harness-symbolic"
+if os.path.exists(os.path.join(ICON_DIR, ICON_NAME + ".svg")):
+    indicator.set_icon_theme_path(ICON_DIR)
+    indicator.set_icon_full(ICON_NAME, "Remote Harness")
+    indicator.set_attention_icon_full(ICON_NAME, "Remote Harness · waiting for you")
 indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
 indicator.set_menu(build([]))
 
@@ -62,6 +72,10 @@ indicator.set_menu(build([]))
 def apply(message):
     if message.get("type") == "menu":
         indicator.set_title(message.get("tooltip", "Remote Harness"))
+        waiting = message.get("icon") == "waiting"
+        indicator.set_status(
+            AppIndicator.IndicatorStatus.ATTENTION if waiting else AppIndicator.IndicatorStatus.ACTIVE
+        )
         indicator.set_menu(build(message.get("items", [])))
     return False
 

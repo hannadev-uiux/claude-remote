@@ -1,25 +1,30 @@
 import { Redirect, router, Stack, usePathname } from 'expo-router'
-import { useEffect, useRef } from 'react'
+import { Menu } from 'lucide-react-native'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, TextInput, View } from 'react-native'
 import { addListener, constants } from 'react-native-key-command'
 import { useShallow } from 'zustand/react/shallow'
 import { useConnectionStore } from '@/core/connection'
-import { useWidthClass, type WidthClass } from '@/core/layout'
-import { colors, fonts, space } from '@/core/theme'
+import { inspectorMode, type LayoutClass, sidebarMode, useLayout } from '@/core/layout'
+import { space, useTheme } from '@/core/theme'
+import { InspectorPane } from '@/features/inspector/InspectorPane'
+import { setInspectorOpen, useInspectorStore } from '@/features/inspector/store'
 import { useLiveStatus } from '@/features/live-status/use-live-status'
 import { selectPendingCounts, usePermissionsStore } from '@/features/permissions/store'
 import { usePush } from '@/features/push/use-push'
 import { extractSessionIdFromPathname } from '@/features/sessions/active-session'
+import { ListTitle } from '@/features/sessions/components/ListTitle'
 import { SessionListActions } from '@/features/sessions/components/SessionListActions'
 import { SessionsScreen } from '@/features/sessions/SessionsScreen'
+import { useSessionShortcuts } from '@/features/shortcuts/use-session-shortcuts'
 import { useDaemonSync } from '@/features/sync/use-daemon-sync'
-import { MasterDetailLayout, Text } from '@/ui'
+import { IconButton, MasterDetailLayout, stackScreenOptions } from '@/ui'
 
-/** Cmd+N, Cmd+, and Esc outside a text field (closes the detail pane). */
-function useShellKeyCommands(widthClass: WidthClass) {
-  const widthClassRef = useRef(widthClass)
-  widthClassRef.current = widthClass
+/** Cmd+N, Cmd+, and Esc outside a text field (closes the detail pane on tablets). */
+function useShellKeyCommands(layout: LayoutClass) {
+  const layoutRef = useRef(layout)
+  layoutRef.current = layout
 
   useEffect(() => {
     const unsubscribers = [
@@ -28,7 +33,7 @@ function useShellKeyCommands(widthClass: WidthClass) {
         router.push('/settings'),
       ),
       addListener({ input: constants.keyInputEscape }, () => {
-        if (widthClassRef.current === 'regular' && !TextInput.State.currentlyFocusedInput()) {
+        if (layoutRef.current !== 'compact' && !TextInput.State.currentlyFocusedInput()) {
           router.navigate('/')
         }
       }),
@@ -48,41 +53,61 @@ export default function MainLayout() {
   useDaemonSync()
   usePush()
   useLiveStatus()
-  const widthClass = useWidthClass()
+  const { layout, portrait } = useLayout()
   const pathname = usePathname()
   const pending = usePermissionsStore(useShallow(selectPendingCounts))
-  useShellKeyCommands(widthClass)
+  const theme = useTheme()
+  const selectedSessionId = extractSessionIdFromPathname(pathname)
+  const sidebar = sidebarMode(layout, portrait)
+  const inspector = inspectorMode(layout)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const inspectorOpen = useInspectorStore((s) => s.open)
+  const inspectorWidth = useInspectorStore((s) => s.width)
+  useShellKeyCommands(layout)
+  useSessionShortcuts(selectedSessionId, layout)
+
+  // Portrait tablets: the list slides over the conversation; it opens on its own while no session
+  // is open and closes when one is picked.
+  useEffect(() => {
+    if (sidebar === 'overlay') setSidebarOpen(pathname === '/')
+  }, [sidebar, pathname])
+
   if (!credentials) return <Redirect href="/pair" />
 
-  const selectedSessionId = extractSessionIdFromPathname(pathname)
+  const sidebarContent = (
+    <>
+      <View style={styles.sidebarHeader}>
+        <ListTitle />
+        <SessionListActions />
+      </View>
+      <SessionsScreen pendingBySession={pending} selectedSessionId={selectedSessionId} interactive />
+    </>
+  )
+  const menuButton =
+    sidebar === 'overlay'
+      ? () => <IconButton icon={Menu} label={t('tablet.sidebar')} onPress={() => setSidebarOpen(true)} />
+      : undefined
 
   return (
     <MasterDetailLayout
-      sidebar={
-        widthClass === 'regular' ? (
-          <>
-            <View style={styles.sidebarHeader}>
-              <Text weight="bold" size="lg">
-                Remote Harness
-              </Text>
-              <SessionListActions />
-            </View>
-            <SessionsScreen pendingBySession={pending} selectedSessionId={selectedSessionId} interactive />
-          </>
+      sidebar={sidebar === 'none' ? null : sidebarContent}
+      sidebarMode={sidebar}
+      sidebarOpen={sidebarOpen}
+      onCloseSidebar={() => setSidebarOpen(false)}
+      inspector={
+        inspector !== 'none' && selectedSessionId ? (
+          <InspectorPane sessionId={selectedSessionId} mode={inspector} />
         ) : null
       }
+      inspectorMode={inspector}
+      inspectorOpen={inspector === 'inline' || inspectorOpen}
+      inspectorWidth={inspectorWidth}
+      onCloseInspector={() => setInspectorOpen(false)}
     >
       <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontFamily: fonts.bold, fontSize: 16 },
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: colors.background },
-          headerBackButtonDisplayMode: 'minimal',
-        }}
+        screenOptions={{ ...stackScreenOptions(theme), ...(menuButton ? { headerLeft: menuButton } : {}) }}
       >
-        <Stack.Screen name="index" options={{ title: 'Remote Harness' }} />
+        <Stack.Screen name="index" options={{ headerTitle: () => <ListTitle /> }} />
         <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
         <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
         <Stack.Screen name="session/[id]/index" options={{ title: '' }} />

@@ -7,19 +7,23 @@ import {
   DirectoryItemSchema,
   ErrorCodeSchema,
   FileItemSchema,
+  ModelInfoSchema,
   MuteStateSchema,
   PermissionModeSchema,
   PermissionOutcomeSchema,
   PermissionRequestInfoSchema,
   ProfileSchema,
   ProjectItemSchema,
+  ProviderCreditsSchema,
   PushModeSchema,
   PushTestResultSchema,
+  QueuedMessageSchema,
   RuleScopeSchema,
   SessionSchema,
   SessionStateSchema,
   SubagentInfoSchema,
   TranscriptEntrySchema,
+  WorktreeInfoSchema,
 } from './domain.ts'
 
 const replyTo = z.string().optional()
@@ -82,6 +86,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     outcome: PermissionOutcomeSchema,
   }),
   z.object({ type: z.literal('subagent.updated'), sessionId: z.string(), subagent: SubagentInfoSchema }),
+  /** A session's queued prompts, in delivery order; sent on every change and replayed on connect. */
+  z.object({ type: z.literal('session.queue'), sessionId: z.string(), items: z.array(QueuedMessageSchema) }),
   z.object({ type: z.literal('attachment.uploaded'), replyTo, attachmentId: z.string().min(1) }),
   z.object({
     type: z.literal('transcript.image'),
@@ -94,6 +100,25 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('files.results'), replyTo, query: z.string(), items: z.array(FileItemSchema) }),
   z.object({ type: z.literal('commands.results'), replyTo, items: z.array(CommandItemSchema) }),
   z.object({ type: z.literal('projects.results'), replyTo, items: z.array(ProjectItemSchema) }),
+  z.object({
+    type: z.literal('models.results'),
+    replyTo,
+    profileId: z.string(),
+    models: z.array(ModelInfoSchema),
+    /** When the list was fetched from the provider. */
+    fetchedAt: z.string(),
+    /** The provider could not be reached and this is the last list fetched. */
+    stale: z.boolean(),
+  }),
+  z.object({
+    type: z.literal('provider.info'),
+    replyTo,
+    profileId: z.string(),
+    /** A provider key is stored on the computer for this profile (the key itself never travels). */
+    hasKey: z.boolean(),
+    /** `null` without a key or when the provider did not answer. */
+    credits: ProviderCreditsSchema.nullable(),
+  }),
   z.object({
     type: z.literal('directories.results'),
     replyTo,
@@ -112,6 +137,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     checkout: CheckoutSchema.nullable(),
     peers: z.array(CheckoutPeerSchema),
   }),
+  /** `null` when the session's folder is not inside a linked git worktree. */
+  z.object({ type: z.literal('worktree.info'), replyTo, worktree: WorktreeInfoSchema.nullable() }),
   z.object({ type: z.literal('mute.updated'), muted: MuteStateSchema }),
   z.object({ type: z.literal('push.testResult'), replyTo, result: PushTestResultSchema }),
   /** Usage limits of a profile's account; sent when they change and to every client that connects. */

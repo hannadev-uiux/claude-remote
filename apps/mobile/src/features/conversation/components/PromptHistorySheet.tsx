@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Modal, Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, radius, space } from '@/core/theme'
+import { makeStyles, radius, space } from '@/core/theme'
 import { Button, Text } from '@/ui'
 import { type PromptHistoryItem, promptHistory } from '../prompt-history'
 import type { StreamState } from '../store'
@@ -23,6 +23,7 @@ export function PromptHistorySheet({
 }) {
   const { t } = useTranslation()
   const insets = useSafeAreaInsets()
+  const styles = useStyles()
   const prompts = useMemo(
     () => promptHistory(stream.entries, (count) => t('images.count', { count })),
     [stream.entries, t],
@@ -83,18 +84,18 @@ export function PromptHistorySheet({
   )
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+const useStyles = makeStyles((theme) => ({
+  backdrop: { flex: 1, backgroundColor: theme.colors.backdrop, justifyContent: 'flex-end' },
   sheet: {
     maxHeight: '80%',
-    backgroundColor: colors.surface,
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     paddingHorizontal: space.xl,
     paddingTop: space.xl,
     gap: space.sm,
     borderTopWidth: 1,
-    borderColor: colors.border,
+    borderColor: theme.colors.border,
   },
   list: { flexGrow: 0 },
   content: { gap: space.sm, paddingVertical: space.sm },
@@ -102,10 +103,10 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceRaised,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceRaised,
   },
-  pressed: { borderColor: colors.accent },
+  pressed: { borderColor: theme.colors.accent },
   center: { textAlign: 'center', padding: space.md },
   footer: { paddingTop: space.xs },
-})
+}))

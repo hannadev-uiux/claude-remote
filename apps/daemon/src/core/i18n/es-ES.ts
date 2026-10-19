@@ -2,7 +2,7 @@ import type { Messages } from './en-US.ts'
 
 export const esES = {
   cli: {
-    description: 'Daemon de Remote Harness: controla las sesiones de Claude Code en tmux desde el móvil',
+    description: 'Daemon de Remote Harness: sigue y dirige tus agentes de código desde el móvil',
     help: 'muestra la ayuda del comando',
     version: 'muestra la versión',
     buildMissing: 'No se encontró el build: ejecuta `pnpm --filter @remote-harness/daemon build`.',
@@ -41,6 +41,18 @@ export const esES = {
       rotatedOffline: 'Token cambiado (el daemon no está en ejecución).',
       pairAgain: 'Ejecuta `remote-harness pair` para volver a emparejar.',
     },
+    provider: {
+      description: 'proveedores de modelos de los perfiles (clave de OpenRouter)',
+      key: 'guarda la clave del proveedor de un perfil en el almacén seguro del sistema (nunca en un archivo nuestro)',
+      stdin: 'lee la clave de la entrada estándar en vez de preguntar',
+      prompt: (provider: string) => `Clave de API de ${provider}:`,
+      unknownProfile: (id: string) => `No hay ningún perfil "${id}" en la configuración.`,
+      noProvider: (id: string) =>
+        `El perfil "${id}" no tiene proveedor. Añádele "provider": { "kind": "openrouter" } en config.json primero.`,
+      empty: 'No se indicó ninguna clave; no se guardó nada.',
+      saved: (id: string, store: string) =>
+        `Clave del perfil ${id} guardada ${store}. Las sesiones nuevas del perfil la usan.`,
+    },
     doctor: {
       description: 'comprueba las dependencias y la configuración',
       notOnPath: 'no se encuentra en el PATH',
@@ -56,6 +68,8 @@ export const esES = {
         file: (path: string) => `en el archivo ${path} (0600)`,
       },
       runPair: 'ejecuta `remote-harness pair`',
+      providerKey: (id: string, provider: string) => `clave de ${provider} del perfil ${id}`,
+      runProviderKey: (id: string) => `ejecuta \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `servicio en segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
       linger: 'lingering (el servicio sigue en marcha tras cerrar sesión)',
@@ -178,6 +192,8 @@ export const esES = {
     },
   },
   install: {
+    missingProviderKey: (id: string, provider: string) =>
+      `No hay ninguna clave de ${provider} guardada para el perfil ${id}: ejecuta \`remote-harness provider key ${id}\`.`,
     shortcut: (path: string) => `atajo ${path}`,
     shellPath: (files: string) => `PATH en ${files}`,
     hooksIn: (path: string) => `hooks en ${path}`,
@@ -200,7 +216,7 @@ export const esES = {
     welcome: {
       title: '¡Te damos la bienvenida a Remote Harness!',
       intro1: (machine: string) => `Vamos a preparar este ${machine} para que sigas y controles`,
-      intro2: 'Claude Code desde el móvil. Tarda unos 2 minutos.',
+      intro2: 'tus agentes de código desde el móvil. Tarda unos 2 minutos.',
       footer: (version: string) => `v${version} · ↑/↓ para elegir · Enter para confirmar · Ctrl+C sale`,
     },
     steps: {
@@ -386,6 +402,10 @@ export const esES = {
     },
     tools: (count: number) => (count === 1 ? '1 herramienta' : `${count} herramientas`),
     ago: 'hace {time}',
+    allow: 'Permitir',
+    deny: 'Denegar',
+    total: 'total',
+    closedHint: 'transcripción guardada · reanuda desde la app',
   },
   updates: {
     available: (version: string) => `Remote Harness ${version} disponible`,
@@ -410,13 +430,31 @@ export const esES = {
       restart: 'Reiniciar daemon',
       doctor: 'Ejecutar doctor',
       quit: 'Cerrar icono',
+      status: (machine: string, version: string, since: string) => `${machine} · ${version} · desde ${since}`,
+      waiting: 'Esperando por ti',
+      allow: 'Permitir',
+      always: 'Permitir siempre',
+      deny: 'Denegar',
+      focus: 'Enfocar en tmux',
+      close: 'Cerrar sesión',
+      sessions: (total: number, running: number) =>
+        running > 0 ? `Sesiones · ${total} · ${running} en marcha` : `Sesiones · ${total}`,
+      noSessions: 'Sin sesiones',
+      ended: (count: number) => (count === 1 ? '1 sesión terminada' : `${count} sesiones terminadas`),
+      states: { running: 'en marcha', waiting: 'esperando', idle: 'inactiva', ended: 'terminada' },
+      worktree: 'worktree',
+      phones: (count: number, push: boolean) => `Teléfonos · ${count}${push ? ' · push ✓' : ''}`,
+      newSession: 'Nueva sesión…',
+      pair: 'Vincular un teléfono…',
+      docs: 'Abrir la documentación',
+      prefs: 'Preferencias…',
     },
   },
   push: {
     sessionDone: 'Sesión terminada',
     sessionWaiting: 'Sesión esperándote',
     permissionPending: 'Permiso pendiente',
-    questionPending: 'Claude está esperando tu respuesta',
+    questionPending: 'El agente está esperando tu respuesta',
     planPending: 'Plan listo para revisar',
     testTitle: 'Notificación de prueba',
     testBody: (host: string) => `Las notificaciones de ${host} funcionan`,

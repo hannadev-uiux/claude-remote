@@ -16,8 +16,8 @@ const clientSamples: ClientMessage[] = [
   { type: 'session.subscribe', id: '1', sessionId: 's', sinceCursor: 3 },
   { type: 'session.unsubscribe', id: '1', sessionId: 's' },
   { type: 'session.history', id: '1', sessionId: 's', before: 50, limit: 50 },
-  { type: 'session.input', id: '1', sessionId: 's', text: 'oi\nlinha 2 @src/a.ts' },
-  { type: 'session.input', id: '1', sessionId: 's', text: '', attachmentIds: ['a1', 'a2'] },
+  { type: 'session.input', id: '1', sessionId: 's', text: 'oi\nlinha 2 @src/a.ts', mode: 'now' },
+  { type: 'session.input', id: '1', sessionId: 's', text: '', attachmentIds: ['a1', 'a2'], mode: 'now' },
   { type: 'attachment.upload', id: '1', sessionId: 's', mimeType: 'image/png', data: 'iVBORw0KGgo=' },
   { type: 'transcript.image', id: '1', sessionId: 's', agentId: 'a', imageId: '12.0' },
   { type: 'session.key', id: '1', sessionId: 's', key: 'Escape' },
@@ -43,11 +43,22 @@ const clientSamples: ClientMessage[] = [
   },
   { type: 'device.register', id: '1', fcmToken: 'tok' },
   { type: 'device.register', id: '1', fcmToken: 'tok', platform: 'android' },
+  { type: 'device.unregister', id: '1', fcmToken: 'tok' },
   { type: 'app.visibility', id: '1', foreground: true },
   { type: 'push.test', id: '1', fcmToken: 'tok' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'android', fcmToken: 'tok' },
   { type: 'live.unregister', id: '1', sessionId: 's' },
+  { type: 'session.close', id: '1', sessionId: 's' },
+  { type: 'session.close', id: '1', sessionId: 's', worktree: 'push-delete' },
+  { type: 'worktree.inspect', id: '1', sessionId: 's' },
+  { type: 'worktree.cleanup', id: '1', sessionId: 's', action: 'delete' },
+  { type: 'session.input', id: '1', sessionId: 's', text: 'later', mode: 'auto' },
+  { type: 'queue.update', id: '1', sessionId: 's', itemId: 'q1', text: 'edited' },
+  { type: 'queue.remove', id: '1', sessionId: 's', itemId: 'q1' },
+  { type: 'queue.sendNow', id: '1', sessionId: 's', itemId: 'q1' },
+  { type: 'queue.flush', id: '1', sessionId: 's' },
+  { type: 'pane.focus', id: '1', sessionId: 's' },
   {
     type: 'device.register',
     id: '1',
@@ -63,13 +74,31 @@ const clientSamples: ClientMessage[] = [
     fcmToken: 'tok',
     relay: { url: 'https://relay.example/r', grant: 'g' },
   },
+  {
+    type: 'live.register',
+    id: '1',
+    sessionId: 's',
+    platform: 'android',
+    fcmToken: 'tok',
+    palette: {
+      background: '#0D0D0D',
+      text: '#E8E6E3',
+      textMuted: '#8A8784',
+      accent: '#E8A33D',
+      success: '#7FB069',
+      warning: '#F3DC7A',
+    },
+  },
   { type: 'files.search', id: '1', sessionId: 's', query: 'src', limit: 20 },
   { type: 'commands.list', id: '1', sessionId: 's' },
   { type: 'projects.list', id: '1', profileId: 'claudin' },
+  { type: 'models.list', id: '1', profileId: 'work' },
+  { type: 'provider.status', id: '1', profileId: 'work' },
   { type: 'directories.list', id: '1', path: '~', limit: 200 },
   { type: 'directories.list', id: '1', path: '~/work', prefix: 'ap', hidden: true, limit: 20 },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
+  { type: 'session.start', id: '1', profileId: 'work', cwd: '/tmp', model: 'anthropic/claude-opus-5.5' },
   { type: 'checkout.inspect', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.resume', id: '1', profileId: 'claudin', sessionId: 's' },
   { type: 'pane.subscribe', id: '1', sessionId: 's' },
@@ -175,7 +204,15 @@ const serverSamples: ServerMessage[] = [
   {
     type: 'subagent.updated',
     sessionId: 's',
-    subagent: { agentId: 'a', agentType: null, description: null, state: 'running', updatedAt: 'now' },
+    subagent: {
+      agentId: 'a',
+      agentType: null,
+      description: null,
+      state: 'running',
+      updatedAt: 'now',
+      startedAt: null,
+      toolCount: 0,
+    },
   },
   { type: 'files.results', replyTo: '1', query: 'q', items: [{ path: 'src/', kind: 'dir' }] },
   {
@@ -183,7 +220,32 @@ const serverSamples: ServerMessage[] = [
     replyTo: '1',
     items: [{ name: 'clear', description: '', source: 'builtin', interactive: false }],
   },
-  { type: 'projects.results', replyTo: '1', items: [{ cwd: '/tmp', lastUsedAt: 'now' }] },
+  {
+    type: 'projects.results',
+    replyTo: '1',
+    items: [{ cwd: '/tmp', lastUsedAt: 'now', branch: 'main', sessions: 2 }],
+  },
+  {
+    type: 'models.results',
+    replyTo: '1',
+    profileId: 'work',
+    models: [
+      {
+        id: 'anthropic/claude-sonnet-5.5',
+        name: 'Claude Sonnet 5.5',
+        contextLength: 200000,
+        promptPrice: 3,
+        completionPrice: 15,
+        tools: true,
+        reasoning: true,
+        caching: true,
+      },
+    ],
+    fetchedAt: 'now',
+    stale: false,
+  },
+  { type: 'provider.info', replyTo: '1', profileId: 'work', hasKey: true, credits: { total: 50, used: 7.9 } },
+  { type: 'provider.info', replyTo: '1', profileId: 'work', hasKey: false, credits: null },
   {
     type: 'directories.results',
     replyTo: '1',
@@ -253,6 +315,26 @@ describe('client messages', () => {
     expect(parseClientMessage({ type: 'session.key', id: '1', sessionId: 's', key: 'C-z' }).ok).toBe(true)
   })
 
+  test('session.input defaults to immediate delivery and refuses unknown modes', () => {
+    const parsed = parseClientMessage({ type: 'session.input', id: '1', sessionId: 's', text: 'hi' })
+    expect(parsed.ok && parsed.value.type === 'session.input' ? parsed.value.mode : null).toBe('now')
+    expect(
+      parseClientMessage({ type: 'session.input', id: '1', sessionId: 's', text: 'hi', mode: 'later' }).ok,
+    ).toBe(false)
+  })
+
+  test('worktree actions are a closed set', () => {
+    expect(
+      parseClientMessage({ type: 'worktree.cleanup', id: '1', sessionId: 's', action: 'wipe' }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'bad_request' },
+    })
+    expect(parseClientMessage({ type: 'session.close', id: '1', sessionId: 's', worktree: 'keep' }).ok).toBe(
+      false,
+    )
+  })
+
   test('live status props carry only the allowed fields', () => {
     const props = { title: 'Work', state: 'working', status: 'Working', step: '', tools: '', startedAt: 1 }
     const full = {
@@ -264,9 +346,37 @@ describe('client messages', () => {
       ago: '{time} ago',
       changedAt: 2,
       endedAt: 3,
+      glyphs: ['⌘'],
+      pending: { requestId: 'r1', tool: 'Bash', allow: 'Allow', deny: 'Deny' },
+      hint: '',
     }
     expect(LiveStatusPropsSchema.parse({ ...full, prompt: 'secret' })).toEqual(full)
+    // The pending request carries identifiers and labels only.
+    expect(
+      LiveStatusPropsSchema.parse({ ...full, pending: { ...full.pending, input: { command: 'rm' } } })
+        .pending,
+    ).toEqual(full.pending)
     expect(LiveStatusPropsSchema.safeParse({ ...props, state: 'error' }).success).toBe(false)
+  })
+
+  test('live status props carry the app palette when the registration had one', () => {
+    const props = { title: 'Work', state: 'working', status: 'Working', step: '', tools: '', startedAt: 1 }
+    const palette = {
+      background: '#0D0D0D',
+      text: '#E8E6E3',
+      textMuted: '#8A8784',
+      accent: '#E8A33D',
+      success: '#7FB069',
+      warning: '#F3DC7A',
+    }
+    expect(LiveStatusPropsSchema.parse({ ...props, palette }).palette).toEqual(palette)
+    expect(LiveStatusPropsSchema.parse(props).palette).toBeUndefined()
+    expect(
+      LiveStatusPropsSchema.safeParse({ ...props, palette: { ...palette, accent: 'amber' } }).success,
+    ).toBe(false)
+    const register = { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok' }
+    expect(parseClientMessage({ ...register, palette })).toMatchObject({ ok: true, value: { palette } })
+    expect(parseClientMessage({ ...register, palette: { accent: '#E8A33D' } }).ok).toBe(false)
   })
 
   test('live status props from older daemons get defaults', () => {
@@ -280,6 +390,9 @@ describe('client messages', () => {
       ago: '',
       changedAt: 0,
       endedAt: null,
+      glyphs: [],
+      pending: null,
+      hint: '',
     })
   })
 

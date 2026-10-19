@@ -1,7 +1,16 @@
 import type { Session } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
-import { liveStateFor, localLiveProps, sessionsToStart, shortenHome } from './logic'
+import { dark } from '@/core/theme/palettes'
+import {
+  liveAction,
+  liveActionTarget,
+  livePalette,
+  liveStateFor,
+  localLiveProps,
+  sessionsToStart,
+  shortenHome,
+} from './logic'
 
 const session = (id: string, state: Session['state'], profileId = 'p1') =>
   ({ id, state, profileId, title: 'Fix login', cwd: '/Users/me/app' }) as Session
@@ -23,6 +32,15 @@ describe('sessionsToStart', () => {
   })
 })
 
+describe('liveAction', () => {
+  test('parses the widget button targets and ignores anything else', () => {
+    expect(liveAction(liveActionTarget('allow', 'r1'))).toEqual({ requestId: 'r1', decision: 'allow' })
+    expect(liveAction('deny:req:with:colons')).toEqual({ requestId: 'req:with:colons', decision: 'deny' })
+    expect(liveAction('open')).toBeNull()
+    expect(liveAction('allow:')).toBeNull()
+  })
+})
+
 describe('localLiveProps', () => {
   test('maps the session state and translates it', () => {
     expect(liveStateFor('idle')).toBe('done')
@@ -41,7 +59,24 @@ describe('localLiveProps', () => {
       ago: 'há {time}',
       changedAt: 6,
       endedAt: null,
+      glyphs: [],
+      pending: null,
+      hint: '',
     })
+  })
+
+  test('carries the theme palette the status started with', () => {
+    const palette = livePalette(dark)
+    expect(palette).toEqual({
+      background: dark.colors.background,
+      text: dark.colors.text,
+      textMuted: dark.colors.textMuted,
+      accent: dark.colors.accent,
+      success: dark.colors.success,
+      warning: dark.colors.warning,
+    })
+    const info = { title: 'Work', host: 'mac', startedAt: 5, changedAt: 6, endedAt: null, palette }
+    expect(localLiveProps(session('a', 'running'), info, createI18n('en-US').t).palette).toEqual(palette)
   })
 
   test('shortens the usual home folders', () => {

@@ -1,3 +1,4 @@
+import type { InputMode } from '@remote-harness/protocol'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDaemonClient } from '@/core/connection'
@@ -62,8 +63,12 @@ export function usePrompt(sessionId: string) {
     [client, sessionId, t],
   )
 
+  /**
+   * Sends (or, with `auto`, queues while the session is busy) the text and photos. `now` pastes
+   * mid-turn like Claude Code's Ctrl+Enter. Resolves true when the prompt was sent or queued.
+   */
   const sendText = useCallback(
-    async (value: string, images: PreparedImage[] = []) => {
+    async (value: string, images: PreparedImage[] = [], mode: InputMode = 'auto') => {
       if (!client || (!value.trim() && images.length === 0)) return false
       setSending(true)
       setError(null)
@@ -74,6 +79,7 @@ export function usePrompt(sessionId: string) {
           type: 'session.input',
           sessionId,
           text: value,
+          mode,
           ...(attachmentIds.length > 0 ? { attachmentIds } : {}),
         })
         return true
@@ -87,16 +93,22 @@ export function usePrompt(sessionId: string) {
     [client, sessionId, t, upload],
   )
 
-  const send = useCallback(async () => {
-    const value = text
-    const images = attachments
-    const ok = await sendText(value, images)
-    if (ok) {
-      setText((current) => (current === value ? '' : current))
-      setAttachments((current) => current.filter((image) => !images.includes(image)))
-    }
-    return ok
-  }, [sendText, text, attachments])
+  const send = useCallback(
+    async (mode: InputMode = 'auto') => {
+      const value = text
+      const images = attachments
+      const ok = await sendText(value, images, mode)
+      if (ok) {
+        setText((current) => (current === value ? '' : current))
+        setAttachments((current) => current.filter((image) => !images.includes(image)))
+      }
+      return ok
+    },
+    [sendText, text, attachments],
+  )
+
+  /** Pastes mid-turn instead of waiting in the queue (long press on Send, ⌘⏎). */
+  const sendNow = useCallback(() => send('now'), [send])
 
   const addAttachments = useCallback((images: PreparedImage[]) => {
     setAttachments((current) => [...current, ...images])
@@ -122,6 +134,7 @@ export function usePrompt(sessionId: string) {
     addAttachments,
     removeAttachment,
     send,
+    sendNow,
     sendText,
     sendKey,
     sending,

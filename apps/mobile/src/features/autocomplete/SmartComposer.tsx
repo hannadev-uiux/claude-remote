@@ -5,13 +5,21 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, type TextInput } from 'react-native'
 import { addListener, constants } from 'react-native-key-command'
+import { useShallow } from 'zustand/react/shallow'
+import { useLayout } from '@/core/layout'
 import { useBackHandler } from '@/core/platform/use-back-handler'
 import { IconButton } from '@/ui'
 import { AttachmentChips } from '../attachments/components/AttachmentChips'
 import { remainingSlots } from '../attachments/limits'
 import { type ImageSource, useImagePicker } from '../attachments/use-image-picker'
 import { PromptComposer } from '../conversation/components/PromptComposer'
+import { keyboardHints } from '../conversation/keyboard-hints'
 import type { usePrompt } from '../conversation/use-prompt'
+import { selectPendingFor, usePermissionsStore } from '../permissions/store'
+import { willQueue } from '../queue/logic'
+import { selectQueueFor, useQueueStore } from '../queue/store'
+import { sessionAgent } from '../sessions/agent'
+import { useSessionsStore } from '../sessions/store'
 import { RecordingOverlay } from '../voice/components/RecordingOverlay'
 import { VoiceButton } from '../voice/components/VoiceButton'
 import { insertTranscriptAtCursor } from '../voice/insert-at-cursor'
@@ -40,6 +48,16 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
     if (!found) setDismissed(null)
   }, [found])
   useBackHandler(trigger !== null, () => setDismissed(triggerKey(trigger)))
+  const agent = useSessionsStore((s) => {
+    const session = s.sessions[sessionId]
+    return session ? sessionAgent(session) : null
+  })
+  const session = useSessionsStore((s) => s.sessions[sessionId])
+  const pendingPermissions = usePermissionsStore(useShallow(selectPendingFor(sessionId))).length
+  const queued = useQueueStore(selectQueueFor(sessionId)).length
+  // Send holds the prompt while the agent is busy; the hint tells how to paste it mid-turn instead.
+  const queueing = willQueue(session, pendingPermissions, queued)
+  const { layout } = useLayout()
   const suggestions = useSuggestions(sessionId, trigger)
   const commands = useCommands(sessionId)
 
@@ -76,10 +94,10 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
     ])
   }
 
-  const send = async () => {
+  const send = async (mode: 'auto' | 'now' = 'auto') => {
     const text = prompt.text
     const interactive = isInteractiveCommand(text, commands.data ?? [])
-    const ok = await prompt.send()
+    const ok = await prompt.send(mode)
     // Menus like /model only exist in the TUI: show the raw terminal to drive them.
     if (interactive && ok) router.push({ pathname: '/session/[id]/terminal', params: { id: sessionId } })
   }
@@ -95,7 +113,8 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
     return addListener(
       { input: constants.keyInputEnter, modifierFlags: constants.keyModifierCommand },
       () => {
-        if (canSendRef.current) void sendRef.current()
+        // ⌘⏎ pastes mid-turn, like Claude Code's Ctrl+Enter; the Send button queues while busy.
+        if (canSendRef.current) void sendRef.current('now')
       },
     )
   }, [])
@@ -111,6 +130,11 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
       sending={prompt.sending}
       disabled={disabled}
       error={prompt.error}
+      agent={agent}
+      onSendNow={() => void send('now')}
+      hint={queueing ? t('queue.holdHint') : null}
+      tablet={layout !== 'compact'}
+      hints={keyboardHints({ pendingPermission: pendingPermissions > 0 }, t)}
       onKey={prompt.sendKey}
       keysDisabled={disabled}
       accessory={

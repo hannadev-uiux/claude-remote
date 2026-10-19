@@ -171,7 +171,7 @@ describe('PushService', () => {
       ...base,
       interaction: { kind: 'question', title: null, questions: [] },
     })
-    expect(question.title).toBe('Claude is waiting for your answer')
+    expect(question.title).toBe('The agent is waiting for your answer')
     expect(question.category).toBeUndefined()
     const plan = service.messageForPermission({ ...base, interaction: { kind: 'plan', plan: 'secret plan' } })
     expect(plan.title).toBe('Plan ready for review')

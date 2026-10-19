@@ -1,8 +1,23 @@
 import { describe, expect, test } from 'vitest'
-import { activeWindow, formatPercent, formatReset, formatTokens, statusItems, statusLevel } from './logic'
+import {
+  activeWindow,
+  formatPercent,
+  formatReset,
+  formatTokens,
+  modelLabel,
+  statusItems,
+  statusLevel,
+} from './logic'
 
 const NOW = Date.parse('2026-10-18T12:00:00Z')
 const HOUR = 60 * 60 * 1000
+
+test('modelLabel joins the model and the effort, and hides without a model', () => {
+  expect(modelLabel({ model: 'sonnet-5.5', effort: 'high' })).toBe('sonnet-5.5 · high')
+  expect(modelLabel({ model: 'Opus 5.5', effort: null })).toBe('Opus 5.5')
+  expect(modelLabel({ model: null, effort: 'high' })).toBeNull()
+  expect(modelLabel(null)).toBeNull()
+})
 
 describe('statusLevel', () => {
   test.each([

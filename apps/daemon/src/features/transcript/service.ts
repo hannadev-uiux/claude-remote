@@ -45,6 +45,8 @@ export class TranscriptService {
   constructor(
     private readonly logger: Logger,
     private readonly onMeta: (sessionId: string, update: TranscriptMetaUpdate) => void = () => {},
+    /** New lines were read for a session (its own transcript or a subagent's): last activity. */
+    private readonly onActivity: (sessionId: string, at: number) => void = () => {},
   ) {
     this.poller = setInterval(() => {
       for (const stream of this.streams.values()) void this.pump(stream)
@@ -204,6 +206,7 @@ export class TranscriptService {
         }
         for (const entry of parseTranscriptLine(line.text, line.cursor)) this.emit(stream, entry)
       }
+      this.onActivity(stream.sessionId, Date.now())
     }
   }
 
