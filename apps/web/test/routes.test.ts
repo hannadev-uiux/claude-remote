@@ -27,6 +27,33 @@ describe('route', () => {
     expect(route(`/ios/${token}`)).toEqual({ kind: 'not-found' })
     expect(route('/ios/short/')).toEqual({ kind: 'not-found' })
     expect(route('/ios/')).toEqual({ kind: 'not-found' })
-    expect(route('/')).toEqual({ kind: 'not-found' })
+  })
+
+  test('landing: negotiated at the root, fixed under the language paths', () => {
+    expect(route('/')).toEqual({ kind: 'page', locale: null })
+    expect(route('/index.html')).toEqual({ kind: 'page', locale: null })
+    expect(route('/en/')).toEqual({ kind: 'page', locale: 'en-US' })
+    expect(route('/pt-br')).toEqual({ kind: 'page', locale: 'pt-BR' })
+    expect(route('/PT/')).toEqual({ kind: 'page', locale: 'pt-BR' })
+    expect(route('/es/')).toEqual({ kind: 'page', locale: 'es-ES' })
+    expect(route('/es/other')).toEqual({ kind: 'not-found' })
+    expect(route('/fr/')).toEqual({ kind: 'not-found' })
+  })
+
+  test('site files, installer redirects and the rest', () => {
+    expect(route('/sitemap.xml')).toEqual({ kind: 'sitemap' })
+    expect(route('/robots.txt')).toEqual({ kind: 'robots' })
+    expect(route('/favicon.svg')).toEqual({ kind: 'favicon' })
+    expect(route('/favicon.ico')).toEqual({ kind: 'favicon' })
+    expect(route('/install.sh')).toEqual({
+      kind: 'installer',
+      url: 'https://raw.githubusercontent.com/maarkN/remote-harness/main/install.sh',
+    })
+    expect(route('/install.ps1')).toEqual({
+      kind: 'installer',
+      url: 'https://raw.githubusercontent.com/maarkN/remote-harness/main/install.ps1',
+    })
+    expect(route('/install.sh/x')).toEqual({ kind: 'not-found' })
+    expect(route('/anything-else')).toEqual({ kind: 'not-found' })
   })
 })
