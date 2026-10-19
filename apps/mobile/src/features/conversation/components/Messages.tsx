@@ -9,6 +9,7 @@ import { Text } from '@/ui'
 import { ImageStrip } from '../../images/ImageStrip'
 import { ConversationAgent } from '../agent-context'
 import { systemText } from '../timeline'
+import { LinkifiedText } from './LinkText'
 import { Markdown } from './Markdown'
 
 export const UserMessage = memo(function UserMessage({
@@ -25,7 +26,7 @@ export const UserMessage = memo(function UserMessage({
         {'> '}
       </Text>
       <View style={styles.flex}>
-        {text ? <Text selectable>{text}</Text> : null}
+        {text ? <LinkifiedText selectable>{text}</LinkifiedText> : null}
         <ImageStrip images={images} />
       </View>
     </View>
@@ -61,9 +62,9 @@ export const ThinkingBlock = memo(function ThinkingBlock({ text }: { text: strin
         </Text>
       </View>
       {open ? (
-        <Text size="sm" color="textMuted" style={styles.italic} selectable>
+        <LinkifiedText size="sm" color="textMuted" style={styles.italic} selectable>
           {text}
-        </Text>
+        </LinkifiedText>
       ) : null}
     </Pressable>
   )
@@ -82,9 +83,9 @@ export const SystemLine = memo(function SystemLine({
   const text = systemText({ subtype, text: raw, durationMs }, t)
   return (
     <View style={styles.system}>
-      <Text size="xs" color={subtype === 'command' ? 'info' : 'textDim'} selectable>
+      <LinkifiedText size="xs" color={subtype === 'command' ? 'info' : 'textDim'} selectable>
         {subtype === 'command' ? `› ${text}` : `· ${text}`}
-      </Text>
+      </LinkifiedText>
     </View>
   )
 })

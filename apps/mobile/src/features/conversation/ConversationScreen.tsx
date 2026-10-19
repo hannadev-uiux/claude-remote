@@ -13,6 +13,7 @@ import { sessionAgent } from '../sessions/agent'
 import { useSessionsStore } from '../sessions/store'
 import { ConversationAgent } from './agent-context'
 import { KeyBar } from './components/KeyBar'
+import { LinkSheet } from './components/LinkSheet'
 import { AssistantMessage, SystemLine, ThinkingBlock, UnknownEntry, UserMessage } from './components/Messages'
 import { PromptHistorySheet } from './components/PromptHistorySheet'
 import { ToolCallCard } from './components/ToolCallCard'
@@ -170,6 +171,7 @@ export function ConversationScreen({
               onClose={onHistoryClose}
             />
           ) : null}
+          {Platform.OS === 'ios' ? null : <LinkSheet />}
         </Screen>
       </ConversationAgent.Provider>
     </TranscriptImagesContext.Provider>

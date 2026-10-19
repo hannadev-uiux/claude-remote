@@ -124,6 +124,7 @@ const enUS = {
     running: 'running…',
     showMore: 'Show more',
     tabs: { output: 'Output', input: 'Input', json: 'JSON' },
+    link: { open: 'Open', copy: 'Copy link', share: 'Share', copied: 'Link copied' },
     placeholder: 'message {{agent}}… (@ files, / commands)',
     placeholderReadOnly: 'read-only session',
     confirmCtrlC: 'Send Ctrl+C to the session?',
