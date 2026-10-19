@@ -1,9 +1,10 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { ChevronDown, EllipsisVertical, Terminal } from 'lucide-react-native'
+import { ChevronDown, EllipsisVertical, PanelRight, Terminal } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
+import { useLayout } from '@/core/layout'
 import { makeStyles, space, useTheme } from '@/core/theme'
 import { shortPath } from '@/core/utils/time'
 import { SmartComposer } from '@/features/autocomplete/SmartComposer'
@@ -12,6 +13,7 @@ import { setFollow, useFollowStore } from '@/features/conversation/follow-store'
 import { setKeyBarVisible, useKeyBarStore } from '@/features/conversation/key-bar-store'
 import { type SessionMenuAction, sessionMenu } from '@/features/conversation/session-menu'
 import { usePrompt } from '@/features/conversation/use-prompt'
+import { toggleInspector } from '@/features/inspector/store'
 import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
 import { ModeSelector } from '@/features/mode/ModeSelector'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
@@ -44,6 +46,8 @@ export default function SessionRoute() {
   const [subagentsOpen, setSubagentsOpen] = useState(false)
   const subagentStats = subagentCounts(session?.subagents ?? [])
   const agent = session ? sessionAgent(session) : null
+  // Two-column tablets reach the inspector (terminal, subagents, details) from the header.
+  const { layout } = useLayout()
   const title = session?.title || t('common.session')
   // A focused composer would keep the keyboard over the sheet's lower rows.
   const openDetails = () => {
@@ -80,6 +84,9 @@ export default function SessionRoute() {
                   disabled={!controllable}
                   onPress={actions.terminal}
                 />
+                {layout === 'regular' ? (
+                  <IconButton icon={PanelRight} label={t('tablet.inspector')} onPress={toggleInspector} />
+                ) : null}
                 <ActionMenu
                   icon={EllipsisVertical}
                   label={t('sessionMenu.moreOptions')}

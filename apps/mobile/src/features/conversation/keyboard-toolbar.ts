@@ -41,3 +41,17 @@ export function keyboardToolbar({
     hideKeyBar: visible && expanded,
   }
 }
+
+/**
+ * A hardware keyboard is in use: the field is focused but no software keyboard is on screen (iPad
+ * reports 0, or only the shortcut bar's height). Drives the hints row and Return-to-send on tablets.
+ */
+export function hardwareKeyboard({
+  focused,
+  keyboardHeight,
+}: {
+  focused: boolean
+  keyboardHeight: number
+}): boolean {
+  return focused && keyboardHeight < SOFT_KEYBOARD_MIN_HEIGHT
+}

@@ -588,6 +588,28 @@ const ptBR = {
     withPhotos_one: '+{{count}} foto',
     withPhotos_other: '+{{count}} fotos',
   },
+  tablet: {
+    sidebar: 'Mostrar sessões',
+    inspector: 'Inspetor',
+    terminal: 'Terminal',
+    subagents: 'Subagentes',
+    /** `n` é um número simples entre parênteses, sem plural. */
+    subagentsCount: 'Subagentes ({{n}})',
+    details: 'Detalhes',
+    noSubagents: 'Nenhum subagente nesta sessão.',
+    resize: 'Redimensionar o inspetor',
+  },
+  /** Rótulos da fileira de dicas do teclado físico (curtos, em minúsculas). */
+  keys: {
+    queue: 'fila',
+    sendNow: 'enviar agora',
+    session: 'sessão',
+    search: 'buscar',
+    terminal: 'terminal',
+    esc: 'esc',
+    mode: 'modo',
+    answer: 'responder',
+  },
   subagents: {
     title: 'Subagentes',
     summary_one: '{{count}} subagente',
