@@ -120,6 +120,7 @@ const ptBR = {
     running: 'executando…',
     showMore: 'Mostrar mais',
     tabs: { output: 'Saída', input: 'Entrada', json: 'JSON' },
+    link: { open: 'Abrir', copy: 'Copiar link', share: 'Compartilhar', copied: 'Link copiado' },
     placeholder: 'mensagem para {{agent}}… (@ arquivos, / comandos)',
     placeholderReadOnly: 'sessão somente leitura',
     confirmCtrlC: 'Enviar Ctrl+C para a sessão?',

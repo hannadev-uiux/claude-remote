@@ -11,6 +11,7 @@ import { summarizeTool } from '../summarize-tool'
 import { cutText, TOOL_TABS, type ToolTab, tabFor, toolCallJson, toolInputFields } from '../tool-details'
 import { saveToolTab, useToolTabStore } from '../tool-tab-store'
 import { DiffView } from './DiffView'
+import { LinkifiedText } from './LinkText'
 
 type Use = Extract<TranscriptEntry, { kind: 'tool_use' }>
 type Result = Extract<TranscriptEntry, { kind: 'tool_result' }>
@@ -169,9 +170,9 @@ function InputFields({ name, input }: { name: string; input: Use['input'] }) {
             <Text size="xs" color="textMuted">
               {label}
             </Text>
-            <Text size="xs" selectable>
+            <LinkifiedText size="xs" selectable>
               {f.value}
-            </Text>
+            </LinkifiedText>
           </View>
         )
       })}
@@ -200,10 +201,9 @@ function LongText({
     <View>
       <ScrollView style={styles.block} nestedScrollEnabled>
         <ScrollView horizontal nestedScrollEnabled>
-          <Text size="xs" color={color} selectable>
-            {cut.text}
-            {cut.hidden ? '…' : truncated ? `\n${t('conversation.truncated')}` : ''}
-          </Text>
+          <LinkifiedText size="xs" color={color} selectable>
+            {`${cut.text}${cut.hidden ? '…' : truncated ? `\n${t('conversation.truncated')}` : ''}`}
+          </LinkifiedText>
         </ScrollView>
       </ScrollView>
       {cut.hidden ? (

@@ -120,6 +120,7 @@ const esES = {
     running: 'ejecutando…',
     showMore: 'Mostrar más',
     tabs: { output: 'Salida', input: 'Entrada', json: 'JSON' },
+    link: { open: 'Abrir', copy: 'Copiar enlace', share: 'Compartir', copied: 'Enlace copiado' },
     placeholder: 'mensaje para {{agent}}… (@ archivos, / comandos)',
     placeholderReadOnly: 'sesión de solo lectura',
     confirmCtrlC: '¿Enviar Ctrl+C a la sesión?',
