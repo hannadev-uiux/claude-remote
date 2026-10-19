@@ -55,9 +55,7 @@ describe('renderLanding', () => {
     expect(html).toContain(`<title>${m.meta.title}</title>`)
     expect(html).toContain('<link rel="alternate" hreflang="pt-BR" href="https://remoteharness.app/pt-br/">')
     expect(html).toContain('<link rel="alternate" hreflang="x-default" href="https://remoteharness.app/">')
-    expect(html).toContain(
-      'og:image" content="https://raw.githubusercontent.com/maarkN/remote-harness/main/docs/brand/og.png"',
-    )
+    expect(html).toContain('og:image" content="https://remoteharness.app/og.png"')
     for (const id of ['how', 'features', 'security', 'install', 'docs', 'app'])
       expect(html).toContain(`id="${id}"`)
     expect(html).toContain(`data-copy="${INSTALL_COMMANDS.unix}"`)

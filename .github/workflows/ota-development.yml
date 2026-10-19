@@ -30,8 +30,6 @@ jobs:
     env:
       # Must be the URL the installed builds were made with: it is part of their runtime version.
       REMOTE_HARNESS_UPDATES_URL: https://remoteharness.app/api/updates/manifest
-      # The server only accepts asset URLs under its own address (remoteharness.app proxies to it).
-      REMOTE_HARNESS_UPDATES_ASSETS_URL: https://maarkn.dev/api/claude-remote/updates/assets/
       # Part of the runtime version too (ios.appleTeamId): the team the local builds are signed with.
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
     steps:

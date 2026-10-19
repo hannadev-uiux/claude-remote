@@ -4,14 +4,10 @@ import { route } from '../src/routes.ts'
 const token = 'aB3_x-9aB3_x-9aB3_x-9aB3_x'
 
 describe('route', () => {
-  test('forwards the updates API with the query string', () => {
-    expect(route('/api/updates/manifest', '?a=1')).toEqual({
-      kind: 'updates',
-      url: 'https://maarkn.dev/api/claude-remote/updates/manifest?a=1',
-    })
-    expect(route('/api/updates/assets/abc')).toMatchObject({
-      url: 'https://maarkn.dev/api/claude-remote/updates/assets/abc',
-    })
+  test('the updates API is answered here, by path', () => {
+    expect(route('/api/updates/manifest', '?a=1')).toEqual({ kind: 'updates', path: 'manifest' })
+    expect(route('/api/updates/assets/abc')).toEqual({ kind: 'updates', path: 'assets/abc' })
+    expect(route('/api/updates/manifests')).toEqual({ kind: 'updates', path: 'manifests' })
     expect(route('/api/updates/')).toEqual({ kind: 'not-found' })
     expect(route('/api/updates/../secret')).toEqual({ kind: 'not-found' })
   })
@@ -67,6 +63,7 @@ describe('route', () => {
     expect(route('/robots.txt')).toEqual({ kind: 'robots' })
     expect(route('/favicon.svg')).toEqual({ kind: 'favicon' })
     expect(route('/favicon.ico')).toEqual({ kind: 'favicon' })
+    expect(route('/og.png')).toEqual({ kind: 'og-image' })
     expect(route('/install.sh/x')).toEqual({ kind: 'not-found' })
     expect(route('/anything-else')).toEqual({ kind: 'not-found' })
   })

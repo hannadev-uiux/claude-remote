@@ -28,12 +28,16 @@ TBD - created by archiving change 38-remoteharness-domain. Update Purpose after 
 - **WHEN** a request for `/install.sh` or `/install.ps1` reaches the Worker
 - **THEN** it receives that script, bundled from the deployed commit, with the same query handling as `/install`
 
-### Requirement: Updates proxy
-Requests to `https://remoteharness.app/api/updates/<path>` SHALL be forwarded to the Expo Updates server with the same method, headers, query and body, and its response returned unchanged.
+### Requirement: Updates server
+`https://remoteharness.app/api/updates/` SHALL be the Expo Updates server of the app, answered by the Worker from R2 as the `updates-server` capability describes, with no request forwarded to another site. The URL builds are made with (`https://remoteharness.app/api/updates/manifest`) MUST stay the same, since it is part of their runtime version.
 
 #### Scenario: Manifest request
 - **WHEN** a build made with `REMOTE_HARNESS_UPDATES_URL=https://remoteharness.app/api/updates/manifest` checks for updates
 - **THEN** it receives the server's manifest for its runtime and channel
+
+#### Scenario: No other site
+- **WHEN** the app or the publisher talks to `/api/updates/*`
+- **THEN** the Worker answers it without contacting `maarkn.dev` or any other origin
 
 ### Requirement: iPhone install link
 `make install-ios-link IOS_LINK=web` and `make install-android-link` SHALL upload their build (`RemoteHarness.ipa` with its `manifest.plist`, or `RemoteHarness.apk`) and a `builds.json` entry with the version, build and date to the same R2 folder `<token>/`, where `<token>` is random and reused between builds, and print `https://remoteharness.app/app/<token>/`. The Worker SHALL answer `/app/<token>/` and `/ios/<token>/` with the install page, serve only `RemoteHarness.ipa`, `RemoteHarness.apk` (as `application/vnd.android.package-archive`) and `manifest.plist` under a token, and MUST answer 404 to anything else. A folder without `builds.json` SHALL keep being answered with its uploaded `index.html`.

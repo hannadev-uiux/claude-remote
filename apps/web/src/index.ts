@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers'
+import ogImage from '../../../docs/brand/og.png?inline'
 import installPs1 from '../../../install.ps1?raw'
 import installSh from '../../../install.sh?raw'
 import { APP_FILES, BUILDS, classifyDevice, LEGACY_PAGE, parseBuilds, renderAppLinkPage } from './app-link.ts'
@@ -16,6 +17,8 @@ import { renderInstallPage } from './install-page.ts'
 import { renderLanding, renderNotFound } from './landing.ts'
 import { route } from './routes.ts'
 import { faviconSvg, robotsTxt, sitemapXml } from './site.ts'
+import { handleUpdates } from './updates/handler.ts'
+import { R2UpdatesStore } from './updates/store.ts'
 
 /** A build file of an install link, from R2, with the content type of its name. */
 async function appFile(request: Request, key: string, name: string): Promise<Response> {
@@ -101,7 +104,10 @@ function script(request: Request, name: InstallScriptName, ref: string | null, v
   return new Response(request.method === 'HEAD' ? null : body, { headers })
 }
 
-function file(body: string, type: string): Response {
+/** The link preview image, decoded once from the `data:` URL Vite inlined. */
+const OG_IMAGE = Uint8Array.from(atob(ogImage.slice(ogImage.indexOf(',') + 1)), (char) => char.charCodeAt(0))
+
+function file(body: string | Uint8Array, type: string): Response {
   return new Response(body, { headers: { 'content-type': type, 'cache-control': 'public, max-age=86400' } })
 }
 
@@ -110,8 +116,10 @@ export default {
     const url = new URL(request.url)
     const target = route(url.pathname, url.search)
     if (target.kind === 'updates') {
-      // Same method, headers and body; redirects and errors go back to the client unchanged.
-      return fetch(new Request(target.url, request), { redirect: 'manual' })
+      return handleUpdates(request, target.path, new R2UpdatesStore(env.UPDATES), {
+        token: env.UPDATES_TOKEN,
+        devToken: env.UPDATES_DEV_TOKEN,
+      })
     }
     if (target.kind === 'app-file') return appFile(request, target.key, target.name)
     if (target.kind === 'app-page') return appPage(request, url, target.token)
@@ -130,6 +138,7 @@ export default {
     if (target.kind === 'sitemap') return file(sitemapXml(), 'application/xml; charset=utf-8')
     if (target.kind === 'robots') return file(robotsTxt(), 'text/plain; charset=utf-8')
     if (target.kind === 'favicon') return file(faviconSvg(), 'image/svg+xml')
+    if (target.kind === 'og-image') return file(OG_IMAGE, 'image/png')
     const negotiated = pickLocale(request.headers.get('accept-language'))
     const notFound = () => page(renderNotFound(negotiated), 404, negotiated, true)
     if (target.kind === 'install') {

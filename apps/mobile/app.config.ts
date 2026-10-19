@@ -292,7 +292,9 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   name: 'Remote Harness',
   slug: 'claude-remote',
   version: '0.13.0',
-  scheme: 'claude-remote',
+  // `remoteharness://` first; `claude-remote://` stays for the pairing QR codes already printed (and
+  // printed by daemons until app builds without the new scheme are gone).
+  scheme: ['remoteharness', 'claude-remote'],
   orientation: 'portrait',
   icon: './assets/icon.png',
   // System surfaces (alerts, pickers) follow the phone; the app theme comes from `src/core/theme`.
