@@ -10,6 +10,7 @@ import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/the
 import type { AgentId } from '@/core/theme/agents'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
+import { COMPOSER_MAX_HEIGHT, COMPOSER_MIN_HEIGHT, composerHeight } from '../composer-height'
 import { composerPlaceholder } from '../composer-placeholder'
 import type { KeyboardHint } from '../keyboard-hints'
 import { hardwareKeyboard, keyboardToolbar } from '../keyboard-toolbar'
@@ -61,6 +62,8 @@ type Props = {
 const SWAP_MS = 150
 const entering = ZoomIn.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
 const exiting = ZoomOut.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
+// The content size reported on iOS leaves out the input's borders (1 pt each side); Android's includes them.
+const CONTENT_EXTRA = Platform.OS === 'ios' ? 2 : 0
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
   const { t } = useTranslation()
@@ -79,6 +82,9 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
     hasVoice: props.voiceButton != null,
   })
   const [focused, setFocused] = useState(false)
+  // Sized explicitly: the native multiline input keeps its old height when a send clears it from code.
+  const [contentHeight, setContentHeight] = useState<number | null>(null)
+  const height = composerHeight(props.value, contentHeight, CONTENT_EXTRA)
   const keyboardHeight = useKeyboardHeight()
   const expanded = useKeyboardToolbarStore((s) => s.expanded)
   const toolbar = keyboardToolbar({ os: Platform.OS, focused, keyboardHeight, expanded })
@@ -117,6 +123,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
             value={props.value}
             onChangeText={props.onChangeText}
             onSelectionChange={props.onSelectionChange}
+            onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
             selection={props.selection}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -127,7 +134,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
             accessibilityLabel={placeholder}
             autoCapitalize="none"
             autoCorrect={false}
-            style={styles.input}
+            style={[styles.input, { height }]}
           />
           {/* A multiline input wraps its native placeholder; this one stays on one line. */}
           {props.value ? null : (
@@ -209,8 +216,8 @@ const useStyles = makeStyles((theme) => ({
   prompt: { paddingBottom: 9 },
   field: { flex: 1 },
   input: {
-    maxHeight: 140,
-    minHeight: 36,
+    maxHeight: COMPOSER_MAX_HEIGHT,
+    minHeight: COMPOSER_MIN_HEIGHT,
     paddingHorizontal: space.sm,
     paddingVertical: 8,
     borderRadius: radius.md,
