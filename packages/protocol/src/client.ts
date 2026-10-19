@@ -149,6 +149,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('worktree.inspect'), id, sessionId }),
   z.object({ type: z.literal('worktree.cleanup'), id, sessionId, action: WorktreeActionSchema }),
   z.object({ type: z.literal('pane.subscribe'), id, sessionId }),
+  /** Selects the session's tmux window and pane on the computer (tray "Focus in tmux"). */
+  z.object({ type: z.literal('pane.focus'), id, sessionId }),
   z.object({ type: z.literal('pane.unsubscribe'), id, sessionId }),
   z.object({
     type: z.literal('settings.mute'),

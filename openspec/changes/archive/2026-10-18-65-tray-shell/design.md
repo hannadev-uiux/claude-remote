@@ -1,0 +1,12 @@
+## Context
+
+`registerUpdatesFeature` builds a `TrayMenu` (`buildTrayMenu`, pure) from the update state and sends it to the helper through `TrayHost`; the helper (`Tray.swift` on macOS, `tray.py` on Linux) draws the mark as a template image, builds the menu and emits `{ type: 'click', id }`. `PermissionBroker.list/respond`, `SessionStore`, the device registry and `CloseService` already hold everything the shell needs. The prototypes (`tray-popover-macos.html`, `tray-linux.html`, `icon-macos-menubar.html`) fix the sections and the glyph states.
+
+## Decisions
+
+- **Same thin client, richer message.** The menu message gains `icon`; items keep the same shape (`id`, `label`, `enabled`, `checked`, separators, submenus). Nothing else changes in the helper protocol, so the Linux helper gets the new content for free and only learns the attention status.
+- **The glyph never carries more than one color.** `idle` stays a template image (macOS tints it); `working` fills the ring; `waiting` is drawn with `labelColor` strokes and an amber dot, so it follows the menu bar appearance while keeping the single accent; `offline` is the helper's own state (40 % opacity) for the moment stdin closes.
+- **Sections come from pure data.** `TrayMenuState` gains optional `machine`, `since`, `sessions`, `pending` and `phones`; `buildTrayMenu` adds the sections only when they are present, so the existing update-only tests and the headless paths keep working. `pendingSummary(info)` (pure) shortens the tool call to `Tool · detail` without ever leaving the computer.
+- **Clicks are prefixed ids.** `allow:` / `always:` / `deny:` go to `PermissionBroker.respond` (Always uses the daemon's suggested rule and default scope, like the app); `focus:` selects the pane through `TmuxClient.focusPane`; `close:` runs the graceful close; `new`, `pair`, `docs`, `prefs` open the terminal, the docs or the config. The updates feature receives the broker, the device registry and the close function from `main.ts`, as other features receive services.
+- **Refresh is debounced.** Session store changes and permission events schedule one rebuild within 300 ms, so a busy session does not flood the helper.
+- **`pane.focus` is a protocol message** because the app will want it too (a session row's "Focus in tmux" on the computer); the daemon only selects the tmux window and pane and leaves raising the terminal app to a later change.

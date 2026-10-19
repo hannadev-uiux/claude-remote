@@ -91,6 +91,12 @@ export class TmuxClient {
     await this.run(['kill-pane', '-t', paneId])
   }
 
+  /** Brings a pane to the front of its tmux client: its window, then the pane itself. */
+  async focusPane(paneId: string): Promise<void> {
+    await this.run(['select-window', '-t', paneId])
+    await this.run(['select-pane', '-t', paneId])
+  }
+
   /** Types text literally, key by key. */
   async sendLiteral(paneId: string, text: string): Promise<void> {
     await this.run(['send-keys', '-t', paneId, '-l', '--', text])
