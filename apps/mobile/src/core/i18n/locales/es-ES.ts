@@ -97,8 +97,8 @@ const esES = {
       },
       install: {
         title: 'Remote Harness en el ordenador',
-        body: 'En un terminal del ordenador, ejecuta el instalador. Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
-        action: 'Enviar el comando al ordenador',
+        body: 'En un terminal del ordenador, ejecuta el instalador (en Windows, en PowerShell: `{{windows}}`). Comprueba los requisitos, te pregunta qué cuentas de Claude Code quieres controlar (o crea una nueva, con inicio de sesión) y el comando (alias) de cada una.',
+        action: 'Enviar el enlace de instalación al ordenador',
       },
       pair: {
         title: 'Vincular',

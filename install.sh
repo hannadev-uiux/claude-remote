@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Remote Harness installer.
 #
-#   curl -fsSL https://remoteharness.app/install.sh | bash
-#   curl -fsSL https://remoteharness.app/install.sh | bash -s -- --yes   # no questions
+#   curl -fsSL https://remoteharness.app/install | bash
+#   curl -fsSL https://remoteharness.app/install | bash -s -- --yes   # no questions
+#   curl -fsSL "https://remoteharness.app/install?ref=development" | bash   # another version
 #
+# https://remoteharness.app/install gives this script to curl/wget and install.ps1 to PowerShell;
+# `?ref=` becomes the default of REF below (the Worker writes it in).
 # Runs on macOS and Linux. Missing tools (tmux, ripgrep, zsh, git) are installed with apt-get, dnf,
 # pacman or zypper (with sudo, after saying why) or Homebrew; Node 24+ must already be installed.
 # Installs (or updates) the daemon from source into ~/.remote-harness/src, builds it and opens
@@ -43,7 +46,7 @@ pt*)
   T_SRC='Código em: %s (env: REMOTE_HARNESS_SRC)'
   T_INSTALLER='instalador'
   T_UNSUPPORTED='Sistema não suportado (%s). O Remote Harness roda em macOS e Linux.'
-  T_WINDOWS='No Windows, o Remote Harness roda dentro do WSL2. No PowerShell: irm https://remoteharness.app/install.ps1 | iex'
+  T_WINDOWS='No Windows, o Remote Harness roda dentro do WSL2. No PowerShell: irm https://remoteharness.app/install | iex'
   T_NEED_NODE='É preciso o Node.js %s+: https://nodejs.org (ou `brew install node`, nvm, fnm…).'
   T_NODE_PRIVATE='Node.js %s+ não encontrado: baixando o Node %s só para o Remote Harness em %s (não muda o seu Node).'
   T_NODE_DOWNLOAD_FAILED='Não consegui baixar o Node.js (%s). Instale o Node.js %s+ (https://nodejs.org) e rode de novo.'
@@ -74,7 +77,7 @@ es*)
   T_SRC='Código en: %s (env: REMOTE_HARNESS_SRC)'
   T_INSTALLER='instalador'
   T_UNSUPPORTED='Sistema no compatible (%s). Remote Harness funciona en macOS y Linux.'
-  T_WINDOWS='En Windows, Remote Harness funciona dentro de WSL2. En PowerShell: irm https://remoteharness.app/install.ps1 | iex'
+  T_WINDOWS='En Windows, Remote Harness funciona dentro de WSL2. En PowerShell: irm https://remoteharness.app/install | iex'
   T_NEED_NODE='Necesitas Node.js %s+: https://nodejs.org (o `brew install node`, nvm, fnm…).'
   T_NODE_PRIVATE='No se encontró Node.js %s+: descargando Node %s solo para Remote Harness en %s (no cambia tu Node).'
   T_NODE_DOWNLOAD_FAILED='No se pudo descargar Node.js (%s). Instala Node.js %s+ (https://nodejs.org) y vuelve a ejecutarlo.'
@@ -105,7 +108,7 @@ es*)
   T_SRC='Source in: %s (env: REMOTE_HARNESS_SRC)'
   T_INSTALLER='installer'
   T_UNSUPPORTED='Unsupported system (%s). Remote Harness runs on macOS and Linux.'
-  T_WINDOWS='On Windows, Remote Harness runs inside WSL2. In PowerShell: irm https://remoteharness.app/install.ps1 | iex'
+  T_WINDOWS='On Windows, Remote Harness runs inside WSL2. In PowerShell: irm https://remoteharness.app/install | iex'
   T_NEED_NODE='Node.js %s+ is required: https://nodejs.org (or `brew install node`, nvm, fnm…).'
   T_NODE_PRIVATE='Node.js %s+ not found: downloading Node %s just for Remote Harness into %s (your Node is untouched).'
   T_NODE_DOWNLOAD_FAILED='Could not download Node.js (%s). Install Node.js %s+ (https://nodejs.org) and run this again.'

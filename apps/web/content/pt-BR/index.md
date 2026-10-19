@@ -16,6 +16,6 @@ O Remote Harness permite acompanhar e comandar, pelo celular, sessões do Claude
 
 ## Começo rápido
 
-1. No computador: `curl -fsSL https://remoteharness.app/install.sh | bash` (Windows: `irm https://remoteharness.app/install.ps1 | iex` no PowerShell).
+1. No computador: `curl -fsSL https://remoteharness.app/install | bash` (Windows: `irm https://remoteharness.app/install | iex` no PowerShell).
 2. Instale o app e o Tailscale no celular e escaneie o QR code que a instalação mostra no fim.
 3. Rode o seu alias (por exemplo `trabalho`) em vez de `claude`. A sessão aparece no celular, totalmente controlável.

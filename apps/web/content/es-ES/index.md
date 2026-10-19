@@ -16,6 +16,6 @@ Remote Harness te permite seguir y dirigir desde el móvil sesiones de Claude Co
 
 ## Inicio rápido
 
-1. En el ordenador: `curl -fsSL https://remoteharness.app/install.sh | bash` (Windows: `irm https://remoteharness.app/install.ps1 | iex` en PowerShell).
+1. En el ordenador: `curl -fsSL https://remoteharness.app/install | bash` (Windows: `irm https://remoteharness.app/install | iex` en PowerShell).
 2. Instala la app y Tailscale en el móvil y escanea el código QR que la instalación muestra al final.
 3. Ejecuta tu alias (por ejemplo `trabajo`) en vez de `claude`. La sesión aparece en el móvil, totalmente controlable.

@@ -290,6 +290,22 @@ export const esES: WebMessages = {
     applies: 'Válido para {{version}}',
     fallback: 'Esta página aún no está traducida; aquí tienes la versión en inglés.',
   },
+  installPage: {
+    title: 'Instalar Remote Harness',
+    description:
+      'Un comando instala Remote Harness en macOS, Linux o Windows (WSL2): comprueba el sistema, compila el daemon y abre la configuración guiada.',
+    eyebrow: 'Instalar',
+    heading: 'Una línea en una terminal de tu ordenador.',
+    lead: 'La misma dirección sirve para todos: curl y wget reciben el script de macOS · Linux, PowerShell recibe el de Windows y el navegador recibe esta página.',
+    unix: 'macOS · Linux · WSL',
+    windows: 'Windows (PowerShell)',
+    detected: 'Para tu sistema',
+    others: 'Otros sistemas',
+    phone:
+      'Ejecútalo en una terminal del ordenador en el que se ejecuta tu agente de código, no en el móvil.',
+    version: 'Instalando `{{ref}}` en lugar de la última versión.',
+    next: 'Paso a paso, con qué hacer después de la configuración: [primeros pasos]({{docs}}).',
+  },
   notFound: {
     title: 'Página no encontrada',
     body: 'No hay nada en esta dirección. La página de inicio explica la app; el repositorio tiene el código y la documentación.',

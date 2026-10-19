@@ -16,6 +16,6 @@ Remote Harness lets you follow and drive Claude Code sessions that run in tmux o
 
 ## Quick start
 
-1. On the computer: `curl -fsSL https://remoteharness.app/install.sh | bash` (Windows: `irm https://remoteharness.app/install.ps1 | iex` in PowerShell).
+1. On the computer: `curl -fsSL https://remoteharness.app/install | bash` (Windows: `irm https://remoteharness.app/install | iex` in PowerShell).
 2. Install the app and Tailscale on the phone, then scan the QR code the setup shows at the end.
 3. Run your alias (for example `work`) instead of `claude`. The session appears on the phone, fully controllable.

@@ -101,8 +101,8 @@ const enUS = {
       },
       install: {
         title: 'Remote Harness on the computer',
-        body: 'In a terminal on the computer, run the installer. It checks the prerequisites, asks which Claude Code accounts you want to control (or creates a new one, with login) and the command (alias) for each.',
-        action: 'Send the command to the computer',
+        body: 'In a terminal on the computer, run the installer (on Windows, in PowerShell: `{{windows}}`). It checks the prerequisites, asks which Claude Code accounts you want to control (or creates a new one, with login) and the command (alias) for each.',
+        action: 'Send the install link to the computer',
       },
       pair: {
         title: 'Pair',

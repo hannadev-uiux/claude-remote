@@ -13,10 +13,12 @@ applies: 0.7+
 
 ## Instalar en el ordenador
 
+Una dirección para todos los sistemas: `https://remoteharness.app/install` entrega a curl el script de macOS / Linux y a PowerShell el de Windows. Abierta en el navegador del ordenador, muestra el comando correcto con un botón de copiar. Añade `?ref=<rama|tag>` para otra versión, por ejemplo `curl -fsSL "https://remoteharness.app/install?ref=development" | bash`.
+
 ### macOS y Linux
 
 ```bash
-curl -fsSL https://remoteharness.app/install.sh | bash
+curl -fsSL https://remoteharness.app/install | bash
 ```
 
 El instalador comprueba el sistema y Node, instala las herramientas que faltan (Homebrew en macOS; apt, dnf, pacman o zypper en Linux, con `sudo` tras explicar el motivo), deja el código en `~/.remote-harness/src`, compila el daemon y abre la instalación guiada (`remote-harness setup`), que:
@@ -33,10 +35,10 @@ Opciones: `bash -s -- --yes` se salta las preguntas, `bash -s -- --ref <rama|eti
 Remote Harness controla Claude Code a través de tmux, así que en Windows se ejecuta dentro de WSL2, donde Claude Code también funciona mejor. En PowerShell:
 
 ```powershell
-irm https://remoteharness.app/install.ps1 | iex
+irm https://remoteharness.app/install | iex
 ```
 
-El script comprueba Windows 10 2004+ o Windows 11, instala WSL2 con Ubuntu cuando falta (Windows pide permiso de administrador; reinicia si lo pide y vuelve a ejecutar el mismo comando), ayuda a crear el usuario de Linux y ejecuta el instalador de Linux dentro de la distribución. Node y Claude Code deben estar instalados dentro de WSL, no solo en Windows. Opciones: `& ([scriptblock]::Create((irm https://remoteharness.app/install.ps1))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
+El script comprueba Windows 10 2004+ o Windows 11, instala WSL2 con Ubuntu cuando falta (Windows pide permiso de administrador; reinicia si lo pide y vuelve a ejecutar el mismo comando), ayuda a crear el usuario de Linux y ejecuta el instalador de Linux dentro de la distribución. Node y Claude Code deben estar instalados dentro de WSL, no solo en Windows. Opciones: `& ([scriptblock]::Create((irm https://remoteharness.app/install))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
 
 systemd, el inicio al iniciar sesión y Tailscale dentro de WSL están en [Resolución de problemas](/es/docs/troubleshooting/#windows-wsl2).
 

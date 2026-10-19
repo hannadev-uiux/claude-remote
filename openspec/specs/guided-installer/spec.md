@@ -52,18 +52,22 @@ Installs and configures Remote Harness on the Mac with a single command and a gu
 - **THEN** its launcher and hooks are removed
 
 ### Requirement: Installer redirect
-`https://remoteharness.app/install.sh` SHALL temporarily redirect to the `install.sh` on the `main` branch on GitHub.
+`https://remoteharness.app/install` SHALL deliver `install.sh` to curl and wget (macOS, Linux, WSL), and `install.sh` started from Git Bash, MSYS or Cygwin on Windows MUST stop with a message that shows `irm https://remoteharness.app/install | iex`.
 
 #### Scenario: curl
-- **WHEN** `curl -fsSL https://remoteharness.app/install.sh` is run
+- **WHEN** `curl -fsSL https://remoteharness.app/install` is run
 - **THEN** the script content is downloaded
 
+#### Scenario: Git Bash on Windows
+- **WHEN** the user runs `curl -fsSL https://remoteharness.app/install | bash` in Git Bash
+- **THEN** the installer stops and prints the PowerShell command
+
 ### Requirement: Tutorial in the app
-The pairing screen SHALL offer a step-by-step guide for those who installed the app before setting up the Mac: install Tailscale on the iPhone (App Store link) and on the Mac with the same account, install Remote Harness on the Mac with the one-line command (which can be shared, for example via AirDrop), and pair via the QR code.
+The pairing screen SHALL offer a step-by-step guide for those who installed the app before setting up the computer: install Tailscale on the phone (store link) and on the computer with the same account, install Remote Harness on the computer with the one-line command `curl -fsSL https://remoteharness.app/install | bash` (the Windows command `irm https://remoteharness.app/install | iex` is named in the step), with a share action that sends `https://remoteharness.app/install` (which shows the right command for the computer that opens it), and pair via the QR code.
 
 #### Scenario: App installed first
-- **WHEN** the user opens the app without pairing and taps "First time? Set up your Mac"
-- **THEN** they see the steps in order, with the install command ready to share and a shortcut back to the QR scanner
+- **WHEN** the user opens the app without pairing and taps "First time? Set up your computer"
+- **THEN** they see the steps in order, with the install command and the install link ready to share and a shortcut back to the QR scanner
 
 ### Requirement: Update command
 `remote-harness update [--ref <ref>] [--force]` SHALL update an installation made by the installer: fetch the ref (default `main`) into `~/.remote-harness/src`, run the new `install.sh --update` (checks, dependencies and build without the wizard), refresh launchers, shortcut, PATH and hooks idempotently, restart the background service only when it is installed, and print the old and new version. It MUST NOT ask setup questions or show the pairing code, MUST refuse a checkout other than the installer's or one with local changes, and SHALL say when the installation is already up to date.

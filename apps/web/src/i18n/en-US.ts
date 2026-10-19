@@ -283,6 +283,21 @@ export const enUS = {
     applies: 'Applies to {{version}}',
     fallback: 'This page is not translated yet; here is the English version.',
   },
+  installPage: {
+    title: 'Install Remote Harness',
+    description:
+      'One command installs Remote Harness on macOS, Linux or Windows (WSL2): it checks the system, builds the daemon and opens the guided setup.',
+    eyebrow: 'Install',
+    heading: 'One line in a terminal on your computer.',
+    lead: 'The same address works everywhere: curl and wget get the macOS · Linux script, PowerShell gets the Windows one, and a browser gets this page.',
+    unix: 'macOS · Linux · WSL',
+    windows: 'Windows (PowerShell)',
+    detected: 'For your system',
+    others: 'Other systems',
+    phone: 'Run it in a terminal on the computer where your coding agent runs, not on the phone.',
+    version: 'Installing `{{ref}}` instead of the latest release.',
+    next: 'Step by step, with what to do after the setup: [getting started]({{docs}}).',
+  },
   notFound: {
     title: 'Page not found',
     body: 'There is nothing at this address. The landing page explains the app; the repository has the code and the docs.',
