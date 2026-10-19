@@ -27,7 +27,9 @@ The daemon binds only to a 100.x address. If `doctor` says there is none: instal
 
 ## The computer sleeps or locks
 
-The daemon only works while the computer is awake. On a MacBook, keep it plugged in and disable sleep while connected to power, or use `caffeinate`; on Linux check the power settings. Locking the screen is fine. Sessions in tmux survive a disconnection of the app and reconnect when it returns.
+The daemon only works while the computer is awake. Locking the screen is fine. By default the background service keeps the computer from idle-sleeping while a session is running or waiting, and for 10 minutes after; the display still turns off and the screen still locks. Change it with `remote-harness keep-awake off`, `sessions` or `always`; `doctor` shows whether it is holding. A laptop still sleeps when the lid closes, unless it is on power with an external display. When the app says the computer is not answering, it is probably asleep: wake it and the app reconnects by itself. Sessions in tmux survive a disconnection of the app.
+
+The app cannot wake a sleeping computer: Wake-on-LAN packets do not cross Tailscale. If the computer supports Wake-on-LAN (usually over Ethernet) and another device on the same network stays on and is in your tailnet (a Raspberry Pi, a NAS, a router with WoL), you can wake it from there, for example `ssh pi@raspberrypi wakeonlan AA:BB:CC:DD:EE:FF` with the computer's MAC address.
 
 ## macOS asks for folder access
 

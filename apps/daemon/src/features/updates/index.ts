@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import type { PermissionRequestInfo, Profile } from '@remote-harness/protocol'
+import type { DaemonUpdateBlocker, PermissionRequestInfo, Profile } from '@remote-harness/protocol'
 import { effectiveLocale, loadConfig, updateConfigFile } from '../../core/config.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
 import { hostName, paths, shortenHome } from '../../core/paths.ts'
@@ -9,7 +9,7 @@ import { currentWsl, resolvePlatform } from '../../infra/platform.ts'
 import { spawnJsonLines, trayAssetsDir, trayCommand } from '../../infra/tray-helper.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { SessionStore } from '../sessions/store.ts'
-import { installerSourceDir, SourceUpdater, updateSource } from '../update/update.ts'
+import { installerSourceDir, SourceUpdater, type UpdateSource, updateSource } from '../update/update.ts'
 import { isQuietMoment, isUpdateChannel, underServiceManager, updateLabel } from './channel.ts'
 import { type AvailableUpdate, UpdateChecker } from './checker.ts'
 import {
@@ -21,6 +21,7 @@ import {
   type TrayPending,
   type TraySession,
 } from './menu.ts'
+import { RemoteUpdates } from './remote.ts'
 import { TrayHost } from './tray-host.ts'
 
 /** Given only to the service daemon (`start` without `--dev`). */
@@ -187,9 +188,10 @@ export async function registerUpdatesFeature(
     refreshTimer.unref()
   }
 
-  const runUpdate = () => {
+  /** Starts the detached `remote-harness update`; false when it cannot (nothing available, running). */
+  const launch = (onFailure: (code: number | null) => void): boolean => {
     const available = checker?.state.available
-    if (updating || !source.ok || !deps.options.cliPath || !available) return
+    if (updating || !source.ok || !deps.options.cliPath || !available) return false
     updating = true
     ctx.logger.info({ version: available.version, channel: settings.update.channel }, 'updating')
     void desktop.notify(m.updating(updateLabel(available, DAEMON_VERSION)), '')
@@ -207,14 +209,24 @@ export async function registerUpdatesFeature(
           updating = false
           failedCommit = available.commit
           refreshMenu()
+          onFailure(code)
         },
       })
     } catch (error) {
       ctx.logger.warn({ err: error }, 'could not start the update')
       updating = false
       failedCommit = available.commit
+      refreshMenu()
+      return false
     }
     refreshMenu()
+    return true
+  }
+
+  /** The tray's "Update now" and automatic updates take the same recorded path as the app. */
+  const runUpdate = () => {
+    if (updating || !checker?.state.available) return
+    void remote.begin()
   }
 
   /** Automatic updates restart the daemon: only when nobody is waiting on Claude, never a downgrade. */
@@ -229,8 +241,10 @@ export async function registerUpdatesFeature(
     if (!checker) return checker
     const pending = checker.check(settings.update.channel, force)
     refreshMenu()
+    remote.broadcast()
     await pending
     refreshMenu()
+    remote.broadcast()
     maybeAutoUpdate()
     return checker
   }
@@ -240,6 +254,7 @@ export async function registerUpdatesFeature(
     const channelChanged = config.update.channel !== settings.update.channel
     settings = { update: config.update, tray: config.tray }
     refreshMenu()
+    remote.broadcast()
     if (channelChanged) await check(true)
     else maybeAutoUpdate()
   }
@@ -248,6 +263,23 @@ export async function registerUpdatesFeature(
     await updateConfigFile({ update: { ...settings.update, ...patch } })
     await reload()
   }
+
+  const remote = new RemoteUpdates({
+    hub: ctx.hub,
+    router: ctx.router,
+    logger: ctx.logger,
+    runPath: paths.updateRun(),
+    current: DAEMON_VERSION,
+    blocked: updateBlocker(source, underServiceManager()),
+    channel: () => settings.update.channel,
+    checker: () => (checker ? { state: checker.state, checking: checker.checking } : null),
+    busy: () => !isQuietMoment(deps.store.all(), deps.hasPendingPermission),
+    check: (force) => check(force),
+    saveChannel: (channel) => saveUpdateSettings({ channel }),
+    launch,
+  })
+  await remote.load()
+  remote.register()
 
   const focusSession = async (sessionId: string) => {
     const session = deps.store.get(sessionId)
@@ -317,6 +349,38 @@ export async function registerUpdatesFeature(
     clearInterval(tick)
     clearTimeout(refreshTimer)
     tray?.stop()
+    remote.stop()
   })
-  return { checker, tray }
+  return { checker, tray, channel: () => settings.update.channel }
+}
+
+/** Why this daemon cannot update itself, or null. */
+export function updateBlocker(source: UpdateSource, serviceManaged: boolean): DaemonUpdateBlocker | null {
+  if (!source.ok) return source.reason
+  return serviceManaged ? null : 'no-service'
+}
+
+/**
+ * Development and foreground daemons cannot restart themselves: they answer the update messages
+ * with the blocker so the app shows the terminal command.
+ */
+export async function registerBlockedRemoteUpdates(ctx: DaemonContext): Promise<RemoteUpdates> {
+  const remote = new RemoteUpdates({
+    hub: ctx.hub,
+    router: ctx.router,
+    logger: ctx.logger,
+    runPath: paths.updateRun(),
+    current: DAEMON_VERSION,
+    blocked: 'no-service',
+    channel: () => ctx.config.update.channel,
+    checker: () => null,
+    busy: () => false,
+    check: async () => undefined,
+    saveChannel: async () => undefined,
+    launch: () => false,
+  })
+  await remote.load()
+  remote.register()
+  ctx.onStop(() => remote.stop())
+  return remote
 }

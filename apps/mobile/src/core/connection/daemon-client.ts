@@ -51,6 +51,8 @@ export type DaemonClientOptions = {
   requestTimeoutMs?: number
   minBackoffMs?: number
   maxBackoffMs?: number
+  /** An attempt that has not opened after this long is abandoned and counted as unreachable. */
+  connectTimeoutMs?: number
   clientName?: string
 }
 
@@ -83,6 +85,10 @@ export class DaemonClient {
   private seq = 0
   private attempt = 0
   private retryTimer: ReturnType<typeof setTimeout> | null = null
+  private connectTimer: ReturnType<typeof setTimeout> | null = null
+  private _unreachable = false
+  /** `unreachable` as of the last status notification (a flip alone notifies the listeners). */
+  private notifiedUnreachable = false
   private stopped = false
   private _status: ConnectionStatus = 'idle'
   private _hello: Hello | null = null
@@ -100,6 +106,14 @@ export class DaemonClient {
 
   get lastError(): string | undefined {
     return this._lastError
+  }
+
+  /**
+   * The last attempt got no answer at all (timed out): the computer is likely asleep or offline.
+   * A refused or failed-at-once attempt clears it, as does a successful open.
+   */
+  get unreachable(): boolean {
+    return this._unreachable
   }
 
   connect(): void {
@@ -120,6 +134,7 @@ export class DaemonClient {
   close(): void {
     this.stopped = true
     this.clearRetry()
+    this.clearConnectTimer()
     const socket = this.socket
     this.socket = null
     if (socket) {
@@ -197,7 +212,8 @@ export class DaemonClient {
 
   private setStatus(status: ConnectionStatus, error?: string): void {
     this._lastError = error
-    if (this._status === status && !error) return
+    if (this._status === status && !error && this._unreachable === this.notifiedUnreachable) return
+    this.notifiedUnreachable = this._unreachable
     this._status = status
     for (const listener of this.statusListeners) listener(status, error)
   }
@@ -214,7 +230,22 @@ export class DaemonClient {
       return
     }
     this.socket = socket
+    this.clearConnectTimer()
+    this.connectTimer = setTimeout(() => {
+      this.connectTimer = null
+      if (this.socket !== socket) return
+      // No answer at all: drop this attempt instead of waiting for the OS timeout.
+      this.socket = null
+      socket.onopen = null
+      socket.onclose = null
+      socket.close()
+      this._unreachable = true
+      this.failPending('disconnected')
+      this.scheduleReconnect('unreachable')
+    }, this.options.connectTimeoutMs ?? 10_000)
     socket.onopen = () => {
+      this.clearConnectTimer()
+      this._unreachable = false
       this.setStatus('authenticating')
       this.sendRequest({
         type: 'auth',
@@ -245,6 +276,9 @@ export class DaemonClient {
     socket.onclose = (event) => {
       if (this.socket !== socket) return
       this.socket = null
+      // Closed before opening, within the timeout: something answered (refused, no network).
+      if (this.connectTimer) this._unreachable = false
+      this.clearConnectTimer()
       this.failPending('disconnected')
       if (FATAL_CLOSE_CODES.has(event.code)) {
         this.stopped = true
@@ -300,5 +334,10 @@ export class DaemonClient {
   private clearRetry(): void {
     if (this.retryTimer) clearTimeout(this.retryTimer)
     this.retryTimer = null
+  }
+
+  private clearConnectTimer(): void {
+    if (this.connectTimer) clearTimeout(this.connectTimer)
+    this.connectTimer = null
   }
 }

@@ -9,6 +9,8 @@ type ConnectionState = {
   client: DaemonClient | null
   status: ConnectionStatus
   error: string | undefined
+  /** The last attempt got no answer: the computer may be asleep or offline. */
+  unreachable: boolean
   hello: Hello | null
   /** Starts (or restarts) the connection for the given credentials; null disconnects. */
   setCredentials(credentials: Credentials | null): void
@@ -21,6 +23,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   client: null,
   status: 'idle',
   error: undefined,
+  unreachable: false,
   hello: null,
   setCredentials(credentials) {
     get().client?.close()
@@ -32,11 +35,12 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         status: 'idle',
         hello: null,
         error: undefined,
+        unreachable: false,
       })
       return
     }
     const client = new DaemonClient({ ...credentials, clientName: 'claude-remote-ios' })
-    client.onStatus((status, error) => set({ status, error }))
+    client.onStatus((status, error) => set({ status, error, unreachable: client.unreachable }))
     client.onReady((hello) => set({ hello }))
     set({
       credentials,
@@ -45,6 +49,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       status: client.status,
       hello: null,
       error: undefined,
+      unreachable: false,
     })
     client.connect()
   },

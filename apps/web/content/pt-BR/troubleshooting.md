@@ -27,7 +27,9 @@ O daemon só escuta num endereço 100.x. Se o `doctor` disser que não há nenhu
 
 ## O computador suspende ou bloqueia
 
-O daemon só funciona com o computador acordado. Num MacBook, deixe na tomada e desative a suspensão com energia ligada, ou use `caffeinate`; no Linux confira os ajustes de energia. Bloquear a tela não atrapalha. As sessões no tmux sobrevivem a uma desconexão do app e reconectam quando ele volta.
+O daemon só funciona com o computador acordado. Bloquear a tela não atrapalha. Por padrão, o serviço em segundo plano impede a suspensão por inatividade enquanto uma sessão está rodando ou esperando, e por 10 minutos depois; a tela continua apagando e bloqueando. Mude com `remote-harness keep-awake off`, `sessions` ou `always`; o `doctor` mostra se está segurando. Um notebook ainda suspende ao fechar a tampa, a não ser na tomada e com monitor externo. Quando o app diz que o computador não responde, ele provavelmente está dormindo: acorde-o e o app reconecta sozinho. As sessões no tmux sobrevivem a uma desconexão do app.
+
+O app não consegue acordar um computador dormindo: os pacotes de Wake-on-LAN não atravessam o Tailscale. Se o computador aceita Wake-on-LAN (em geral pelo cabo de rede) e outro aparelho da mesma rede fica sempre ligado e está no seu tailnet (um Raspberry Pi, um NAS, um roteador com WoL), dá para acordá-lo por ele, por exemplo `ssh pi@raspberrypi wakeonlan AA:BB:CC:DD:EE:FF` com o endereço MAC do computador.
 
 ## O macOS pede acesso a pastas
 

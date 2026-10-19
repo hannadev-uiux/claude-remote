@@ -53,6 +53,21 @@ export const esES = {
       saved: (id: string, store: string) =>
         `Clave del perfil ${id} guardada ${store}. Las sesiones nuevas del perfil la usan.`,
     },
+    keepAwake: {
+      description: 'muestra o define cuándo el ordenador se mantiene despierto: off, sessions o always',
+      modes: {
+        off: 'desactivado',
+        sessions: 'mientras hay sesiones activas (y 10 min después)',
+        always: 'siempre, mientras el daemon funciona',
+      },
+      current: (mode: string) => `mantener despierto: ${mode}`,
+      holding: 'manteniendo el ordenador despierto ahora',
+      notHolding: 'sin mantenerlo ahora',
+      unavailable: (reason: string) => `el auxiliar de energía no está disponible: ${reason}`,
+      invalid: (value: string, valid: string) => `"${value}" no es un modo; usa uno de: ${valid}`,
+      applied: 'aplicado al daemon en ejecución',
+      notRunning: 'el daemon no está en ejecución; se aplica en el próximo inicio',
+    },
     doctor: {
       description: 'comprueba las dependencias y la configuración',
       notOnPath: 'no se encuentra en el PATH',
@@ -80,6 +95,11 @@ export const esES = {
         'consejo: para no recibir una solicitud por carpeta, añade "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Acceso total al disco',
       linger: 'lingering (el servicio sigue en marcha tras cerrar sesión)',
       lingerHint: 'ejecuta `loginctl enable-linger $USER`',
+      keepAwake: (mode: string, state: string) => `mantener despierto: ${mode} (${state})`,
+      keepAwakeHeld: 'activo ahora',
+      keepAwakeIdle: 'no hace falta ahora',
+      keepAwakeFailed: (reason: string) => `el auxiliar de energía falló: ${reason}`,
+      lidNote: 'en un portátil, cerrar la tapa sigue suspendiendo, salvo enchufado y con monitor externo',
       devices: (platforms: string) => `móviles registrados para push: ${platforms}`,
       noDevices: 'ningún móvil registrado para push',
       noDevicesHint: 'abre la app y permite las notificaciones',
@@ -132,6 +152,9 @@ export const esES = {
       dirty: (dir: string) => `${dir} tiene cambios locales. Haz commit o descártalos y vuelve a ejecutarlo.`,
       fetchFailed: (error: string) => `No pude descargar la versión nueva: ${error}`,
       checkoutFailed: 'No pude cambiar a la versión nueva.',
+      rolledBack: (version: string) =>
+        `Volví a la ${version} y la recompilé: el ordenador queda como estaba.`,
+      rollBackFailed: 'No pude volver a la versión anterior: ejecuta `remote-harness update` de nuevo.',
       upToDate: (version: string, commit: string) => `Ya está actualizado (${version}, ${commit}).`,
       available: (version: string, commit: string) => `Versión nueva: ${version} (${commit})`,
       failed:
@@ -369,6 +392,9 @@ export const esES = {
     mirroredAlready: (path: string) => `networkingMode=mirrored ya estaba en ${path}`,
     mirroredNoConfig:
       '  No se encontró %UserProfile%\\.wslconfig (¿la interoperabilidad con Windows está desactivada?). Añade [wsl2] networkingMode=mirrored a mano.',
+  },
+  power: {
+    why: 'Hay sesiones de Remote Harness en ejecución',
   },
   bundle: {
     folderAccess:

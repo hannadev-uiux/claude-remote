@@ -59,6 +59,9 @@ const clientSamples: ClientMessage[] = [
   { type: 'queue.sendNow', id: '1', sessionId: 's', itemId: 'q1' },
   { type: 'queue.flush', id: '1', sessionId: 's' },
   { type: 'pane.focus', id: '1', sessionId: 's' },
+  { type: 'daemon.update.check', id: '1' },
+  { type: 'daemon.update.check', id: '1', channel: 'development', force: true },
+  { type: 'daemon.update.start', id: '1', channel: 'main' },
   {
     type: 'device.register',
     id: '1',
@@ -266,6 +269,43 @@ const serverSamples: ServerMessage[] = [
   },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
   {
+    type: 'daemon.update.info',
+    replyTo: '1',
+    info: {
+      current: '0.12.0',
+      channel: 'main',
+      checkedAt: '2026-10-19T10:00:00.000Z',
+      checking: false,
+      available: { version: '0.13.0', commit: 'abc1234', downgrade: false },
+      blocked: null,
+      busy: true,
+      run: {
+        channel: 'main',
+        from: '0.12.0',
+        to: '0.13.0',
+        commit: 'abc1234',
+        step: 'failed',
+        error: 'build failed',
+        rolledBack: true,
+        startedAt: '2026-10-19T10:01:00.000Z',
+        finishedAt: '2026-10-19T10:03:00.000Z',
+      },
+    },
+  },
+  {
+    type: 'daemon.update.info',
+    info: {
+      current: '0.12.0',
+      channel: 'development',
+      checkedAt: null,
+      checking: true,
+      available: null,
+      blocked: 'not-installer',
+      busy: false,
+      run: null,
+    },
+  },
+  {
     type: 'limits.updated',
     limits: {
       profileId: 'claudin',
@@ -442,6 +482,14 @@ describe('client messages', () => {
       ok: false,
       error: { code: 'bad_request' },
     })
+  })
+
+  test('daemon.update.start needs a known channel', () => {
+    expect(parseClientMessage({ type: 'daemon.update.start', id: '1', channel: 'beta' })).toMatchObject({
+      ok: false,
+      error: { code: 'bad_request' },
+    })
+    expect(parseClientMessage({ type: 'daemon.update.start', id: '1' })).toMatchObject({ ok: false })
   })
 })
 
