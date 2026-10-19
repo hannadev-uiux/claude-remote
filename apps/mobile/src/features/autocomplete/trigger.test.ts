@@ -1,6 +1,13 @@
 import type { CommandItem } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
-import { applySuggestion, filterCommands, findTrigger, isInteractiveCommand, triggerKey } from './trigger'
+import {
+  applySuggestion,
+  filterCommands,
+  findTrigger,
+  insertTrigger,
+  isInteractiveCommand,
+  triggerKey,
+} from './trigger'
 
 describe('triggerKey', () => {
   test('stays the same while typing the same token and changes for a new one', () => {
@@ -64,5 +71,25 @@ describe('commands', () => {
     expect(isInteractiveCommand('/model', commands)).toBe(true)
     expect(isInteractiveCommand('/compact agora', commands)).toBe(false)
     expect(isInteractiveCommand('oi', commands)).toBe(false)
+  })
+})
+
+describe('insertTrigger', () => {
+  test('@ goes at the cursor, after a space when needed, and opens file suggestions', () => {
+    const next = insertTrigger('read', 4, '@')
+    expect(next).toEqual({ text: 'read @', cursor: 6 })
+    expect(next && findTrigger(next.text, next.cursor)).toMatchObject({ kind: 'file', query: '' })
+    expect(insertTrigger('read ', 5, '@')).toEqual({ text: 'read @', cursor: 6 })
+    expect(insertTrigger('', 0, '@')).toEqual({ text: '@', cursor: 1 })
+    expect(insertTrigger('a\nb', 2, '@')).toEqual({ text: 'a\n@b', cursor: 3 })
+    expect(insertTrigger('ab', 1, '@')).toEqual({ text: 'a @b', cursor: 3 })
+    expect(insertTrigger('ab', 99, '@')).toEqual({ text: 'ab @', cursor: 4 })
+  })
+
+  test('/ only starts a blank prompt', () => {
+    const next = insertTrigger('  ', 2, '/')
+    expect(next).toEqual({ text: '/', cursor: 1 })
+    expect(next && findTrigger(next.text, next.cursor)).toMatchObject({ kind: 'command', query: '' })
+    expect(insertTrigger('fix it', 6, '/')).toBeNull()
   })
 })
