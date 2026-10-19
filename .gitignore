@@ -26,3 +26,5 @@ apps/mobile/certs/*key*.pem
 
 # Design annotations (local only)
 .annotations/
+# Store listing texts generated from apps/mobile/store/metadata.ts
+apps/mobile/store/fastlane/

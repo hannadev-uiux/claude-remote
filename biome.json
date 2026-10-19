@@ -9,6 +9,7 @@
       "!**/.docs",
       "!**/*.generated.ts",
       "!**/assets",
+      "!**/store/*.svg",
       "!**/docs/design"
     ]
   },

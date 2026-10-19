@@ -52,6 +52,10 @@ La app avisa cuando el daemon es más antiguo de lo que necesita. Ejecuta `remot
 
 El lanzador se niega a abrir una ventana cuando el perfil no tiene clave e imprime el comando que hay que ejecutar: `remote-harness provider key <perfil>`. `doctor` lista los perfiles con proveedor y si cada uno tiene clave. Las sesiones abiertas conservan la clave con la que empezaron; las nuevas la leen de nuevo.
 
+## Pasar de un development build al build de la tienda
+
+Cuando el build de TestFlight o de Google Play esté disponible, instálalo junto al build que hiciste tú: tiene otra firma, así que empieza vacío. Empareja de nuevo escaneando `remote-harness pair`; el emparejamiento antiguo sigue funcionando hasta que toques **Olvidar esta máquina** en ese build o rotes el token. El push se registra solo en el primer arranque del nuevo build, y el ordenador descarta el registro antiguo cuando deja de conectarse. Después borra el development build.
+
 ## Pedir ayuda
 
 Abre una issue con la salida de `remote-harness doctor`, las versiones (sistema, Node, Claude Code, app) y los registros del daemon de `~/.remote-harness/logs`, tras quitar tokens y contenido de sesiones. Los problemas de seguridad van a [Seguridad y privacidad](/es/docs/security/#informar-de-una-vulnerabilidad), nunca a issues públicas.

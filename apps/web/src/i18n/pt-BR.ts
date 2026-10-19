@@ -263,6 +263,7 @@ export const ptBR: WebMessages = {
     github: 'GitHub',
     releases: 'Releases',
     security: 'Segurança',
+    privacy: 'Privacidade',
     license: 'MIT',
     legal:
       'Remote Harness é um projeto independente, sem afiliação, endosso ou patrocínio da Anthropic ou da OpenAI. “Claude” e “Claude Code” são marcas da Anthropic, PBC; “Codex” é marca da OpenAI. As capturas mostram sessões de demonstração.',
