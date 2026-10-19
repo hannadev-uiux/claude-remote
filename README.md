@@ -275,19 +275,17 @@ Builds are created without an update server, so updates are off. To ship JavaScr
 2. **Build** with the server URL, e.g. in `apps/mobile/.env.local` (git-ignored, read by the build and the publisher):
    ```dotenv
    REMOTE_HARNESS_UPDATES_URL=https://remoteharness.app/api/updates/manifest
-   # Optional: prefix of the asset URLs signed into each update, for a server that only accepts its own address
-   REMOTE_HARNESS_UPDATES_ASSETS_URL=https://maarkn.dev/api/claude-remote/updates/assets/
    ```
-   `remoteharness.app/api/updates/*` is a Cloudflare Worker (`apps/web`) that forwards to the update server, so the server can move without new builds.
-   A custom URL without `certs/certificate.pem` is refused. The URL is part of the runtime version: builds made with the old `https://maarkn.dev/api/claude-remote/updates/manifest` only receive updates published with that URL, so publish once more with it until those builds are replaced. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
+   The server is the Cloudflare Worker in `apps/web`, with the update files in R2 (`remote-harness-updates`); it implements the protocol itself and never holds the signing key. Asset URLs signed into each update default to `<updates base>/assets/`; `REMOTE_HARNESS_UPDATES_ASSETS_URL` changes that prefix for another server.
+   A custom URL without `certs/certificate.pem` is refused. The URL is part of the runtime version, so it never changes for installed builds. Builds made before the rename with `https://maarkn.dev/api/claude-remote/updates/manifest` are answered by that old server until they are replaced. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
 3. **Publish** a JavaScript change:
    ```bash
    REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/.remote-harness-keys/private-key.pem \
      pnpm --filter @remote-harness/mobile ota:publish          # --platform ios|android, --dry-run
    ```
-   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the server's `REMOTE_HARNESS_UPDATES_TOKEN`.
+   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is the Worker's `UPDATES_TOKEN` secret (`cf workers secrets put UPDATES_TOKEN` in `apps/web`).
 
-**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the server's `REMOTE_HARNESS_UPDATES_DEV_TOKEN`, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
+**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the Worker's `UPDATES_DEV_TOKEN` secret, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
 
 The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 

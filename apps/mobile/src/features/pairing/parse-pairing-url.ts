@@ -17,10 +17,13 @@ export function parseCredentials(input: {
   return parsed.success ? parsed.data : null
 }
 
-/** Parses `claude-remote://pair?host=…&port=…&token=…` as printed by `remote-harness pair`. */
+/**
+ * Parses `remoteharness://pair?host=…&port=…&token=…`, or the same link with the `claude-remote://`
+ * scheme that `remote-harness pair` prints (and older QR codes carry).
+ */
 export function parsePairingUrl(raw: string): Credentials | null {
   const text = raw.trim()
-  const match = /^claude-remote:\/\/pair\/?\?(.*)$/i.exec(text)
+  const match = /^(?:remoteharness|claude-remote):\/\/pair\/?\?(.*)$/i.exec(text)
   if (!match?.[1]) return null
   const params = new URLSearchParams(match[1])
   return parseCredentials({

@@ -3,9 +3,9 @@ import { LOCALE_PATHS, WEB_LOCALES } from './i18n/locale.ts'
 
 export const SITE_URL = 'https://remoteharness.app'
 export const REPO_URL = 'https://github.com/maarkN/remote-harness'
-export const RAW_MAIN_URL = 'https://raw.githubusercontent.com/maarkN/remote-harness/main'
-/** Brand image for link previews; served from the repository until the Worker has static assets. */
-export const OG_IMAGE_URL = `${RAW_MAIN_URL}/docs/brand/og.png`
+/** Brand image for link previews (`docs/brand/og.png`), bundled into the Worker and served here. */
+export const OG_IMAGE_PATH = '/og.png'
+export const OG_IMAGE_URL = `${SITE_URL}${OG_IMAGE_PATH}`
 
 /** The mark ("the Tether"), regular weight: the same paths as `docs/design/identity/shared.js`. */
 export const MARK_REGULAR =

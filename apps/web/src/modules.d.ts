@@ -13,3 +13,8 @@ declare module '*.ps1?raw' {
   const content: string
   export default content
 }
+/** Images inlined by Vite as a `data:` URL (the link preview image). */
+declare module '*.png?inline' {
+  const content: string
+  export default content
+}
