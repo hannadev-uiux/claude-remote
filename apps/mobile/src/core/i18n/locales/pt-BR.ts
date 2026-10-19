@@ -614,6 +614,14 @@ const ptBR = {
       ended: 'encerrada',
     },
   },
+  drafts: {
+    label: 'Rascunho:',
+    photos_one: '{{count}} foto',
+    photos_other: '{{count}} fotos',
+    rowLabel: 'Rascunho: {{preview}}',
+    imagesLost_one: 'Não foi possível restaurar a foto do rascunho.',
+    imagesLost_other: 'Não foi possível restaurar as {{count}} fotos do rascunho.',
+  },
   queue: {
     count: 'NA FILA · {{count}}',
     sendAll: 'Enviar tudo agora',

@@ -1,12 +1,15 @@
 import type { Profile, Session } from '@remote-harness/protocol'
 import { router } from 'expo-router'
-import { BellOff, ChevronRight, Pin } from 'lucide-react-native'
+import { BellOff, ChevronRight, Pencil, Pin } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View } from 'react-native'
+import { useShallow } from 'zustand/react/shallow'
 import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { AgentBadge, Badge, ProfileTag, Text } from '@/ui'
+import { draftSummary } from '../../drafts/logic'
+import { useDraftsStore } from '../../drafts/store'
 import { sessionAgent } from '../agent'
 import { isWorktreePath } from '../summary'
 import { StateBadge } from './StateBadge'
@@ -32,7 +35,7 @@ type Props = {
 
 /**
  * One session: agent badge · title · relative time / folder · branch · worktree · shared checkout /
- * state pill · pending · read-only · profile tag · muted · subagents · background · chevron.
+ * draft (when there is one) / state pill · pending · read-only · profile tag · muted · subagents · background · chevron.
  */
 export const SessionRow = memo(function SessionRow({
   session,
@@ -103,6 +106,7 @@ export const SessionRow = memo(function SessionRow({
           </Text>
         ) : null}
       </View>
+      <DraftLine sessionId={session.id} />
       <View style={styles.meta}>
         <StateBadge state={session.state} />
         {pendingPermissions > 0 ? (
@@ -124,6 +128,27 @@ export const SessionRow = memo(function SessionRow({
     </Pressable>
   )
 })
+
+/** `Draft: <start of the text>` while the session has an unsent prompt on this device. */
+function DraftLine({ sessionId }: { sessionId: string }) {
+  const { t } = useTranslation()
+  const { colors } = useTheme()
+  const styles = useStyles()
+  const summary = useDraftsStore(useShallow((s) => draftSummary(s.drafts[sessionId])))
+  if (!summary) return null
+  const preview = 'text' in summary ? summary.text : t('drafts.photos', { count: summary.photos })
+  return (
+    <View style={styles.line} accessible accessibilityLabel={t('drafts.rowLabel', { preview })}>
+      <Pencil size={11} color={colors.accentText} />
+      <Text size="xs" color="accentText" numberOfLines={1} style={styles.shrink}>
+        {t('drafts.label')}{' '}
+        <Text size="xs" color="textMuted">
+          {preview}
+        </Text>
+      </Text>
+    </View>
+  )
+}
 
 const useStyles = makeStyles((theme) => ({
   row: {

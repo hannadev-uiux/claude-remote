@@ -20,6 +20,8 @@ Open a session to read the conversation as it happens: prompts, the agent's text
 
 Type in the composer and send. While the agent is busy the prompt is queued and delivered in order when the turn ends; the **Queue** card lets you edit, reorder, remove or send an item now. Hold the send button (or press ⌘⏎ with a keyboard) to send immediately, like Ctrl+Enter in the terminal.
 
+What you type is kept as the session's draft: leave the session, open another one or close the app, and it is there when you come back, photos included. The session list marks rows with a draft (**Draft:** and the start of the text). Sending clears it; emptying the field discards it. Drafts stay on the phone and expire after 7 days.
+
 - `@` completes files of the project, `/` completes Claude Code's slash commands.
 - The camera button attaches photos; the microphone dictates on-device (set the language in Settings → Voice).
 - **Show keyboard shortcuts** (menu) adds a key bar with Esc, Ctrl+C, the arrows, Tab and Enter for the agent's own menus.

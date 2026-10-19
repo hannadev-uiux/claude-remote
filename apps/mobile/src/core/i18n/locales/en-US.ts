@@ -616,6 +616,14 @@ const enUS = {
       ended: 'ended',
     },
   },
+  drafts: {
+    label: 'Draft:',
+    photos_one: '{{count}} photo',
+    photos_other: '{{count}} photos',
+    rowLabel: 'Draft: {{preview}}',
+    imagesLost_one: 'The draft photo could not be restored.',
+    imagesLost_other: 'The {{count}} draft photos could not be restored.',
+  },
   queue: {
     count: 'QUEUED · {{count}}',
     sendAll: 'Send all now',

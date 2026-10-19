@@ -14,7 +14,7 @@ Solo los informes de errores que aceptes enviar. No hay cuenta, ni analítica, n
 
 ## Qué se queda en tus dispositivos
 
-- En el móvil: el token de emparejamiento (en el almacenamiento seguro del sistema), las preferencias de la app (tema, idioma, nombre de la máquina, opciones de notificación) y nada de las conversaciones más allá de lo que hay en pantalla.
+- En el móvil: el token de emparejamiento (en el almacenamiento seguro del sistema), las preferencias de la app (tema, idioma, nombre de la máquina, opciones de notificación), los borradores de prompts sin enviar de cada sesión (en el almacenamiento seguro del sistema, nunca enviados a ningún sitio, borrados al enviarlos, a los 7 días o al olvidar la máquina) y nada más de las conversaciones más allá de lo que hay en pantalla.
 - En el ordenador: la configuración del daemon, la lista de sesiones conocidas, sus registros y las claves de proveedor en el almacén seguro del sistema.
 
 Borrar la app y ejecutar `remote-harness uninstall` lo elimina todo.

@@ -20,6 +20,8 @@ Abra uma sessão para ler a conversa enquanto acontece: prompts, o texto do agen
 
 Digite no compositor e envie. Enquanto o agente está ocupado o prompt entra na fila e é entregue em ordem quando o turno termina; o cartão **Fila** deixa editar, reordenar, remover ou enviar um item agora. Segure o botão de enviar (ou pressione ⌘⏎ com um teclado) para enviar na hora, como Ctrl+Enter no terminal.
 
+O que você digita fica como rascunho da sessão: saia da sessão, abra outra ou feche o app, e ele estará lá quando você voltar, com as fotos. A lista de sessões marca as linhas com rascunho (**Rascunho:** e o começo do texto). Enviar limpa o rascunho; esvaziar o campo o descarta. Os rascunhos ficam só no celular e expiram depois de 7 dias.
+
 - `@` completa arquivos do projeto, `/` completa os comandos de barra do Claude Code.
 - O botão da câmera anexa fotos; o microfone dita no aparelho (escolha o idioma em Ajustes → Voz).
 - **Mostrar atalhos de teclado** (menu) acrescenta uma barra com Esc, Ctrl+C, as setas, Tab e Enter para os menus do próprio agente.

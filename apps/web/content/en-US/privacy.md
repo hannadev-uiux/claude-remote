@@ -14,7 +14,7 @@ Only the error reports you agree to send. There is no account, no analytics and 
 
 ## What stays on your devices
 
-- On the phone: the pairing token (in the system's secure storage), the app's preferences (theme, language, machine name, notification and error report choices), the log of the app's own errors, and nothing from the conversations beyond what is on screen.
+- On the phone: the pairing token (in the system's secure storage), the app's preferences (theme, language, machine name, notification and error report choices), the log of the app's own errors, the unsent prompt drafts of each session (in the system's secure storage, never sent anywhere, deleted when sent, after 7 days or when you forget the machine), and nothing else from the conversations beyond what is on screen.
 - On the computer: the daemon's configuration, the list of known sessions, its logs, and the provider keys in the OS secret store.
 
 Deleting the app and running `remote-harness uninstall` remove them.

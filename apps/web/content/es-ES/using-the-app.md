@@ -20,6 +20,8 @@ Abre una sesión para leer la conversación según ocurre: prompts, el texto del
 
 Escribe en el compositor y envía. Mientras el agente está ocupado el prompt entra en la cola y se entrega en orden cuando termina el turno; la tarjeta **Cola** permite editar, reordenar, quitar o enviar ya un elemento. Mantén pulsado el botón de enviar (o pulsa ⌘⏎ con un teclado) para enviarlo al instante, como Ctrl+Enter en el terminal.
 
+Lo que escribes se guarda como borrador de la sesión: sal de la sesión, abre otra o cierra la app, y seguirá ahí cuando vuelvas, con las fotos. La lista de sesiones marca las filas con borrador (**Borrador:** y el comienzo del texto). Enviar lo limpia; vaciar el campo lo descarta. Los borradores se quedan en el móvil y caducan a los 7 días.
+
 - `@` completa archivos del proyecto, `/` completa los comandos de barra de Claude Code.
 - El botón de la cámara adjunta fotos; el micrófono dicta en el dispositivo (elige el idioma en Ajustes → Voz).
 - **Mostrar atajos de teclado** (menú) añade una barra con Esc, Ctrl+C, las flechas, Tab e Intro para los menús del propio agente.
