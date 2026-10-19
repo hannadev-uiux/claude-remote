@@ -53,6 +53,8 @@ type Props = {
    */
   tablet?: boolean
   hints?: KeyboardHint[]
+  /** Inserts `@` or `/` from the keyboard toolbar; without it the toolbar shows no trigger buttons. */
+  onTrigger?: (trigger: '@' | '/') => void
 }
 
 // Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
@@ -65,6 +67,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
   const { colors } = useTheme()
   const styles = useStyles()
   const hasText = props.value.trim().length > 0
+  const placeholder = composerPlaceholder(props.agent ?? null, props.disabled, t)
   const hasAttachments = props.hasAttachments === true
   const canSend = !props.disabled && !props.sending && (hasText || hasAttachments)
   const show = composerActions({
@@ -108,24 +111,37 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
         <Text color="accentText" weight="bold" style={styles.prompt}>
           {'>'}
         </Text>
-        <TextInput
-          ref={ref}
-          value={props.value}
-          onChangeText={props.onChangeText}
-          onSelectionChange={props.onSelectionChange}
-          selection={props.selection}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          editable={!props.disabled}
-          multiline
-          submitBehavior={hardware ? 'submit' : 'newline'}
-          onSubmitEditing={hardware && canSend ? props.onSend : undefined}
-          placeholder={composerPlaceholder(props.agent ?? null, props.disabled, t)}
-          placeholderTextColor={colors.textDim}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.input}
-        />
+        <View style={styles.field}>
+          <TextInput
+            ref={ref}
+            value={props.value}
+            onChangeText={props.onChangeText}
+            onSelectionChange={props.onSelectionChange}
+            selection={props.selection}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            editable={!props.disabled}
+            multiline
+            submitBehavior={hardware ? 'submit' : 'newline'}
+            onSubmitEditing={hardware && canSend ? props.onSend : undefined}
+            accessibilityLabel={placeholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+          />
+          {/* A multiline input wraps its native placeholder; this one stays on one line. */}
+          {props.value ? null : (
+            <Text
+              color="textDim"
+              numberOfLines={1}
+              importantForAccessibility="no"
+              accessibilityElementsHidden
+              style={styles.placeholder}
+            >
+              {placeholder}
+            </Text>
+          )}
+        </View>
         {/* Only swaps animate: the buttons present when the screen opens just appear. */}
         <LayoutAnimationConfig skipEntering>
           {show.attach ? (
@@ -175,6 +191,8 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           onKey={props.onKey}
           keysDisabled={props.keysDisabled}
           canDismiss={toolbar.canDismiss}
+          onTrigger={props.onTrigger}
+          commandEnabled={!hasText}
         />
       ) : null}
     </View>
@@ -189,8 +207,8 @@ const useStyles = makeStyles((theme) => ({
   },
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, padding: space.sm },
   prompt: { paddingBottom: 9 },
+  field: { flex: 1 },
   input: {
-    flex: 1,
     maxHeight: 140,
     minHeight: 36,
     paddingHorizontal: space.sm,
@@ -202,6 +220,14 @@ const useStyles = makeStyles((theme) => ({
     color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
+  },
+  // Over the empty input, where the native placeholder would be (padding + border).
+  placeholder: {
+    position: 'absolute',
+    left: space.sm + 1,
+    right: space.sm + 1,
+    top: 9,
+    pointerEvents: 'none',
   },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   error: { paddingHorizontal: space.md, paddingTop: space.xs },

@@ -2,8 +2,8 @@ import type { Key } from '@remote-harness/protocol'
 import { Command, KeyboardOff } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, Pressable, StyleSheet, View } from 'react-native'
-import { makeStyles, space, useTheme } from '@/core/theme'
-import { IconButton } from '@/ui'
+import { makeStyles, radius, space, useTheme } from '@/core/theme'
+import { IconButton, Text } from '@/ui'
 import { setKeyboardToolbarExpanded, useKeyboardToolbarStore } from '../keyboard-toolbar-store'
 import { KeyBar } from './KeyBar'
 
@@ -16,11 +16,17 @@ export function KeyboardToolbar({
   onKey,
   keysDisabled,
   canDismiss,
+  onTrigger,
+  commandEnabled = true,
 }: {
   onKey: (key: Key) => void
   keysDisabled?: boolean
   /** False with a hardware keyboard: only the system shortcut bar is up. */
   canDismiss: boolean
+  /** Inserts `@` or `/` in the prompt; the buttons show while the keys are collapsed. */
+  onTrigger?: (trigger: '@' | '/') => void
+  /** `/` only starts a blank prompt. */
+  commandEnabled?: boolean
 }) {
   const { t } = useTranslation()
   const { colors } = useTheme()
@@ -38,7 +44,24 @@ export function KeyboardToolbar({
       >
         <Command size={16} color={expanded ? colors.accentText : colors.textMuted} strokeWidth={2} />
       </Pressable>
-      <View style={styles.keys}>{expanded ? <KeyBar onKey={onKey} disabled={keysDisabled} /> : null}</View>
+      <View style={styles.keys}>
+        {expanded ? (
+          <KeyBar onKey={onKey} disabled={keysDisabled} />
+        ) : onTrigger ? (
+          <View style={styles.triggers}>
+            <TriggerButton label={t('conversation.insertTrigger.file')} onPress={() => onTrigger('@')}>
+              @
+            </TriggerButton>
+            <TriggerButton
+              label={t('conversation.insertTrigger.command')}
+              disabled={!commandEnabled}
+              onPress={() => onTrigger('/')}
+            >
+              /
+            </TriggerButton>
+          </View>
+        ) : null}
+      </View>
       {canDismiss ? (
         <IconButton
           icon={KeyboardOff}
@@ -48,6 +71,35 @@ export function KeyboardToolbar({
         />
       ) : null}
     </View>
+  )
+}
+
+function TriggerButton({
+  label,
+  disabled,
+  onPress,
+  children,
+}: {
+  label: string
+  disabled?: boolean
+  onPress: () => void
+  children: string
+}) {
+  const styles = useStyles()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
+      hitSlop={4}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [styles.trigger, pressed && styles.pressed, disabled && styles.disabled]}
+    >
+      <Text color="textMuted" weight="medium">
+        {children}
+      </Text>
+    </Pressable>
   )
 }
 
@@ -71,5 +123,16 @@ const useStyles = makeStyles((theme) => ({
   },
   toggleOn: { backgroundColor: theme.colors.surfaceRaised },
   pressed: { opacity: 0.6 },
+  disabled: { opacity: 0.35 },
   keys: { flex: 1 },
+  triggers: { flexDirection: 'row', gap: space.xs, paddingHorizontal: space.xs },
+  trigger: {
+    minWidth: 36,
+    height: 30,
+    paddingHorizontal: space.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: theme.colors.surfaceRaised,
+  },
 }))

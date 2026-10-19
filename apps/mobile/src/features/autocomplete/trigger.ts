@@ -17,6 +17,23 @@ export function findTrigger(text: string, cursor: number): Trigger | null {
   return null
 }
 
+/**
+ * Inserts a trigger typed from the keyboard toolbar. `@` goes at the cursor, after a space when the
+ * previous character is not whitespace; `/` only starts a blank prompt (commands only count at the
+ * start), so it gives null otherwise.
+ */
+export function insertTrigger(
+  text: string,
+  cursor: number,
+  trigger: '@' | '/',
+): { text: string; cursor: number } | null {
+  if (trigger === '/') return text.trim() ? null : { text: '/', cursor: 1 }
+  const at = Math.min(Math.max(cursor, 0), text.length)
+  const before = text.slice(0, at)
+  const insertion = before && !/\s$/.test(before) ? ' @' : '@'
+  return { text: `${before}${insertion}${text.slice(at)}`, cursor: at + insertion.length }
+}
+
 /** Replaces the trigger token with the chosen suggestion and returns the new text and cursor. */
 export function applySuggestion(
   text: string,
