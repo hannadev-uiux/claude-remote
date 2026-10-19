@@ -45,7 +45,7 @@ import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
 import { DeviceRegistry, describeDevices } from './features/push/devices.ts'
 import { resolvePushMode } from './features/push/mode.ts'
-import { LaunchdService } from './features/service/launchd.ts'
+import { bundleLauncherKind, LaunchdService } from './features/service/launchd.ts'
 import type { ServiceManager } from './features/service/service-manager.ts'
 import { SystemdUserService } from './features/service/systemd.ts'
 import { colorEnabled, createPaint } from './features/setup/banner.ts'
@@ -99,7 +99,12 @@ const wslHost = wsl ? new WslHost(execaExecutor, { wsl }) : undefined
 /** launchd on macOS, systemd user unit on Linux. */
 function serviceManager(): ServiceManager {
   return platform === 'darwin'
-    ? new LaunchdService(execaExecutor, { home: homedir(), appDir: paths.app() })
+    ? new LaunchdService(execaExecutor, {
+        home: homedir(),
+        appDir: paths.app(),
+        legacyAppDir: paths.legacyApp(),
+        buildDir: paths.launcher(),
+      })
     : new SystemdUserService(execaExecutor, { home: homedir(), user: userInfo().username })
 }
 
@@ -395,6 +400,11 @@ program
       d.serviceHint,
     )
     if (status?.loaded && manager.linger) check(await manager.linger.enabled(), d.linger, d.lingerHint)
+    if (status?.loaded && manager.kind === 'launchd') {
+      const native = (await bundleLauncherKind(paths.app())) === 'native'
+      check(native, native ? d.launcherNative : d.launcherScript, d.launcherHint)
+      console.log(`· ${d.fullDiskAccess}`)
+    }
     const devices = new DeviceRegistry(paths.devices())
     await devices.load()
     const platforms = describeDevices(devices.devices())

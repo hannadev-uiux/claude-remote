@@ -74,6 +74,12 @@ export const enUS = {
       runProviderKey: (id: string) => `run \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
       serviceHint: 'optional: `remote-harness service install`',
+      launcherNative: 'folder access prompts name "Remote Harness"',
+      launcherScript: 'folder access prompts name "node" (no compiled launcher)',
+      launcherHint:
+        'install the Command Line Tools (`xcode-select --install`), then run `remote-harness service install`',
+      fullDiskAccess:
+        'tip: to avoid one prompt per folder, add "Remote Harness" under System Settings → Privacy & Security → Full Disk Access',
       linger: 'lingering (the service keeps running after logout)',
       lingerHint: 'run `loginctl enable-linger $USER`',
       devices: (platforms: string) => `phones registered for push: ${platforms}`,
@@ -360,6 +366,10 @@ export const enUS = {
       "  Couldn't find %UserProfile%\\.wslconfig (is Windows interop off?). Add [wsl2] networkingMode=mirrored to it by hand.",
   },
   /** How texts name this machine (with the article in each text). */
+  bundle: {
+    folderAccess:
+      'Remote Harness runs your coding agent sessions in this folder and needs to read and write its files.',
+  },
   machine: { darwin: 'Mac', linux: 'computer' },
   profiles: {
     defaultName: 'Personal',

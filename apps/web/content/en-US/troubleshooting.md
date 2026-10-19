@@ -29,6 +29,10 @@ The daemon binds only to a 100.x address. If `doctor` says there is none: instal
 
 The daemon only works while the computer is awake. On a MacBook, keep it plugged in and disable sleep while connected to power, or use `caffeinate`; on Linux check the power settings. Locking the screen is fine. Sessions in tmux survive a disconnection of the app and reconnect when it returns.
 
+## macOS asks for folder access
+
+The first time a session works in Documents, Desktop, Downloads or an external drive, macOS asks whether **Remote Harness** may access that folder: allow it once and it sticks, also across `remote-harness update`. To avoid one prompt per folder, add Remote Harness under System Settings → Privacy & Security → Full Disk Access. If the prompt names **node** instead, the Command Line Tools are missing: run `xcode-select --install`, then `remote-harness service install` (`doctor` shows this check).
+
 ## Sessions are read-only
 
 A session started with plain `claude` outside tmux appears in the app but cannot be typed into. Tap **Resume** to reopen it inside tmux, fully controllable, with the same history. Always start sessions through your alias to avoid this.

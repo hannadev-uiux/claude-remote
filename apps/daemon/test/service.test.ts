@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync, statSync } from 'node:fs'
-import { writeFile } from 'node:fs/promises'
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 import { createLogger } from '../src/core/logger.ts'
@@ -8,16 +8,21 @@ import { paths } from '../src/core/paths.ts'
 import { MuteStore } from '../src/features/mute/store.ts'
 import {
   APP_NAME,
+  APP_SCRIPT,
   appExecutablePath,
+  bundleLauncherKind,
+  daemonProgramArguments,
   dedupePath,
   installAppBundle,
   installService,
   LAUNCHD_LABEL,
   LaunchdService,
   renderAppInfoPlist,
-  renderAppLauncher,
+  renderInfoPlistStrings,
   renderPlist,
   serviceStatus,
+  USAGE_DESCRIPTION_KEYS,
+  usageDescriptions,
 } from '../src/features/service/launchd.ts'
 import type { ServiceManager } from '../src/features/service/service-manager.ts'
 import {
@@ -27,12 +32,15 @@ import {
   SystemdUserService,
   unitPath,
 } from '../src/features/service/systemd.ts'
+import { execaExecutor } from '../src/infra/exec.ts'
+import { buildC, launcherSourcePath } from '../src/infra/native-build.ts'
 import { TAILSCALE_NOT_FOUND, waitForWsHost } from '../src/main.ts'
 import { fakeExecutor, useTempHome } from './helpers.ts'
 
 const home = useTempHome()
+const executable = '/Users/me/.remote-harness/Remote Harness.app/Contents/MacOS/remote-harness'
 const options = {
-  executable: '/Users/me/.claude-remote/Claude Remote.app/Contents/MacOS/claude-remote',
+  programArguments: daemonProgramArguments(executable, '/opt/node', '/repo/cli.js'),
   logsDir: '/Users/me/.claude-remote/logs',
   path: '/opt/homebrew/bin:/usr/bin:/bin',
   home: '/Users/me',
@@ -42,12 +50,20 @@ const onMac = process.platform === 'darwin'
 
 describe('launchd', () => {
   test.skipIf(!onMac)(
-    'renders a valid plist that runs the app bundle with KeepAlive and the captured PATH',
+    'renders a valid plist that runs node through the app bundle with KeepAlive and the captured PATH',
     async () => {
       const xml = renderPlist(options)
       expect(xml).toContain(`<string>${LAUNCHD_LABEL}</string>`)
       expect(xml).toContain(
-        '<string>/Users/me/.claude-remote/Claude Remote.app/Contents/MacOS/claude-remote</string>',
+        [
+          '  <array>',
+          `    <string>${executable}</string>`,
+          '    <string>/opt/node</string>',
+          '    <string>/repo/cli.js</string>',
+          '    <string>start</string>',
+          '    <string>--wait-tailscale</string>',
+          '  </array>',
+        ].join('\n'),
       )
       expect(xml).toContain('<key>AssociatedBundleIdentifiers</key>')
       expect(xml).toContain('<key>KeepAlive</key>\n  <true/>')
@@ -101,32 +117,94 @@ describe('launchd', () => {
   })
 
   test.skipIf(!onMac)(
-    'app bundle is named Claude Remote and execs the daemon waiting for Tailscale',
+    'app bundle is named Remote Harness and carries the folder usage descriptions',
     async () => {
-      const info = renderAppInfoPlist(true)
+      const info = renderAppInfoPlist({ hasIcon: true, usage: 'Needs <files> & "folders".' })
+      expect(APP_NAME).toBe('Remote Harness')
       expect(info).toContain(`<string>${APP_NAME}</string>`)
       expect(info).toContain(`<string>${LAUNCHD_LABEL}</string>`)
       expect(info).toContain('<key>CFBundleIconFile</key>')
-      expect(renderAppInfoPlist(false)).not.toContain('CFBundleIconFile')
+      for (const key of USAGE_DESCRIPTION_KEYS) expect(info).toContain(`<key>${key}</key>`)
+      expect(info).toContain('Needs &lt;files&gt; &amp; &quot;folders&quot;.')
+      expect(renderAppInfoPlist({ hasIcon: false, usage: 'x' })).not.toContain('CFBundleIconFile')
       const file = join(home.dir(), 'Info.plist')
       await writeFile(file, info)
       expect(execFileSync('plutil', ['-lint', file]).toString()).toContain('OK')
 
-      expect(renderAppLauncher("/opt/it's/node", '/repo/cli.js')).toBe(
-        "#!/bin/sh\nexec '/opt/it'\\''s/node' '/repo/cli.js' start --wait-tailscale\n",
-      )
+      const strings = join(home.dir(), 'InfoPlist.strings')
+      await writeFile(strings, renderInfoPlistStrings('Say "hi" \\ bye'))
+      expect(execFileSync('plutil', ['-lint', strings]).toString()).toContain('OK')
+      const parsed = JSON.parse(execFileSync('plutil', ['-convert', 'json', '-o', '-', strings]).toString())
+      expect(parsed.NSDocumentsFolderUsageDescription).toBe('Say "hi" \\ bye')
     },
   )
 
-  test('installAppBundle writes an executable launcher and signs the bundle', async () => {
+  test('usage descriptions come from the three catalogs', () => {
+    const usage = usageDescriptions()
+    expect(Object.keys(usage).sort()).toEqual(['en-US', 'es-ES', 'pt-BR'])
+    expect(new Set(Object.values(usage)).size).toBe(3)
+  })
+
+  test('installAppBundle falls back to the exec script, writes the translations and signs the bundle', async () => {
     const exec = fakeExecutor()
-    const appDir = join(home.dir(), 'Claude Remote.app')
-    const executable = await installAppBundle(exec, { appDir, nodePath: '/n', cliPath: '/c' })
-    expect(executable).toBe(appExecutablePath(appDir))
-    expect(statSync(executable).mode & 0o111).not.toBe(0)
-    expect(readFileSync(join(appDir, 'Contents', 'Info.plist'), 'utf8')).not.toContain('CFBundleIconFile')
+    const appDir = join(home.dir(), 'Remote Harness.app')
+    const usage = usageDescriptions()
+    const bundle = await installAppBundle(exec, { appDir, launcher: null, usage })
+    expect(bundle).toEqual({ executable: appExecutablePath(appDir), launcher: 'script', rebuilt: true })
+    expect(readFileSync(bundle.executable, 'utf8')).toBe(APP_SCRIPT)
+    expect(statSync(bundle.executable).mode & 0o111).not.toBe(0)
+    expect(await bundleLauncherKind(appDir)).toBe('script')
+    const info = readFileSync(join(appDir, 'Contents', 'Info.plist'), 'utf8')
+    expect(info).not.toContain('CFBundleIconFile')
+    expect(info).toContain(usage['en-US'])
+    const resources = join(appDir, 'Contents', 'Resources')
+    expect(readFileSync(join(resources, 'pt-BR.lproj', 'InfoPlist.strings'), 'utf8')).toContain(
+      usage['pt-BR'],
+    )
+    expect(readFileSync(join(resources, 'es.lproj', 'InfoPlist.strings'), 'utf8')).toContain(usage['es-ES'])
     expect(exec.calls.map((c) => c.file)).toEqual(['codesign'])
     expect(exec.calls[0]?.args).toEqual(['--force', '--sign', '-', appDir])
+  })
+
+  test('installAppBundle leaves an unchanged bundle untouched and rebuilds when the launcher changes', async () => {
+    const exec = fakeExecutor()
+    const appDir = join(home.dir(), 'Remote Harness.app')
+    const usage = usageDescriptions()
+    await installAppBundle(exec, { appDir, launcher: null, usage })
+    const again = await installAppBundle(exec, { appDir, launcher: null, usage })
+    expect(again.rebuilt).toBe(false)
+    expect(exec.calls).toHaveLength(1)
+
+    const binary = join(home.dir(), 'launcher-bin')
+    await writeFile(binary, Buffer.from([0xcf, 0xfa, 0xed, 0xfe]))
+    const native = await installAppBundle(exec, { appDir, launcher: binary, usage })
+    expect(native).toMatchObject({ launcher: 'native', rebuilt: true })
+    expect(await bundleLauncherKind(appDir)).toBe('native')
+    expect(exec.calls).toHaveLength(2)
+    expect(await bundleLauncherKind(join(home.dir(), 'none.app'))).toBe('missing')
+  })
+
+  test('buildC does not call cc without the Command Line Tools', async () => {
+    const source = join(home.dir(), 'x.c')
+    await writeFile(source, 'int main(void) { return 0; }\n')
+    const exec = fakeExecutor((c) => (c.file === 'xcode-select' ? { exitCode: 2 } : undefined))
+    const build = await buildC({ exec, source, buildDir: join(home.dir(), 'build'), name: 'x' })
+    expect(build).toEqual({ unavailable: 'Command Line Tools not installed' })
+    expect(exec.calls.map((c) => c.file)).toEqual(['xcode-select'])
+  })
+
+  test.skipIf(!onMac)('the compiled launcher runs its arguments and returns their exit code', async () => {
+    const source = launcherSourcePath()
+    expect(source).not.toBeNull()
+    const buildDir = join(home.dir(), 'build')
+    const build = await buildC({ exec: execaExecutor, source: source ?? '', buildDir, name: 'launcher' })
+    if (!('binary' in build)) return // no Command Line Tools on this Mac
+    const ran = await execaExecutor(build.binary, ['/bin/sh', '-c', 'exit 7'])
+    expect(ran.exitCode).toBe(7)
+    // Cached by source hash: a second build reuses the binary without calling cc.
+    const exec = fakeExecutor()
+    expect(await buildC({ exec, source: source ?? '', buildDir, name: 'launcher' })).toEqual(build)
+    expect(exec.calls).toHaveLength(0)
   })
 
   test('status parses launchctl print', async () => {
@@ -147,8 +225,17 @@ describe('LaunchdService', () => {
       if (c.args[0] === 'bootstrap' && ++bootstraps < 2) return { exitCode: 5 }
       return undefined
     })
-    const appDir = join(home.dir(), 'Claude Remote.app')
-    const service = new LaunchdService(exec, { home: home.dir(), appDir, sleep: async () => {} })
+    const appDir = join(home.dir(), 'Remote Harness.app')
+    const legacyAppDir = join(home.dir(), 'Claude Remote.app')
+    await mkdir(join(legacyAppDir, 'Contents'), { recursive: true })
+    const service = new LaunchdService(exec, {
+      home: home.dir(),
+      appDir,
+      legacyAppDir,
+      buildDir: join(home.dir(), 'launcher'),
+      launcherSource: null,
+      sleep: async () => {},
+    })
     expect(await service.available()).toBe(true)
     const path = await service.install({
       nodePath: '/n',
@@ -165,8 +252,11 @@ describe('LaunchdService', () => {
       'launchctl bootstrap',
     ])
     const plist = readFileSync(path, 'utf8')
-    expect(plist).toContain(`<string>${appExecutablePath(appDir)}</string>`)
+    expect(plist).toContain(`<string>${appExecutablePath(appDir)}</string>\n    <string>/n</string>`)
     expect(plist).toContain('<string>/a:/b</string>')
+    expect(existsSync(legacyAppDir)).toBe(false)
+    await service.uninstall()
+    expect(existsSync(appDir)).toBe(false)
     expect((service as ServiceManager).linger).toBeUndefined()
   })
 })

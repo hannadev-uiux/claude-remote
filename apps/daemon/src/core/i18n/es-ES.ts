@@ -72,6 +72,12 @@ export const esES = {
       runProviderKey: (id: string) => `ejecuta \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `servicio en segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
+      launcherNative: 'las solicitudes de acceso a carpetas muestran "Remote Harness"',
+      launcherScript: 'las solicitudes de acceso a carpetas muestran "node" (sin launcher compilado)',
+      launcherHint:
+        'instala las Command Line Tools (`xcode-select --install`) y ejecuta `remote-harness service install`',
+      fullDiskAccess:
+        'consejo: para no recibir una solicitud por carpeta, añade "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Acceso total al disco',
       linger: 'lingering (el servicio sigue en marcha tras cerrar sesión)',
       lingerHint: 'ejecuta `loginctl enable-linger $USER`',
       devices: (platforms: string) => `móviles registrados para push: ${platforms}`,
@@ -363,6 +369,10 @@ export const esES = {
     mirroredAlready: (path: string) => `networkingMode=mirrored ya estaba en ${path}`,
     mirroredNoConfig:
       '  No se encontró %UserProfile%\\.wslconfig (¿la interoperabilidad con Windows está desactivada?). Añade [wsl2] networkingMode=mirrored a mano.',
+  },
+  bundle: {
+    folderAccess:
+      'Remote Harness ejecuta las sesiones de tu agente de código en esta carpeta y necesita leer y escribir sus archivos.',
   },
   machine: { darwin: 'Mac', linux: 'ordenador' },
   profiles: {

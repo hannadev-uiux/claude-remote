@@ -1,8 +1,13 @@
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { existsSync } from 'node:fs'
+import { chmod, mkdir, mkdtemp, open, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
+import type { Locale } from '@remote-harness/protocol'
+import { CATALOGS } from '../../core/i18n/index.ts'
 import type { Executor } from '../../infra/exec.ts'
+import { buildC, launcherSourcePath } from '../../infra/native-build.ts'
 import {
   dedupePath,
   type ServiceInstallOptions,
@@ -12,10 +17,28 @@ import {
 
 export { dedupePath }
 
+/** launchd label and bundle id; kept from before the rename so the LaunchAgent is replaced in place. */
 export const LAUNCHD_LABEL = 'tech.doctorx.claude-remote'
-/** Name shown by macOS in "Login Items" and in the background activity notification. */
-export const APP_NAME = 'Claude Remote'
-const APP_EXECUTABLE = 'claude-remote'
+/** Name shown by macOS in "Login Items", the background activity notice and privacy prompts. */
+export const APP_NAME = 'Remote Harness'
+const APP_EXECUTABLE = 'remote-harness'
+/** Fallback executable without the Command Line Tools: runs the arguments launchd passes. */
+export const APP_SCRIPT = '#!/bin/sh\nexec "$@"\n'
+
+/** Folder privacy prompts that may show the usage description. */
+export const USAGE_DESCRIPTION_KEYS = [
+  'NSDocumentsFolderUsageDescription',
+  'NSDesktopFolderUsageDescription',
+  'NSDownloadsFolderUsageDescription',
+  'NSRemovableVolumesUsageDescription',
+  'NSNetworkVolumesUsageDescription',
+] as const
+
+/** `.lproj` folder of each locale inside the bundle. */
+export const LPROJ: Record<Locale, string> = { 'en-US': 'en', 'pt-BR': 'pt-BR', 'es-ES': 'es' }
+
+/** Changes whenever the bundle layout changes, so older bundles are rebuilt once. */
+const BUNDLE_FORMAT = 'remote-harness-bundle-1'
 
 export function appExecutablePath(appDir: string): string {
   return join(appDir, 'Contents', 'MacOS', APP_EXECUTABLE)
@@ -34,15 +57,21 @@ function xml(value: string): string {
 }
 
 export type PlistOptions = {
-  /** Program launchd runs: the executable inside the Claude Remote.app bundle. */
-  executable: string
+  /** What launchd runs: the bundle executable, then node, cli.js and its arguments. */
+  programArguments: readonly string[]
   logsDir: string
   /** PATH captured from the installing shell so tmux, git, rg and claude resolve under launchd. */
   path: string
   home: string
 }
 
+/** `ProgramArguments` of the LaunchAgent: the bundle launcher runs node with the daemon. */
+export function daemonProgramArguments(executable: string, nodePath: string, cliPath: string): string[] {
+  return [executable, nodePath, cliPath, 'start', '--wait-tailscale']
+}
+
 export function renderPlist(o: PlistOptions): string {
+  const args = o.programArguments.map((arg) => `    <string>${xml(arg)}</string>`).join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -51,7 +80,7 @@ export function renderPlist(o: PlistOptions): string {
   <string>${LAUNCHD_LABEL}</string>
   <key>ProgramArguments</key>
   <array>
-    <string>${xml(o.executable)}</string>
+${args}
   </array>
   <key>AssociatedBundleIdentifiers</key>
   <array>
@@ -79,7 +108,11 @@ export function renderPlist(o: PlistOptions): string {
 `
 }
 
-export function renderAppInfoPlist(hasIcon: boolean): string {
+/** `Info.plist` of the bundle; the usage descriptions are the en-US texts (other languages in `.lproj`). */
+export function renderAppInfoPlist(o: { hasIcon: boolean; usage: string }): string {
+  const usage = USAGE_DESCRIPTION_KEYS.map(
+    (key) => `\n  <key>${key}</key>\n  <string>${xml(o.usage)}</string>`,
+  ).join('')
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -94,53 +127,102 @@ export function renderAppInfoPlist(hasIcon: boolean): string {
   <string>${APP_EXECUTABLE}</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
   <key>LSBackgroundOnly</key>
-  <true/>${hasIcon ? '\n  <key>CFBundleIconFile</key>\n  <string>AppIcon</string>' : ''}
+  <true/>${o.hasIcon ? '\n  <key>CFBundleIconFile</key>\n  <string>AppIcon</string>' : ''}${usage}
 </dict>
 </plist>
 `
 }
 
-function shellQuote(value: string): string {
-  return `'${value.replaceAll("'", `'\\''`)}'`
+/** `InfoPlist.strings` of one language: the usage description for every folder prompt. */
+export function renderInfoPlistStrings(usage: string): string {
+  const value = usage.replaceAll('\\', '\\\\').replaceAll('"', '\\"')
+  return USAGE_DESCRIPTION_KEYS.map((key) => `"${key}" = "${value}";\n`).join('')
 }
 
-export function renderAppLauncher(nodePath: string, cliPath: string): string {
-  return `#!/bin/sh\nexec ${shellQuote(nodePath)} ${shellQuote(cliPath)} start --wait-tailscale\n`
+/** Usage description of each locale, from the daemon catalogs. */
+export function usageDescriptions(): Record<Locale, string> {
+  return {
+    'en-US': CATALOGS['en-US'].bundle.folderAccess,
+    'pt-BR': CATALOGS['pt-BR'].bundle.folderAccess,
+    'es-ES': CATALOGS['es-ES'].bundle.folderAccess,
+  }
 }
 
 export type AppBundleOptions = {
   appDir: string
-  nodePath: string
-  cliPath: string
+  /** Compiled launcher to copy as the executable; null falls back to `APP_SCRIPT`. */
+  launcher: string | null
+  usage: Record<Locale, string>
   /** 1024px PNG converted to AppIcon.icns; skipped when absent. */
   iconPng?: string
 }
 
+export type AppBundle = { executable: string; launcher: 'native' | 'script'; rebuilt: boolean }
+
+function stampPath(appDir: string): string {
+  return join(appDir, 'Contents', 'Resources', 'bundle-stamp')
+}
+
 /**
- * Builds a minimal ad-hoc signed app bundle that execs the daemon. macOS names background items
- * after the signer of the launched program, so pointing launchd at node would show
- * "Node.js Foundation"; the bundle makes it show "Claude Remote" with the app icon.
+ * Builds a minimal ad-hoc signed app bundle whose executable runs the daemon. macOS names
+ * background items after the signer of the launched program and attributes folder access to the
+ * responsible process, so the bundle makes both show "Remote Harness" with the app icon.
+ *
+ * The ad-hoc signature (and the privacy grants keyed by it) only stays the same while the contents
+ * do, so an unchanged bundle (same stamp of the inputs) is left as it is.
  */
-export async function installAppBundle(exec: Executor, o: AppBundleOptions): Promise<string> {
+export async function installAppBundle(exec: Executor, o: AppBundleOptions): Promise<AppBundle> {
+  const executable = appExecutablePath(o.appDir)
+  const code = o.launcher ? await readFile(o.launcher) : Buffer.from(APP_SCRIPT)
+  const launcher = o.launcher ? 'native' : 'script'
+  const stamp = createHash('sha256')
+    .update(BUNDLE_FORMAT)
+    .update(code)
+    .update(o.iconPng ? await readFile(o.iconPng) : '')
+    .update(JSON.stringify(o.usage))
+    .digest('hex')
+  const current = await readFile(stampPath(o.appDir), 'utf8').catch(() => null)
+  if (current === stamp && existsSync(executable)) return { executable, launcher, rebuilt: false }
+
   await rm(o.appDir, { recursive: true, force: true })
   const contents = join(o.appDir, 'Contents')
   await mkdir(join(contents, 'MacOS'), { recursive: true })
   await mkdir(join(contents, 'Resources'), { recursive: true })
-  const executable = appExecutablePath(o.appDir)
-  await writeFile(executable, renderAppLauncher(o.nodePath, o.cliPath))
+  await writeFile(executable, code)
   await chmod(executable, 0o755)
   const hasIcon = o.iconPng
     ? await buildIcns(exec, o.iconPng, join(contents, 'Resources', 'AppIcon.icns'))
     : false
-  await writeFile(join(contents, 'Info.plist'), renderAppInfoPlist(hasIcon))
+  await writeFile(join(contents, 'Info.plist'), renderAppInfoPlist({ hasIcon, usage: o.usage['en-US'] }))
+  for (const [locale, text] of Object.entries(o.usage) as [Locale, string][]) {
+    const lproj = join(contents, 'Resources', `${LPROJ[locale]}.lproj`)
+    await mkdir(lproj, { recursive: true })
+    await writeFile(join(lproj, 'InfoPlist.strings'), renderInfoPlistStrings(text))
+  }
+  await writeFile(stampPath(o.appDir), stamp)
   const signed = await exec('codesign', ['--force', '--sign', '-', o.appDir])
   if (signed.exitCode !== 0) throw new Error(`codesign failed: ${signed.stderr.trim()}`)
-  return executable
+  return { executable, launcher, rebuilt: true }
+}
+
+/** What the bundle runs: the compiled launcher, the script fallback, or nothing installed. */
+export async function bundleLauncherKind(appDir: string): Promise<'native' | 'script' | 'missing'> {
+  const file = await open(appExecutablePath(appDir), 'r').catch(() => null)
+  if (!file) return 'missing'
+  try {
+    const head = Buffer.alloc(2)
+    await file.read(head, 0, 2, 0)
+    return head.toString('latin1') === '#!' ? 'script' : 'native'
+  } finally {
+    await file.close()
+  }
 }
 
 async function buildIcns(exec: Executor, png: string, out: string): Promise<boolean> {
-  const iconset = join(await mkdtemp(join(tmpdir(), 'claude-remote-icon-')), 'AppIcon.iconset')
+  const iconset = join(await mkdtemp(join(tmpdir(), 'remote-harness-icon-')), 'AppIcon.iconset')
   try {
     await mkdir(iconset)
     for (const size of [16, 32, 128, 256, 512]) {
@@ -190,10 +272,14 @@ export async function installService(
   return path
 }
 
-export async function uninstallService(exec: Executor, home = homedir(), appDir?: string): Promise<void> {
+export async function uninstallService(
+  exec: Executor,
+  home = homedir(),
+  appDirs: readonly string[] = [],
+): Promise<void> {
   await exec('launchctl', ['bootout', `${domain()}/${LAUNCHD_LABEL}`])
   await rm(plistPath(home), { force: true })
-  if (appDir) await rm(appDir, { recursive: true, force: true })
+  for (const dir of appDirs) await rm(dir, { recursive: true, force: true })
 }
 
 export async function serviceStatus(exec: Executor): Promise<ServiceStatus> {
@@ -204,14 +290,26 @@ export async function serviceStatus(exec: Executor): Promise<ServiceStatus> {
   return { loaded: true, detail: pid ? `${state} (pid ${pid})` : state }
 }
 
-/** macOS: a LaunchAgent that runs the "Claude Remote" app bundle (KeepAlive, starts at login). */
+export type LaunchdServiceOptions = {
+  home: string
+  appDir: string
+  /** Bundle of older versions (`Claude Remote.app`), removed on install and uninstall. */
+  legacyAppDir?: string
+  /** Where the compiled launcher is cached. */
+  buildDir: string
+  /** `launcher.c`; null (no sources, or tests) uses the script fallback. Defaults to the shipped one. */
+  launcherSource?: string | null
+  sleep?: (ms: number) => Promise<unknown>
+}
+
+/** macOS: a LaunchAgent that runs the "Remote Harness" app bundle (KeepAlive, starts at login). */
 export class LaunchdService implements ServiceManager {
   readonly kind = 'launchd'
   readonly name = LAUNCHD_LABEL
 
   constructor(
     private readonly exec: Executor,
-    private readonly o: { home: string; appDir: string; sleep?: (ms: number) => Promise<unknown> },
+    private readonly o: LaunchdServiceOptions,
   ) {}
 
   async available(): Promise<boolean> {
@@ -219,22 +317,33 @@ export class LaunchdService implements ServiceManager {
   }
 
   async install(options: ServiceInstallOptions): Promise<string> {
-    const executable = await installAppBundle(this.exec, {
+    if (this.o.legacyAppDir) await rm(this.o.legacyAppDir, { recursive: true, force: true })
+    const source = this.o.launcherSource === undefined ? launcherSourcePath() : this.o.launcherSource
+    const build = source
+      ? await buildC({ exec: this.exec, source, buildDir: this.o.buildDir, name: 'launcher' })
+      : null
+    const bundle = await installAppBundle(this.exec, {
       appDir: this.o.appDir,
-      nodePath: options.nodePath,
-      cliPath: options.cliPath,
+      launcher: build && 'binary' in build ? build.binary : null,
+      usage: usageDescriptions(),
       iconPng: options.iconPng,
     })
     return installService(
       this.exec,
-      { executable, logsDir: options.logsDir, path: options.path, home: this.o.home },
+      {
+        programArguments: daemonProgramArguments(bundle.executable, options.nodePath, options.cliPath),
+        logsDir: options.logsDir,
+        path: options.path,
+        home: this.o.home,
+      },
       this.o.home,
       this.o.sleep,
     )
   }
 
   uninstall(): Promise<void> {
-    return uninstallService(this.exec, this.o.home, this.o.appDir)
+    const dirs = [this.o.appDir, ...(this.o.legacyAppDir ? [this.o.legacyAppDir] : [])]
+    return uninstallService(this.exec, this.o.home, dirs)
   }
 
   status(): Promise<ServiceStatus> {
