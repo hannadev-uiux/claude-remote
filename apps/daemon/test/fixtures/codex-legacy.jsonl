@@ -1,0 +1,14 @@
+{"timestamp":"2025-08-01T10:00:00.000Z","type":"session_meta","payload":{"id":"0198a1b2-0000-7000-8000-000000000001","timestamp":"2025-08-01T10:00:00.000Z","cwd":"/Users/me/old","originator":"codex_cli_rs","cli_version":"0.20.0","instructions":null}}
+{"timestamp":"2025-08-01T10:00:01.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<user_instructions>be brief</user_instructions>"}]}}
+{"timestamp":"2025-08-01T10:00:02.000Z","type":"turn_context","payload":{"cwd":"/Users/me/old","approval_policy":"untrusted","sandbox_policy":{"type":"read-only"},"model":"gpt-5","summary":"auto"}}
+{"timestamp":"2025-08-01T10:00:02.100Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"list files"}]}}
+{"timestamp":"2025-08-01T10:00:02.101Z","type":"event_msg","payload":{"type":"user_message","message":"list files","images":["data:image/jpeg;base64,/9j/4AAQ"],"local_images":[],"text_elements":[]}}
+{"timestamp":"2025-08-01T10:00:03.000Z","type":"event_msg","payload":{"type":"agent_reasoning","text":"Listing"}}
+{"timestamp":"2025-08-01T10:00:03.100Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"ls\"],\"workdir\":\"/Users/me/old\"}","call_id":"call_1"}}
+{"timestamp":"2025-08-01T10:00:03.200Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_1","output":"{\"output\":\"a.txt\\nb.txt\\n\",\"metadata\":{\"exit_code\":0,\"duration_seconds\":0.1}}"}}
+{"timestamp":"2025-08-01T10:00:03.300Z","type":"event_msg","payload":{"type":"item_completed","thread_id":"0198a1b2-0000-7000-8000-000000000001","turn_id":"1","item":{"type":"Plan","id":"p1","text":"1. list"}}}
+{"timestamp":"2025-08-01T10:00:04.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Two files."}]}}
+{"timestamp":"2025-08-01T10:00:04.001Z","type":"event_msg","payload":{"type":"agent_message","message":"Two files."}}
+{"timestamp":"2025-08-01T10:00:05.000Z","type":"response_item","payload":{"type":"web_search_call","id":"ws_1","status":"completed","action":{"type":"search","query":"codex cli"}}}
+{"timestamp":"2025-08-01T10:00:06.000Z","type":"compacted","payload":{"message":"summary"}}
+not json

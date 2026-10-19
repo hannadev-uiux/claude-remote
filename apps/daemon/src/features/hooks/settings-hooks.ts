@@ -23,18 +23,58 @@ function shellQuote(value: string): string {
 
 export type HookInstallOptions = { port: number; secret: string; permissionTimeoutSec: number }
 
+/** Where the hooks are written: Claude Code's `settings.json` or Codex's `hooks.json` (same shape). */
+export type HookStyle = 'claude-settings' | 'codex-hooks'
+
+/** Codex has no Notification or SubagentStop for us; the rest match Claude Code's names and stdin. */
+export const CODEX_HOOK_EVENTS: readonly HookEventName[] = [
+  'SessionStart',
+  'UserPromptSubmit',
+  'PermissionRequest',
+  'Stop',
+  'SessionEnd',
+]
+
+function curlHeaders(secret: string): string {
+  return [
+    `${SECRET_HEADER}: ${secret}`,
+    `${PANE_HEADER}: $TMUX_PANE`,
+    `${PROFILE_HEADER}: $CLAUDE_REMOTE_PROFILE`,
+  ]
+    .map((h) => `-H "${h}"`)
+    .join(' ')
+}
+
+/**
+ * Codex runs command hooks only (`$SHELL -lc`, the event JSON on stdin, Codex's environment, so
+ * `$TMUX_PANE` and the launcher's profile are set). The permission hook prints the daemon's answer;
+ * an empty answer (daemon down, timeout) lets Codex show its own prompt. `SessionEnd` hooks get at
+ * most 3 seconds.
+ */
+export function buildCodexHookEntry(event: HookEventName, options: HookInstallOptions): HookEntry {
+  const url = shellQuote(`http://127.0.0.1:${options.port}/hooks/${event}`)
+  const post = `-X POST -H 'content-type: application/json' ${curlHeaders(options.secret)} --data-binary @- ${url}`
+  if (event === 'PermissionRequest') {
+    return {
+      type: 'command',
+      command: `curl -s -m ${options.permissionTimeoutSec} ${post} 2>/dev/null || true`,
+      timeout: options.permissionTimeoutSec + 10,
+    }
+  }
+  const ending = event === 'SessionEnd'
+  return {
+    type: 'command',
+    command: `curl -s -m ${ending ? 2 : 5} -o /dev/null ${post} >/dev/null 2>&1 || true`,
+    timeout: ending ? 3 : 10,
+  }
+}
+
 export function buildHookEntry(event: HookEventName, options: HookInstallOptions): HookEntry {
   const url = `http://127.0.0.1:${options.port}/hooks/${event}`
   if (COMMAND_ONLY_EVENTS.has(event)) {
     // Same request as the http hook: stdin JSON as body. Output is discarded because a
     // SessionStart hook's stdout is added to Claude's context; failures never block the session.
-    const headers = [
-      `${SECRET_HEADER}: ${options.secret}`,
-      `${PANE_HEADER}: $TMUX_PANE`,
-      `${PROFILE_HEADER}: $CLAUDE_REMOTE_PROFILE`,
-    ]
-      .map((h) => `-H "${h}"`)
-      .join(' ')
+    const headers = curlHeaders(options.secret)
     return {
       type: 'command',
       command: `curl -s -m 5 -o /dev/null -X POST -H 'content-type: application/json' ${headers} --data-binary @- ${shellQuote(url)} >/dev/null 2>&1 || true`,
@@ -79,11 +119,14 @@ export function removeOurHooks<T extends Settings>(settings: T): T {
 export function mergeOurHooks<T extends Settings>(
   settings: T,
   options: HookInstallOptions,
+  style: HookStyle = 'claude-settings',
 ): T & { hooks: Record<string, HookGroup[]> } {
   const clean = removeOurHooks(settings)
   const hooks: Record<string, HookGroup[]> = { ...(clean.hooks ?? {}) }
-  for (const event of HOOK_EVENTS) {
-    hooks[event] = [...(hooks[event] ?? []), { hooks: [buildHookEntry(event, options)] }]
+  const codex = style === 'codex-hooks'
+  for (const event of codex ? CODEX_HOOK_EVENTS : HOOK_EVENTS) {
+    const entry = codex ? buildCodexHookEntry(event, options) : buildHookEntry(event, options)
+    hooks[event] = [...(hooks[event] ?? []), { hooks: [entry] }]
   }
   return { ...clean, hooks }
 }

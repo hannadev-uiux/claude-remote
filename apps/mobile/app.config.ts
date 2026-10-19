@@ -260,7 +260,8 @@ const withLiveActivityIcon: ConfigPlugin = (config) => {
 
 /**
  * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
- * drop the native mods of the platforms that have no file.
+ * drop the native mods of the platforms that have no file. Crashlytics collection stays off until
+ * the user opts in (`firebase.json`, `src/features/error-reports`).
  */
 const withFirebase: ConfigPlugin = (config) => {
   const skipped = (['ios', 'android'] as const).filter((platform) => !firebase[platform])
@@ -271,6 +272,7 @@ const withFirebase: ConfigPlugin = (config) => {
     '@react-native-firebase/app',
     '@react-native-firebase/messaging',
     '@react-native-firebase/app-check',
+    '@react-native-firebase/crashlytics',
   ])
   for (const [platform, mods] of saved) next.mods = { ...next.mods, [platform]: mods }
   return firebase.ios ? withFirebaseCocoaPods(next) : next
@@ -289,7 +291,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Remote Harness',
   slug: 'claude-remote',
-  version: '0.12.0',
+  version: '0.13.0',
   scheme: 'claude-remote',
   orientation: 'portrait',
   icon: './assets/icon.png',

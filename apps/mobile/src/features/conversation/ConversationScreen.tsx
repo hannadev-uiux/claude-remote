@@ -13,7 +13,16 @@ import { sessionAgent } from '../sessions/agent'
 import { useSessionsStore } from '../sessions/store'
 import { ConversationAgent } from './agent-context'
 import { KeyBar } from './components/KeyBar'
-import { AssistantMessage, SystemLine, ThinkingBlock, UnknownEntry, UserMessage } from './components/Messages'
+import { LinkSheet } from './components/LinkSheet'
+import {
+  AssistantMessage,
+  SystemLine,
+  TaggedEntry,
+  TaskNotification,
+  ThinkingBlock,
+  UnknownEntry,
+  UserMessage,
+} from './components/Messages'
 import { PromptHistorySheet } from './components/PromptHistorySheet'
 import { ToolCallCard } from './components/ToolCallCard'
 import { useFollowStore } from './follow-store'
@@ -35,6 +44,9 @@ function renderItem({ item }: { item: TimelineItem }) {
     case 'tool':
       return <ToolCallCard use={item.use} result={item.result} />
     case 'system':
+      if (item.subtype === 'task_notification')
+        return <TaskNotification text={item.text} status={item.status} note={item.note} />
+      if (item.subtype === 'tagged' && item.tag) return <TaggedEntry tag={item.tag} text={item.text} />
       return <SystemLine text={item.text} subtype={item.subtype} durationMs={item.durationMs} />
     case 'unknown':
       return <UnknownEntry raw={item.raw} />
@@ -170,6 +182,7 @@ export function ConversationScreen({
               onClose={onHistoryClose}
             />
           ) : null}
+          {Platform.OS === 'ios' ? null : <LinkSheet />}
         </Screen>
       </ConversationAgent.Provider>
     </TranscriptImagesContext.Provider>

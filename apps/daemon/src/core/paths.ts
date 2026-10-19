@@ -63,8 +63,14 @@ export const paths = {
   logs: () => join(dataHome(), 'logs'),
   /** Result of the last background update check. */
   updates: () => join(dataHome(), 'updates.json'),
+  /** Steps of the last `remote-harness update` run, read by the daemon for the app. */
+  updateRun: () => join(dataHome(), 'update-run.json'),
   /** Compiled tray helper (macOS). */
   tray: () => join(dataHome(), 'tray'),
   /** App bundle launched by the LaunchAgent (gives the background item its name and icon). */
-  app: () => join(dataHome(), 'Claude Remote.app'),
+  app: () => join(dataHome(), 'Remote Harness.app'),
+  /** Bundle written by versions before the rename; removed when the service is (un)installed. */
+  legacyApp: () => join(dataHome(), 'Claude Remote.app'),
+  /** Compiled launcher of the app bundle (macOS), by source hash. */
+  launcher: () => join(dataHome(), 'launcher'),
 }

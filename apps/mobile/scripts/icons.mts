@@ -3,7 +3,8 @@
  * "the Tether" (three reins from three terminals meeting in one ring, see docs/design/identity),
  * in two weights: regular for the app icon, splash and banner; bold under 24 px (notification,
  * favicon, Live Activity, tray). Outputs: `assets/*.png` + `assets/icon/*.svg` (app), the Linux tray
- * glyph next to `tray.py`, and `docs/brand/og.png` (README header, Open Graph).
+ * glyph next to `tray.py`, `docs/brand/og.png` (README header, Open Graph) and the Google Play
+ * feature graphic in `store/`.
  * Run: pnpm --filter @remote-harness/mobile icons
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -18,6 +19,7 @@ const assets = join(here, '..', 'assets')
 const repo = join(here, '..', '..', '..')
 const brand = join(repo, 'docs', 'brand')
 const linuxTray = join(repo, 'apps', 'daemon', 'tray', 'linux')
+const store = join(here, '..', 'store')
 
 // Dark theme and brand colors (apps/mobile/src/core/theme/palettes.ts, agents.ts).
 const ACCENT = '#E8A33D'
@@ -151,9 +153,25 @@ const FONTS: Record<Weight, Font> = {
   bold: loadFont(join('700Bold', 'JetBrainsMono_700Bold.ttf')),
 }
 
+/**
+ * Path data from the outline commands, two decimals. opentype's own `toPathData()` rounds through
+ * exponent strings and turns some coordinates into `NaN`, which stops the rasterizer mid-glyph.
+ */
+function pathData(path: opentype.Path): string {
+  const n = (value: number | undefined) => String(Math.round((value ?? 0) * 100) / 100)
+  return path.commands
+    .map((c) => {
+      if (c.type === 'Z') return 'Z'
+      if (c.type === 'Q') return `Q${n(c.x1)} ${n(c.y1)} ${n(c.x)} ${n(c.y)}`
+      if (c.type === 'C') return `C${n(c.x1)} ${n(c.y1)} ${n(c.x2)} ${n(c.y2)} ${n(c.x)} ${n(c.y)}`
+      return `${c.type}${n(c.x)} ${n(c.y)}`
+    })
+    .join('')
+}
+
 /** A text run as a filled path, baseline at (x, y), `size` in pixels. */
 function text(content: string, weight: Weight, size: number, color: string, x: number, y: number): string {
-  const d = FONTS[weight].getPath(content, x, y, size, { kerning: true }).toPathData(2)
+  const d = pathData(FONTS[weight].getPath(content, x, y, size, { kerning: true }))
   return `<path d="${d}" fill="${color}"/>`
 }
 
@@ -207,6 +225,23 @@ function bannerSvg(): string {
   )
 }
 
+/** Google Play feature graphic, 1024 × 500: the banner's composition without the chips. */
+function featureGraphicSvg(): string {
+  const left = 352
+  const parts = [
+    text('Remote Harness', 'bold', 54, TEXT, left, 232),
+    text('Follow and drive your coding agents', 'regular', 21, MUTED, left, 280),
+    text('from your phone.', 'regular', 21, MUTED, left, 312),
+  ]
+  const { defs, rects } = backdrop('fg', false)
+  const glow = `<radialGradient id="fg-mark-glow" cx="0.18" cy="0.5" r="0.34"><stop offset="0" stop-color="${ACCENT}" stop-opacity="0.22"/><stop offset="1" stop-color="${ACCENT}" stop-opacity="0"/></radialGradient>`
+  return svg(
+    1024,
+    500,
+    `<defs>${defs}${glow}</defs>${rects}<rect width="100%" height="100%" fill="url(#fg-mark-glow)"/>${markAt('regular', ACCENT, 84, 128, 244)}${parts.join('')}`,
+  )
+}
+
 // --- Output -------------------------------------------------------------------------------------
 
 async function render(source: string, file: string, size?: number, background?: string) {
@@ -238,3 +273,5 @@ await render(adaptiveForegroundSvg(), join(assets, 'adaptive-icon.png'), 1024)
 await render(monochromeSvg((1024 * 24) / 108), join(assets, 'adaptive-icon-monochrome.png'), 1024)
 await render(monochromeSvg(82), join(assets, 'notification-icon.png'), 96)
 await render(bannerSvg(), join(brand, 'og.png'))
+write(join(store, 'feature-graphic.svg'), featureGraphicSvg())
+await render(featureGraphicSvg(), join(store, 'feature-graphic.png'))

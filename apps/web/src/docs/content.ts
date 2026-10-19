@@ -2,6 +2,7 @@ import enContributing from '../../content/en-US/contributing.md?raw'
 import enDaemon from '../../content/en-US/daemon.md?raw'
 import enGettingStarted from '../../content/en-US/getting-started.md?raw'
 import enIndex from '../../content/en-US/index.md?raw'
+import enPrivacy from '../../content/en-US/privacy.md?raw'
 import enSecurity from '../../content/en-US/security.md?raw'
 import enTroubleshooting from '../../content/en-US/troubleshooting.md?raw'
 import enUsingTheApp from '../../content/en-US/using-the-app.md?raw'
@@ -9,6 +10,7 @@ import esContributing from '../../content/es-ES/contributing.md?raw'
 import esDaemon from '../../content/es-ES/daemon.md?raw'
 import esGettingStarted from '../../content/es-ES/getting-started.md?raw'
 import esIndex from '../../content/es-ES/index.md?raw'
+import esPrivacy from '../../content/es-ES/privacy.md?raw'
 import esSecurity from '../../content/es-ES/security.md?raw'
 import esTroubleshooting from '../../content/es-ES/troubleshooting.md?raw'
 import esUsingTheApp from '../../content/es-ES/using-the-app.md?raw'
@@ -16,6 +18,7 @@ import ptContributing from '../../content/pt-BR/contributing.md?raw'
 import ptDaemon from '../../content/pt-BR/daemon.md?raw'
 import ptGettingStarted from '../../content/pt-BR/getting-started.md?raw'
 import ptIndex from '../../content/pt-BR/index.md?raw'
+import ptPrivacy from '../../content/pt-BR/privacy.md?raw'
 import ptSecurity from '../../content/pt-BR/security.md?raw'
 import ptTroubleshooting from '../../content/pt-BR/troubleshooting.md?raw'
 import ptUsingTheApp from '../../content/pt-BR/using-the-app.md?raw'
@@ -28,6 +31,7 @@ export const DOC_SLUGS = [
   'using-the-app',
   'daemon',
   'security',
+  'privacy',
   'troubleshooting',
   'contributing',
 ] as const
@@ -47,6 +51,7 @@ export const DOCS: DocRegistry = {
     'using-the-app': enUsingTheApp,
     daemon: enDaemon,
     security: enSecurity,
+    privacy: enPrivacy,
     troubleshooting: enTroubleshooting,
     contributing: enContributing,
   },
@@ -56,6 +61,7 @@ export const DOCS: DocRegistry = {
     'using-the-app': ptUsingTheApp,
     daemon: ptDaemon,
     security: ptSecurity,
+    privacy: ptPrivacy,
     troubleshooting: ptTroubleshooting,
     contributing: ptContributing,
   },
@@ -65,6 +71,7 @@ export const DOCS: DocRegistry = {
     'using-the-app': esUsingTheApp,
     daemon: esDaemon,
     security: esSecurity,
+    privacy: esPrivacy,
     troubleshooting: esTroubleshooting,
     contributing: esContributing,
   },

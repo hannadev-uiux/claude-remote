@@ -1,4 +1,9 @@
-import { PROTOCOL_VERSION, type Profile, type PushMode } from '@remote-harness/protocol'
+import {
+  type DaemonUpdateChannel,
+  PROTOCOL_VERSION,
+  type Profile,
+  type PushMode,
+} from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
 import { type Config, loadConfig, resolveProfiles } from './core/config.ts'
@@ -12,6 +17,7 @@ import { DAEMON_VERSION } from './core/version.ts'
 import { registerAttachmentsFeature } from './features/attachments/index.ts'
 import { registerAutocompleteFeature } from './features/autocomplete/index.ts'
 import { registerCheckoutFeature } from './features/checkout/index.ts'
+import { registerDiagnosticsFeature } from './features/diagnostics/index.ts'
 import { HookReceiver } from './features/hooks/receiver.ts'
 import { registerInputFeature } from './features/input/index.ts'
 import { registerLifecycleFeature } from './features/lifecycle/index.ts'
@@ -21,6 +27,7 @@ import { registerMuteFeature } from './features/mute/index.ts'
 import type { MuteStore } from './features/mute/store.ts'
 import { registerPaneFeature } from './features/pane/index.ts'
 import { registerPermissionsFeature } from './features/permissions/index.ts'
+import { registerPowerFeature } from './features/power/index.ts'
 import { registerProvidersFeature } from './features/providers/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
@@ -29,10 +36,15 @@ import { registerSessionsFeature } from './features/sessions/index.ts'
 import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
-import { type DesktopOptions, registerUpdatesFeature } from './features/updates/index.ts'
+import {
+  type DesktopOptions,
+  registerBlockedRemoteUpdates,
+  registerUpdatesFeature,
+} from './features/updates/index.ts'
 import type { Executor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolvePlatform } from './infra/platform.ts'
+import type { SleepInhibitor } from './infra/power.ts'
 import { TmuxClient } from './infra/tmux.ts'
 import { ClientHub, type Connection } from './transport/connection.ts'
 import { createHooksServer } from './transport/hooks-server.ts'
@@ -56,6 +68,8 @@ export type DaemonOptions = {
   pushSender?: PushSender | null
   /** Update checks and the tray icon: only for the service daemon (`start` without `--dev`). */
   desktop?: DesktopOptions
+  /** Prevents idle sleep per `keepAwake`: only for the service daemon. */
+  sleepInhibitor?: SleepInhibitor
   /** A profile's provider key from the OS secret store (`null` when none); absent = no keys (tests). */
   providerKey?: (profileId: string) => Promise<string | null>
 }
@@ -166,7 +180,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     return { ok: true }
   })
 
-  const features = await registerFeatures(context, options.desktop)
+  const features = await registerFeatures(context, options.desktop, options.sleepInhibitor ?? null)
 
   await hooks.listen({ host: '127.0.0.1', port: options.hookPort ?? config.hookPort })
   const hookAddress = hooks.server.address()
@@ -200,6 +214,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),
       push: { mode: features.pushMode() },
+      update: { channel: features.updateChannel() },
     }),
   })
   const wsAddress = wss.address()
@@ -228,7 +243,8 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
 async function registerFeatures(
   ctx: DaemonContext,
   desktop: DesktopOptions | undefined,
-): Promise<{ mute: MuteStore; pushMode: () => PushMode }> {
+  sleepInhibitor: SleepInhibitor | null,
+): Promise<{ mute: MuteStore; pushMode: () => PushMode; updateChannel: () => DaemonUpdateChannel }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
   const transcript = registerTranscriptFeature(ctx, sessions.store, (id, at) =>
     sessions.service.noteActivity(id, at),
@@ -243,6 +259,7 @@ async function registerFeatures(
   const queue = registerQueueFeature(ctx, sessions.store, input.service, hasPendingPermission)
   registerModeFeature(ctx, sessions.store, sessionLock, hasPendingPermission)
   registerAutocompleteFeature(ctx, sessions.store)
+  registerDiagnosticsFeature(ctx)
   registerPaneFeature(ctx, sessions.store)
   registerProvidersFeature(ctx, { key: ctx.providerKey })
   const checkout = registerCheckoutFeature(ctx, sessions.store)
@@ -259,8 +276,9 @@ async function registerFeatures(
     isMuted,
     follow: transcript.follow,
   })
+  let updateChannel = () => ctx.config.update.channel
   if (desktop) {
-    await registerUpdatesFeature(ctx, {
+    const updates = await registerUpdatesFeature(ctx, {
       store: sessions.store,
       hasPendingPermission: (id) => permissions.broker.hasPending(id),
       options: desktop,
@@ -280,9 +298,13 @@ async function registerFeatures(
         closeSession: (id) => lifecycle.closer.close(id),
       },
     })
+    updateChannel = updates.channel
+  } else {
+    await registerBlockedRemoteUpdates(ctx)
   }
   await sessions.start()
+  registerPowerFeature(ctx, sessions.store, sleepInhibitor)
   // After the sessions, so prompts queued for sessions that ended meanwhile are dropped.
   await queue.service.load().catch((error) => ctx.logger.warn({ err: error }, 'queue restore failed'))
-  return { mute: mute.store, pushMode: push.mode }
+  return { mute: mute.store, pushMode: push.mode, updateChannel: () => updateChannel() }
 }

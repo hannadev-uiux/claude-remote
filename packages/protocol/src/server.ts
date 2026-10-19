@@ -4,6 +4,8 @@ import {
   CheckoutPeerSchema,
   CheckoutSchema,
   CommandItemSchema,
+  DaemonUpdateChannelSchema,
+  DaemonUpdateInfoSchema,
   DirectoryItemSchema,
   ErrorCodeSchema,
   FileItemSchema,
@@ -18,6 +20,7 @@ import {
   PushModeSchema,
   PushTestResultSchema,
   QueuedMessageSchema,
+  RejectedRequestSchema,
   RuleScopeSchema,
   SessionSchema,
   SessionStateSchema,
@@ -41,6 +44,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     muted: MuteStateSchema,
     /** Absent in older daemons. */
     push: z.object({ mode: PushModeSchema }).optional(),
+    /** Present when the daemon accepts `daemon.update.*` (absent in older daemons). */
+    update: z.object({ channel: DaemonUpdateChannelSchema }).optional(),
   }),
   z.object({ type: z.literal('pong'), replyTo }),
   z.object({ type: z.literal('ack'), replyTo, data: z.record(z.string(), z.unknown()).optional() }),
@@ -120,6 +125,13 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     credits: ProviderCreditsSchema.nullable(),
   }),
   z.object({
+    type: z.literal('diagnostics.result'),
+    replyTo,
+    daemonVersion: z.string(),
+    /** Most recent first, at most `DIAGNOSTICS_LIMIT`. */
+    errors: z.array(RejectedRequestSchema),
+  }),
+  z.object({
     type: z.literal('directories.results'),
     replyTo,
     /** Absolute path that was listed. */
@@ -140,6 +152,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   /** `null` when the session's folder is not inside a linked git worktree. */
   z.object({ type: z.literal('worktree.info'), replyTo, worktree: WorktreeInfoSchema.nullable() }),
   z.object({ type: z.literal('mute.updated'), muted: MuteStateSchema }),
+  /** Reply to `daemon.update.check` / `start`, and broadcast whenever an update run changes. */
+  z.object({ type: z.literal('daemon.update.info'), replyTo, info: DaemonUpdateInfoSchema }),
   z.object({ type: z.literal('push.testResult'), replyTo, result: PushTestResultSchema }),
   /** Usage limits of a profile's account; sent when they change and to every client that connects. */
   z.object({ type: z.literal('limits.updated'), limits: AccountLimitsSchema }),

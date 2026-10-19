@@ -55,6 +55,21 @@ export const enUS = {
       saved: (id: string, store: string) =>
         `Key of profile ${id} stored ${store}. New sessions of the profile use it.`,
     },
+    keepAwake: {
+      description: 'show or set when the computer is kept awake: off, sessions or always',
+      modes: {
+        off: 'off',
+        sessions: 'while sessions are active (and 10 min after)',
+        always: 'always, while the daemon runs',
+      },
+      current: (mode: string) => `keep awake: ${mode}`,
+      holding: 'holding the computer awake now',
+      notHolding: 'not holding it now',
+      unavailable: (reason: string) => `the sleep helper is unavailable: ${reason}`,
+      invalid: (value: string, valid: string) => `"${value}" is not a mode; use one of: ${valid}`,
+      applied: 'applied to the running daemon',
+      notRunning: 'the daemon is not running; it applies at the next start',
+    },
     doctor: {
       description: 'check dependencies and configuration',
       notOnPath: 'not found in PATH',
@@ -72,10 +87,23 @@ export const enUS = {
       runPair: 'run `remote-harness pair`',
       providerKey: (id: string, provider: string) => `${provider} key for profile ${id}`,
       runProviderKey: (id: string) => `run \`remote-harness provider key ${id}\``,
+      codexHooks: (id: string, path: string) => `Codex hooks for profile ${id} (${path})`,
+      runInstall: 'run `remote-harness install`',
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
       serviceHint: 'optional: `remote-harness service install`',
+      launcherNative: 'folder access prompts name "Remote Harness"',
+      launcherScript: 'folder access prompts name "node" (no compiled launcher)',
+      launcherHint:
+        'install the Command Line Tools (`xcode-select --install`), then run `remote-harness service install`',
+      fullDiskAccess:
+        'tip: to avoid one prompt per folder, add "Remote Harness" under System Settings → Privacy & Security → Full Disk Access',
       linger: 'lingering (the service keeps running after logout)',
       lingerHint: 'run `loginctl enable-linger $USER`',
+      keepAwake: (mode: string, state: string) => `keep awake: ${mode} (${state})`,
+      keepAwakeHeld: 'held now',
+      keepAwakeIdle: 'not needed now',
+      keepAwakeFailed: (reason: string) => `the sleep helper failed: ${reason}`,
+      lidNote: 'on a laptop, closing the lid still sleeps unless it is on power with an external display',
       devices: (platforms: string) => `phones registered for push: ${platforms}`,
       noDevices: 'no phone registered for push',
       noDevicesHint: 'open the app and allow notifications',
@@ -127,6 +155,9 @@ export const enUS = {
       dirty: (dir: string) => `${dir} has local changes. Commit or discard them and run again.`,
       fetchFailed: (error: string) => `Could not fetch the new version: ${error}`,
       checkoutFailed: 'Could not switch to the new version.',
+      rolledBack: (version: string) =>
+        `Went back to ${version} and rebuilt it: the computer stays as it was.`,
+      rollBackFailed: 'Could not go back to the previous version: run `remote-harness update` again.',
       upToDate: (version: string, commit: string) => `Already up to date (${version}, ${commit}).`,
       available: (version: string, commit: string) => `New version: ${version} (${commit})`,
       failed: 'Update failed (see above). The previous version keeps running until the next restart.',
@@ -194,6 +225,8 @@ export const enUS = {
     shortcut: (path: string) => `shortcut ${path}`,
     shellPath: (files: string) => `PATH in ${files}`,
     hooksIn: (path: string) => `hooks in ${path}`,
+    codexTrust:
+      'Codex asks once to trust new hooks: open `codex` and choose "Trust all and continue" (or review them in /hooks). Until then its sessions stay read-only.',
     launcherRemoved: (id: string) => `launcher ${id} removed`,
     hooksRemovedFrom: (path: string) => `hooks removed from ${path}`,
     statusLineIn: (path: string) => `status line in ${path}`,
@@ -360,6 +393,13 @@ export const enUS = {
       "  Couldn't find %UserProfile%\\.wslconfig (is Windows interop off?). Add [wsl2] networkingMode=mirrored to it by hand.",
   },
   /** How texts name this machine (with the article in each text). */
+  power: {
+    why: 'Remote Harness sessions are running',
+  },
+  bundle: {
+    folderAccess:
+      'Remote Harness runs your coding agent sessions in this folder and needs to read and write its files.',
+  },
   machine: { darwin: 'Mac', linux: 'computer' },
   profiles: {
     defaultName: 'Personal',

@@ -14,16 +14,12 @@ describe('agentLabel', () => {
 
   test('falls back to "the agent", capitalized at the start of a sentence', () => {
     const en = createI18n('en-US').t
-    expect(en('conversation.placeholder', { agent: agentLabel(null, en) })).toBe(
-      'message the agent… (@ files, / commands)',
-    )
+    expect(en('conversation.placeholder', { agent: agentLabel(null, en) })).toBe('Message the agent…')
     expect(en('permissions.question.title', { agent: agentLabel(null, en, { sentence: true }) })).toBe(
       'The agent has a question',
     )
     const pt = createI18n('pt-BR').t
-    expect(pt('conversation.placeholder', { agent: agentLabel(null, pt) })).toBe(
-      'mensagem para o agente… (@ arquivos, / comandos)',
-    )
+    expect(pt('conversation.placeholder', { agent: agentLabel(null, pt) })).toBe('Mensagem para o agente…')
     expect(pt('permissions.question.title', { agent: agentLabel('codex', pt, { sentence: true }) })).toBe(
       'Codex tem uma pergunta',
     )

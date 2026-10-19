@@ -6,11 +6,14 @@ import { Pressable, ScrollView, View } from 'react-native'
 import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Text } from '@/ui'
 import { ImageStrip } from '../../images/ImageStrip'
+import { toolTabCopyText } from '../copy'
 import { diffForTool } from '../diff'
 import { summarizeTool } from '../summarize-tool'
 import { cutText, TOOL_TABS, type ToolTab, tabFor, toolCallJson, toolInputFields } from '../tool-details'
 import { saveToolTab, useToolTabStore } from '../tool-tab-store'
+import { CopyButton } from './CopyButton'
 import { DiffView } from './DiffView'
+import { LinkifiedText } from './LinkText'
 
 type Use = Extract<TranscriptEntry, { kind: 'tool_use' }>
 type Result = Extract<TranscriptEntry, { kind: 'tool_result' }>
@@ -88,6 +91,7 @@ function ToolDetails({
   const [picked, setPicked] = useState<ToolTab | null>(null)
   const tab = picked ?? tabFor(saved, name, available)
   const [showAll, setShowAll] = useState(false)
+  const copy = useMemo(() => toolTabCopyText(tab, use, result), [tab, use, result])
 
   const choose = (next: ToolTab) => {
     setPicked(next)
@@ -111,6 +115,11 @@ function ToolDetails({
             </Text>
           </Pressable>
         ))}
+        {copy ? (
+          <View style={styles.tabCopy}>
+            <CopyButton value={copy} label={t(`conversation.copy.${tab === 'json' ? 'json' : 'output'}`)} />
+          </View>
+        ) : null}
       </View>
       {tab === 'output' ? (
         <>
@@ -165,13 +174,16 @@ function InputFields({ name, input }: { name: string; input: Use['input'] }) {
       {fields.map((f) => {
         const label = 'field' in f ? t(`tools.fields.${f.field}`) : f.key
         return (
-          <View key={label} style={styles.field}>
-            <Text size="xs" color="textMuted">
-              {label}
-            </Text>
-            <Text size="xs" selectable>
-              {f.value}
-            </Text>
+          <View key={label} style={styles.fieldRow}>
+            <View style={styles.field}>
+              <Text size="xs" color="textMuted">
+                {label}
+              </Text>
+              <LinkifiedText size="xs" selectable>
+                {f.value}
+              </LinkifiedText>
+            </View>
+            <CopyButton value={f.value} label={t('conversation.copy.field', { field: label })} />
           </View>
         )
       })}
@@ -200,10 +212,9 @@ function LongText({
     <View>
       <ScrollView style={styles.block} nestedScrollEnabled>
         <ScrollView horizontal nestedScrollEnabled>
-          <Text size="xs" color={color} selectable>
-            {cut.text}
-            {cut.hidden ? '…' : truncated ? `\n${t('conversation.truncated')}` : ''}
-          </Text>
+          <LinkifiedText size="xs" color={color} selectable>
+            {`${cut.text}${cut.hidden ? '…' : truncated ? `\n${t('conversation.truncated')}` : ''}`}
+          </LinkifiedText>
         </ScrollView>
       </ScrollView>
       {cut.hidden ? (
@@ -240,8 +251,10 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: -1,
   },
   tabActive: { borderBottomColor: theme.colors.accent },
+  tabCopy: { marginLeft: 'auto', alignSelf: 'center' },
   fields: { gap: space.sm },
-  field: { gap: space.xxs },
+  fieldRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
+  field: { flex: 1, gap: space.xxs },
   block: {
     backgroundColor: theme.colors.background,
     borderRadius: radius.sm,

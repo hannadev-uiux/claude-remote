@@ -27,7 +27,13 @@ O daemon só escuta num endereço 100.x. Se o `doctor` disser que não há nenhu
 
 ## O computador suspende ou bloqueia
 
-O daemon só funciona com o computador acordado. Num MacBook, deixe na tomada e desative a suspensão com energia ligada, ou use `caffeinate`; no Linux confira os ajustes de energia. Bloquear a tela não atrapalha. As sessões no tmux sobrevivem a uma desconexão do app e reconectam quando ele volta.
+O daemon só funciona com o computador acordado. Bloquear a tela não atrapalha. Por padrão, o serviço em segundo plano impede a suspensão por inatividade enquanto uma sessão está rodando ou esperando, e por 10 minutos depois; a tela continua apagando e bloqueando. Mude com `remote-harness keep-awake off`, `sessions` ou `always`; o `doctor` mostra se está segurando. Um notebook ainda suspende ao fechar a tampa, a não ser na tomada e com monitor externo. Quando o app diz que o computador não responde, ele provavelmente está dormindo: acorde-o e o app reconecta sozinho. As sessões no tmux sobrevivem a uma desconexão do app.
+
+O app não consegue acordar um computador dormindo: os pacotes de Wake-on-LAN não atravessam o Tailscale. Se o computador aceita Wake-on-LAN (em geral pelo cabo de rede) e outro aparelho da mesma rede fica sempre ligado e está no seu tailnet (um Raspberry Pi, um NAS, um roteador com WoL), dá para acordá-lo por ele, por exemplo `ssh pi@raspberrypi wakeonlan AA:BB:CC:DD:EE:FF` com o endereço MAC do computador.
+
+## O macOS pede acesso a pastas
+
+Na primeira vez que uma sessão trabalha em Documentos, Mesa, Downloads ou num disco externo, o macOS pergunta se o **Remote Harness** pode acessar essa pasta: permita uma vez e vale de vez, também depois de `remote-harness update`. Para não ter um pedido por pasta, adicione o Remote Harness em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco. Se o pedido mostrar **node**, faltam as Command Line Tools: rode `xcode-select --install` e depois `remote-harness service install` (o `doctor` mostra essa verificação).
 
 ## As sessões estão somente leitura
 
@@ -51,6 +57,10 @@ O app avisa quando o daemon é mais antigo do que precisa. Rode `remote-harness 
 ## Um perfil do OpenRouter não abre
 
 O atalho se recusa a abrir uma janela quando o perfil não tem chave e imprime o comando para rodar: `remote-harness provider key <perfil>`. O `doctor` lista os perfis com provedor e se cada um tem chave. Sessões abertas mantêm a chave com que começaram; as novas leem de novo.
+
+## Migrando de um development build para a build da loja
+
+Quando a build do TestFlight ou do Google Play estiver disponível, instale-a ao lado da build que você mesmo fez: ela tem outra assinatura, então começa vazia. Pareie de novo escaneando `remote-harness pair`; o pareamento antigo continua funcionando até você tocar em **Esquecer esta máquina** naquela build ou trocar o token. O push se registra sozinho na primeira abertura da nova build, e o computador descarta o registro antigo quando ele para de conectar. Depois apague o development build.
 
 ## Pedindo ajuda
 

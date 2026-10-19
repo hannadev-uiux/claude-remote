@@ -8,6 +8,11 @@ export function profileAgent(profile: Pick<Profile, 'id' | 'agent'>): AgentId {
   return profile.agent ?? 'claude'
 }
 
+/** Agents that can start in their own git worktree (Claude Code's `--worktree`); Codex cannot. */
+export function canStartInWorktree(agent: AgentId): boolean {
+  return agent === 'claude'
+}
+
 /** `Claude Code · ~/.claude`, with the provider appended when it is not the default (#109). */
 export function profileDetail(
   profile: Pick<Profile, 'id' | 'configDir'>,

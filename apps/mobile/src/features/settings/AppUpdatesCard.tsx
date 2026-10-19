@@ -16,7 +16,6 @@ import {
 import { Button, Card, Text } from '@/ui'
 
 const DOCS_URL = 'https://remoteharness.app/docs'
-const ISSUES_URL = 'https://github.com/maarkN/remote-harness/issues/new'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -136,12 +135,6 @@ export function AppUpdatesCard() {
             variant="ghost"
             compact
             onPress={() => void Linking.openURL(DOCS_URL)}
-          />
-          <Button
-            label={t('settings.reportProblem')}
-            variant="ghost"
-            compact
-            onPress={() => void Linking.openURL(ISSUES_URL)}
           />
         </View>
       </View>

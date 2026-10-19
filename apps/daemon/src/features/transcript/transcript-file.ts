@@ -1,6 +1,7 @@
 import { open } from 'node:fs/promises'
 import type { TranscriptEntry } from '@remote-harness/protocol'
-import { parseTranscriptLine } from './parser.ts'
+import type { TranscriptFormat } from './format.ts'
+import { claudeTranscript } from './parser.ts'
 
 export type RawLine = { cursor: number; text: string }
 
@@ -14,7 +15,10 @@ export class TranscriptFile {
   private readonly lineStarts: number[] = [0]
   private queue: Promise<unknown> = Promise.resolve()
 
-  constructor(readonly path: string) {}
+  constructor(
+    readonly path: string,
+    readonly format: TranscriptFormat = claudeTranscript,
+  ) {}
 
   get lineCount(): number {
     return this.lineStarts.length - 1
@@ -101,7 +105,7 @@ export class TranscriptFile {
       const lines = await this.readLines(start, end)
       for (let i = lines.length - 1; i >= 0 && count < limit; i--) {
         const line = lines[i]!
-        const entries = parseTranscriptLine(line.text, line.cursor)
+        const entries = this.format.parseLine(line.text, line.cursor)
         if (entries.length === 0) continue
         chunks.push(entries)
         count += entries.length
@@ -116,6 +120,6 @@ export class TranscriptFile {
   async since(cursor: number, maxLines = 2_000): Promise<TranscriptEntry[]> {
     const from = Math.max(cursor + 1, this.lineCount - maxLines)
     const lines = await this.readLines(from, this.lineCount)
-    return lines.flatMap((l) => parseTranscriptLine(l.text, l.cursor))
+    return lines.flatMap((l) => this.format.parseLine(l.text, l.cursor))
   }
 }

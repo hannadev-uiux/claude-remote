@@ -20,6 +20,8 @@ Open a session to read the conversation as it happens: prompts, the agent's text
 
 Type in the composer and send. While the agent is busy the prompt is queued and delivered in order when the turn ends; the **Queue** card lets you edit, reorder, remove or send an item now. Hold the send button (or press ⌘⏎ with a keyboard) to send immediately, like Ctrl+Enter in the terminal.
 
+What you type is kept as the session's draft: leave the session, open another one or close the app, and it is there when you come back, photos included. The session list marks rows with a draft (**Draft:** and the start of the text). Sending clears it; emptying the field discards it. Drafts stay on the phone and expire after 7 days.
+
 - `@` completes files of the project, `/` completes Claude Code's slash commands.
 - The camera button attaches photos; the microphone dictates on-device (set the language in Settings → Voice).
 - **Show keyboard shortcuts** (menu) adds a key bar with Esc, Ctrl+C, the arrows, Tab and Enter for the agent's own menus.
@@ -56,6 +58,8 @@ Push notifications tell you when a session needs a permission, finishes a turn o
 
 A profile is a Claude Code account, that is a `CLAUDE_CONFIG_DIR`, with a name, a color and an alias. A profile can also route Claude Code through **OpenRouter**: its rows show a dashed `via OpenRouter` chip, **New session** gets a **Model** row with a searchable picker (context size, prices per million tokens, tool use, thinking and caching support, credits left), and **Change model…** in the session menu switches a running session. The key stays on the computer: see [the daemon](/en/docs/daemon/#profiles-and-openrouter).
 
+A profile can also run **Codex** (`cx` badge, green): its sessions show the approval policy (`on-request`, `never`…) in place of the mode chip, `exec(…)` and `apply_patch(…)` calls with their output and diff, and approvals with Allow / Deny. See [Codex profiles](/en/docs/daemon/#codex-profiles).
+
 ## Settings
 
 - **Machine**: the connection, the machine's name (an alias of your choice, else its hostname), the daemon version, and **Forget this machine**.
@@ -63,7 +67,8 @@ A profile is a Claude Code account, that is a `CLAUDE_CONFIG_DIR`, with a name, 
 - **Profiles**: each profile with its agent, alias, config dir, notifications switch and, with a provider, the provider, the default model and the credits.
 - **Notifications**: push for this phone, test, live status, the muted profiles and sessions.
 - **Voice**: the transcription language.
-- **App**: version, over-the-air updates and their channel, **Check for updates**, **Documentation**, **Report a problem**.
+- **App**: version, over-the-air updates and their channel, **Check for updates**, **Documentation**.
+- **Error reports**: send automatically, ask each time (default) or never, and **Report a problem** (describe the bug, preview exactly what is sent, then send, share or open a GitHub issue). Reports never carry the content of your sessions; see the [privacy policy](/en/docs/privacy/).
 
 ## iPad and keyboards
 

@@ -68,7 +68,7 @@ Product copy in the app, the daemon CLI, the installers, the push notifications,
 
 #### Scenario: Composer of a session with an unknown agent
 - **WHEN** the app shows the composer of a session whose agent is not known
-- **THEN** the placeholder reads "message the agent… (@ files, / commands)" (pt-BR "mensagem para o agente…", es-ES "mensaje para el agente…")
+- **THEN** the placeholder reads "Message the agent…" (pt-BR "Mensagem para o agente…", es-ES "Mensaje para el agente…")
 
 #### Scenario: Question from a known agent
 - **WHEN** a session whose agent is known as Codex asks a question

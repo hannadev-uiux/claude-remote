@@ -128,6 +128,8 @@ export const SessionSchema = z.object({
   title: z.string(),
   state: SessionStateSchema,
   permissionMode: PermissionModeSchema.nullable(),
+  /** Codex: the approval policy (`on-request`, `never`, …); `null` for Claude Code, until known and from older daemons. */
+  approvalPolicy: z.string().nullable().default(null),
   controllable: z.boolean(),
   paneId: z.string().nullable(),
   updatedAt: z.string(),
@@ -242,6 +244,12 @@ export const TranscriptEntrySchema = z.discriminatedUnion('kind', [
     text: z.string(),
     /** `turn_duration` only: lets the app write the text in its own language. */
     durationMs: z.number().optional(),
+    /** `task_notification` only: `completed`, `failed`, `stopped`, `killed` or another value. */
+    status: z.string().optional(),
+    /** `task_notification` only: extra explanation, when Claude Code gives one. */
+    note: z.string().optional(),
+    /** `tagged` only: the first tag name of an entry made of tags the daemon does not know. */
+    tag: z.string().optional(),
   }),
   z.object({ ...entryBase, kind: z.literal('unknown'), raw: z.string() }),
 ])
@@ -509,3 +517,57 @@ export const ErrorCodeSchema = z.enum([
   'internal',
 ])
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>
+
+/** A request the daemon rejected, for `diagnostics.result`: never its payload or message. */
+export const RejectedRequestSchema = z.object({
+  at: z.string(),
+  type: z.string().max(64),
+  code: ErrorCodeSchema,
+})
+export type RejectedRequest = z.infer<typeof RejectedRequestSchema>
+/** How many rejections the daemon keeps for `diagnostics.errors`. */
+export const DIAGNOSTICS_LIMIT = 50
+
+/** Branches the daemon's installer can follow: `main` (stable) or `development`. */
+export const DaemonUpdateChannelSchema = z.enum(['main', 'development'])
+export type DaemonUpdateChannel = z.infer<typeof DaemonUpdateChannelSchema>
+
+/** Steps of a daemon update run; `done` and `failed` are final. */
+export const DaemonUpdateStepSchema = z.enum(['fetching', 'building', 'restarting', 'done', 'failed'])
+export type DaemonUpdateStep = z.infer<typeof DaemonUpdateStepSchema>
+
+/** One `remote-harness update` run, wherever it was started (app, tray, terminal). */
+export const DaemonUpdateRunSchema = z.object({
+  channel: DaemonUpdateChannelSchema,
+  /** Version that was running when the run started. */
+  from: z.string(),
+  /** Version installed (known once fetched; the running one when done). */
+  to: z.string().nullable(),
+  commit: z.string().nullable(),
+  step: DaemonUpdateStepSchema,
+  error: z.string().optional(),
+  /** The build failed and the previous version was rebuilt. */
+  rolledBack: z.boolean().optional(),
+  startedAt: z.string(),
+  finishedAt: z.string().nullable(),
+})
+export type DaemonUpdateRun = z.infer<typeof DaemonUpdateRunSchema>
+
+/** Why this daemon cannot update itself: run from sources, a development clone, no service manager. */
+export const DaemonUpdateBlockerSchema = z.enum(['not-built', 'not-installer', 'no-service'])
+export type DaemonUpdateBlocker = z.infer<typeof DaemonUpdateBlockerSchema>
+
+export const DaemonUpdateInfoSchema = z.object({
+  current: z.string(),
+  channel: DaemonUpdateChannelSchema,
+  checkedAt: z.string().nullable(),
+  checking: z.boolean(),
+  available: z
+    .object({ version: z.string().nullable(), commit: z.string(), downgrade: z.boolean() })
+    .nullable(),
+  blocked: DaemonUpdateBlockerSchema.nullable(),
+  /** A session is running or waiting, or a permission is pending (the restart interrupts the app). */
+  busy: z.boolean(),
+  run: DaemonUpdateRunSchema.nullable(),
+})
+export type DaemonUpdateInfo = z.infer<typeof DaemonUpdateInfoSchema>

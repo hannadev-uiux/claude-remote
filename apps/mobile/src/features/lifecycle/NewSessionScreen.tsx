@@ -19,7 +19,7 @@ import {
   matchingSuggestions,
   splitDirectoryInput,
 } from './directory-input'
-import { profileAgent, profileDetail, recentDetail } from './new-session'
+import { canStartInWorktree, profileAgent, profileDetail, recentDetail } from './new-session'
 import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
 import { useDirectories, useDirectoriesSupported } from './use-directories'
 
@@ -78,6 +78,7 @@ export function NewSessionScreen() {
   })
   const current = inspectedCwd === cwd.trim() ? inspection.data : undefined
   const checkout = current?.checkout ?? null
+  const worktreeAllowed = selectedProfile ? canStartInWorktree(profileAgent(selectedProfile)) : false
   const peers = current?.peers ?? []
 
   // Folder autocomplete: the listing may lag the text, so it is narrowed to what is typed now.
@@ -145,7 +146,11 @@ export function NewSessionScreen() {
     // long (an older or busy daemon must not leave the button looking dead).
     const info =
       current !== undefined ? current : await withTimeout(inspect(cwd.trim()), INSPECT_BEFORE_START_MS, null)
-    const plan = planStart({ worktree, inCheckout: info?.checkout != null, peers: info?.peers.length ?? 0 })
+    const plan = planStart({
+      worktree: worktree && worktreeAllowed,
+      inCheckout: info?.checkout != null,
+      peers: info?.peers.length ?? 0,
+    })
     if (plan.action === 'launch') return void launch(plan.worktree)
     Alert.alert(
       t('newSession.confirmTitle'),
@@ -318,7 +323,7 @@ export function NewSessionScreen() {
           </Text>
         ) : null}
 
-        {checkout ? (
+        {checkout && worktreeAllowed ? (
           <View style={[styles.option, styles.section]}>
             <View style={styles.flex}>
               <Text size="sm">{t('newSession.worktree')}</Text>

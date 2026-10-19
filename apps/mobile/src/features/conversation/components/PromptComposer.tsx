@@ -10,6 +10,7 @@ import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/the
 import type { AgentId } from '@/core/theme/agents'
 import { Text } from '@/ui'
 import { composerActions } from '../composer-actions'
+import { COMPOSER_MAX_HEIGHT, COMPOSER_MIN_HEIGHT, composerHeight } from '../composer-height'
 import { composerPlaceholder } from '../composer-placeholder'
 import type { KeyboardHint } from '../keyboard-hints'
 import { hardwareKeyboard, keyboardToolbar } from '../keyboard-toolbar'
@@ -53,18 +54,23 @@ type Props = {
    */
   tablet?: boolean
   hints?: KeyboardHint[]
+  /** Inserts `@` or `/` from the keyboard toolbar; without it the toolbar shows no trigger buttons. */
+  onTrigger?: (trigger: '@' | '/') => void
 }
 
 // Subtle swap between attach/mic and Send; instant when the system asks for reduced motion.
 const SWAP_MS = 150
 const entering = ZoomIn.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
 const exiting = ZoomOut.duration(SWAP_MS).reduceMotion(ReduceMotion.System)
+// The content size reported on iOS leaves out the input's borders (1 pt each side); Android's includes them.
+const CONTENT_EXTRA = Platform.OS === 'ios' ? 2 : 0
 
 export const PromptComposer = forwardRef<TextInput, Props>(function PromptComposer(props, ref) {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useStyles()
   const hasText = props.value.trim().length > 0
+  const placeholder = composerPlaceholder(props.agent ?? null, props.disabled, t)
   const hasAttachments = props.hasAttachments === true
   const canSend = !props.disabled && !props.sending && (hasText || hasAttachments)
   const show = composerActions({
@@ -76,6 +82,9 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
     hasVoice: props.voiceButton != null,
   })
   const [focused, setFocused] = useState(false)
+  // Sized explicitly: the native multiline input keeps its old height when a send clears it from code.
+  const [contentHeight, setContentHeight] = useState<number | null>(null)
+  const height = composerHeight(props.value, contentHeight, CONTENT_EXTRA)
   const keyboardHeight = useKeyboardHeight()
   const expanded = useKeyboardToolbarStore((s) => s.expanded)
   const toolbar = keyboardToolbar({ os: Platform.OS, focused, keyboardHeight, expanded })
@@ -108,24 +117,38 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
         <Text color="accentText" weight="bold" style={styles.prompt}>
           {'>'}
         </Text>
-        <TextInput
-          ref={ref}
-          value={props.value}
-          onChangeText={props.onChangeText}
-          onSelectionChange={props.onSelectionChange}
-          selection={props.selection}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          editable={!props.disabled}
-          multiline
-          submitBehavior={hardware ? 'submit' : 'newline'}
-          onSubmitEditing={hardware && canSend ? props.onSend : undefined}
-          placeholder={composerPlaceholder(props.agent ?? null, props.disabled, t)}
-          placeholderTextColor={colors.textDim}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.input}
-        />
+        <View style={styles.field}>
+          <TextInput
+            ref={ref}
+            value={props.value}
+            onChangeText={props.onChangeText}
+            onSelectionChange={props.onSelectionChange}
+            onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
+            selection={props.selection}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            editable={!props.disabled}
+            multiline
+            submitBehavior={hardware ? 'submit' : 'newline'}
+            onSubmitEditing={hardware && canSend ? props.onSend : undefined}
+            accessibilityLabel={placeholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.input, { height }]}
+          />
+          {/* A multiline input wraps its native placeholder; this one stays on one line. */}
+          {props.value ? null : (
+            <Text
+              color="textDim"
+              numberOfLines={1}
+              importantForAccessibility="no"
+              accessibilityElementsHidden
+              style={styles.placeholder}
+            >
+              {placeholder}
+            </Text>
+          )}
+        </View>
         {/* Only swaps animate: the buttons present when the screen opens just appear. */}
         <LayoutAnimationConfig skipEntering>
           {show.attach ? (
@@ -175,6 +198,8 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           onKey={props.onKey}
           keysDisabled={props.keysDisabled}
           canDismiss={toolbar.canDismiss}
+          onTrigger={props.onTrigger}
+          commandEnabled={!hasText}
         />
       ) : null}
     </View>
@@ -189,10 +214,10 @@ const useStyles = makeStyles((theme) => ({
   },
   row: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm, padding: space.sm },
   prompt: { paddingBottom: 9 },
+  field: { flex: 1 },
   input: {
-    flex: 1,
-    maxHeight: 140,
-    minHeight: 36,
+    maxHeight: COMPOSER_MAX_HEIGHT,
+    minHeight: COMPOSER_MIN_HEIGHT,
     paddingHorizontal: space.sm,
     paddingVertical: 8,
     borderRadius: radius.md,
@@ -202,6 +227,14 @@ const useStyles = makeStyles((theme) => ({
     color: theme.colors.text,
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
+  },
+  // Over the empty input, where the native placeholder would be (padding + border).
+  placeholder: {
+    position: 'absolute',
+    left: space.sm + 1,
+    right: space.sm + 1,
+    top: 9,
+    pointerEvents: 'none',
   },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   error: { paddingHorizontal: space.md, paddingTop: space.xs },

@@ -27,7 +27,13 @@ The daemon binds only to a 100.x address. If `doctor` says there is none: instal
 
 ## The computer sleeps or locks
 
-The daemon only works while the computer is awake. On a MacBook, keep it plugged in and disable sleep while connected to power, or use `caffeinate`; on Linux check the power settings. Locking the screen is fine. Sessions in tmux survive a disconnection of the app and reconnect when it returns.
+The daemon only works while the computer is awake. Locking the screen is fine. By default the background service keeps the computer from idle-sleeping while a session is running or waiting, and for 10 minutes after; the display still turns off and the screen still locks. Change it with `remote-harness keep-awake off`, `sessions` or `always`; `doctor` shows whether it is holding. A laptop still sleeps when the lid closes, unless it is on power with an external display. When the app says the computer is not answering, it is probably asleep: wake it and the app reconnects by itself. Sessions in tmux survive a disconnection of the app.
+
+The app cannot wake a sleeping computer: Wake-on-LAN packets do not cross Tailscale. If the computer supports Wake-on-LAN (usually over Ethernet) and another device on the same network stays on and is in your tailnet (a Raspberry Pi, a NAS, a router with WoL), you can wake it from there, for example `ssh pi@raspberrypi wakeonlan AA:BB:CC:DD:EE:FF` with the computer's MAC address.
+
+## macOS asks for folder access
+
+The first time a session works in Documents, Desktop, Downloads or an external drive, macOS asks whether **Remote Harness** may access that folder: allow it once and it sticks, also across `remote-harness update`. To avoid one prompt per folder, add Remote Harness under System Settings → Privacy & Security → Full Disk Access. If the prompt names **node** instead, the Command Line Tools are missing: run `xcode-select --install`, then `remote-harness service install` (`doctor` shows this check).
 
 ## Sessions are read-only
 
@@ -51,6 +57,10 @@ The app says when the daemon is older than it needs. Run `remote-harness update`
 ## An OpenRouter profile will not start
 
 The launcher refuses to open a window when the profile has no key and prints the command to run: `remote-harness provider key <profile>`. `doctor` lists the provider profiles and whether each has a key. Open sessions keep the key they started with; new ones read it again.
+
+## Moving from a development build to the store build
+
+When the TestFlight or Google Play build is available, install it next to the build you made yourself: it has a different signature, so it starts empty. Pair it again by scanning `remote-harness pair`; the old pairing keeps working until you tap **Forget this machine** in that build or rotate the token. Push registers itself on the first launch of the new build, and the computer drops the old registration once it stops connecting. Then delete the development build.
 
 ## Getting help
 

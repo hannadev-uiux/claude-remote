@@ -4,6 +4,9 @@
  * `unknown` entries (or are skipped when they are clearly metadata) and nothing throws.
  */
 import type { ImageRef, TranscriptEntry } from '@remote-harness/protocol'
+import type { ImageData, TranscriptFormat, TranscriptMetaUpdate } from './format.ts'
+
+export type { ImageData, TranscriptMetaUpdate } from './format.ts'
 
 export const MAX_TOOL_RESULT_CHARS = 20_000
 const MAX_UNKNOWN_RAW_CHARS = 2_000
@@ -38,9 +41,6 @@ function str(value: unknown): string | null {
 function truncate(text: string, max: number): { text: string; truncated: boolean } {
   return text.length > max ? { text: text.slice(0, max), truncated: true } : { text, truncated: false }
 }
-
-/** A base64 image block; other sources (`url`, `file`) are not supported and yield null. */
-export type ImageData = { mediaType: string; data: string; bytes: number }
 
 function imageData(part: Json): ImageData | null {
   if (!isObject(part.source) || part.source.type !== 'base64') return null
@@ -122,23 +122,81 @@ export function findImage(raw: string, index: number): ImageData | null {
 const COMMAND_NAME = /<command-name>([\s\S]*?)<\/command-name>/
 const COMMAND_ARGS = /<command-args>([\s\S]*?)<\/command-args>/
 const COMMAND_STDOUT = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/
+const TASK_NOTIFICATION = /<task-notification>([\s\S]*?)<\/task-notification>/g
+const BASH_INPUT = /<bash-input>([\s\S]*?)<\/bash-input>/
+const BASH_STDOUT = /<bash-stdout>([\s\S]*?)<\/bash-stdout>/
+const BASH_STDERR = /<bash-stderr>([\s\S]*?)<\/bash-stderr>/
+const OPENING_TAG = /\s*<([a-z][a-z0-9-]*)(?:\s[^>]*)?>/y
+const ONLY_SPACE = /\s*$/y
 
-/** User strings wrapped in Claude Code's XML-ish tags are slash commands or their output. */
-function classifyUserString(text: string): {
-  kind: 'user' | 'system' | 'skip'
-  subtype?: string
-  text: string
-} {
+type SystemDraft = Extract<Draft, { kind: 'system' }>
+type Classified = { kind: 'user'; text: string } | SystemDraft
+
+/** Trimmed content of the first `<name>` element in `text`, if any. */
+function tagContent(text: string, name: string): string | undefined {
+  const match = new RegExp(`<${name}>([\\s\\S]*?)</${name}>`).exec(text)
+  return match?.[1]?.trim()
+}
+
+/**
+ * First tag name of a string made only of `<tag>…</tag>` blocks, or null. Each block ends at the
+ * first matching closing tag: a linear scan, where a backtracking regex could take exponential time.
+ */
+export function onlyTagsName(text: string): string | null {
+  let first: string | null = null
+  let at = 0
+  while (at < text.length) {
+    ONLY_SPACE.lastIndex = at
+    if (ONLY_SPACE.test(text)) break
+    OPENING_TAG.lastIndex = at
+    const open = OPENING_TAG.exec(text)
+    const name = open?.[1]
+    if (!name) return null
+    const close = text.indexOf(`</${name}>`, OPENING_TAG.lastIndex)
+    if (close < 0) return null
+    first ??= name
+    at = close + name.length + 3
+  }
+  return first
+}
+
+/** Status, summary and note of a background task; ids, file paths, usage and result stay out. */
+function taskNotification(body: string): SystemDraft {
+  const status = tagContent(body, 'status') ?? ''
+  const note = tagContent(body, 'note')
+  return {
+    kind: 'system',
+    subtype: 'task_notification',
+    text: tagContent(body, 'summary') || status,
+    status,
+    ...(note ? { note } : {}),
+  }
+}
+
+/**
+ * User strings wrapped in Claude Code's XML-ish tags are not prompts: slash commands and their
+ * output, background task notifications, `!` shell commands, or tags the daemon does not know yet.
+ */
+function classifyUserString(text: string): Classified[] {
   const name = COMMAND_NAME.exec(text)
   if (name) {
     const args = COMMAND_ARGS.exec(text)?.[1]?.trim()
-    return { kind: 'system', subtype: 'command', text: `${name[1]?.trim()}${args ? ` ${args}` : ''}` }
+    return [{ kind: 'system', subtype: 'command', text: `${name[1]?.trim()}${args ? ` ${args}` : ''}` }]
   }
   const stdout = COMMAND_STDOUT.exec(text)
-  if (stdout) return { kind: 'system', subtype: 'command_output', text: stdout[1]?.trim() ?? '' }
-  if (text.startsWith('<command-message>') || text.startsWith('<system-reminder>'))
-    return { kind: 'skip', text }
-  return { kind: 'user', text }
+  if (stdout) return [{ kind: 'system', subtype: 'command_output', text: stdout[1]?.trim() ?? '' }]
+  if (text.startsWith('<command-message>') || text.startsWith('<system-reminder>')) return []
+  const tasks = [...text.matchAll(TASK_NOTIFICATION)].map((m) => taskNotification(m[1] ?? ''))
+  if (tasks.length > 0) return tasks
+  const input = BASH_INPUT.exec(text)
+  if (input) return [{ kind: 'system', subtype: 'bash_input', text: input[1]?.trim() ?? '' }]
+  if (BASH_STDOUT.test(text) || BASH_STDERR.test(text)) {
+    const output = [BASH_STDOUT.exec(text)?.[1]?.trim(), BASH_STDERR.exec(text)?.[1]?.trim()]
+    return [{ kind: 'system', subtype: 'bash_output', text: output.filter(Boolean).join('\n') }]
+  }
+  const tag = onlyTagsName(text)
+  if (tag) return [{ kind: 'system', subtype: 'tagged', tag, text: text.trim() }]
+  return [{ kind: 'user', text }]
 }
 
 type Base = Pick<TranscriptEntry, 'cursor' | 'uuid' | 'timestamp' | 'isSidechain'>
@@ -148,17 +206,19 @@ type Draft = TranscriptEntry extends infer E
     : never
   : never
 
+/** Drafts of a user text: a prompt, or system entries for tagged text; nothing when empty. */
+function userDrafts(text: string): Draft[] {
+  return classifyUserString(text).flatMap((c): Draft[] => {
+    if (!c.text) return []
+    return c.kind === 'user' ? [{ kind: 'user', text: c.text, images: [] }] : [c]
+  })
+}
+
 function parseUser(line: Json, cursor: number): Draft[] {
   if (line.isMeta === true) return []
   const message = isObject(line.message) ? line.message : {}
   const content = message.content
-  if (typeof content === 'string') {
-    const c = classifyUserString(content)
-    if (c.kind === 'skip' || !c.text) return []
-    return c.kind === 'system'
-      ? [{ kind: 'system', subtype: c.subtype ?? 'info', text: c.text }]
-      : [{ kind: 'user', text: c.text, images: [] }]
-  }
+  if (typeof content === 'string') return userDrafts(content)
   if (!Array.isArray(content)) return []
   const drafts: Draft[] = []
   const counter = new ImageCounter(cursor)
@@ -178,10 +238,7 @@ function parseUser(line: Json, cursor: number): Draft[] {
         images,
       })
     } else if (part.type === 'text') {
-      const c = classifyUserString(str(part.text) ?? '')
-      if (c.kind === 'user' && c.text) drafts.push({ kind: 'user', text: c.text, images: [] })
-      else if (c.kind === 'system')
-        drafts.push({ kind: 'system', subtype: c.subtype ?? 'info', text: c.text })
+      drafts.push(...userDrafts(str(part.text) ?? ''))
     } else if (part.type === 'image') {
       promptImages.push(...counter.ref(part))
     }
@@ -281,9 +338,6 @@ export function parseTranscriptLine(raw: string, cursor: number): TranscriptEntr
   )
 }
 
-/** Metadata lines that update the session itself rather than the conversation. */
-export type TranscriptMetaUpdate = { customTitle?: string; permissionMode?: string }
-
 export function parseMetaLine(raw: string): TranscriptMetaUpdate | null {
   if (!raw.includes('"custom-title"') && !raw.includes('"permission-mode"')) return null
   try {
@@ -298,4 +352,11 @@ export function parseMetaLine(raw: string): TranscriptMetaUpdate | null {
     // ignore
   }
   return null
+}
+
+/** Claude Code's `.jsonl`, as the transcript service reads formats. */
+export const claudeTranscript: TranscriptFormat = {
+  parseLine: parseTranscriptLine,
+  parseMeta: parseMetaLine,
+  findImage,
 }

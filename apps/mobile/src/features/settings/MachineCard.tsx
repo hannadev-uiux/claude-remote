@@ -8,6 +8,7 @@ import { useConnectionStore } from '@/core/connection'
 import { credentialsStorage } from '@/core/storage/credentials'
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { Badge, Button, Card, IconButton, Text } from '@/ui'
+import { clearAllDrafts } from '../drafts/persistence'
 import { setMachineAlias, useMachineName, useMachineStore } from './machine-store'
 import { machineMeta } from './summary'
 
@@ -46,6 +47,7 @@ export function MachineCard() {
         style: 'destructive',
         onPress: async () => {
           await credentialsStorage.clear()
+          await clearAllDrafts()
           setCredentials(null)
           router.replace('/pair')
         },

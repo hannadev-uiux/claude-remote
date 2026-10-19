@@ -16,7 +16,7 @@ const NEWLINE = 0x0a
 /** Per transcript: bytes already searched for `custom-title` and the latest one found there. */
 const titleScans = new Map<string, { scannedTo: number; title: string | null }>()
 
-async function readSlice(path: string, from: 'head' | 'tail', bytes: number): Promise<string> {
+export async function readSlice(path: string, from: 'head' | 'tail', bytes: number): Promise<string> {
   const handle = await open(path, 'r')
   try {
     const { size } = await handle.stat()

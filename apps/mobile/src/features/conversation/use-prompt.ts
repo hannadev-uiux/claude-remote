@@ -1,10 +1,13 @@
 import type { InputMode } from '@remote-harness/protocol'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
 import type { TFunction } from '@/core/i18n/create'
 import { exceedsUploadLimit, type PreparedImage } from '../attachments/limits'
+import { clearImagesLost, selectDraft, setDraftImages, setDraftText, useDraftsStore } from '../drafts/store'
+
+const NO_IMAGES: PreparedImage[] = []
 
 export function promptErrorMessage(error: unknown, t: TFunction, withAttachments = false): string {
   return errorMessage(error, t, {
@@ -25,14 +28,36 @@ export function uploadErrorMessage(error: unknown, t: TFunction): string {
   })
 }
 
-/** Prompt text, attached photos and send/keys actions for a session. Both are kept when sending fails. */
+/**
+ * Prompt text, attached photos and send/keys actions for a session. Text and photos are the session's
+ * draft, kept across screens and relaunches; both are kept when sending fails.
+ */
 export function usePrompt(sessionId: string) {
   const client = useDaemonClient()
   const { t } = useTranslation()
-  const [text, setText] = useState('')
-  const [attachments, setAttachments] = useState<PreparedImage[]>([])
+  const draft = useDraftsStore(selectDraft(sessionId))
+  const text = draft?.text ?? ''
+  const attachments = draft?.images ?? NO_IMAGES
+  const imagesLost = draft?.imagesLost ?? 0
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const setText = useCallback(
+    (value: string | ((current: string) => string)) => setDraftText(sessionId, value),
+    [sessionId],
+  )
+  const setAttachments = useCallback(
+    (value: PreparedImage[] | ((current: PreparedImage[]) => PreparedImage[])) =>
+      setDraftImages(sessionId, value),
+    [sessionId],
+  )
+
+  // Photos of a restored draft whose local copies are gone: say so once.
+  useEffect(() => {
+    if (imagesLost === 0) return
+    setError(t('drafts.imagesLost', { count: imagesLost }))
+    clearImagesLost(sessionId)
+  }, [imagesLost, sessionId, t])
 
   /** Uploads each photo in order; returns their ids, or null after showing the error. */
   const upload = useCallback(
@@ -104,19 +129,21 @@ export function usePrompt(sessionId: string) {
       }
       return ok
     },
-    [sendText, text, attachments],
+    [sendText, text, attachments, setText, setAttachments],
   )
 
   /** Pastes mid-turn instead of waiting in the queue (long press on Send, ⌘⏎). */
   const sendNow = useCallback(() => send('now'), [send])
 
-  const addAttachments = useCallback((images: PreparedImage[]) => {
-    setAttachments((current) => [...current, ...images])
-  }, [])
+  const addAttachments = useCallback(
+    (images: PreparedImage[]) => setAttachments((current) => [...current, ...images]),
+    [setAttachments],
+  )
 
-  const removeAttachment = useCallback((key: string) => {
-    setAttachments((current) => current.filter((image) => image.key !== key))
-  }, [])
+  const removeAttachment = useCallback(
+    (key: string) => setAttachments((current) => current.filter((image) => image.key !== key)),
+    [setAttachments],
+  )
 
   const sendKey = useCallback(
     (key: string) => {

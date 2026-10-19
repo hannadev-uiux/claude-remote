@@ -63,7 +63,7 @@ The screen SHALL follow the end of the conversation while following is on, the u
 - **THEN** the last message stays visible above the keyboard
 
 ### Requirement: Prompt sending
-The prompt field SHALL send `session.input` with `mode: auto` and clear the field after the `ack`, whether the prompt was sent or queued; on error, it MUST keep the text and show the message. In a read-only session the field MUST be disabled and its placeholder say so. Otherwise the placeholder SHALL name the agent when it is known (`message Claude Code… (@ files, / commands)`) and say `message the agent…` when it is not. While the message would be queued (the session is `running` or `waiting`, a permission is pending or prompts are already queued), the composer SHALL show the hint `Hold: send now · ⌘⏎` and label the send button as queueing; a long press on Send, and ⌘⏎ on a hardware keyboard, SHALL send with `mode: now`. The session's queued prompts SHALL be shown in a dashed `QUEUED · N` card above the composer, numbered in order, each with its text, a photo count when it has attachments, the delivery error when one failed, and Edit (a sheet that keeps the attachments), Remove and Send now actions; the card SHALL offer `Send all now`. The card mirrors `session.queue` and disappears when the queue is empty.
+The prompt field SHALL send `session.input` with `mode: auto` and clear the field after the `ack`, whether the prompt was sent or queued; on error, it MUST keep the text and show the message. In a read-only session the field MUST be disabled and its placeholder say so (`Read-only session`). Otherwise the placeholder SHALL name the agent when it is known (`Message Claude Code…`) and say `Message the agent…` when it is not. The placeholder MUST stay on one line whatever the language and width, ending in an ellipsis when it does not fit, so the empty field never grows. While the message would be queued (the session is `running` or `waiting`, a permission is pending or prompts are already queued), the composer SHALL show the hint `Hold: send now · ⌘⏎` and label the send button as queueing; a long press on Send, and ⌘⏎ on a hardware keyboard, SHALL send with `mode: now`. The session's queued prompts SHALL be shown in a dashed `QUEUED · N` card above the composer, numbered in order, each with its text, a photo count when it has attachments, the delivery error when one failed, and Edit (a sheet that keeps the attachments), Remove and Send now actions; the card SHALL offer `Send all now`. The card mirrors `session.queue` and disappears when the queue is empty.
 
 #### Scenario: Successful send
 - **WHEN** the user sends "continue" to an idle session
@@ -79,7 +79,11 @@ The prompt field SHALL send `session.input` with `mode: auto` and clear the fiel
 
 #### Scenario: Placeholder
 - **WHEN** a Claude Code session is open and the field is empty
-- **THEN** it reads "message Claude Code… (@ files, / commands)"
+- **THEN** it reads "Message Claude Code…" on one line
+
+#### Scenario: Placeholder on a narrow phone
+- **WHEN** the composer is shown in pt-BR on a 320 pt wide screen
+- **THEN** the placeholder stays on one line, cut with an ellipsis if needed, and the empty field keeps its one-line height
 
 #### Scenario: Failed delivery shown
 - **WHEN** the daemon could not deliver the first queued prompt
@@ -88,7 +92,7 @@ The prompt field SHALL send `session.input` with `mode: auto` and clear the fiel
 ### Requirement: Controls
 The screen SHALL offer Esc (interrupt) and Ctrl+C (with confirmation), plus a key bar (arrows, Enter, Tab, 1-3). The key bar SHALL be hidden by default and shown or hidden from the session options menu; the choice MUST be remembered on the device across app restarts.
 
-While the prompt field is focused (on Android, also with the keyboard up), a toolbar SHALL be attached to the top of the keyboard with a "special keys" button and a "hide keyboard" button. The special keys button SHALL expand the same keys as the key bar (Ctrl+C still asks for confirmation) in the toolbar and collapse them again; the expanded state MUST be remembered on the device across app restarts and SHALL be collapsed by default. Sending a key from the toolbar MUST NOT blur the prompt field. When only a hardware keyboard's shortcut bar is up, the toolbar SHALL keep the special keys and omit the hide keyboard button. While the toolbar's keys are expanded, the key bar under the conversation MUST be hidden. All labels MUST be translated.
+While the prompt field is focused (on Android, also with the keyboard up), a toolbar SHALL be attached to the top of the keyboard with a "special keys" button and a "hide keyboard" button. While the special keys are collapsed, a composer with suggestions SHALL show `@` and `/` buttons in the toolbar: `@` inserts `@` at the cursor (after a space when the previous character is not whitespace) and opens the file suggestions; `/` is available only while the field is empty and inserts `/`, opening the command suggestions. Inserting MUST NOT blur the prompt field. The special keys button SHALL expand the same keys as the key bar (Ctrl+C still asks for confirmation) in the toolbar and collapse them again; the expanded state MUST be remembered on the device across app restarts and SHALL be collapsed by default. Sending a key from the toolbar MUST NOT blur the prompt field. When only a hardware keyboard's shortcut bar is up, the toolbar SHALL keep the special keys and omit the hide keyboard button. While the toolbar's keys are expanded, the key bar under the conversation MUST be hidden. All labels MUST be translated.
 
 #### Scenario: Interrupt
 - **WHEN** the key bar is shown and the user taps Esc
@@ -121,6 +125,14 @@ While the prompt field is focused (on Android, also with the keyboard up), a too
 #### Scenario: No duplicate keys
 - **WHEN** the key bar is shown and the user focuses the prompt field with the toolbar's keys expanded
 - **THEN** the key bar under the conversation is hidden until the keyboard closes
+
+#### Scenario: Insert a file mention
+- **WHEN** the field holds "read" with the cursor at the end and the user taps `@` in the toolbar
+- **THEN** the field holds "read @", the cursor is after `@` and the file suggestions open
+
+#### Scenario: Command button
+- **WHEN** the field is empty and the user taps `/` in the toolbar
+- **THEN** the field holds "/" and the command suggestions open; once the field has text, `/` is disabled
 
 #### Scenario: Read-only session
 - **WHEN** the session has no live pane
@@ -299,3 +311,121 @@ While a hardware keyboard is attached on a tablet (the composer is focused and t
 #### Scenario: Pending permission
 - **WHEN** a tool permission is pending while the hints row is visible
 - **THEN** the row also shows `⌘A / ⌘D answer`
+
+### Requirement: Links in the conversation
+The conversation SHALL render markdown links and bare URLs (`http://`, `https://`, `mailto:`) as links in every kind of entry: assistant messages (including inline code and code blocks), user messages, thinking, system lines and the expanded tool call output, JSON and input fields. A tap on a link whose target uses `https`, `http` or `mailto` MUST open it with the system handler. A link with any other target (another scheme, or a file path used as a markdown link target) MUST NOT be opened: a tap opens the link menu instead. A long press on any link SHALL open a menu with "Open" (only for `https`, `http`, `mailto`), "Copy link" and "Share"; copying MUST give a brief confirmation. File paths such as `src/foo.ts:12` MUST NOT be detected as links, and trailing punctuation or an unmatched closing parenthesis after a bare URL MUST NOT be part of it. Text that contains no link stays selectable.
+
+#### Scenario: Open a markdown link
+- **WHEN** an assistant message contains `[the PR](https://github.com/o/r/pull/1)` and the user taps "the PR"
+- **THEN** the system opens `https://github.com/o/r/pull/1`
+
+#### Scenario: Bare URL in tool output
+- **WHEN** an expanded `Bash` result contains `Deployed to https://app.example.dev.` and the user taps the URL
+- **THEN** `https://app.example.dev` opens, without the final period
+
+#### Scenario: Copy with a long press
+- **WHEN** the user long-presses a link and picks "Copy link"
+- **THEN** the URL is in the clipboard and the app confirms the copy
+
+#### Scenario: Unsafe scheme
+- **WHEN** an assistant message links to `file:///etc/hosts` and the user taps it
+- **THEN** nothing is opened and the menu offers only "Copy link" and "Share"
+
+#### Scenario: File path
+- **WHEN** a message shows `src/foo.ts:12`
+- **THEN** it is not rendered as a link
+
+### Requirement: Quick copy
+The conversation SHALL let the user copy content with one tap, without blocking dialogs and without sending anything to the daemon. User and assistant messages MUST have a copy button that copies the whole message (the markdown source for assistant messages). Fenced code blocks MUST show a header with the language (when given) and a Copy button that copies the code. Inline code MUST copy on tap or long press, unless it contains a link; a text block containing inline code MUST copy its whole text on a long press outside the code. An expanded tool call MUST offer a Copy button on the Output tab (the raw result) and the JSON tab (the JSON), and one per Input field (such as the `Bash` command). Every copy MUST be confirmed briefly: the copy icon turns into a check, plus a haptic and an accessibility announcement; copies without an icon also show a short toast on Android. Text without anything tappable stays selectable. Labels SHALL be translated (pt-BR, en-US, es-ES).
+
+#### Scenario: Copy an answer
+- **WHEN** the user taps the copy button of an assistant message
+- **THEN** its markdown source is in the clipboard and the icon briefly shows a check
+
+#### Scenario: Copy a code block
+- **WHEN** an assistant message has a ```` ```bash ```` block with `pnpm check` and the user taps Copy in its header
+- **THEN** `pnpm check` is in the clipboard and the header shows "bash"
+
+#### Scenario: Copy inline code
+- **WHEN** the user taps `` `pnpm check` `` inside an assistant paragraph
+- **THEN** `pnpm check` is in the clipboard and the app confirms the copy
+
+#### Scenario: Copy a Bash command
+- **WHEN** the user opens the Input tab of a `Bash` call and taps the copy button of the Command field
+- **THEN** the command is in the clipboard
+
+#### Scenario: Copy a tool output
+- **WHEN** the user expands a finished tool call on the Output tab and taps Copy
+- **THEN** the full raw result is in the clipboard, even when the tab shows it cut with "Show more"
+
+### Requirement: Notifications and tagged entries
+The conversation SHALL render a `task_notification` system entry as a compact card with an icon and color by status (completed, failed, stopped or killed, other), the translated status and the summary; when the entry has a note, a tap MUST expand it. A `bash_input` entry SHALL render as `! <command>`, and its `bash_output` as a system line. A `tagged` entry SHALL render as a dimmed, collapsed line naming the tag that expands to the raw text on tap. None of them is shown as a user prompt or offered in the prompt history. Labels SHALL be translated (pt-BR, en-US, es-ES).
+
+#### Scenario: Stopped background agent
+- **WHEN** a `task_notification` entry arrives with status `stopped`, summary "Background agent didn't finish" and a note
+- **THEN** the conversation shows a card with the stopped icon, "stopped" and the summary, and tapping it shows the note
+
+#### Scenario: Unknown tag
+- **WHEN** a `tagged` entry with tag `new-thing` arrives
+- **THEN** a dimmed "new-thing" line appears that shows the raw text when tapped
+
+### Requirement: Prompt drafts
+The composer's text and attached photos SHALL be kept as a draft per session: leaving the session screen, opening another session, backgrounding the app or the OS killing it MUST NOT lose them, and opening the session again SHALL restore them. Drafts MUST be persisted on the device only (secure storage, excluded from backups and device migration), never sent to the daemon nor included in push payloads. A successful send SHALL clear what was sent from the draft; a failed send MUST keep it. Emptying the field and removing the photos SHALL discard the draft. Photos SHALL be persisted as references to their local copies; when a copy cannot be read after a relaunch, the text MUST still be restored and the composer SHALL say the photos could not be restored. Drafts SHALL expire after 7 days, SHALL be removed when their session is absent from the session list and the draft was last edited more than an hour ago, and MUST all be cleared when the machine is forgotten.
+
+#### Scenario: Leave and come back
+- **WHEN** the user types "refactor the parser" in a session, goes back to the list and opens the session again
+- **THEN** the field contains "refactor the parser"
+
+#### Scenario: App killed in the background
+- **WHEN** the user types a prompt, backgrounds the app and the OS kills it, then the user opens the app and the session
+- **THEN** the prompt is restored
+
+#### Scenario: Sent
+- **WHEN** the draft is sent successfully
+- **THEN** the field is empty and the session has no draft
+
+#### Scenario: Send fails
+- **WHEN** sending the draft fails
+- **THEN** the text and photos stay and remain the session's draft
+
+#### Scenario: Photos gone
+- **WHEN** a draft with a photo is restored after a relaunch and the photo's local copy no longer exists
+- **THEN** the text is restored and the composer says the photos could not be restored
+
+#### Scenario: Forget the machine
+- **WHEN** the user forgets the machine in Settings
+- **THEN** every draft is deleted from the device
+
+### Requirement: Composer height
+The prompt field SHALL grow with its content from one line (36 pt) up to 140 pt, then scroll. Whenever the field is empty it MUST have the one-line height: after a successful send by any means (Send, long press, ⌘⏎, hardware Return, voice) and after the user deletes all the text. A failed send MUST keep the text and its height.
+
+#### Scenario: Shrinks after sending
+- **WHEN** the user sends a five-line message
+- **THEN** the empty field returns to the one-line height
+
+#### Scenario: Shrinks when cleared by hand
+- **WHEN** the user deletes all the text of a multi-line prompt
+- **THEN** the field returns to the one-line height
+
+#### Scenario: Grows up to the maximum
+- **WHEN** the user types twenty lines
+- **THEN** the field stops growing at 140 pt and scrolls its content
+
+#### Scenario: Failed send
+- **WHEN** sending a multi-line message fails
+- **THEN** the text and the field's height stay
+
+### Requirement: Codex sessions in the conversation
+For a Codex session the mode chip SHALL show the session's approval policy (`on-request`, `never`, …, or `—` when unknown) and MUST NOT open the mode picker; its accessibility label says it is the approval policy. `exec` tool calls SHALL be labeled `exec(<command>)` with Command and Folder fields; `apply_patch` calls SHALL be labeled with the changed files and show the patch as a diff (added and removed lines colored, file headers as context). The new-session screen MUST hide the worktree option for agents that cannot start in a worktree (Codex). All labels MUST be translated.
+
+#### Scenario: Mode chip
+- **WHEN** a Codex session with approval policy `on-request` is open
+- **THEN** the chip reads `on-request` and tapping it does nothing
+
+#### Scenario: Patch
+- **WHEN** the conversation has an `apply_patch` call updating `src/app.css`
+- **THEN** the card reads `apply_patch(app.css)` and its diff shows the `-` and `+` lines
+
+#### Scenario: No worktree for Codex
+- **WHEN** the user picks a Codex profile in New session
+- **THEN** the worktree toggle is not shown

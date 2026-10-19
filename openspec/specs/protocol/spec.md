@@ -28,7 +28,7 @@ The parser SHALL reject malformed messages by returning an error result, without
 - **THEN** the message is accepted and the extra field is discarded
 
 ### Requirement: Message catalog
-The protocol SHALL define the client messages `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input` (with its delivery `mode`: `now`, `queue` or `auto`), `session.key`, `session.setMode`, `session.close`, `attachment.upload`, `permission.respond`, `permission.answer`, `queue.update`, `queue.remove`, `queue.sendNow`, `queue.flush`, `device.register`, `device.unregister`, `files.search`, `commands.list`, `projects.list`, `directories.list`, `models.list`, `provider.status`, `session.start` (with an optional `model`), `session.resume`, `worktree.inspect`, `worktree.cleanup`, `pane.subscribe`, `pane.unsubscribe`, `pane.focus`, `settings.mute`, `app.visibility` and `ping`; and the server messages `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `session.queue`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `directories.results`, `models.results`, `provider.info`, `attachment.uploaded`, `worktree.info`, `ack`, `error` and `pong`. `models.results` carries the profile id, the `ModelInfo` list (id, name, context length, prompt and completion prices in USD per million tokens, `tools`, `reasoning` and `caching` flags), when it was fetched and whether it is stale; `provider.info` carries the profile id, `hasKey` and the credits (`total`, `used`) or `null`. No message SHALL carry a provider key.
+The protocol SHALL define the client messages `auth`, `sessions.list`, `session.subscribe`, `session.unsubscribe`, `session.history`, `session.input` (with its delivery `mode`: `now`, `queue` or `auto`), `session.key`, `session.setMode`, `session.close`, `attachment.upload`, `permission.respond`, `permission.answer`, `queue.update`, `queue.remove`, `queue.sendNow`, `queue.flush`, `device.register`, `device.unregister`, `files.search`, `commands.list`, `projects.list`, `directories.list`, `models.list`, `provider.status`, `session.start` (with an optional `model`), `session.resume`, `worktree.inspect`, `worktree.cleanup`, `pane.subscribe`, `pane.unsubscribe`, `pane.focus`, `settings.mute`, `app.visibility`, `daemon.update.check`, `daemon.update.start` and `ping`; and the server messages `auth.ok`, `sessions.snapshot`, `session.updated`, `session.removed`, `session.queue`, `transcript.entry`, `transcript.page`, `pane.frame`, `permission.request`, `permission.resolved`, `session.state`, `subagent.updated`, `files.results`, `commands.results`, `projects.results`, `directories.results`, `models.results`, `provider.info`, `attachment.uploaded`, `worktree.info`, `daemon.update.info`, `ack`, `error` and `pong`. `models.results` carries the profile id, the `ModelInfo` list (id, name, context length, prompt and completion prices in USD per million tokens, `tools`, `reasoning` and `caching` flags), when it was fetched and whether it is stale; `provider.info` carries the profile id, `hasKey` and the credits (`total`, `used`) or `null`. `daemon.update.info` carries the daemon's update info (version, channel, last check, available update, blocker, `busy`, last run) and is both the reply to `daemon.update.check` / `daemon.update.start` and the broadcast of run progress; `auth.ok` MAY carry `update: { channel }` when the daemon supports these messages. No message SHALL carry a provider key.
 
 #### Scenario: Unknown type
 - **WHEN** a message arrives with a `type` outside the catalog
@@ -49,6 +49,10 @@ The protocol SHALL define the client messages `auth`, `sessions.list`, `session.
 #### Scenario: Provider messages
 - **WHEN** a client sends `models.list` with a profile id
 - **THEN** the message is accepted and the daemon answers `models.results` with the models, `fetchedAt` and `stale`
+
+#### Scenario: Daemon update messages
+- **WHEN** a client sends `daemon.update.start` with channel `main`
+- **THEN** the message is accepted, and one with a channel outside `main`, `development` is rejected with `bad_request`
 
 ### Requirement: Protocol version
 The `auth` handshake SHALL include `protocolVersion`; the daemon MUST reject versions with a different major with a `protocol_mismatch` error.
@@ -104,3 +108,21 @@ The protocol SHALL define the client messages `session.close { sessionId, worktr
 #### Scenario: Unknown action
 - **WHEN** the client sends `worktree.cleanup` with `action: "wipe"`
 - **THEN** the parser returns a `bad_request` error
+
+### Requirement: Daemon diagnostics
+The daemon SHALL log every rejected WS request with its message type and error code and without its payload or message, keep the last 50 rejections in memory as `{ at, type, code }`, and answer `diagnostics.errors` with `diagnostics.result { daemonVersion, errors }`, most recent first.
+
+#### Scenario: Recent rejections
+- **WHEN** a `session.start` was rejected with `invalid_cwd` and the app sends `diagnostics.errors`
+- **THEN** the reply lists `{ type: "session.start", code: "invalid_cwd" }` with its time, and no path
+
+#### Scenario: Older daemon
+- **WHEN** the daemon does not know `diagnostics.errors`
+- **THEN** it answers `unknown_type` and the app hides the option to include the computer's errors
+
+### Requirement: Agent mode on sessions
+`Session` SHALL carry `approvalPolicy`: the Codex approval policy of the session (`on-request`, `never`, `untrusted`, `granular`, or another value Codex reports), `null` for Claude Code sessions and until known. It MUST default to `null` so messages from older daemons stay valid. `permissionMode` keeps describing Claude Code sessions.
+
+#### Scenario: Older daemon
+- **WHEN** an app parses a session without `approvalPolicy`
+- **THEN** it reads `approvalPolicy: null`

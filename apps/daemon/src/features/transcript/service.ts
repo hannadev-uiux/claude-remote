@@ -7,13 +7,8 @@ import { type FSWatcher, watch } from 'chokidar'
 import { DaemonError } from '../../core/errors.ts'
 import type { Logger } from '../../core/logger.ts'
 import type { Connection } from '../../transport/connection.ts'
-import {
-  findImage,
-  parseImageId,
-  parseMetaLine,
-  parseTranscriptLine,
-  type TranscriptMetaUpdate,
-} from './parser.ts'
+import type { TranscriptFormat, TranscriptMetaUpdate } from './format.ts'
+import { claudeTranscript, parseImageId } from './parser.ts'
 import { TranscriptFile } from './transcript-file.ts'
 
 export const DEFAULT_PAGE_SIZE = 50
@@ -33,7 +28,8 @@ type Stream = {
 
 export type EntryListener = (sessionId: string, entry: TranscriptEntry) => void
 
-export type StreamTarget = { sessionId: string; agentId?: string; path: string }
+/** `format` is the agent's transcript format (Claude Code when absent). */
+export type StreamTarget = { sessionId: string; agentId?: string; path: string; format?: TranscriptFormat }
 
 /** Tails transcripts that have at least one subscriber or listener and fans entries out to them. */
 export class TranscriptService {
@@ -58,10 +54,10 @@ export class TranscriptService {
     return agentId ? `${sessionId}#${agentId}` : sessionId
   }
 
-  private fileFor(path: string): TranscriptFile {
+  private fileFor(path: string, format: TranscriptFormat = claudeTranscript): TranscriptFile {
     let file = this.files.get(path)
     if (!file) {
-      file = new TranscriptFile(path)
+      file = new TranscriptFile(path, format)
       this.files.set(path, file)
     }
     return file
@@ -113,7 +109,7 @@ export class TranscriptService {
     const key = TranscriptService.key(target.sessionId, target.agentId)
     let stream = this.streams.get(key)
     if (!stream) {
-      const file = this.fileFor(target.path)
+      const file = this.fileFor(target.path, target.format)
       await file.sync()
       const watcher = watch(target.path, { ignoreInitial: true })
       const created: Stream = {
@@ -164,7 +160,7 @@ export class TranscriptService {
   }
 
   async history(target: StreamTarget, before: number, limit: number) {
-    const file = this.fileFor(target.path)
+    const file = this.fileFor(target.path, target.format)
     await this.catchUp(file)
     const page = await file.page(before, limit)
     return { sessionId: target.sessionId, agentId: target.agentId, ...page, lineCount: file.lineCount }
@@ -176,11 +172,11 @@ export class TranscriptService {
     imageId: string,
   ): Promise<Omit<ServerMessageOf<'transcript.image'>, 'type' | 'replyTo'>> {
     const at = parseImageId(imageId)
-    const file = this.fileFor(target.path)
+    const file = this.fileFor(target.path, target.format)
     // Refs come from lines already read; only a new file object (daemon restart) needs indexing.
     if (at && at.cursor >= file.lineCount) await this.catchUp(file)
     const [line] = at ? await file.readLines(at.cursor, at.cursor + 1) : []
-    const image = line && at ? findImage(line.text, at.index) : null
+    const image = line && at ? file.format.findImage(line.text, at.index) : null
     if (!image) throw new DaemonError('not_found', `image ${imageId} not found`)
     if (image.bytes > MAX_TRANSCRIPT_IMAGE_BYTES)
       throw new DaemonError('too_large', `image ${imageId} has ${image.bytes} bytes`)
@@ -201,10 +197,10 @@ export class TranscriptService {
       if (lines.length === 0) return
       for (const line of lines) {
         if (!stream.agentId) {
-          const meta = parseMetaLine(line.text)
+          const meta = stream.file.format.parseMeta(line.text)
           if (meta) this.onMeta(stream.sessionId, meta)
         }
-        for (const entry of parseTranscriptLine(line.text, line.cursor)) this.emit(stream, entry)
+        for (const entry of stream.file.format.parseLine(line.text, line.cursor)) this.emit(stream, entry)
       }
       this.onActivity(stream.sessionId, Date.now())
     }

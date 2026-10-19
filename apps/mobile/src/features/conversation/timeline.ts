@@ -8,7 +8,16 @@ export type TimelineItem =
   | { type: 'assistant'; key: string; text: string }
   | { type: 'thinking'; key: string; text: string }
   | { type: 'tool'; key: string; use: Of<'tool_use'> | null; result: Of<'tool_result'> | null }
-  | { type: 'system'; key: string; subtype: string; text: string; durationMs?: number }
+  | {
+      type: 'system'
+      key: string
+      subtype: string
+      text: string
+      durationMs?: number
+      status?: string
+      note?: string
+      tag?: string
+    }
   | { type: 'unknown'; key: string; raw: string }
 
 /** Pairs each tool_use with its tool_result and maps the rest to display items, in order. */
@@ -45,6 +54,9 @@ export function buildTimeline(entries: readonly TranscriptEntry[]): TimelineItem
           subtype: entry.subtype,
           text: entry.text,
           durationMs: entry.durationMs,
+          status: entry.status,
+          note: entry.note,
+          tag: entry.tag,
         })
         break
       case 'unknown':
@@ -80,5 +92,27 @@ export function systemText(
   if (item.subtype === 'turn_duration' && item.durationMs !== undefined)
     return t('conversation.turnDuration', { duration: formatDuration(item.durationMs) })
   if (item.subtype === 'compact_boundary') return t('conversation.compacted')
+  if (item.subtype === 'turn_aborted' && item.text === 'Interrupted') return t('conversation.interrupted')
   return item.text
+}
+
+const TASK_STATUSES = ['completed', 'failed', 'stopped', 'killed'] as const
+type TaskStatus = (typeof TASK_STATUSES)[number]
+
+function isTaskStatus(status: string): status is TaskStatus {
+  return (TASK_STATUSES as readonly string[]).includes(status)
+}
+
+/** Look of a background task notification by status; unknown statuses get the neutral look. */
+export function taskTone(status: string | undefined): 'done' | 'failed' | 'stopped' | 'other' {
+  if (status === 'completed') return 'done'
+  if (status === 'failed') return 'failed'
+  if (status === 'stopped' || status === 'killed') return 'stopped'
+  return 'other'
+}
+
+/** Translated status of a background task; statuses the app does not know are shown as sent. */
+export function taskStatusText(status: string | undefined, t: TFunction): string {
+  if (!status) return ''
+  return isTaskStatus(status) ? t(`conversation.task.status.${status}`) : status
 }

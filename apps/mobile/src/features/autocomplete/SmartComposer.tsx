@@ -25,7 +25,7 @@ import { VoiceButton } from '../voice/components/VoiceButton'
 import { insertTranscriptAtCursor } from '../voice/insert-at-cursor'
 import { useVoiceRecording } from '../voice/use-voice-recording'
 import { SuggestionList } from './SuggestionList'
-import { applySuggestion, findTrigger, isInteractiveCommand, triggerKey } from './trigger'
+import { applySuggestion, findTrigger, insertTrigger, isInteractiveCommand, triggerKey } from './trigger'
 import { useCommands, useSuggestions } from './use-suggestions'
 
 type Props = { sessionId: string; prompt: ReturnType<typeof usePrompt>; disabled: boolean }
@@ -137,6 +137,10 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
       hints={keyboardHints({ pendingPermission: pendingPermissions > 0 }, t)}
       onKey={prompt.sendKey}
       keysDisabled={disabled}
+      onTrigger={(trigger) => {
+        const next = insertTrigger(prompt.text, cursor, trigger)
+        if (next) insert(next)
+      }}
       accessory={
         trigger ? (
           <SuggestionList

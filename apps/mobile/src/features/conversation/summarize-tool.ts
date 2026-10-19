@@ -1,4 +1,5 @@
 import type { TFunction } from '@/core/i18n/create'
+import { patchFiles } from './patch'
 
 type Input = Record<string, unknown>
 
@@ -47,6 +48,15 @@ export function summarizeTool(name: string, input: Input, t: TFunction): string 
         return Array.isArray(input.todos) ? t('tools.todoItems', { count: input.todos.length }) : undefined
       case 'Skill':
         return str(input.skill) ?? str(input.command)
+      // Codex: shell commands and patches.
+      case 'exec':
+        return str(input.command)
+      case 'apply_patch': {
+        const files = patchFiles(input).map(basename)
+        return files.length > 0 ? files.join(', ') : undefined
+      }
+      case 'web_search':
+        return str(input.query)
       default: {
         const first = Object.values(input).find((v) => typeof v === 'string') as string | undefined
         return first

@@ -1,4 +1,4 @@
-// Firebase (push) is optional: without GoogleService-Info.plist its native pods are not linked,
+// Firebase (push, error reports) is optional: without GoogleService-Info.plist its native pods are not linked,
 // so the iOS build works without a Firebase project. Keep in sync with app.config.ts.
 const { existsSync } = require('node:fs')
 const { join } = require('node:path')
@@ -13,5 +13,6 @@ module.exports = {
         '@react-native-firebase/app': disabled,
         '@react-native-firebase/messaging': disabled,
         '@react-native-firebase/app-check': disabled,
+        '@react-native-firebase/crashlytics': disabled,
       },
 }

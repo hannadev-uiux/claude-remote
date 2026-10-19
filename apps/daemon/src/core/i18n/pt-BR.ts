@@ -53,6 +53,21 @@ export const ptBR = {
       saved: (id: string, store: string) =>
         `Chave do perfil ${id} guardada ${store}. As novas sessões do perfil passam a usá-la.`,
     },
+    keepAwake: {
+      description: 'mostra ou define quando o computador fica acordado: off, sessions ou always',
+      modes: {
+        off: 'desligado',
+        sessions: 'enquanto há sessões ativas (e 10 min depois)',
+        always: 'sempre, enquanto o daemon roda',
+      },
+      current: (mode: string) => `manter acordado: ${mode}`,
+      holding: 'segurando o computador acordado agora',
+      notHolding: 'sem segurar agora',
+      unavailable: (reason: string) => `o auxiliar de energia não está disponível: ${reason}`,
+      invalid: (value: string, valid: string) => `"${value}" não é um modo; use um destes: ${valid}`,
+      applied: 'aplicado ao daemon em execução',
+      notRunning: 'o daemon não está rodando; vale no próximo início',
+    },
     doctor: {
       description: 'verifica dependências e configuração',
       notOnPath: 'não encontrado no PATH',
@@ -70,10 +85,23 @@ export const ptBR = {
       runPair: 'rode `remote-harness pair`',
       providerKey: (id: string, provider: string) => `chave do ${provider} do perfil ${id}`,
       runProviderKey: (id: string) => `rode \`remote-harness provider key ${id}\``,
+      codexHooks: (id: string, path: string) => `hooks do Codex do perfil ${id} (${path})`,
+      runInstall: 'rode `remote-harness install`',
       service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
+      launcherNative: 'pedidos de acesso a pastas mostram "Remote Harness"',
+      launcherScript: 'pedidos de acesso a pastas mostram "node" (sem launcher compilado)',
+      launcherHint:
+        'instale as Command Line Tools (`xcode-select --install`) e rode `remote-harness service install`',
+      fullDiskAccess:
+        'dica: para não ter um pedido por pasta, adicione "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco',
       linger: 'lingering (o serviço continua rodando após o logout)',
       lingerHint: 'rode `loginctl enable-linger $USER`',
+      keepAwake: (mode: string, state: string) => `manter acordado: ${mode} (${state})`,
+      keepAwakeHeld: 'ativo agora',
+      keepAwakeIdle: 'não é preciso agora',
+      keepAwakeFailed: (reason: string) => `o auxiliar de energia falhou: ${reason}`,
+      lidNote: 'num notebook, fechar a tampa ainda suspende, a não ser na tomada e com monitor externo',
       devices: (platforms: string) => `celulares registrados para push: ${platforms}`,
       noDevices: 'nenhum celular registrado para push',
       noDevicesHint: 'abra o app e permita as notificações',
@@ -125,6 +153,9 @@ export const ptBR = {
       dirty: (dir: string) => `${dir} tem mudanças locais. Faça commit ou descarte e rode de novo.`,
       fetchFailed: (error: string) => `Não consegui baixar a versão nova: ${error}`,
       checkoutFailed: 'Não consegui trocar para a versão nova.',
+      rolledBack: (version: string) =>
+        `Voltei para a ${version} e recompilei: o computador fica como estava.`,
+      rollBackFailed: 'Não consegui voltar para a versão anterior: rode `remote-harness update` de novo.',
       upToDate: (version: string, commit: string) => `Já está atualizado (${version}, ${commit}).`,
       available: (version: string, commit: string) => `Versão nova: ${version} (${commit})`,
       failed: 'A atualização falhou (veja acima). A versão anterior continua rodando até o próximo reinício.',
@@ -196,6 +227,8 @@ export const ptBR = {
     shortcut: (path: string) => `atalho ${path}`,
     shellPath: (files: string) => `PATH em ${files}`,
     hooksIn: (path: string) => `hooks em ${path}`,
+    codexTrust:
+      'O Codex pede uma vez para confiar em hooks novos: abra o `codex` e escolha "Trust all and continue" (ou revise em /hooks). Até lá, as sessões dele ficam somente leitura.',
     launcherRemoved: (id: string) => `launcher ${id} removido`,
     hooksRemovedFrom: (path: string) => `hooks removidos de ${path}`,
     statusLineIn: (path: string) => `status line em ${path}`,
@@ -361,6 +394,13 @@ export const ptBR = {
     mirroredAlready: (path: string) => `networkingMode=mirrored já estava em ${path}`,
     mirroredNoConfig:
       '  Não encontrei o %UserProfile%\\.wslconfig (a interoperabilidade com o Windows está desligada?). Adicione [wsl2] networkingMode=mirrored nele à mão.',
+  },
+  power: {
+    why: 'Há sessões do Remote Harness em execução',
+  },
+  bundle: {
+    folderAccess:
+      'O Remote Harness roda as sessões do seu agente de código nesta pasta e precisa ler e gravar os arquivos dela.',
   },
   machine: { darwin: 'Mac', linux: 'computador' },
   profiles: {

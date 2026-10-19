@@ -1,4 +1,5 @@
 import type { TranscriptEntry } from '@remote-harness/protocol'
+import { patchFiles } from './patch'
 
 type Use = Extract<TranscriptEntry, { kind: 'tool_use' }>
 type Result = Extract<TranscriptEntry, { kind: 'tool_result' }>
@@ -31,6 +32,8 @@ export type FieldKey =
   | 'todos'
   | 'skill'
   | 'args'
+  | 'folder'
+  | 'files'
 
 /** A known field with a translated label, or a raw input key shown as is. */
 export type InputField = { field: FieldKey; value: string } | { key: string; value: string }
@@ -143,6 +146,18 @@ function knownFields(name: string, input: Input): Array<[FieldKey, string | unde
         ['skill', text(input.skill) ?? text(input.command)],
         ['args', text(input.args)],
       ]
+    // Codex: the patch itself is in the diff and the JSON tab.
+    case 'exec':
+      return [
+        ['command', text(input.command)],
+        ['folder', text(input.workdir)],
+      ]
+    case 'apply_patch': {
+      const files = patchFiles(input)
+      return [['files', files.length > 0 ? files.join('\n') : undefined]]
+    }
+    case 'web_search':
+      return [['query', text(input.query)]]
     default:
       return []
   }

@@ -20,6 +20,8 @@ Abra uma sessão para ler a conversa enquanto acontece: prompts, o texto do agen
 
 Digite no compositor e envie. Enquanto o agente está ocupado o prompt entra na fila e é entregue em ordem quando o turno termina; o cartão **Fila** deixa editar, reordenar, remover ou enviar um item agora. Segure o botão de enviar (ou pressione ⌘⏎ com um teclado) para enviar na hora, como Ctrl+Enter no terminal.
 
+O que você digita fica como rascunho da sessão: saia da sessão, abra outra ou feche o app, e ele estará lá quando você voltar, com as fotos. A lista de sessões marca as linhas com rascunho (**Rascunho:** e o começo do texto). Enviar limpa o rascunho; esvaziar o campo o descarta. Os rascunhos ficam só no celular e expiram depois de 7 dias.
+
 - `@` completa arquivos do projeto, `/` completa os comandos de barra do Claude Code.
 - O botão da câmera anexa fotos; o microfone dita no aparelho (escolha o idioma em Ajustes → Voz).
 - **Mostrar atalhos de teclado** (menu) acrescenta uma barra com Esc, Ctrl+C, as setas, Tab e Enter para os menus do próprio agente.
@@ -56,6 +58,8 @@ As notificações push avisam quando uma sessão precisa de permissão, termina 
 
 Um perfil é uma conta do Claude Code, ou seja um `CLAUDE_CONFIG_DIR`, com nome, cor e alias. Um perfil também pode rotear o Claude Code pelo **OpenRouter**: as linhas dele mostram um chip tracejado `via OpenRouter`, **Nova sessão** ganha uma linha **Modelo** com um seletor pesquisável (tamanho do contexto, preços por milhão de tokens, suporte a ferramentas, raciocínio e cache, créditos restantes), e **Trocar modelo…** no menu da sessão troca uma sessão em andamento. A chave fica no computador: veja [o daemon](/pt-br/docs/daemon/#perfis-e-openrouter).
 
+Um perfil também pode rodar o **Codex** (selo `cx`, verde): as sessões dele mostram a política de aprovação (`on-request`, `never`…) no lugar do chip de modo, chamadas `exec(…)` e `apply_patch(…)` com saída e diff, e aprovações com Permitir / Negar. Veja [Perfis do Codex](/pt-br/docs/daemon/#perfis-do-codex).
+
 ## Ajustes
 
 - **Máquina**: a conexão, o nome da máquina (um apelido à sua escolha, senão o hostname), a versão do daemon e **Esquecer esta máquina**.
@@ -63,7 +67,8 @@ Um perfil é uma conta do Claude Code, ou seja um `CLAUDE_CONFIG_DIR`, com nome,
 - **Perfis**: cada perfil com agente, alias, pasta de config, interruptor de notificações e, com provedor, o provedor, o modelo padrão e os créditos.
 - **Notificações**: push para este celular, teste, status ao vivo, os perfis e sessões silenciados.
 - **Voz**: o idioma da transcrição.
-- **App**: versão, atualizações over-the-air e o canal delas, **Verificar atualizações**, **Documentação**, **Relatar um problema**.
+- **App**: versão, atualizações over-the-air e o canal delas, **Verificar atualizações**, **Documentação**.
+- **Relatórios de erro**: enviar automaticamente, perguntar sempre (padrão) ou nunca, e **Relatar um problema** (descreva o bug, veja exatamente o que será enviado e envie, compartilhe ou abra uma issue no GitHub). Os relatórios nunca levam o conteúdo das suas sessões; veja a [política de privacidade](/pt-br/docs/privacy/).
 
 ## iPad e teclados
 

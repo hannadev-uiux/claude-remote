@@ -51,6 +51,7 @@ function setup(cycle: PermissionMode[], start = 0, pending = false) {
     title: '',
     state: 'idle',
     permissionMode: null,
+    approvalPolicy: null,
     controllable: true,
     paneId: '%1',
     updatedAt: '',

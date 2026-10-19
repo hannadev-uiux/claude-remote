@@ -14,6 +14,7 @@ const session = (over: Partial<Session> = {}): Session => ({
   title: 'Fix login',
   state: 'running',
   permissionMode: 'acceptEdits',
+  approvalPolicy: null,
   controllable: true,
   paneId: '%12',
   updatedAt: '2026-10-18T11:55:00Z',
@@ -96,5 +97,16 @@ describe('sessionDetails', () => {
     const rows = sessionDetails(session({ controllable: false }), profile, pt, { locale: 'pt-BR', now: NOW })
     expect(rows[0]?.label).toBe('Pasta')
     expect(rows.find((r) => r.key === 'access')?.value).toBe('somente leitura')
+  })
+})
+
+describe('sessionDetails for Codex', () => {
+  test('the mode row is the approval policy', () => {
+    const codex = session({ agent: 'codex', permissionMode: null, approvalPolicy: 'on-request' })
+    expect(sessionDetails(codex, profile, en, opts).find((r) => r.key === 'mode')?.value).toBe('on-request')
+    const unknown = session({ agent: 'codex', permissionMode: null })
+    expect(sessionDetails(unknown, profile, en, opts).find((r) => r.key === 'mode')?.value).toBe(
+      en('sessionDetails.unknown'),
+    )
   })
 })

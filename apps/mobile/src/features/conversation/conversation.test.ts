@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
 import { diffForTool } from './diff'
 import { summarizeTool } from './summarize-tool'
-import { buildTimeline, mergeEntries, systemText } from './timeline'
+import { buildTimeline, mergeEntries, systemText, taskStatusText, taskTone } from './timeline'
 
 const en = createI18n('en-US').t
 const pt = createI18n('pt-BR').t
@@ -124,5 +124,39 @@ describe('systemText', () => {
       'Conversa compactada',
     )
     expect(systemText({ subtype: 'info', text: 'raw' }, t)).toBe('raw')
+  })
+})
+
+describe('task notifications', () => {
+  test('tone by status, neutral for unknown ones', () => {
+    expect(taskTone('completed')).toBe('done')
+    expect(taskTone('failed')).toBe('failed')
+    expect(taskTone('stopped')).toBe('stopped')
+    expect(taskTone('killed')).toBe('stopped')
+    expect(taskTone('paused')).toBe('other')
+    expect(taskTone(undefined)).toBe('other')
+  })
+
+  test('status text is translated when known', () => {
+    expect(taskStatusText('stopped', pt)).toBe('interrompida')
+    expect(taskStatusText('completed', en)).toBe('completed')
+    expect(taskStatusText('paused', en)).toBe('paused')
+    expect(taskStatusText(undefined, en)).toBe('')
+  })
+
+  test('the timeline keeps status, note and tag of system entries', () => {
+    const entry: TranscriptEntry = {
+      ...base,
+      kind: 'system',
+      subtype: 'task_notification',
+      text: 'Agent stopped',
+      status: 'stopped',
+      note: 'why',
+      cursor: 1,
+      index: 0,
+      uuid: 's1',
+      key: 's1:0',
+    }
+    expect(buildTimeline([entry])[0]).toMatchObject({ type: 'system', status: 'stopped', note: 'why' })
   })
 })

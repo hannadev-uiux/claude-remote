@@ -59,6 +59,9 @@ const clientSamples: ClientMessage[] = [
   { type: 'queue.sendNow', id: '1', sessionId: 's', itemId: 'q1' },
   { type: 'queue.flush', id: '1', sessionId: 's' },
   { type: 'pane.focus', id: '1', sessionId: 's' },
+  { type: 'daemon.update.check', id: '1' },
+  { type: 'daemon.update.check', id: '1', channel: 'development', force: true },
+  { type: 'daemon.update.start', id: '1', channel: 'main' },
   {
     type: 'device.register',
     id: '1',
@@ -96,6 +99,7 @@ const clientSamples: ClientMessage[] = [
   { type: 'provider.status', id: '1', profileId: 'work' },
   { type: 'directories.list', id: '1', path: '~', limit: 200 },
   { type: 'directories.list', id: '1', path: '~/work', prefix: 'ap', hidden: true, limit: 20 },
+  { type: 'diagnostics.errors', id: '1' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'session.start', id: '1', profileId: 'work', cwd: '/tmp', model: 'anthropic/claude-opus-5.5' },
@@ -113,6 +117,7 @@ const session: Session = {
   title: 'x',
   state: 'idle',
   permissionMode: 'default',
+  approvalPolicy: null,
   controllable: true,
   paneId: '%1',
   updatedAt: '2026-10-14T00:00:00Z',
@@ -264,7 +269,51 @@ const serverSamples: ServerMessage[] = [
     items: [],
     truncated: true,
   },
+  {
+    type: 'diagnostics.result',
+    replyTo: '1',
+    daemonVersion: '0.12.0',
+    errors: [{ at: '2026-10-19T12:00:00.000Z', type: 'session.start', code: 'invalid_cwd' }],
+  },
+  { type: 'diagnostics.result', replyTo: '1', daemonVersion: '0.12.0', errors: [] },
   { type: 'mute.updated', muted: { profiles: ['claudin'], sessions: [] } },
+  {
+    type: 'daemon.update.info',
+    replyTo: '1',
+    info: {
+      current: '0.12.0',
+      channel: 'main',
+      checkedAt: '2026-10-19T10:00:00.000Z',
+      checking: false,
+      available: { version: '0.13.0', commit: 'abc1234', downgrade: false },
+      blocked: null,
+      busy: true,
+      run: {
+        channel: 'main',
+        from: '0.12.0',
+        to: '0.13.0',
+        commit: 'abc1234',
+        step: 'failed',
+        error: 'build failed',
+        rolledBack: true,
+        startedAt: '2026-10-19T10:01:00.000Z',
+        finishedAt: '2026-10-19T10:03:00.000Z',
+      },
+    },
+  },
+  {
+    type: 'daemon.update.info',
+    info: {
+      current: '0.12.0',
+      channel: 'development',
+      checkedAt: null,
+      checking: true,
+      available: null,
+      blocked: 'not-installer',
+      busy: false,
+      run: null,
+    },
+  },
   {
     type: 'limits.updated',
     limits: {
@@ -443,6 +492,14 @@ describe('client messages', () => {
       error: { code: 'bad_request' },
     })
   })
+
+  test('daemon.update.start needs a known channel', () => {
+    expect(parseClientMessage({ type: 'daemon.update.start', id: '1', channel: 'beta' })).toMatchObject({
+      ok: false,
+      error: { code: 'bad_request' },
+    })
+    expect(parseClientMessage({ type: 'daemon.update.start', id: '1' })).toMatchObject({ ok: false })
+  })
 })
 
 describe('server messages', () => {
@@ -520,6 +577,22 @@ describe('session status', () => {
     const status = { model: null, effort: null, context: null }
     const result = parseServerMessage({ type: 'session.updated', session: { ...session, status } })
     expect(result).toMatchObject({ ok: true, value: { session: { status } } })
+  })
+})
+
+describe('session approval policy', () => {
+  test('defaults to null for older daemons', () => {
+    const { approvalPolicy: _omit, ...old } = session
+    const result = parseServerMessage({ type: 'session.updated', session: old })
+    expect(result).toMatchObject({ ok: true, value: { session: { approvalPolicy: null } } })
+  })
+
+  test('carries the Codex policy', () => {
+    const result = parseServerMessage({
+      type: 'session.updated',
+      session: { ...session, agent: 'codex', approvalPolicy: 'on-request' },
+    })
+    expect(result).toMatchObject({ ok: true, value: { session: { approvalPolicy: 'on-request' } } })
   })
 })
 

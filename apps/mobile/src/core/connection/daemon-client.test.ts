@@ -110,6 +110,29 @@ describe('DaemonClient', () => {
     await expect(pending).rejects.toBeInstanceOf(DaemonRequestError)
   })
 
+  test('reports error replies and timeouts with the request type, not lost connections', async () => {
+    const client = makeClient({ requestTimeoutMs: 15_000 })
+    const failures: Array<[string, string]> = []
+    client.onRequestError((type, error) => failures.push([type, error.code]))
+    client.connect()
+    const socket = FakeSocket.instances[0]!
+    authenticate(socket)
+    await Promise.resolve()
+    const start = client.request({ type: 'session.start', profileId: 'p', cwd: '/x' })
+    socket.receive({ type: 'error', replyTo: socket.last().id, code: 'invalid_cwd', message: 'nope' })
+    await expect(start).rejects.toMatchObject({ code: 'invalid_cwd' })
+    const ping = client.request({ type: 'ping' })
+    vi.advanceTimersByTime(15_001)
+    await expect(ping).rejects.toMatchObject({ code: 'timeout' })
+    const list = client.request({ type: 'sessions.list' })
+    socket.drop()
+    await expect(list).rejects.toMatchObject({ code: 'disconnected' })
+    expect(failures).toEqual([
+      ['session.start', 'invalid_cwd'],
+      ['ping', 'timeout'],
+    ])
+  })
+
   test('reconnects with exponential backoff and resubscribes', async () => {
     const client = makeClient()
     const ready = vi.fn()
@@ -174,5 +197,57 @@ describe('selectProfiles', () => {
     const { selectProfiles, useConnectionStore } = await import('./connection-store')
     const state = useConnectionStore.getState()
     expect(selectProfiles(state)).toBe(selectProfiles({ ...state }))
+  })
+})
+
+describe('DaemonClient unreachable computer', () => {
+  test('an attempt with no answer is abandoned after the connect timeout and marked unreachable', async () => {
+    const client = makeClient({ connectTimeoutMs: 10_000 })
+    const statuses: Array<[string, boolean]> = []
+    client.onStatus((status) => statuses.push([status, client.unreachable]))
+    client.connect()
+    const first = FakeSocket.instances[0]!
+    vi.advanceTimersByTime(9_999)
+    expect(client.unreachable).toBe(false)
+    vi.advanceTimersByTime(1)
+    expect(first.readyState).toBe(3)
+    expect(client.unreachable).toBe(true)
+    expect(client.status).toBe('reconnecting')
+    expect(statuses.at(-1)).toEqual(['reconnecting', true])
+
+    // The computer wakes: the next attempt opens and the flag clears.
+    vi.advanceTimersByTime(1_000)
+    const second = FakeSocket.instances[1]!
+    authenticate(second)
+    await Promise.resolve()
+    expect(client.status).toBe('open')
+    expect(client.unreachable).toBe(false)
+    // A late close of the abandoned socket changes nothing.
+    first.drop()
+    expect(client.status).toBe('open')
+  })
+
+  test('a connection refused at once is not unreachable and notifies the flip', () => {
+    const client = makeClient({ connectTimeoutMs: 10_000 })
+    const flags: boolean[] = []
+    client.onStatus(() => flags.push(client.unreachable))
+    client.connect()
+    vi.advanceTimersByTime(10_000)
+    expect(client.unreachable).toBe(true)
+    vi.advanceTimersByTime(1_000)
+    FakeSocket.instances[1]!.drop()
+    expect(client.unreachable).toBe(false)
+    expect(client.status).toBe('reconnecting')
+    expect(flags.at(-1)).toBe(false)
+  })
+
+  test('close() cancels a pending connect timeout', () => {
+    const client = makeClient({ connectTimeoutMs: 10_000 })
+    client.connect()
+    client.close()
+    vi.advanceTimersByTime(20_000)
+    expect(client.unreachable).toBe(false)
+    expect(client.status).toBe('closed')
+    expect(FakeSocket.instances).toHaveLength(1)
   })
 })

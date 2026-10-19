@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   AttachmentMimeTypeSchema,
+  DaemonUpdateChannelSchema,
   DevicePlatformSchema,
   DIRECTORY_LIST_LIMIT,
   InputModeSchema,
@@ -158,6 +159,17 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   /** Selects the session's tmux window and pane on the computer (tray "Focus in tmux"). */
   z.object({ type: z.literal('pane.focus'), id, sessionId }),
   z.object({ type: z.literal('pane.unsubscribe'), id, sessionId }),
+  /** Update info of the daemon; a `channel` is saved to its config first, `force` skips the rate limit. */
+  z.object({
+    type: z.literal('daemon.update.check'),
+    id,
+    channel: DaemonUpdateChannelSchema.optional(),
+    force: z.boolean().optional(),
+  }),
+  /** Updates the daemon to the channel's latest version; it restarts at the end. */
+  z.object({ type: z.literal('daemon.update.start'), id, channel: DaemonUpdateChannelSchema }),
+  /** The daemon's recent rejected requests (type and code only), for "Report a problem". */
+  z.object({ type: z.literal('diagnostics.errors'), id }),
   z.object({
     type: z.literal('settings.mute'),
     id,

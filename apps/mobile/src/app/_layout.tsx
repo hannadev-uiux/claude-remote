@@ -6,7 +6,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/jetbrains-mono'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Stack } from 'expo-router'
+import { type ErrorBoundaryProps, Stack, useSegments } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -20,6 +20,10 @@ import { restoreFollow } from '@/features/conversation/follow-store'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
 import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
+import { bindDrafts } from '@/features/drafts/persistence'
+import { installErrorCapture, setRoute } from '@/features/error-reports/capture'
+import { CrashPromptSheet } from '@/features/error-reports/components/CrashPromptSheet'
+import { ErrorFallback } from '@/features/error-reports/components/ErrorFallback'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
 import { restorePushSettings } from '@/features/push/push-settings-store'
 import { restoreSessionPrefs } from '@/features/sessions/prefs-store'
@@ -28,6 +32,13 @@ import { restoreMachineAlias, useMachineNameSync } from '@/features/settings/mac
 import { stackScreenOptions } from '@/ui'
 
 void SplashScreen.preventAutoHideAsync()
+// Before anything renders, so a crash at start-up is recorded too.
+installErrorCapture()
+
+/** Render errors anywhere in the app (Expo Router error boundary of the root route). */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <ErrorFallback {...props} />
+}
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 10_000 } },
@@ -57,6 +68,9 @@ export default function RootLayout() {
     void restoreLiveStatusSetting()
   }, [])
 
+  // Restores the unsent prompts saved on this device and keeps saving them.
+  useEffect(() => bindDrafts(), [])
+
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync()
   }, [ready])
@@ -72,7 +86,9 @@ export default function RootLayout() {
 function Shell({ ready }: { ready: boolean }) {
   const { t } = useTranslation()
   const theme = useTheme()
+  const segments = useSegments()
   useMachineNameSync()
+  useEffect(() => setRoute(segments), [segments])
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <SafeAreaProvider>
@@ -88,6 +104,7 @@ function Shell({ ready }: { ready: boolean }) {
                 />
               </Stack>
             ) : null}
+            <CrashPromptSheet />
           </ConnectionProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

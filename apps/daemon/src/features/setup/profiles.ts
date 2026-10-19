@@ -13,9 +13,13 @@ const CONFIG_DIR = /^\.claude(-[\w.-]+)?$/
 const NOT_PROFILES = new Set(['.claude-remote', '.claude-mem'])
 /** Any of these marks a dir Claude Code has already used as CLAUDE_CONFIG_DIR. */
 const PROFILE_MARKERS = ['.claude.json', 'settings.json', '.credentials.json', 'projects']
+/** `~/.codex` (Codex's default CODEX_HOME) counts once Codex has written one of these. */
+const CODEX_DIR = '.codex'
+const CODEX_MARKERS = ['config.toml', 'auth.json', 'sessions']
+const CODEX_COLOR = '#2FBF8F'
 const ALIAS = /^[a-z][a-z0-9_-]{0,31}$/
 /** The launcher runs `claude` and its directory comes first on PATH; these would call themselves. */
-const RESERVED_ALIASES = new Set(['claude', 'claude-remote', 'remote-harness', 'tmux'])
+const RESERVED_ALIASES = new Set(['claude', 'codex', 'claude-remote', 'remote-harness', 'tmux'])
 export const PROFILE_COLORS = ['#D97757', '#61AFEF', '#98C379', '#C678DD', '#E5C07B', '#56B6C2']
 
 export function tildify(path: string, home = homedir()): string {
@@ -28,8 +32,9 @@ function looksLikeConfigDir(path: string): boolean {
 }
 
 /**
- * Claude Code config dirs in the home, `~/.claude` first, as `~/...` paths. `~/.claude-*` dirs
- * only count when Claude Code has written to them, so other tools' `~/.claude-x` data is skipped.
+ * Claude Code config dirs in the home, `~/.claude` first, as `~/...` paths, then `~/.codex` when
+ * Codex has used it. `~/.claude-*` dirs only count when Claude Code has written to them, so other
+ * tools' `~/.claude-x` data is skipped.
  */
 export async function detectConfigDirs(home = homedir()): Promise<string[]> {
   const entries = await readdir(home).catch(() => [] as string[])
@@ -39,9 +44,17 @@ export async function detectConfigDirs(home = homedir()): Promise<string[]> {
     const path = join(home, name)
     if ((await isDirectory(path)) && (name === '.claude' || looksLikeConfigDir(path))) found.push(name)
   }
-  return found
-    .sort((a, b) => (a === '.claude' ? -1 : b === '.claude' ? 1 : a.localeCompare(b)))
-    .map((n) => `~/${n}`)
+  const codex = join(home, CODEX_DIR)
+  const hasCodex = (await isDirectory(codex)) && CODEX_MARKERS.some((m) => existsSync(join(codex, m)))
+  return [
+    ...found.sort((a, b) => (a === '.claude' ? -1 : b === '.claude' ? 1 : a.localeCompare(b))),
+    ...(hasCodex ? [CODEX_DIR] : []),
+  ].map((n) => `~/${n}`)
+}
+
+/** `~/.codex` and `~/.codex-<name>` hold a Codex home rather than a Claude Code config dir. */
+export function isCodexDir(configDir: string): boolean {
+  return /(^|\/)\.codex(-[\w.-]+)?\/?$/.test(configDir)
 }
 
 function sameDir(a: string, b: string): boolean {
@@ -61,6 +74,12 @@ export function suggestProfile(
 ): Profile {
   const current = existing.find((p) => sameDir(p.configDir, configDir))
   if (current) return { ...current, configDir }
+  if (isCodexDir(configDir)) {
+    const codexSuffix = /\.codex-([\w.-]+)\/?$/.exec(configDir)?.[1]
+    const id = codexSuffix ? `cdx-${codexSuffix.toLowerCase().replace(/[^a-z0-9_-]/g, '-')}` : 'cdx'
+    const name = codexSuffix ? `Codex ${capitalize(codexSuffix.replace(/[-_.]+/g, ' '))}` : 'Codex'
+    return { id, name, configDir, color: CODEX_COLOR, agent: 'codex' }
+  }
   const suffix = /\.claude-([\w.-]+)$/.exec(configDir)?.[1]
   const id = suffix ? `claude-${suffix.toLowerCase().replace(/[^a-z0-9_-]/g, '-')}` : 'claudin'
   const name = suffix ? capitalize(suffix.replace(/[-_.]+/g, ' ')) : m.defaultName

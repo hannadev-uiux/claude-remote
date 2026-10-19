@@ -1,6 +1,7 @@
 import { PermissionModeSchema } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { DaemonContext } from '../../main.ts'
+import { adapterOf } from '../agents/index.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { oneLine } from '../sessions/transcript-meta.ts'
 import { type EntryListener, type StreamTarget, TranscriptService } from './service.ts'
@@ -21,6 +22,7 @@ export function registerTranscriptFeature(
       store.upsert(sessionId, {
         ...(mode.success ? { permissionMode: mode.data } : {}),
         ...(update.customTitle ? { title: oneLine(update.customTitle) } : {}),
+        ...(update.approvalPolicy ? { approvalPolicy: update.approvalPolicy } : {}),
       })
     },
     onActivity,
@@ -31,9 +33,11 @@ export function registerTranscriptFeature(
   ]
 
   function target(sessionId: string, agentId?: string): StreamTarget {
+    // Subagent transcripts are Claude Code's; a session's own one is in its agent's format.
+    const format = agentId ? undefined : adapterOf(store.get(sessionId)?.agent).transcript
     for (const resolve of resolvers) {
       const path = resolve(sessionId, agentId)
-      if (path) return { sessionId, agentId, path }
+      if (path) return { sessionId, agentId, path, ...(format ? { format } : {}) }
     }
     throw new DaemonError(
       'not_found',

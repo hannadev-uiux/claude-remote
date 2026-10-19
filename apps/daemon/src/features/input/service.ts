@@ -2,6 +2,7 @@ import { KeySchema } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { KeyedMutex } from '../../core/keyed-mutex.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
+import { adapterOf } from '../agents/index.ts'
 import type { AttachmentStore } from '../attachments/store.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import type { SessionRecord } from '../sessions/types.ts'
@@ -52,7 +53,8 @@ export class InputService {
 
   async sendText(sessionId: string, rawText: string, attachmentIds: readonly string[] = []): Promise<void> {
     assertWithinLimit(rawText)
-    const { paneId } = requireControllable(this.store, sessionId)
+    const { paneId, agent } = requireControllable(this.store, sessionId)
+    const input = adapterOf(agent).input
     const paths = attachmentIds.length > 0 ? this.resolveAttachments(sessionId, attachmentIds) : []
     const text = paths.length > 0 ? buildPrompt(rawText, paths) : rawText
     if (!text.trim()) throw new DaemonError('bad_request', 'empty prompt')
@@ -66,14 +68,15 @@ export class InputService {
         const lines = text.split('\n')
         for (const [i, line] of lines.entries()) {
           if (line) await this.tmux.sendLiteral(paneId, line)
-          // Claude Code inserts a newline for backslash + Enter.
-          if (i < lines.length - 1)
-            await this.tmux.sendLiteral(paneId, '\\').then(() => this.tmux.sendKeys(paneId, ['Enter']))
+          if (i < lines.length - 1) {
+            if (input.newline.literal) await this.tmux.sendLiteral(paneId, input.newline.literal)
+            await this.tmux.sendKeys(paneId, input.newline.keys)
+          }
         }
         // Close any autocomplete menu opened while typing so Enter submits.
-        await this.tmux.sendKeys(paneId, ['Escape'])
+        if (input.beforeSubmit.length > 0) await this.tmux.sendKeys(paneId, input.beforeSubmit)
       }
-      await this.sleep(this.options.pasteEnterDelayMs)
+      await this.sleep(Math.max(this.options.pasteEnterDelayMs, input.minEnterDelayMs))
       await this.tmux.sendKeys(paneId, ['Enter'])
     })
   }

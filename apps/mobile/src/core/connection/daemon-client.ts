@@ -51,15 +51,20 @@ export type DaemonClientOptions = {
   requestTimeoutMs?: number
   minBackoffMs?: number
   maxBackoffMs?: number
+  /** An attempt that has not opened after this long is abandoned and counted as unreachable. */
+  connectTimeoutMs?: number
   clientName?: string
 }
 
 type Pending = {
+  type: ClientRequest['type']
   resolve: (message: ServerMessage) => void
   reject: (error: Error) => void
   timer: ReturnType<typeof setTimeout>
 }
 type AnyHandler = (message: ServerMessage) => void
+/** A request answered with `error`, or never answered: its message type and the error (code). */
+export type RequestErrorListener = (type: ClientRequest['type'], error: DaemonRequestError) => void
 
 const OPEN = 1
 /** Close codes after which retrying is pointless (bad token, rotated token, protocol mismatch). */
@@ -80,9 +85,14 @@ export class DaemonClient {
   private readonly handlers = new Map<ServerMessageType | '*', Set<AnyHandler>>()
   private readonly statusListeners = new Set<(status: ConnectionStatus, error?: string) => void>()
   private readyListeners = new Set<(hello: Hello) => void>()
+  private readonly requestErrorListeners = new Set<RequestErrorListener>()
   private seq = 0
   private attempt = 0
   private retryTimer: ReturnType<typeof setTimeout> | null = null
+  private connectTimer: ReturnType<typeof setTimeout> | null = null
+  private _unreachable = false
+  /** `unreachable` as of the last status notification (a flip alone notifies the listeners). */
+  private notifiedUnreachable = false
   private stopped = false
   private _status: ConnectionStatus = 'idle'
   private _hello: Hello | null = null
@@ -100,6 +110,14 @@ export class DaemonClient {
 
   get lastError(): string | undefined {
     return this._lastError
+  }
+
+  /**
+   * The last attempt got no answer at all (timed out): the computer is likely asleep or offline.
+   * A refused or failed-at-once attempt clears it, as does a successful open.
+   */
+  get unreachable(): boolean {
+    return this._unreachable
   }
 
   connect(): void {
@@ -120,6 +138,7 @@ export class DaemonClient {
   close(): void {
     this.stopped = true
     this.clearRetry()
+    this.clearConnectTimer()
     const socket = this.socket
     this.socket = null
     if (socket) {
@@ -160,6 +179,20 @@ export class DaemonClient {
     return this.sendRequest(message, options.timeoutMs)
   }
 
+  /**
+   * Called when a request is answered with `error` or times out (not for requests dropped because
+   * the connection was lost, which the connection status already reports).
+   */
+  onRequestError(listener: RequestErrorListener): () => void {
+    this.requestErrorListeners.add(listener)
+    return () => this.requestErrorListeners.delete(listener)
+  }
+
+  private requestFailed(type: ClientRequest['type'], error: DaemonRequestError): DaemonRequestError {
+    for (const listener of this.requestErrorListeners) listener(type, error)
+    return error
+  }
+
   /** Fire-and-forget variant that ignores the reply. */
   send(message: ClientRequest): void {
     this.request(message).catch(() => undefined)
@@ -186,18 +219,24 @@ export class DaemonClient {
       const timer = setTimeout(
         () => {
           this.pending.delete(id)
-          reject(new DaemonRequestError('timeout', `no reply to ${message.type}`))
+          reject(
+            this.requestFailed(
+              message.type,
+              new DaemonRequestError('timeout', `no reply to ${message.type}`),
+            ),
+          )
         },
         timeoutMs ?? this.options.requestTimeoutMs ?? 15_000,
       )
-      this.pending.set(id, { resolve, reject, timer })
+      this.pending.set(id, { type: message.type, resolve, reject, timer })
       this.socket?.send(JSON.stringify({ ...message, id }))
     })
   }
 
   private setStatus(status: ConnectionStatus, error?: string): void {
     this._lastError = error
-    if (this._status === status && !error) return
+    if (this._status === status && !error && this._unreachable === this.notifiedUnreachable) return
+    this.notifiedUnreachable = this._unreachable
     this._status = status
     for (const listener of this.statusListeners) listener(status, error)
   }
@@ -214,7 +253,22 @@ export class DaemonClient {
       return
     }
     this.socket = socket
+    this.clearConnectTimer()
+    this.connectTimer = setTimeout(() => {
+      this.connectTimer = null
+      if (this.socket !== socket) return
+      // No answer at all: drop this attempt instead of waiting for the OS timeout.
+      this.socket = null
+      socket.onopen = null
+      socket.onclose = null
+      socket.close()
+      this._unreachable = true
+      this.failPending('disconnected')
+      this.scheduleReconnect('unreachable')
+    }, this.options.connectTimeoutMs ?? 10_000)
     socket.onopen = () => {
+      this.clearConnectTimer()
+      this._unreachable = false
       this.setStatus('authenticating')
       this.sendRequest({
         type: 'auth',
@@ -245,6 +299,9 @@ export class DaemonClient {
     socket.onclose = (event) => {
       if (this.socket !== socket) return
       this.socket = null
+      // Closed before opening, within the timeout: something answered (refused, no network).
+      if (this.connectTimer) this._unreachable = false
+      this.clearConnectTimer()
       this.failPending('disconnected')
       if (FATAL_CLOSE_CODES.has(event.code)) {
         this.stopped = true
@@ -265,7 +322,10 @@ export class DaemonClient {
       if (pending) {
         this.pending.delete(replyTo)
         clearTimeout(pending.timer)
-        if (message.type === 'error') pending.reject(new DaemonRequestError(message.code, message.message))
+        if (message.type === 'error')
+          pending.reject(
+            this.requestFailed(pending.type, new DaemonRequestError(message.code, message.message)),
+          )
         else pending.resolve(message)
       }
     }
@@ -300,5 +360,10 @@ export class DaemonClient {
   private clearRetry(): void {
     if (this.retryTimer) clearTimeout(this.retryTimer)
     this.retryTimer = null
+  }
+
+  private clearConnectTimer(): void {
+    if (this.connectTimer) clearTimeout(this.connectTimer)
+    this.connectTimer = null
   }
 }

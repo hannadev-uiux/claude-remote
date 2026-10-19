@@ -1,6 +1,8 @@
 import * as Haptics from 'expo-haptics'
 import { useEffect } from 'react'
 import { useDaemonClient } from '@/core/connection'
+import { bindDaemonUpdate } from '@/features/daemon-update/store'
+import { bindErrorReports } from '@/features/error-reports/capture'
 import { bindMute } from '@/features/mute/store'
 import { bindPermissions } from '@/features/permissions/store'
 import { bindQueue } from '@/features/queue/store'
@@ -17,6 +19,8 @@ export function useDaemonSync() {
       bindMute(client),
       bindLimits(client),
       bindQueue(client),
+      bindDaemonUpdate(client),
+      bindErrorReports(client),
       bindPermissions(client, () => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
     ]
     return () => {

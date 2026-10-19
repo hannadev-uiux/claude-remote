@@ -2,7 +2,7 @@
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { homedir, userInfo } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { text } from 'node:stream/consumers'
 import { fileURLToPath } from 'node:url'
 import { password } from '@inquirer/prompts'
@@ -17,7 +17,14 @@ import {
 import { Command, InvalidArgumentError, Option } from 'commander'
 import qrcode from 'qrcode-terminal'
 import { z } from 'zod'
-import { configuredLocaleSync, loadConfig, resolveProfiles, updateConfigFile } from './core/config.ts'
+import {
+  configuredLocaleSync,
+  KEEP_AWAKE_MODES,
+  KeepAwakeModeSchema,
+  loadConfig,
+  resolveProfiles,
+  updateConfigFile,
+} from './core/config.ts'
 import { envVar } from './core/env.ts'
 import { type Messages, messagesFor } from './core/i18n/index.ts'
 import { createLogger } from './core/logger.ts'
@@ -33,8 +40,10 @@ import {
   type TokenStoreKind,
 } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
+import { agentFor } from './features/agents/index.ts'
 import {
   existingRcFiles,
+  hasOurHooks,
   settingsPath,
   uninstallHooks,
   uninstallLaunchers,
@@ -43,9 +52,10 @@ import {
 } from './features/hooks/installer.ts'
 import { isDefaultConfigDir } from './features/hooks/launcher.ts'
 import { RulesLog } from './features/permissions/rules-log.ts'
+import type { PowerState } from './features/power/index.ts'
 import { DeviceRegistry, describeDevices } from './features/push/devices.ts'
 import { resolvePushMode } from './features/push/mode.ts'
-import { LaunchdService } from './features/service/launchd.ts'
+import { bundleLauncherKind, LaunchdService } from './features/service/launchd.ts'
 import type { ServiceManager } from './features/service/service-manager.ts'
 import { SystemdUserService } from './features/service/systemd.ts'
 import { colorEnabled, createPaint } from './features/setup/banner.ts'
@@ -62,6 +72,7 @@ import { STATUS_LINE_SCRIPT } from './features/status-line/wrapper.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
 import { isDowngrade, isUpdateChannel, UPDATE_CHANNELS, updateLabel } from './features/updates/channel.ts'
 import { readUpdateState, UpdateChecker, type UpdateState } from './features/updates/checker.ts'
+import { advanceRun, RunRecorder, readRun, writeRun } from './features/updates/run.ts'
 import { WslHost } from './features/wsl/host.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
@@ -72,6 +83,7 @@ import {
   resolvePlatform,
   UnsupportedPlatformError,
 } from './infra/platform.ts'
+import { ProcessSleepInhibitor, sleepHelperCommand } from './infra/power.ts'
 import { resolveWsHost, startDaemon } from './main.ts'
 import { SECRET_HEADER } from './transport/hooks-server.ts'
 
@@ -99,7 +111,12 @@ const wslHost = wsl ? new WslHost(execaExecutor, { wsl }) : undefined
 /** launchd on macOS, systemd user unit on Linux. */
 function serviceManager(): ServiceManager {
   return platform === 'darwin'
-    ? new LaunchdService(execaExecutor, { home: homedir(), appDir: paths.app() })
+    ? new LaunchdService(execaExecutor, {
+        home: homedir(),
+        appDir: paths.app(),
+        legacyAppDir: paths.legacyApp(),
+        buildDir: paths.launcher(),
+      })
     : new SystemdUserService(execaExecutor, { home: homedir(), user: userInfo().username })
 }
 
@@ -176,6 +193,25 @@ async function adminRequest(path: string): Promise<unknown | null> {
   }
 }
 
+/** GET on the running daemon's hooks server; null when it is not running. */
+async function daemonGet(path: string): Promise<unknown | null> {
+  const config = await loadConfig(createLogger({ level: 'silent' }))
+  try {
+    const response = await fetch(`http://127.0.0.1:${config.hookPort}${path}`, {
+      headers: { [SECRET_HEADER]: await ensureHookSecret() },
+    })
+    return response.ok ? ((await response.json()) as unknown) : null
+  } catch {
+    return null
+  }
+}
+
+/** Keep-awake state of the running daemon, or null. */
+async function daemonPower(): Promise<PowerState | null> {
+  const reply = await daemonGet('/power')
+  return reply && typeof reply === 'object' && 'mode' in reply ? (reply as PowerState) : null
+}
+
 /** Push mode for this computer as the daemon resolves it at start. */
 async function localPushMode(): Promise<PushMode> {
   const config = await loadConfig(createLogger({ level: 'silent' }))
@@ -225,6 +261,11 @@ program
         // Update checks and the tray belong to the service daemon, not to development runs.
         // Restarting is exiting: launchd (KeepAlive) / systemd (Restart=always) start it again.
         desktop: opts.dev ? undefined : { cliPath: builtCliPath(), restart: () => void shutdown() },
+        sleepInhibitor: opts.dev
+          ? undefined
+          : new ProcessSleepInhibitor(
+              sleepHelperCommand({ platform, wsl: wsl !== null, pid: process.pid, why: m.power.why }),
+            ),
       })
       stopDaemon = () => daemon.stop()
       process.on('SIGINT', shutdown)
@@ -361,6 +402,16 @@ program
         ])
         check(result.exitCode === 0, d.profile(profile.id, profile.configDir), d.dirMissing)
       }
+      // Codex profiles: the CLI on the PATH and the daemon's hooks in their hooks.json.
+      const codexProfiles = (await resolveProfiles(config, logger)).filter((p) => agentFor(p).id === 'codex')
+      if (codexProfiles.length > 0) {
+        const which = await execaExecutor('which', ['codex'])
+        check(which.exitCode === 0, 'codex', d.notOnPath)
+        for (const profile of codexProfiles) {
+          check(await hasOurHooks(profile), d.codexHooks(profile.id, settingsPath(profile)), d.runInstall)
+        }
+        console.log(`· ${m.install.codexTrust}`)
+      }
       const { kind: storeKind } = await selectStore()
       for (const profile of config.profiles) {
         if (!profile.provider) continue
@@ -395,6 +446,26 @@ program
       d.serviceHint,
     )
     if (status?.loaded && manager.linger) check(await manager.linger.enabled(), d.linger, d.lingerHint)
+    const power = await daemonPower()
+    if (power) {
+      const mode = m.cli.keepAwake.modes[power.mode]
+      if (power.mode === 'off') console.log(`· ${d.keepAwake(mode, m.cli.keepAwake.notHolding)}`)
+      else {
+        const state = power.holding ? d.keepAwakeHeld : d.keepAwakeIdle
+        check(power.available, d.keepAwake(mode, state), d.keepAwakeFailed(power.reason ?? '?'))
+      }
+    }
+    if (
+      platform === 'darwin' &&
+      (await execaExecutor('pmset', ['-g', 'batt'])).stdout.includes('InternalBattery')
+    ) {
+      console.log(`· ${d.lidNote}`)
+    }
+    if (status?.loaded && manager.kind === 'launchd') {
+      const native = (await bundleLauncherKind(paths.app())) === 'native'
+      check(native, native ? d.launcherNative : d.launcherScript, d.launcherHint)
+      console.log(`· ${d.fullDiskAccess}`)
+    }
     const devices = new DeviceRegistry(paths.devices())
     await devices.load()
     const platforms = describeDevices(devices.devices())
@@ -436,6 +507,7 @@ program
       console.log(
         `${(await uninstallHooks(profile)) ? '✓' : '·'} ${m.cli.uninstall.hooksRemoved(settingsPath(profile))}`,
       )
+      if (!agentFor(profile).statusLine) continue
       console.log(
         `${(await uninstallStatusLine(profile)) ? '✓' : '·'} ${m.install.statusLineRestored(settingsPath(profile))}`,
       )
@@ -524,16 +596,25 @@ program
       process.exit(1)
     }
     console.log(`▸ ${u.checking(options.ref)}`)
+    // Steps for the app (only channel refs: the app follows channels, not arbitrary refs).
+    const recorder = isUpdateChannel(options.ref)
+      ? await RunRecorder.open({ path: paths.updateRun(), channel: options.ref, from: DAEMON_VERSION })
+      : null
+    const fail = async (message: string, code = 1, rolledBack?: boolean): Promise<never> => {
+      console.error(`✗ ${message}`)
+      await recorder?.step('failed', { error: message, ...(rolledBack === undefined ? {} : { rolledBack }) })
+      process.exit(code)
+    }
     const updater = new SourceUpdater(execaExecutor, source.root)
+    const previous = await updater.head()
     const result = await updater.fetch(options.ref)
     if (result.status === 'dirty' || result.status === 'failed') {
-      console.error(
-        `✗ ${result.status === 'dirty' ? u.dirty(tildify(source.root)) : u.fetchFailed(result.error)}`,
-      )
-      process.exit(1)
+      await fail(result.status === 'dirty' ? u.dirty(tildify(source.root)) : u.fetchFailed(result.error))
+      return
     }
     if (result.status === 'current' && !options.force) {
       console.log(`✓ ${u.upToDate(DAEMON_VERSION, result.commit.slice(0, 7))}`)
+      await recorder?.step('done', { to: DAEMON_VERSION, commit: result.commit })
       return
     }
     if (result.status === 'available') {
@@ -541,28 +622,58 @@ program
       if (isDowngrade(DAEMON_VERSION, result.version))
         console.log(`⚠ ${u.older(DAEMON_VERSION, result.version ?? '?')}`)
       if (!(await updater.checkout())) {
-        console.error(`✗ ${u.checkoutFailed}`)
-        process.exit(1)
+        await fail(u.checkoutFailed)
+        return
       }
+    }
+    await recorder?.step('building', {
+      commit: result.commit,
+      to: result.status === 'available' ? result.version : DAEMON_VERSION,
+    })
+    const env = {
+      ...process.env,
+      REMOTE_HARNESS_SRC: source.root,
+      REMOTE_HARNESS_LANG: configuredLocaleSync(),
+      REMOTE_HARNESS_UPDATE_FROM: DAEMON_VERSION,
     }
     // The new install.sh checks the tools, builds and calls `update --finish` with the new CLI.
     const code = await runInteractive(
       'bash',
       [`${source.root}/install.sh`, '--update', '--ref', options.ref],
       {
-        env: {
-          ...process.env,
-          REMOTE_HARNESS_SRC: source.root,
-          REMOTE_HARNESS_LANG: configuredLocaleSync(),
-          REMOTE_HARNESS_UPDATE_FROM: DAEMON_VERSION,
-        },
+        env,
       },
     )
-    if (code !== 0) {
-      console.error(`✗ ${u.failed}`)
-      process.exit(code)
-    }
+    if (code === 0) return
+    // Failed before the service restarted: put back and rebuild the code the daemon came from, so a
+    // later restart does not start a broken build.
+    const beforeRestart = !recorder || recorder.current.step === 'building'
+    const rolledBack =
+      beforeRestart && previous !== null && result.status === 'available'
+        ? await rollBack(updater, previous, source.root, env)
+        : undefined
+    if (rolledBack) console.log(`↺ ${u.rolledBack(DAEMON_VERSION)}`)
+    else if (rolledBack === false) console.error(`✗ ${u.rollBackFailed}`)
+    await fail(u.failed, code, rolledBack)
   })
+
+/** Checks out `commit` again and rebuilds it with its own installer's `build_daemon`. */
+async function rollBack(
+  updater: SourceUpdater,
+  commit: string,
+  root: string,
+  env: NodeJS.ProcessEnv,
+): Promise<boolean> {
+  if (!(await updater.restore(commit))) return false
+  const code = await runInteractive(
+    'bash',
+    ['-c', 'source "$1" && build_daemon', 'bash', `${root}/install.sh`],
+    {
+      env: { ...env, PATH: `${dirname(process.execPath)}:${env.PATH ?? ''}` },
+    },
+  )
+  return code === 0
+}
 
 /** Refreshes what the new version installs (idempotent) and restarts the service when it is loaded. */
 async function finishUpdate(from: string | undefined): Promise<void> {
@@ -574,16 +685,48 @@ async function finishUpdate(from: string | undefined): Promise<void> {
   for (const line of lines) if (line.status === 'done') console.log(`✓ ${line.text}`)
   const manager = serviceManager()
   const cliPath = builtCliPath()
+  // The run the old CLI recorded: the new daemon marks `restarting` as done when it starts.
+  const run = await readRun(paths.updateRun())
+  const recording = run && run.step === 'building'
   if (cliPath && (await manager.status()).loaded) {
+    if (recording)
+      await writeRun(paths.updateRun(), advanceRun(run, 'restarting', new Date(), { to: DAEMON_VERSION }))
     await installServiceFromCli({ ...installOptions(), cliPath, service: manager })
     console.log(`✓ ${u.serviceRestarted}`)
   } else {
+    if (recording)
+      await writeRun(paths.updateRun(), advanceRun(run, 'done', new Date(), { to: DAEMON_VERSION }))
     console.log(`· ${u.serviceNotInstalled}`)
   }
   console.log(
     `\n✓ ${from && from !== DAEMON_VERSION ? u.updated(from, DAEMON_VERSION) : u.rebuilt(DAEMON_VERSION)}`,
   )
 }
+
+program
+  .command('keep-awake [mode]')
+  .description(m.cli.keepAwake.description)
+  .action(async (value: string | undefined) => {
+    const k = m.cli.keepAwake
+    const config = await loadConfig(createLogger({ level: 'silent' }))
+    if (value === undefined) {
+      const power = await daemonPower()
+      console.log(k.current(k.modes[power?.mode ?? config.keepAwake]))
+      if (!power) console.log(`  ${k.notRunning}`)
+      else if (!power.available) console.log(`  ✗ ${k.unavailable(power.reason ?? '?')}`)
+      else console.log(`  ${power.holding ? k.holding : k.notHolding}`)
+      return
+    }
+    const parsed = KeepAwakeModeSchema.safeParse(value)
+    if (!parsed.success) {
+      console.error(`✗ ${k.invalid(value, KEEP_AWAKE_MODES.join(', '))}`)
+      process.exit(1)
+    }
+    await updateConfigFile({ keepAwake: parsed.data })
+    const reply = await adminRequest('/admin/keep-awake-reload')
+    console.log(`✓ ${k.current(k.modes[parsed.data])}`)
+    console.log(`  ${reply ? k.applied : k.notRunning}`)
+  })
 
 const updates = program.command('updates').description(m.cli.updates.description)
 updates
