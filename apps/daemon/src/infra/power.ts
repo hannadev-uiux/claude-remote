@@ -115,7 +115,8 @@ export class ProcessSleepInhibitor implements SleepInhibitor {
         else if (held) for (const listener of this.lost) listener()
       }
       child.on('error', (error) => fail(error.message))
-      child.on('exit', (code, signal) => fail(stderr.trim() || `exited (${signal ?? code})`))
+      // `close` (not `exit`) comes after stderr is drained, so the reason is never lost.
+      child.on('close', (code, signal) => fail(stderr.trim() || `exited (${signal ?? code})`))
     })
   }
 
