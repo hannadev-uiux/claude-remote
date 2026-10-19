@@ -20,6 +20,7 @@ import { restoreFollow } from '@/features/conversation/follow-store'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
 import { restoreToolTabs } from '@/features/conversation/tool-tab-store'
+import { bindDrafts } from '@/features/drafts/persistence'
 import { installErrorCapture, setRoute } from '@/features/error-reports/capture'
 import { CrashPromptSheet } from '@/features/error-reports/components/CrashPromptSheet'
 import { ErrorFallback } from '@/features/error-reports/components/ErrorFallback'
@@ -66,6 +67,9 @@ export default function RootLayout() {
     void restoreToolTabs()
     void restoreLiveStatusSetting()
   }, [])
+
+  // Restores the unsent prompts saved on this device and keeps saving them.
+  useEffect(() => bindDrafts(), [])
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync()

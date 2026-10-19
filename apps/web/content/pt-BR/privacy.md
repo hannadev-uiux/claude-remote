@@ -14,7 +14,7 @@ Só os relatórios de erro que você aceitar enviar. Não há conta, analytics n
 
 ## O que fica nos seus aparelhos
 
-- No celular: o token de pareamento (no armazenamento seguro do sistema), as preferências do app (tema, idioma, nome da máquina, escolhas de notificação) e nada das conversas além do que está na tela.
+- No celular: o token de pareamento (no armazenamento seguro do sistema), as preferências do app (tema, idioma, nome da máquina, escolhas de notificação), os rascunhos de prompts não enviados de cada sessão (no armazenamento seguro do sistema, nunca enviados a lugar nenhum, apagados ao enviar, depois de 7 dias ou ao esquecer a máquina) e nada mais das conversas além do que está na tela.
 - No computador: a configuração do daemon, a lista de sessões conhecidas, os logs e as chaves de provedor no cofre do sistema.
 
 Apagar o app e rodar `remote-harness uninstall` remove tudo isso.

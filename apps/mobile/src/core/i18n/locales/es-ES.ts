@@ -615,6 +615,14 @@ const esES = {
       ended: 'terminada',
     },
   },
+  drafts: {
+    label: 'Borrador:',
+    photos_one: '{{count}} foto',
+    photos_other: '{{count}} fotos',
+    rowLabel: 'Borrador: {{preview}}',
+    imagesLost_one: 'No se pudo restaurar la foto del borrador.',
+    imagesLost_other: 'No se pudieron restaurar las {{count}} fotos del borrador.',
+  },
   queue: {
     count: 'EN COLA · {{count}}',
     sendAll: 'Enviar todo ahora',
