@@ -59,11 +59,14 @@ export class LifecycleService {
     return result.stdout.trim()
   }
 
-  /** `worktree` runs Claude Code with `--worktree <name>`: its own git worktree and branch. */
+  /**
+   * `worktree` runs Claude Code with `--worktree <name>` (its own git worktree and branch); `model`
+   * adds `--model <id>` (a provider model picked in the app).
+   */
   async start(
     profileId: string,
     rawCwd: string,
-    options: { worktree?: boolean } = {},
+    options: { worktree?: boolean; model?: string } = {},
   ): Promise<{ paneId: string }> {
     const profile = this.profile(profileId)
     const cwd = await validateCwd(rawCwd, this.home)
@@ -74,6 +77,7 @@ export class LifecycleService {
       if (!worktreeArgs) throw new DaemonError('bad_request', 'this agent cannot start in a worktree')
       args.push(...worktreeArgs)
     }
+    if (options.model) args.push('--model', options.model)
     const paneId = await this.launch(profile, cwd, args)
     // The launcher only reports the window it created; a window whose command exits closes at once.
     if (this.settleMs > 0) {

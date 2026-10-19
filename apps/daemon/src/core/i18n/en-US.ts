@@ -43,6 +43,18 @@ export const enUS = {
       rotatedOffline: 'Token rotated (the daemon is not running).',
       pairAgain: 'Run `remote-harness pair` to pair again.',
     },
+    provider: {
+      description: 'model providers of the profiles (OpenRouter key)',
+      key: 'store the provider key of a profile in the OS secret store (never in a file we write)',
+      stdin: 'read the key from standard input instead of asking',
+      prompt: (provider: string) => `${provider} API key:`,
+      unknownProfile: (id: string) => `No profile "${id}" in the config.`,
+      noProvider: (id: string) =>
+        `Profile "${id}" has no provider. Add "provider": { "kind": "openrouter" } to it in config.json first.`,
+      empty: 'No key given; nothing stored.',
+      saved: (id: string, store: string) =>
+        `Key of profile ${id} stored ${store}. New sessions of the profile use it.`,
+    },
     doctor: {
       description: 'check dependencies and configuration',
       notOnPath: 'not found in PATH',
@@ -58,6 +70,8 @@ export const enUS = {
         file: (path: string) => `in the file ${path} (0600)`,
       },
       runPair: 'run `remote-harness pair`',
+      providerKey: (id: string, provider: string) => `${provider} key for profile ${id}`,
+      runProviderKey: (id: string) => `run \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
       serviceHint: 'optional: `remote-harness service install`',
       linger: 'lingering (the service keeps running after logout)',
@@ -175,6 +189,8 @@ export const enUS = {
     },
   },
   install: {
+    missingProviderKey: (id: string, provider: string) =>
+      `No ${provider} key stored for profile ${id}: run \`remote-harness provider key ${id}\`.`,
     shortcut: (path: string) => `shortcut ${path}`,
     shellPath: (files: string) => `PATH in ${files}`,
     hooksIn: (path: string) => `hooks in ${path}`,

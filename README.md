@@ -182,6 +182,23 @@ Profiles and ports live in `~/.remote-harness/config.json` (installs made before
 }
 ```
 
+A profile can route Claude Code through **OpenRouter** instead of the Anthropic account: give it a `provider` (optionally with `baseUrl`, a default `model` and a `smallFastModel`) and store the key in the OS secret store. The key never goes into a file we write, nor to the phone; the app shows `via OpenRouter` on the profile and its sessions, lets you pick the model when starting a session (context, prices, capabilities, credits left) and switch it later from the session menu.
+
+```json
+{
+  "id": "openrouter",
+  "name": "OpenRouter",
+  "configDir": "~/.claude-openrouter",
+  "color": "#8A8784",
+  "provider": { "kind": "openrouter", "model": "anthropic/claude-sonnet-5.5" }
+}
+```
+
+```bash
+remote-harness install                  # regenerates the launchers with the provider variables
+remote-harness provider key openrouter  # asks for the key (hidden); `--stdin` reads it from a pipe
+```
+
 ### 2. Phone: app
 
 ```bash

@@ -26,7 +26,9 @@ export function createI18n(locale: Locale, plugins: readonly Module[] = []): i18
       const variable = Array.isArray(match) ? String(match[1]).trim() : ''
       if (variable === 'machine') return machineName() ?? instance.t('machine.generic')
       if (variable === 'Machine') return machineName() ?? instance.t('machine.genericSentence')
-      return text
+      // Any other missing variable stays as its placeholder (what i18next does by itself): returning
+      // the whole text would re-insert every placeholder and grow without bound.
+      return Array.isArray(match) ? String(match[0]) : text
     },
     returnNull: false,
     initAsync: false,

@@ -7,12 +7,14 @@ import {
   DirectoryItemSchema,
   ErrorCodeSchema,
   FileItemSchema,
+  ModelInfoSchema,
   MuteStateSchema,
   PermissionModeSchema,
   PermissionOutcomeSchema,
   PermissionRequestInfoSchema,
   ProfileSchema,
   ProjectItemSchema,
+  ProviderCreditsSchema,
   PushModeSchema,
   PushTestResultSchema,
   QueuedMessageSchema,
@@ -98,6 +100,25 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('files.results'), replyTo, query: z.string(), items: z.array(FileItemSchema) }),
   z.object({ type: z.literal('commands.results'), replyTo, items: z.array(CommandItemSchema) }),
   z.object({ type: z.literal('projects.results'), replyTo, items: z.array(ProjectItemSchema) }),
+  z.object({
+    type: z.literal('models.results'),
+    replyTo,
+    profileId: z.string(),
+    models: z.array(ModelInfoSchema),
+    /** When the list was fetched from the provider. */
+    fetchedAt: z.string(),
+    /** The provider could not be reached and this is the last list fetched. */
+    stale: z.boolean(),
+  }),
+  z.object({
+    type: z.literal('provider.info'),
+    replyTo,
+    profileId: z.string(),
+    /** A provider key is stored on the computer for this profile (the key itself never travels). */
+    hasKey: z.boolean(),
+    /** `null` without a key or when the provider did not answer. */
+    credits: ProviderCreditsSchema.nullable(),
+  }),
   z.object({
     type: z.literal('directories.results'),
     replyTo,

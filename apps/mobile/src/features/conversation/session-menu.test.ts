@@ -74,6 +74,15 @@ describe('sessionMenu', () => {
     expect(label(false)).toBe('Follow output')
   })
 
+  test('a provider session offers "Change model…" after the terminal, disabled when read-only', () => {
+    const items = (controllable: boolean) =>
+      sessionMenu({ controllable, keyBarVisible: false, following: true, provider: true }, en).items
+    expect(items(true)[1]).toEqual({ key: 'model', label: 'Change model…', disabled: false })
+    expect(items(false)[1]?.disabled).toBe(true)
+    const plain = sessionMenu({ controllable: true, keyBarVisible: false, following: true }, en).items
+    expect(plain.some((i) => i.key === 'model')).toBe(false)
+  })
+
   test('read-only session disables terminal, keys and close, keeps history and follow, and explains why', () => {
     const menu = sessionMenu({ controllable: false, keyBarVisible: false, following: false }, en)
     expect(menu.items.filter((i) => i.disabled).map((i) => i.key)).toEqual([

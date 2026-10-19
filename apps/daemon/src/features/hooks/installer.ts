@@ -70,7 +70,7 @@ export async function uninstallStatusLine(profile: Profile): Promise<boolean> {
 
 export async function installLaunchers(
   profiles: readonly Profile[],
-  options: { binDir: string; tmuxSession: string; tmuxBin: string },
+  options: { binDir: string } & Parameters<typeof renderLauncher>[1],
 ): Promise<string[]> {
   await mkdir(options.binDir, { recursive: true })
   const written: string[] = []

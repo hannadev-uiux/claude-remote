@@ -41,6 +41,18 @@ export const esES = {
       rotatedOffline: 'Token cambiado (el daemon no está en ejecución).',
       pairAgain: 'Ejecuta `remote-harness pair` para volver a emparejar.',
     },
+    provider: {
+      description: 'proveedores de modelos de los perfiles (clave de OpenRouter)',
+      key: 'guarda la clave del proveedor de un perfil en el almacén seguro del sistema (nunca en un archivo nuestro)',
+      stdin: 'lee la clave de la entrada estándar en vez de preguntar',
+      prompt: (provider: string) => `Clave de API de ${provider}:`,
+      unknownProfile: (id: string) => `No hay ningún perfil "${id}" en la configuración.`,
+      noProvider: (id: string) =>
+        `El perfil "${id}" no tiene proveedor. Añádele "provider": { "kind": "openrouter" } en config.json primero.`,
+      empty: 'No se indicó ninguna clave; no se guardó nada.',
+      saved: (id: string, store: string) =>
+        `Clave del perfil ${id} guardada ${store}. Las sesiones nuevas del perfil la usan.`,
+    },
     doctor: {
       description: 'comprueba las dependencias y la configuración',
       notOnPath: 'no se encuentra en el PATH',
@@ -56,6 +68,8 @@ export const esES = {
         file: (path: string) => `en el archivo ${path} (0600)`,
       },
       runPair: 'ejecuta `remote-harness pair`',
+      providerKey: (id: string, provider: string) => `clave de ${provider} del perfil ${id}`,
+      runProviderKey: (id: string) => `ejecuta \`remote-harness provider key ${id}\``,
       service: (name: string, detail: string) => `servicio en segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
       linger: 'lingering (el servicio sigue en marcha tras cerrar sesión)',
@@ -178,6 +192,8 @@ export const esES = {
     },
   },
   install: {
+    missingProviderKey: (id: string, provider: string) =>
+      `No hay ninguna clave de ${provider} guardada para el perfil ${id}: ejecuta \`remote-harness provider key ${id}\`.`,
     shortcut: (path: string) => `atajo ${path}`,
     shellPath: (files: string) => `PATH en ${files}`,
     hooksIn: (path: string) => `hooks en ${path}`,

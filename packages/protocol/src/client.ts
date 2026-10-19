@@ -124,6 +124,10 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('commands.list'), id, sessionId }),
   z.object({ type: z.literal('projects.list'), id, profileId: z.string().min(1) }),
+  /** Models of the profile's provider (cached by the daemon); `bad_request` for a profile without one. */
+  z.object({ type: z.literal('models.list'), id, profileId: z.string().min(1) }),
+  /** Whether the profile's provider key is stored, and the credits left. */
+  z.object({ type: z.literal('provider.status'), id, profileId: z.string().min(1) }),
   /** Subdirectories of `path` (`~`, `~/…` or absolute, inside the home folder), filtered by name `prefix`. */
   z.object({
     type: z.literal('directories.list'),
@@ -141,6 +145,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     cwd: z.string().min(1),
     /** Runs Claude Code with `--worktree`: its own git worktree and branch. */
     worktree: z.boolean().optional(),
+    /** Model of the new session (`--model <id>`); the profile's provider default when absent. */
+    model: z.string().min(1).optional(),
   }),
   z.object({ type: z.literal('checkout.inspect'), id, profileId: z.string().min(1), cwd: z.string().min(1) }),
   z.object({ type: z.literal('session.resume'), id, profileId: z.string().min(1), sessionId }),

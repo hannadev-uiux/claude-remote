@@ -21,6 +21,7 @@ import { registerMuteFeature } from './features/mute/index.ts'
 import type { MuteStore } from './features/mute/store.ts'
 import { registerPaneFeature } from './features/pane/index.ts'
 import { registerPermissionsFeature } from './features/permissions/index.ts'
+import { registerProvidersFeature } from './features/providers/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
 import { registerQueueFeature } from './features/queue/index.ts'
@@ -55,6 +56,8 @@ export type DaemonOptions = {
   pushSender?: PushSender | null
   /** Update checks and the tray icon: only for the service daemon (`start` without `--dev`). */
   desktop?: DesktopOptions
+  /** A profile's provider key from the OS secret store (`null` when none); absent = no keys (tests). */
+  providerKey?: (profileId: string) => Promise<string | null>
 }
 
 export type RunningDaemon = {
@@ -84,6 +87,8 @@ export type DaemonContext = {
   onClientConnected(fn: (connection: Connection) => void): void
   /** Overrides the Firebase sender (tests); undefined = load from the service account file. */
   pushSender?: PushSender | null
+  /** A profile's provider key from the OS secret store; only ever handed to the provider itself. */
+  providerKey: (profileId: string) => Promise<string | null>
 }
 
 export function resolveWsHost(options: Pick<DaemonOptions, 'dev' | 'host'>): string {
@@ -149,6 +154,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     onStop: (fn) => stopHandlers.push(fn),
     onClientConnected: (fn) => connectHandlers.push(fn),
     pushSender: options.pushSender,
+    providerKey: options.providerKey ?? (async () => null),
   }
 
   router.register('ping', () => ({ type: 'pong' }))
@@ -238,6 +244,7 @@ async function registerFeatures(
   registerModeFeature(ctx, sessions.store, sessionLock, hasPendingPermission)
   registerAutocompleteFeature(ctx, sessions.store)
   registerPaneFeature(ctx, sessions.store)
+  registerProvidersFeature(ctx, { key: ctx.providerKey })
   const checkout = registerCheckoutFeature(ctx, sessions.store)
   const lifecycle = registerLifecycleFeature(ctx, sessions.store, sessions.service, checkout.resolver, {
     lock: sessionLock,

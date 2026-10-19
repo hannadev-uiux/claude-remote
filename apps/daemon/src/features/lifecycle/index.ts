@@ -44,8 +44,14 @@ export function registerLifecycleFeature(
   ctx.router.register('session.start', async (msg) => {
     const worktree = msg.worktree ?? false
     try {
-      const data = await service.start(msg.profileId, msg.cwd, { worktree })
-      ctx.logger.info({ profileId: msg.profileId, paneId: data.paneId, worktree }, 'session started')
+      const data = await service.start(msg.profileId, msg.cwd, {
+        worktree,
+        ...(msg.model ? { model: msg.model } : {}),
+      })
+      ctx.logger.info(
+        { profileId: msg.profileId, paneId: data.paneId, worktree, model: msg.model ?? null },
+        'session started',
+      )
       return { type: 'ack', data }
     } catch (error) {
       const code = error instanceof DaemonError ? error.code : 'internal'
