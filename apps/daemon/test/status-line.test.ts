@@ -202,6 +202,7 @@ function record(id: string, profileId = 'claudin'): SessionRecord {
     title: 'x',
     state: 'idle',
     permissionMode: null,
+    approvalPolicy: null,
     controllable: true,
     paneId: '%1',
     updatedAt: '2026-10-18T10:00:00.000Z',

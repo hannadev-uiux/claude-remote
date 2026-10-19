@@ -4,6 +4,9 @@
  * `unknown` entries (or are skipped when they are clearly metadata) and nothing throws.
  */
 import type { ImageRef, TranscriptEntry } from '@remote-harness/protocol'
+import type { ImageData, TranscriptFormat, TranscriptMetaUpdate } from './format.ts'
+
+export type { ImageData, TranscriptMetaUpdate } from './format.ts'
 
 export const MAX_TOOL_RESULT_CHARS = 20_000
 const MAX_UNKNOWN_RAW_CHARS = 2_000
@@ -38,9 +41,6 @@ function str(value: unknown): string | null {
 function truncate(text: string, max: number): { text: string; truncated: boolean } {
   return text.length > max ? { text: text.slice(0, max), truncated: true } : { text, truncated: false }
 }
-
-/** A base64 image block; other sources (`url`, `file`) are not supported and yield null. */
-export type ImageData = { mediaType: string; data: string; bytes: number }
 
 function imageData(part: Json): ImageData | null {
   if (!isObject(part.source) || part.source.type !== 'base64') return null
@@ -338,9 +338,6 @@ export function parseTranscriptLine(raw: string, cursor: number): TranscriptEntr
   )
 }
 
-/** Metadata lines that update the session itself rather than the conversation. */
-export type TranscriptMetaUpdate = { customTitle?: string; permissionMode?: string }
-
 export function parseMetaLine(raw: string): TranscriptMetaUpdate | null {
   if (!raw.includes('"custom-title"') && !raw.includes('"permission-mode"')) return null
   try {
@@ -355,4 +352,11 @@ export function parseMetaLine(raw: string): TranscriptMetaUpdate | null {
     // ignore
   }
   return null
+}
+
+/** Claude Code's `.jsonl`, as the transcript service reads formats. */
+export const claudeTranscript: TranscriptFormat = {
+  parseLine: parseTranscriptLine,
+  parseMeta: parseMetaLine,
+  findImage,
 }

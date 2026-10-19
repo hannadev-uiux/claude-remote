@@ -78,6 +78,18 @@ Um perfil pode rotear o Claude Code pelo OpenRouter em vez da conta Anthropic: a
 
 Depois, `remote-harness install` regenera os atalhos e `remote-harness provider key openrouter` guarda a chave no mesmo lugar do token de pareamento (Keychain no macOS, Secret Service ou arquivo `0600` no Linux). O atalho lê a chave só dentro da janela do tmux, nunca numa linha de comando, e o daemon só a usa para mostrar os seus créditos no app. O `doctor` informa se cada perfil com provedor tem chave.
 
+## Perfis do Codex
+
+Um perfil pode rodar o OpenAI Codex CLI em vez do Claude Code: defina `"agent": "codex"` e aponte `configDir` para a pasta do Codex (`CODEX_HOME`, `~/.codex` por padrão). O `remote-harness setup` oferece `~/.codex` quando o Codex já o usou.
+
+```json
+{ "id": "cdx", "name": "Codex", "configDir": "~/.codex", "color": "#2FBF8F", "agent": "codex" }
+```
+
+O `remote-harness install` grava o atalho do perfil (ele abre o `codex` com o `CODEX_HOME` certo) e mescla os hooks do daemon em `<CODEX_HOME>/hooks.json`, ao lado dos seus e com backup; o seu `config.toml` não é alterado. **O Codex pede uma vez para confiar em hooks novos**: abra o `codex` e escolha "Trust all and continue" (ou revise em `/hooks`). Até lá, as sessões dele aparecem somente leitura e as aprovações ficam no terminal. O `doctor` verifica se o `codex` está no `PATH` e se os hooks estão instalados.
+
+O que funciona como no Claude Code: a lista de sessões (rollouts recentes em `sessions/`), a conversa, prompts, fotos e teclas, iniciar e retomar pelo celular, push, status ao vivo e aprovações com Permitir / Negar. Diferenças: o chip de modo mostra a política de aprovação e só muda com `/permissions` no terminal, não há "Sempre" (hooks do Codex não criam regras), nem opção de worktree, nem provedor.
+
 ## Atalhos e aliases
 
 Cada perfil ganha um pequeno atalho em zsh em `~/.remote-harness/bin/<alias>` (adicionado ao `PATH` em `~/.zshrc` e `~/.bashrc`). Rode o alias em vez de `claude`, com os mesmos argumentos: ele abre o Claude Code numa janela da sessão `claude-remote` do tmux com o `CLAUDE_CONFIG_DIR` certo e prende o seu terminal nela. O comando `claude` puro nunca é alterado.

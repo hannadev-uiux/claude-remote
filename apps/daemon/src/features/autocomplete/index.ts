@@ -1,8 +1,8 @@
 import type { CommandItem, Profile } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { DaemonContext } from '../../main.ts'
+import { agentFor } from '../agents/index.ts'
 import type { SessionStore } from '../sessions/store.ts'
-import { commandsSignature, loadCommands } from './commands.ts'
 import { FileIndex } from './file-index.ts'
 
 const COMMANDS_TTL_MS = 60_000
@@ -29,11 +29,12 @@ export function registerAutocompleteFeature(ctx: DaemonContext, store: SessionSt
     const key = `${profile.id}:${cwd}`
     const cached = commandCache.get(key)
     // Directory mtimes catch new skills/commands immediately; the TTL covers nested edits.
-    const signature = await commandsSignature(profile.configDir, cwd)
+    const agent = agentFor(profile)
+    const signature = await agent.commandsSignature(profile.configDir, cwd)
     if (cached && cached.signature === signature && Date.now() - cached.at < COMMANDS_TTL_MS) {
       return { type: 'commands.results', items: cached.items }
     }
-    const items = await loadCommands(profile.configDir, cwd)
+    const items = await agent.commands(profile.configDir, cwd)
     commandCache.set(key, { at: Date.now(), signature, items })
     return { type: 'commands.results', items }
   })

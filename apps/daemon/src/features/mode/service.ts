@@ -2,6 +2,7 @@ import { type PermissionMode, SelectableModeSchema } from '@remote-harness/proto
 import { DaemonError } from '../../core/errors.ts'
 import type { KeyedMutex } from '../../core/keyed-mutex.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
+import { adapterOf } from '../agents/index.ts'
 import { requireControllable } from '../input/service.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { detectMode } from './detect.ts'
@@ -40,7 +41,9 @@ export class ModeService {
     const parsed = SelectableModeSchema.safeParse(requested)
     if (!parsed.success) throw new DaemonError('bad_request', `unknown mode ${requested}`)
     const target = parsed.data
-    const { paneId } = requireControllable(this.store, sessionId)
+    const { paneId, agent } = requireControllable(this.store, sessionId)
+    if (!adapterOf(agent).modes)
+      throw new DaemonError('bad_request', `${adapterOf(agent).name} modes cannot be changed from the app`)
     if (this.hasPendingPermission(sessionId))
       throw new DaemonError('session_busy', 'a permission dialog is open')
 

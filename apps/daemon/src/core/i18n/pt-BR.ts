@@ -85,6 +85,8 @@ export const ptBR = {
       runPair: 'rode `remote-harness pair`',
       providerKey: (id: string, provider: string) => `chave do ${provider} do perfil ${id}`,
       runProviderKey: (id: string) => `rode \`remote-harness provider key ${id}\``,
+      codexHooks: (id: string, path: string) => `hooks do Codex do perfil ${id} (${path})`,
+      runInstall: 'rode `remote-harness install`',
       service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
       launcherNative: 'pedidos de acesso a pastas mostram "Remote Harness"',
@@ -225,6 +227,8 @@ export const ptBR = {
     shortcut: (path: string) => `atalho ${path}`,
     shellPath: (files: string) => `PATH em ${files}`,
     hooksIn: (path: string) => `hooks em ${path}`,
+    codexTrust:
+      'O Codex pede uma vez para confiar em hooks novos: abra o `codex` e escolha "Trust all and continue" (ou revise em /hooks). Até lá, as sessões dele ficam somente leitura.',
     launcherRemoved: (id: string) => `launcher ${id} removido`,
     hooksRemovedFrom: (path: string) => `hooks removidos de ${path}`,
     statusLineIn: (path: string) => `status line em ${path}`,

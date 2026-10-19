@@ -2,6 +2,7 @@ import { chmod, copyFile, mkdir, readFile, realpath, rm, stat } from 'node:fs/pr
 import { basename, join } from 'node:path'
 import type { Profile } from '@remote-harness/protocol'
 import { readJsonFile, writeFileAtomic, writeJsonAtomic } from '../../infra/fs.ts'
+import { agentFor } from '../agents/index.ts'
 import {
   renderStatusLineScript,
   STATUS_LINE_SCRIPT,
@@ -9,7 +10,14 @@ import {
   wrapStatusLine,
 } from '../status-line/wrapper.ts'
 import { removePathBlock, renderLauncher, upsertPathBlock } from './launcher.ts'
-import { type HookInstallOptions, mergeOurHooks, removeOurHooks } from './settings-hooks.ts'
+import { HOOK_EVENTS } from './payloads.ts'
+import {
+  CODEX_HOOK_EVENTS,
+  type HookInstallOptions,
+  isOurHook,
+  mergeOurHooks,
+  removeOurHooks,
+} from './settings-hooks.ts'
 
 export const BACKUP_SUFFIX = '.bak-claude-remote'
 
@@ -37,12 +45,34 @@ async function updateSettings(path: string, update: (settings: Settings) => Sett
   return true
 }
 
+/** The file that holds the profile's hooks: Claude Code's `settings.json`, Codex's `hooks.json`. */
 export function settingsPath(profile: Profile): string {
-  return join(profile.configDir, 'settings.json')
+  return agentFor(profile).hooks.file(profile.configDir)
 }
 
 export async function installHooks(profile: Profile, options: HookInstallOptions): Promise<boolean> {
-  return updateSettings(settingsPath(profile), (s) => mergeOurHooks(s, options))
+  const style = agentFor(profile).hooks.style
+  return updateSettings(settingsPath(profile), (s) => mergeOurHooks(s, options, style))
+}
+
+/** Every hook the daemon needs is in the profile's hooks file (doctor). */
+export async function hasOurHooks(profile: Profile): Promise<boolean> {
+  const settings = (await readJsonFile(settingsPath(profile)).catch(() => undefined)) as
+    | { hooks?: Record<string, unknown> }
+    | undefined
+  const style = agentFor(profile).hooks.style
+  const events = style === 'codex-hooks' ? CODEX_HOOK_EVENTS : HOOK_EVENTS
+  return events.every((event) => {
+    const groups = settings?.hooks?.[event]
+    return (
+      Array.isArray(groups) &&
+      groups.some(
+        (group: { hooks?: unknown }) =>
+          Array.isArray(group?.hooks) &&
+          group.hooks.some((entry) => typeof entry === 'object' && entry !== null && isOurHook(entry)),
+      )
+    )
+  })
 }
 
 export async function uninstallHooks(profile: Profile): Promise<boolean> {
@@ -63,8 +93,9 @@ export async function installStatusLine(profile: Profile, scriptPath: string): P
   return updateSettings(settingsPath(profile), (s) => wrapStatusLine(s, scriptPath))
 }
 
-/** Restores the profile's own status line (or removes ours when there was none). */
+/** Restores the profile's own status line (or removes ours when there was none); agents without one are left alone. */
 export async function uninstallStatusLine(profile: Profile): Promise<boolean> {
+  if (!agentFor(profile).statusLine) return false
   return updateSettings(settingsPath(profile), (s) => unwrapStatusLine(s))
 }
 

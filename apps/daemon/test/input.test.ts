@@ -19,6 +19,7 @@ function session(patch: Partial<SessionRecord> = {}): SessionRecord {
     title: 't',
     state: 'idle',
     permissionMode: 'default',
+    approvalPolicy: null,
     controllable: true,
     paneId: '%7',
     updatedAt: '',

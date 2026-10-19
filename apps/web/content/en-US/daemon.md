@@ -78,6 +78,18 @@ A profile can route Claude Code through OpenRouter instead of the Anthropic acco
 
 Then `remote-harness install` regenerates the launchers and `remote-harness provider key openrouter` stores the key in the same place as the pairing token (Keychain on macOS, Secret Service or a `0600` file on Linux). The launcher reads it only inside the tmux window, never on a command line, and the daemon only uses it to show your credits in the app. `doctor` reports whether each provider profile has a key.
 
+## Codex profiles
+
+A profile can run OpenAI Codex CLI instead of Claude Code: set `"agent": "codex"` and point `configDir` at the Codex home (`CODEX_HOME`, `~/.codex` by default). `remote-harness setup` offers `~/.codex` when Codex has used it.
+
+```json
+{ "id": "cdx", "name": "Codex", "configDir": "~/.codex", "color": "#2FBF8F", "agent": "codex" }
+```
+
+`remote-harness install` writes the profile's launcher (it opens `codex` with `CODEX_HOME` set) and merges the daemon's hooks into `<CODEX_HOME>/hooks.json`, next to your own and with a backup; your `config.toml` is not touched. **Codex asks once to trust new hooks**: open `codex` and choose "Trust all and continue" (or review them in `/hooks`). Until then its sessions are listed read-only and approvals stay in the terminal. `doctor` checks that `codex` is on the `PATH` and that the hooks are installed.
+
+What works like Claude Code: the session list (recent rollouts under `sessions/`), the conversation, prompts, photos and keys, starting and resuming from the phone, push, live status and approvals with Allow / Deny. Differences: the mode chip shows the approval policy and changes only with `/permissions` in the terminal, there is no "Always" (Codex hooks cannot add rules), no worktree option and no provider.
+
 ## Launchers and aliases
 
 Each profile gets a small zsh launcher in `~/.remote-harness/bin/<alias>` (added to the `PATH` of `~/.zshrc` and `~/.bashrc`). Run the alias instead of `claude`, with the same arguments: it opens Claude Code in a window of the `claude-remote` tmux session with the right `CLAUDE_CONFIG_DIR` and attaches your terminal to it. The plain `claude` command is never changed.

@@ -87,6 +87,8 @@ export const enUS = {
       runPair: 'run `remote-harness pair`',
       providerKey: (id: string, provider: string) => `${provider} key for profile ${id}`,
       runProviderKey: (id: string) => `run \`remote-harness provider key ${id}\``,
+      codexHooks: (id: string, path: string) => `Codex hooks for profile ${id} (${path})`,
+      runInstall: 'run `remote-harness install`',
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
       serviceHint: 'optional: `remote-harness service install`',
       launcherNative: 'folder access prompts name "Remote Harness"',
@@ -223,6 +225,8 @@ export const enUS = {
     shortcut: (path: string) => `shortcut ${path}`,
     shellPath: (files: string) => `PATH in ${files}`,
     hooksIn: (path: string) => `hooks in ${path}`,
+    codexTrust:
+      'Codex asks once to trust new hooks: open `codex` and choose "Trust all and continue" (or review them in /hooks). Until then its sessions stay read-only.',
     launcherRemoved: (id: string) => `launcher ${id} removed`,
     hooksRemovedFrom: (path: string) => `hooks removed from ${path}`,
     statusLineIn: (path: string) => `status line in ${path}`,

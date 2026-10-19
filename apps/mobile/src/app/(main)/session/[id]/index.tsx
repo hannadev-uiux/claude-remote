@@ -15,7 +15,8 @@ import { type SessionMenuAction, sessionMenu } from '@/features/conversation/ses
 import { promptErrorMessage, usePrompt } from '@/features/conversation/use-prompt'
 import { toggleInspector } from '@/features/inspector/store'
 import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
-import { ModeSelector } from '@/features/mode/ModeSelector'
+import { ApprovalPolicyChip, ModeSelector } from '@/features/mode/ModeSelector'
+import { hasSwitchableModes } from '@/features/mode/modes'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
 import { SessionPermissions } from '@/features/permissions/components/SessionPermissions'
 import { providerName } from '@/features/providers/logic'
@@ -193,7 +194,11 @@ export default function SessionRoute() {
                   </Pressable>
                   <StateBadge state={session.state} />
                 </View>
-                <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
+                {hasSwitchableModes(agent) ? (
+                  <ModeSelector sessionId={id} mode={session.permissionMode} disabled={!controllable} />
+                ) : (
+                  <ApprovalPolicyChip policy={session.approvalPolicy} />
+                )}
               </View>
               <StatusBar
                 status={session.status}

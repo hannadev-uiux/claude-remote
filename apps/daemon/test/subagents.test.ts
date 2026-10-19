@@ -53,6 +53,7 @@ function setup(now = Date.now) {
       title: '',
       state: 'running',
       permissionMode: null,
+      approvalPolicy: null,
       controllable: true,
       paneId: '%1',
       updatedAt: '',

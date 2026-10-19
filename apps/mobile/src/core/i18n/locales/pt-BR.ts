@@ -110,6 +110,7 @@ const ptBR = {
   conversation: {
     turnDuration: 'Turno concluído em {{duration}}',
     compacted: 'Conversa compactada',
+    interrupted: 'Interrompido',
     loading: 'carregando conversa…',
     newMessages: '↓ novas mensagens',
     thinking: '✻ pensando…',
@@ -368,6 +369,8 @@ const ptBR = {
       todos: 'Itens',
       skill: 'Skill',
       args: 'Argumentos',
+      folder: 'Pasta',
+      files: 'Arquivos',
     },
   },
   permissions: {
@@ -556,6 +559,8 @@ const ptBR = {
     autoConfirmBody:
       '{{agent}} vai decidir sozinho quais ações executar, sem pedir aprovação, enquanto ninguém olha o computador.',
     autoConfirm: 'Ativar auto',
+    approvalPolicy: 'Política de aprovação: {{policy}}',
+    unknownPolicy: 'desconhecida',
     labels: {
       default: 'padrão',
       acceptEdits: 'aceitar edições',

@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path'
 import { PROVIDER_NAMES, type Profile, type Provider } from '@remote-harness/protocol'
 import { paths } from '../../core/paths.ts'
 import { providerKeyAccount, SECRET_SERVICE } from '../../core/secrets.ts'
+import { agentFor } from '../agents/index.ts'
 import { providerEnv } from '../providers/openrouter.ts'
 
 const PATH_BLOCK_START = '# >>> claude-remote >>>'
@@ -17,8 +18,8 @@ function zshQuote(value: string): string {
  * it, even to \`~/.claude\`, switches to \`$CLAUDE_CONFIG_DIR/.claude.json\` and looks like a fresh install
  * (onboarding, no login). The default profile must therefore run with the variable unset.
  */
-export function isDefaultConfigDir(configDir: string, home = homedir()): boolean {
-  return resolve(configDir) === join(home, '.claude')
+export function isDefaultConfigDir(configDir: string, home = homedir(), defaultDir = '~/.claude'): boolean {
+  return resolve(configDir) === join(home, defaultDir.replace(/^~\/?/, ''))
 }
 
 export type LauncherOptions = {
@@ -85,16 +86,18 @@ fi
  * from the OS secret store inside the window and never crosses a command line.
  */
 export function renderLauncher(profile: Profile, options: LauncherOptions): string {
-  const isDefault = isDefaultConfigDir(profile.configDir, options.home)
-  // The tmux server may have inherited another profile's CLAUDE_CONFIG_DIR, so `env -u` clears it.
-  const configDir = isDefault
-    ? 'unset CLAUDE_CONFIG_DIR'
-    : `export CLAUDE_CONFIG_DIR=${zshQuote(profile.configDir)}`
-  const unsetInPane = isDefault ? 'env -u CLAUDE_CONFIG_DIR ' : ''
-  const configEnv = isDefault ? '' : '-e "CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR" '
-  const provider = profile.provider
+  // Claude Code (CLAUDE_CONFIG_DIR, `claude`) or Codex (CODEX_HOME, `codex`).
+  const agent = agentFor(profile)
+  const dirEnv = agent.configDirEnv ?? 'CLAUDE_CONFIG_DIR'
+  const binEnv = agent.id === 'claude' ? 'CLAUDE_BIN' : `${agent.id.toUpperCase()}_BIN`
+  const isDefault = isDefaultConfigDir(profile.configDir, options.home, agent.defaultConfigDir)
+  // The tmux server may have inherited another profile's config dir variable, so `env -u` clears it.
+  const configDir = isDefault ? `unset ${dirEnv}` : `export ${dirEnv}=${zshQuote(profile.configDir)}`
+  const unsetInPane = isDefault ? `env -u ${dirEnv} ` : ''
+  const configEnv = isDefault ? '' : `-e "${dirEnv}=$${dirEnv}" `
+  const provider = agent.providers ? profile.provider : undefined
   const providerBlock = provider ? providerSection(profile.id, provider, unsetInPane, options) : ''
-  const command = provider ? `"\${0:A}" "$@"` : `${unsetInPane}"$CLAUDE_BIN" "$@"`
+  const command = provider ? `"\${0:A}" "$@"` : `${unsetInPane}"$${binEnv}" "$@"`
   const execEnv = provider ? '-e "CLAUDE_REMOTE_EXEC=1" ' : ''
   return `#!/usr/bin/env zsh
 # Remote Harness launcher for profile "${profile.id}" (${profile.name}). Generated; do not edit.
@@ -102,7 +105,7 @@ ${configDir}
 export CLAUDE_REMOTE_PROFILE=${zshQuote(profile.id)}
 TMUX_BIN=\${CLAUDE_REMOTE_TMUX:-${zshQuote(options.tmuxBin)}}
 SESSION=${zshQuote(options.tmuxSession)}
-CLAUDE_BIN=\${CLAUDE_REMOTE_CLAUDE_BIN:-claude}
+${binEnv}=\${CLAUDE_REMOTE_${binEnv}:-${agent.command}}
 ${providerBlock}
 name="${profile.id}:\${PWD:t}"
 cmd=(${command})

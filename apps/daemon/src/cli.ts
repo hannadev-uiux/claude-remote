@@ -40,8 +40,10 @@ import {
   type TokenStoreKind,
 } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
+import { agentFor } from './features/agents/index.ts'
 import {
   existingRcFiles,
+  hasOurHooks,
   settingsPath,
   uninstallHooks,
   uninstallLaunchers,
@@ -400,6 +402,16 @@ program
         ])
         check(result.exitCode === 0, d.profile(profile.id, profile.configDir), d.dirMissing)
       }
+      // Codex profiles: the CLI on the PATH and the daemon's hooks in their hooks.json.
+      const codexProfiles = (await resolveProfiles(config, logger)).filter((p) => agentFor(p).id === 'codex')
+      if (codexProfiles.length > 0) {
+        const which = await execaExecutor('which', ['codex'])
+        check(which.exitCode === 0, 'codex', d.notOnPath)
+        for (const profile of codexProfiles) {
+          check(await hasOurHooks(profile), d.codexHooks(profile.id, settingsPath(profile)), d.runInstall)
+        }
+        console.log(`· ${m.install.codexTrust}`)
+      }
       const { kind: storeKind } = await selectStore()
       for (const profile of config.profiles) {
         if (!profile.provider) continue
@@ -495,6 +507,7 @@ program
       console.log(
         `${(await uninstallHooks(profile)) ? '✓' : '·'} ${m.cli.uninstall.hooksRemoved(settingsPath(profile))}`,
       )
+      if (!agentFor(profile).statusLine) continue
       console.log(
         `${(await uninstallStatusLine(profile)) ? '✓' : '·'} ${m.install.statusLineRestored(settingsPath(profile))}`,
       )

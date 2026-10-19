@@ -85,6 +85,8 @@ export const esES = {
       runPair: 'ejecuta `remote-harness pair`',
       providerKey: (id: string, provider: string) => `clave de ${provider} del perfil ${id}`,
       runProviderKey: (id: string) => `ejecuta \`remote-harness provider key ${id}\``,
+      codexHooks: (id: string, path: string) => `hooks de Codex del perfil ${id} (${path})`,
+      runInstall: 'ejecuta `remote-harness install`',
       service: (name: string, detail: string) => `servicio en segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
       launcherNative: 'las solicitudes de acceso a carpetas muestran "Remote Harness"',
@@ -226,6 +228,8 @@ export const esES = {
     shortcut: (path: string) => `atajo ${path}`,
     shellPath: (files: string) => `PATH en ${files}`,
     hooksIn: (path: string) => `hooks en ${path}`,
+    codexTrust:
+      'Codex pide una vez confiar en los hooks nuevos: abre `codex` y elige "Trust all and continue" (o revísalos en /hooks). Hasta entonces sus sesiones son de solo lectura.',
     launcherRemoved: (id: string) => `launcher ${id} eliminado`,
     hooksRemovedFrom: (path: string) => `hooks eliminados de ${path}`,
     statusLineIn: (path: string) => `status line en ${path}`,

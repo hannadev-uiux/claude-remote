@@ -1,5 +1,6 @@
 import { diffLines } from 'diff'
 import type { TFunction } from '@/core/i18n/create'
+import { patchDiff, patchText } from './patch'
 
 export type DiffLine = { kind: 'add' | 'remove' | 'context'; text: string }
 
@@ -18,7 +19,7 @@ function toLines(oldText: string, newText: string): DiffLine[] {
   return out
 }
 
-/** Builds a line diff for Edit / MultiEdit / Write tool inputs; null for other tools. */
+/** Builds a line diff for Edit / MultiEdit / Write (and Codex's apply_patch) inputs; null for other tools. */
 export function diffForTool(name: string, input: Record<string, unknown>, t: TFunction): DiffLine[] | null {
   let lines: DiffLine[] | null = null
   if (name === 'Edit' && typeof input.old_string === 'string' && typeof input.new_string === 'string') {
@@ -30,6 +31,9 @@ export function diffForTool(name: string, input: Record<string, unknown>, t: TFu
     ])
   } else if (name === 'Write' && typeof input.content === 'string') {
     lines = input.content.split('\n').map((text) => ({ kind: 'add' as const, text }))
+  } else if (name === 'apply_patch') {
+    const patch = patchText(input)
+    lines = patch ? patchDiff(patch) : null
   }
   if (!lines) return null
   return lines.length > MAX_LINES
