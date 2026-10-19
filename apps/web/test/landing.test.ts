@@ -64,6 +64,10 @@ describe('renderLanding', () => {
     expect(html).toContain(m.hero.title)
     expect(html).toContain(m.faq.items[0]?.q ?? 'missing')
     expect(html).not.toMatch(/undefined|\[object Object\]|\{\{/)
+    // Agents show their marks, not the two-letter codes.
+    expect(html).not.toMatch(/>(cl|cx|ki|qw)</)
+    for (const id of ['claude', 'codex', 'kimi', 'qwen', 'openrouter'])
+      expect(html).toContain(`class="mk ${id}"`)
     // The only external resources are the fonts.
     const externals = [...html.matchAll(/(?:href|src)="(https?:\/\/[^"]+)"/g)].map((match) => match[1])
     const foreign = externals.filter(

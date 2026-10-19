@@ -269,7 +269,7 @@ export const enUS = {
     privacy: 'Privacy',
     license: 'MIT',
     legal:
-      'Remote Harness is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic or OpenAI. “Claude” and “Claude Code” are trademarks of Anthropic, PBC; “Codex” is a trademark of OpenAI. Screenshots show demo sessions.',
+      'Remote Harness is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic, OpenAI, Moonshot AI, Alibaba Cloud or OpenRouter. “Claude” and “Claude Code” are trademarks of Anthropic, PBC; “Codex” is a trademark of OpenAI; Kimi, Qwen and OpenRouter and their logos belong to their owners. Screenshots show demo sessions.',
   },
   docs: {
     title: 'Documentation',
