@@ -9,6 +9,7 @@ import { Text } from '@/ui'
 import { ImageStrip } from '../../images/ImageStrip'
 import { ConversationAgent } from '../agent-context'
 import { systemText } from '../timeline'
+import { CopyButton } from './CopyButton'
 import { LinkifiedText } from './LinkText'
 import { Markdown } from './Markdown'
 
@@ -19,6 +20,7 @@ export const UserMessage = memo(function UserMessage({
   text: string
   images: readonly ImageRef[]
 }) {
+  const { t } = useTranslation()
   const themed = useStyles()
   return (
     <View style={themed.user}>
@@ -29,12 +31,14 @@ export const UserMessage = memo(function UserMessage({
         {text ? <LinkifiedText selectable>{text}</LinkifiedText> : null}
         <ImageStrip images={images} />
       </View>
+      {text.trim() ? <CopyButton value={text} label={t('conversation.copy.message')} /> : null}
     </View>
   )
 })
 
 export const AssistantMessage = memo(function AssistantMessage({ text }: { text: string }) {
   // The dot carries the agent's color; the user's `>` stays in the accent.
+  const { t } = useTranslation()
   const agent = useContext(ConversationAgent)
   const { colors } = useTheme()
   const color = agent ? AGENT_COLORS[agent] : colors.accentText
@@ -44,6 +48,7 @@ export const AssistantMessage = memo(function AssistantMessage({ text }: { text:
       <View style={styles.flex}>
         <Markdown text={text} />
       </View>
+      {text.trim() ? <CopyButton value={text} label={t('conversation.copy.message')} /> : null}
     </View>
   )
 })

@@ -1,10 +1,10 @@
-import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
-import { AccessibilityInfo, ActionSheetIOS, Linking, Platform, Share, ToastAndroid } from 'react-native'
+import { ActionSheetIOS, Linking, Platform, Share } from 'react-native'
 import { create } from 'zustand'
 import type { TFunction } from '@/core/i18n'
 import { useTheme } from '@/core/theme'
+import { copyText } from './copy-text'
 import { classifyLink, type LinkAction, type LinkTarget, linkActions } from './links'
 
 /** Link whose menu is open on Android (iOS uses the native action sheet). */
@@ -20,17 +20,8 @@ export function runLinkAction(action: LinkAction, target: LinkTarget, t: TFuncti
       Platform.OS === 'ios' && target.kind === 'web' ? { url: target.value } : { message: target.value }
     void Share.share(content).catch(() => undefined)
   } else {
-    void copyLink(target.value, t)
+    void copyText(target.value, t('conversation.link.copied'), { toast: true })
   }
-}
-
-async function copyLink(value: string, t: TFunction): Promise<void> {
-  const ok = await Clipboard.setStringAsync(value).catch(() => false)
-  if (!ok) return
-  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-  const copied = t('conversation.link.copied')
-  if (Platform.OS === 'android') ToastAndroid.show(copied, ToastAndroid.SHORT)
-  AccessibilityInfo.announceForAccessibility(copied)
 }
 
 /** Tap and long-press handlers for a link: tap opens web links, anything else shows the menu. */
