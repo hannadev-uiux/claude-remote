@@ -33,7 +33,8 @@ describe('agentLabel', () => {
     )
   })
 
-  test('every session is Claude Code until the protocol carries the agent', () => {
+  test('the session agent comes from the daemon, Claude Code when an older daemon sends none', () => {
     expect(sessionAgent({ id: 's1' } as Session)).toBe('claude')
+    expect(sessionAgent({ id: 's2', agent: 'codex' } as Session)).toBe('codex')
   })
 })

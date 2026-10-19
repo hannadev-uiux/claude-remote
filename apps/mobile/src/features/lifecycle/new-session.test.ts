@@ -6,8 +6,9 @@ const en = createI18n('en-US').t
 const pt = createI18n('pt-BR').t
 
 describe('profile rows', () => {
-  test('every profile launches Claude Code until the protocol says otherwise', () => {
+  test('the profile agent comes from the daemon, Claude Code when it sends none', () => {
     expect(profileAgent({ id: 'work' })).toBe('claude')
+    expect(profileAgent({ id: 'codex', agent: 'codex' })).toBe('codex')
   })
 
   test('detail is agent · config dir, plus the provider when given', () => {
