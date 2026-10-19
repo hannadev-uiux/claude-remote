@@ -1,4 +1,5 @@
 import { Fragment, isValidElement, memo, type ReactNode, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   type ImageStyle,
   Text as RNText,
@@ -10,7 +11,11 @@ import {
 } from 'react-native'
 import { MarkedTokenizer, Renderer, useMarkdown } from 'react-native-marked'
 import { fontSize, fonts, radius, space, type Theme, useTheme } from '@/core/theme'
+import { Text } from '@/ui'
+import { codeLabel, plainText } from '../copy'
+import { copyText } from '../copy-text'
 import { hasLinks, splitLinks, tagLinkTarget } from '../links'
+import { CopyButton } from './CopyButton'
 import { LinkImage, LinkText } from './LinkText'
 
 function markedOptions(theme: Theme) {
@@ -78,12 +83,63 @@ class PathTokenizer extends MarkedTokenizer {
 
 const tokenizer = new PathTokenizer()
 
-/** Whether a rendered node has a link inside: its root text must not be selectable. */
-function containsLink(node: ReactNode): boolean {
-  if (Array.isArray(node)) return node.some(containsLink)
+/** Inline code: a tap or a long press copies it. */
+function CodeSpan({ code, style }: { code: string; style?: TextStyle }) {
+  const { t } = useTranslation()
+  const copy = () => void copyText(code, t('conversation.copy.copied'), { toast: true })
+  return (
+    <RNText accessibilityHint={t('conversation.copy.inline')} onPress={copy} onLongPress={copy} style={style}>
+      {code}
+    </RNText>
+  )
+}
+
+/** Root text of a block with tappable spans: not selectable, so a long press copies the whole block. */
+function CopyableBlock({ style, children }: { style?: TextStyle; children: string | ReactNode[] }) {
+  const { t } = useTranslation()
+  const copy = () => void copyText(plainText(children), t('conversation.copy.copied'), { toast: true })
+  return (
+    <RNText onLongPress={copy} style={style}>
+      {children}
+    </RNText>
+  )
+}
+
+/** Fenced code block: header with the language and a Copy button over the scrolling code. */
+function CodeBlock({
+  code,
+  language,
+  style,
+  children,
+}: {
+  code: string
+  language?: string
+  style?: ViewStyle
+  children: ReactNode
+}) {
+  const { t } = useTranslation()
+  return (
+    <View style={style}>
+      <View style={local.codeHeader}>
+        <Text size="xs" color="textDim">
+          {codeLabel(language) ?? ''}
+        </Text>
+        <CopyButton value={code} label={t('conversation.copy.code')} />
+      </View>
+      <ScrollView horizontal>
+        {/* The View avoids "Cannot add a child that doesn't have a YogaNode" (react-native#18773). */}
+        <View>{children}</View>
+      </ScrollView>
+    </View>
+  )
+}
+
+/** Whether a rendered node has a link or inline code inside: its root text must not be selectable. */
+function containsPressable(node: ReactNode): boolean {
+  if (Array.isArray(node)) return node.some(containsPressable)
   if (!isValidElement(node)) return false
-  if (node.type === LinkText || node.type === LinkImage) return true
-  return containsLink((node.props as { children?: ReactNode }).children)
+  if (node.type === LinkText || node.type === LinkImage || node.type === CodeSpan) return true
+  return containsPressable((node.props as { children?: ReactNode }).children)
 }
 
 /** Bare URLs of a code text as links (marked only autolinks outside code). */
@@ -101,8 +157,9 @@ function linkify(text: string): ReactNode[] {
 }
 
 /**
- * Links that open on tap and show a menu on long press. A text block is selectable only without
- * links: a selectable native text keeps the touches for itself and its links would never fire.
+ * Links that open on tap and show a menu on long press, inline code that copies on tap, code blocks
+ * with a Copy button. A text block is selectable only without links or inline code: a selectable
+ * native text keeps the touches for itself and they would never fire.
  */
 class LinkRenderer extends Renderer {
   override link(children: string | ReactNode[], href: string, styles?: TextStyle): ReactNode {
@@ -136,26 +193,34 @@ class LinkRenderer extends Renderer {
   }
 
   override codespan(text: string, styles?: TextStyle): ReactNode {
-    return this.block(hasLinks(text) ? linkify(text) : text, styles)
+    // Code with links keeps the links' behavior.
+    if (hasLinks(text)) return this.block(linkify(text), styles)
+    return <CodeSpan key={this.getKey()} code={text} style={styles} />
   }
 
   override code(
     text: string,
-    _language?: string,
+    language?: string,
     containerStyle?: ViewStyle,
     textStyle?: TextStyle,
   ): ReactNode {
     return (
-      <ScrollView horizontal key={this.getKey()} contentContainerStyle={containerStyle}>
-        {/* The View avoids "Cannot add a child that doesn't have a YogaNode" (react-native#18773). */}
-        <View>{this.block(hasLinks(text) ? linkify(text) : text, textStyle)}</View>
-      </ScrollView>
+      <CodeBlock key={this.getKey()} code={text} language={language} style={containerStyle}>
+        {this.block(hasLinks(text) ? linkify(text) : text, textStyle)}
+      </CodeBlock>
     )
   }
 
   private block(children: string | ReactNode[], styles?: TextStyle): ReactNode {
+    if (containsPressable(children)) {
+      return (
+        <CopyableBlock key={this.getKey()} style={styles}>
+          {children}
+        </CopyableBlock>
+      )
+    }
     return (
-      <RNText key={this.getKey()} selectable={!containsLink(children)} style={styles}>
+      <RNText key={this.getKey()} selectable style={styles}>
         {children}
       </RNText>
     )
@@ -183,4 +248,8 @@ export const Markdown = memo(function Markdown({ text }: { text: string }) {
       ))}
     </View>
   )
+})
+
+const local = StyleSheet.create({
+  codeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 })
