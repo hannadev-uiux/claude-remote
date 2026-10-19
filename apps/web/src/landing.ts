@@ -13,9 +13,13 @@ export const INSTALL_COMMANDS = {
   windows: 'irm https://remoteharness.app/install.ps1 | iex',
 } as const
 
-/** Where the links go until the docs site (#136) and the app stores (#161) exist. */
+/** The language's documentation root (`/en/docs/`). */
+export function docsPath(locale: Locale): string {
+  return `${LOCALE_PATHS[locale]}docs/`
+}
+
+/** Where the app links go until the stores exist (#161). */
 export const LINKS = {
-  docs: `${REPO_URL}#readme`,
   ios: `${REPO_URL}#readme`,
   android: `${REPO_URL}/releases`,
   releases: `${REPO_URL}/releases`,
@@ -26,14 +30,25 @@ export const LINKS = {
 const FONTS_URL =
   'https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap'
 
-function mark(size: number): string {
+export function mark(size: number): string {
   return `<svg width="${size}" height="${size}" viewBox="0 0 256 256" aria-hidden="true" focusable="false">${MARK_REGULAR}</svg>`
 }
 
-function head(locale: Locale, path: string, title: string, description: string): string {
+/** The same page in another language, for the alternates and the switcher. */
+export type PathFor = (locale: Locale) => string
+const landingPath: PathFor = (locale) => LOCALE_PATHS[locale]
+
+/** `<head>` of every page: metadata, alternates of this page in each language, fonts, styles. */
+export function pageHead(
+  locale: Locale,
+  path: string,
+  title: string,
+  description: string,
+  { pathFor = landingPath, xDefault = '/' }: { pathFor?: PathFor; xDefault?: string } = {},
+): string {
   const url = `${SITE_URL}${path}`
   const alternates = WEB_LOCALES.map(
-    (l) => `<link rel="alternate" hreflang="${l}" href="${SITE_URL}${LOCALE_PATHS[l]}">`,
+    (l) => `<link rel="alternate" hreflang="${l}" href="${SITE_URL}${pathFor(l)}">`,
   ).join('\n')
   return `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -41,7 +56,7 @@ function head(locale: Locale, path: string, title: string, description: string):
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${url}">
 ${alternates}
-<link rel="alternate" hreflang="x-default" href="${SITE_URL}/">
+<link rel="alternate" hreflang="x-default" href="${SITE_URL}${xDefault}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Remote Harness">
 <meta property="og:title" content="${esc(title)}">
@@ -61,21 +76,52 @@ ${alternates}
 <style>${STYLES}</style>`
 }
 
-function languageSwitch(locale: Locale, m: WebMessages): string {
+export function languageSwitch(locale: Locale, m: WebMessages, pathFor: PathFor = landingPath): string {
   const links = WEB_LOCALES.map((l) => {
     const current = l === locale ? ' aria-current="page"' : ''
-    return `<a href="${LOCALE_PATHS[l]}" hreflang="${l}" lang="${l}" title="${LANG_NAMES[l]}"${current}>${LANG_CODES[l]}</a>`
+    return `<a href="${pathFor(l)}" hreflang="${l}" lang="${l}" title="${LANG_NAMES[l]}"${current}>${LANG_CODES[l]}</a>`
   }).join('')
   return `<div class="lang" role="navigation" aria-label="${esc(m.nav.language)}">${links}</div>`
 }
 
-function header(locale: Locale, m: WebMessages): string {
+export type NavLink = { href: string; label: string; current?: boolean }
+
+/** Sticky header: brand, section or page links, language switcher, GitHub. */
+export function siteHeader(
+  locale: Locale,
+  m: WebMessages,
+  { pathFor = landingPath, nav }: { pathFor?: PathFor; nav: NavLink[] },
+): string {
+  const links = nav
+    .map(
+      (link) => `<a href="${link.href}"${link.current ? ' aria-current="page"' : ''}>${esc(link.label)}</a>`,
+    )
+    .join('')
   return `<header class="top gutter"><div class="in">
   <a class="brand" href="${LOCALE_PATHS[locale]}">${mark(24)}Remote Harness</a>
-  <nav aria-label="${esc(m.nav.language)}"><a href="#how">${esc(m.nav.how)}</a><a href="#features">${esc(m.nav.features)}</a><a href="#security">${esc(m.nav.security)}</a><a href="#install">${esc(m.nav.install)}</a><a href="${LINKS.docs}">${esc(m.nav.docs)}</a></nav>
-  ${languageSwitch(locale, m)}
+  <nav aria-label="${esc(m.nav.menu)}">${links}</nav>
+  ${languageSwitch(locale, m, pathFor)}
   <a class="gh" href="${REPO_URL}">${esc(m.nav.github)} ↗</a>
 </div></header>`
+}
+
+export function siteFooter(locale: Locale, m: WebMessages): string {
+  const f = m.footer
+  const languages = WEB_LOCALES.map((l) => LANG_NAMES[l]).join(' · ')
+  return `<footer>
+  <div class="row"><span class="brand">${mark(20)}Remote Harness</span><a href="${docsPath(locale)}">${esc(f.docs)}</a><a href="${REPO_URL}">${esc(f.github)}</a><a href="${LINKS.releases}">${esc(f.releases)}</a><a href="${LINKS.security}">${esc(f.security)}</a><a href="${LINKS.license}">${esc(f.license)}</a><span class="langs">${languages}</span></div>
+  <small>${esc(f.legal)}</small>
+</footer>`
+}
+
+function landingNav(locale: Locale, m: WebMessages): NavLink[] {
+  return [
+    { href: '#how', label: m.nav.how },
+    { href: '#features', label: m.nav.features },
+    { href: '#security', label: m.nav.security },
+    { href: '#install', label: m.nav.install },
+    { href: docsPath(locale), label: m.nav.docs },
+  ]
 }
 
 function phoneMock(m: WebMessages): string {
@@ -224,15 +270,6 @@ function faq(m: WebMessages): string {
 </section>`
 }
 
-function footer(m: WebMessages): string {
-  const f = m.footer
-  const languages = WEB_LOCALES.map((l) => LANG_NAMES[l]).join(' · ')
-  return `<footer>
-  <div class="row"><span class="brand">${mark(20)}Remote Harness</span><a href="${LINKS.docs}">${esc(f.docs)}</a><a href="${REPO_URL}">${esc(f.github)}</a><a href="${LINKS.releases}">${esc(f.releases)}</a><a href="${LINKS.security}">${esc(f.security)}</a><a href="${LINKS.license}">${esc(f.license)}</a><span class="langs">${languages}</span></div>
-  <small>${esc(f.legal)}</small>
-</footer>`
-}
-
 /** Tabs (Windows preselected on Windows browsers) and copy buttons; the page works without it. */
 const SCRIPT = `(function(){
 var tabs=document.querySelectorAll('[data-tab]'),panes=document.querySelectorAll('[data-pane]');
@@ -249,11 +286,11 @@ export function renderLanding(locale: Locale, path: string = LOCALE_PATHS[locale
   return `<!doctype html>
 <html lang="${locale}">
 <head>
-${head(locale, path, m.meta.title, m.meta.description)}
+${pageHead(locale, path, m.meta.title, m.meta.description)}
 </head>
 <body>
 <a class="skip" href="#main">${esc(m.nav.skip)}</a>
-${header(locale, m)}
+${siteHeader(locale, m, { nav: landingNav(locale, m) })}
 <main class="gutter" id="main"><div class="in">
 ${hero(m)}
 ${agents(m)}
@@ -262,7 +299,7 @@ ${features(m)}
 ${security(m)}
 ${install(m)}
 ${faq(m)}
-${footer(m)}
+${siteFooter(locale, m)}
 </div></main>
 <script>${SCRIPT}</script>
 </body>
@@ -276,11 +313,11 @@ export function renderNotFound(locale: Locale): string {
   return `<!doctype html>
 <html lang="${locale}">
 <head>
-${head(locale, LOCALE_PATHS[locale], `${m.notFound.title} · Remote Harness`, m.notFound.body)}
+${pageHead(locale, LOCALE_PATHS[locale], `${m.notFound.title} · Remote Harness`, m.notFound.body)}
 <meta name="robots" content="noindex">
 </head>
 <body>
-${header(locale, m)}
+${siteHeader(locale, m, { nav: landingNav(locale, m) })}
 <main class="gutter" id="main"><div class="in nf">
   <span class="code">404</span>
   <h1>${esc(m.notFound.title)}</h1>

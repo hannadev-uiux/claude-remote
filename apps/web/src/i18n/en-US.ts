@@ -18,6 +18,7 @@ export const enUS = {
     docs: 'Docs',
     github: 'GitHub',
     language: 'Language',
+    menu: 'Menu',
   },
   hero: {
     eyebrow: 'Self-hosted · Tailscale · tmux',
@@ -232,7 +233,7 @@ export const enUS = {
   faq: {
     eyebrow: 'Docs & FAQ',
     title: 'Questions people ask first',
-    lead: 'The full guide lives in the [README](https://github.com/maarkN/remote-harness#readme) for now: getting started, using the app, the daemon CLI, security, troubleshooting.',
+    lead: 'The full guide is in [the documentation](/en/docs/): getting started, using the app, the daemon CLI, security, troubleshooting.',
     items: [
       {
         q: 'Does it work away from home?',
@@ -268,6 +269,18 @@ export const enUS = {
     license: 'MIT',
     legal:
       'Remote Harness is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic or OpenAI. “Claude” and “Claude Code” are trademarks of Anthropic, PBC; “Codex” is a trademark of OpenAI. Screenshots show demo sessions.',
+  },
+  docs: {
+    title: 'Documentation',
+    home: 'Home',
+    pages: 'Pages',
+    search: 'Search the docs',
+    noResults: 'No results',
+    onThisPage: 'On this page',
+    previous: 'Previous',
+    next: 'Next',
+    applies: 'Applies to {{version}}',
+    fallback: 'This page is not translated yet; here is the English version.',
   },
   notFound: {
     title: 'Page not found',
