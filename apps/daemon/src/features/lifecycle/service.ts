@@ -4,6 +4,7 @@ import type { Checkout, Profile, ProjectItem } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory } from '../../infra/fs.ts'
+import { agentFor } from '../agents/index.ts'
 import { worktreeName } from '../checkout/resolver.ts'
 import type { SessionStore } from '../sessions/store.ts'
 
@@ -69,7 +70,9 @@ export class LifecycleService {
     const args: string[] = []
     if (options.worktree) {
       if (!(await this.checkout(cwd))) throw new DaemonError('bad_request', `not a git checkout: ${cwd}`)
-      args.push('--worktree', worktreeName(this.now()))
+      const worktreeArgs = agentFor(profile).worktreeArgs(worktreeName(this.now()))
+      if (!worktreeArgs) throw new DaemonError('bad_request', 'this agent cannot start in a worktree')
+      args.push(...worktreeArgs)
     }
     const paneId = await this.launch(profile, cwd, args)
     // The launcher only reports the window it created; a window whose command exits closes at once.
@@ -107,7 +110,7 @@ export class LifecycleService {
       if (this.resuming.get(sessionId) !== pending) return this.resume(profileId, sessionId)
     }
     const launch = validateCwd(session.cwd, this.home).then((cwd) =>
-      this.launch(profile, cwd, ['--resume', sessionId]),
+      this.launch(profile, cwd, agentFor(profile).resumeArgs(sessionId)),
     )
     this.resuming.set(sessionId, launch)
     try {

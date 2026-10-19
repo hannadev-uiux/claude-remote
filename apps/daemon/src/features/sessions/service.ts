@@ -8,6 +8,7 @@ import {
 } from '@remote-harness/protocol'
 import type { Logger } from '../../core/logger.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
+import { profileAgentId } from '../agents/index.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import { scanRecentTranscripts } from './recent-scan.ts'
 import type { SessionStore } from './store.ts'
@@ -45,11 +46,17 @@ export class SessionService {
     private readonly options: SessionServiceOptions,
   ) {}
 
+  /** The agent of a profile (Claude Code when unknown): stamped on every record the registry creates. */
+  private agentOf(profileId: string | null | undefined) {
+    return profileAgentId(this.profiles.find((p) => p.id === profileId))
+  }
+
   private defaults(id: string, hook: HookEvent): SessionRecord {
     const cwd = hook.payload.cwd ?? ''
     return {
       id,
       profileId: hook.profileId ?? 'unknown',
+      agent: this.agentOf(hook.profileId),
       cwd,
       title: cwd ? basename(cwd) : 'Session',
       state: 'idle',
@@ -229,6 +236,7 @@ export class SessionService {
       this.store.upsert(file.sessionId, { updatedAt: file.mtime.toISOString() }, () => ({
         id: file.sessionId,
         profileId: file.profileId,
+        agent: this.agentOf(file.profileId),
         cwd: meta.cwd ?? '',
         title: meta.title ?? basename(meta.cwd ?? ''),
         state: 'ended',

@@ -1,6 +1,7 @@
 import { readdir, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import type { Profile } from '@remote-harness/protocol'
+import { agentFor } from '../agents/index.ts'
 
 export type TranscriptFile = { profileId: string; sessionId: string; path: string; mtime: Date }
 
@@ -12,7 +13,7 @@ export async function scanRecentTranscripts(
   const cutoff = (options.now ?? new Date()).getTime() - options.days * 86_400_000
   const result: TranscriptFile[] = []
   for (const profile of profiles) {
-    const projectsDir = join(profile.configDir, 'projects')
+    const projectsDir = agentFor(profile).transcriptsDir(profile.configDir)
     let projectDirs: string[]
     try {
       projectDirs = await readdir(projectsDir)

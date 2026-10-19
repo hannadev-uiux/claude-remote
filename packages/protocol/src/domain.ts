@@ -14,11 +14,17 @@ export type PermissionMode = z.infer<typeof PermissionModeSchema>
 export const SelectableModeSchema = z.enum(['default', 'acceptEdits', 'plan', 'auto'])
 export type SelectableMode = z.infer<typeof SelectableModeSchema>
 
+/** Coding agents the app knows (badge, color); only those with a daemon adapter can run. */
+export const AgentIdSchema = z.enum(['claude', 'codex', 'kimi', 'qwen'])
+export type AgentId = z.infer<typeof AgentIdSchema>
+
 export const ProfileSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   configDir: z.string().min(1),
   color: z.string().min(1),
+  /** The agent this profile launches; absent means Claude Code (older configs and daemons). */
+  agent: AgentIdSchema.optional(),
 })
 export type Profile = z.infer<typeof ProfileSchema>
 
@@ -77,6 +83,8 @@ export type AccountLimits = z.infer<typeof AccountLimitsSchema>
 export const SessionSchema = z.object({
   id: z.string(),
   profileId: z.string(),
+  /** The profile's agent; absent means Claude Code (older daemons). */
+  agent: AgentIdSchema.optional(),
   cwd: z.string(),
   title: z.string(),
   state: SessionStateSchema,

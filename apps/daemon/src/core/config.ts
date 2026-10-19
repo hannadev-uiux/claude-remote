@@ -8,6 +8,7 @@ import {
   RuleScopeSchema,
 } from '@remote-harness/protocol'
 import { z } from 'zod'
+import { hasAgentAdapter, profileAgentId } from '../features/agents/index.ts'
 import { isDirectory, readJsonFile, writeJsonAtomic } from '../infra/fs.ts'
 import { messagesFor, systemLocale } from './i18n/index.ts'
 import type { Logger } from './logger.ts'
@@ -121,10 +122,15 @@ export async function updateConfigFile(
   return true
 }
 
-/** Expands `~` and drops profiles whose config dir does not exist. */
+/** Expands `~` and drops profiles whose config dir does not exist or whose agent has no adapter yet. */
 export async function resolveProfiles(config: Config, logger: Logger): Promise<Profile[]> {
   const result: Profile[] = []
   for (const profile of config.profiles) {
+    const agent = profileAgentId(profile)
+    if (!hasAgentAdapter(agent)) {
+      logger.warn({ profile: profile.id, agent }, 'no adapter for this agent yet, ignoring profile')
+      continue
+    }
     const configDir = expandHome(profile.configDir)
     if (await isDirectory(configDir)) {
       result.push({ ...profile, configDir })
