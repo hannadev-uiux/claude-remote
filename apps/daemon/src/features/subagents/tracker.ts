@@ -214,12 +214,20 @@ export class SubagentTracker {
     if (existing?.state === 'done') return
     const cursor = tracked ? await this.advance(tracked, agentId) : null
     const now = new Date(this.now()).toISOString()
-    if (existing) {
+    // The record may have changed while the transcript was being read: a SubagentStop that landed
+    // in the meantime must not be undone, only its tool count refreshed.
+    const current = this.store.get(sessionId)?.subagents.find((s) => s.agentId === agentId) ?? existing
+    if (current?.state === 'done') {
+      if (cursor && current.toolCount !== cursor.tools)
+        this.update(sessionId, { ...current, toolCount: cursor.tools })
+      return
+    }
+    if (current) {
       return this.update(sessionId, {
-        ...existing,
+        ...current,
         updatedAt: now,
-        startedAt: existing.startedAt ?? cursor?.startedAt ?? null,
-        toolCount: cursor?.tools ?? existing.toolCount,
+        startedAt: current.startedAt ?? cursor?.startedAt ?? null,
+        toolCount: cursor?.tools ?? current.toolCount,
       })
     }
     const meta = tracked ? await this.readMeta(tracked.dir, agentId) : { agentType: null, description: null }
