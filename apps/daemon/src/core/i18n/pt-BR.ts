@@ -341,7 +341,7 @@ export const ptBR = {
   },
   wsl: {
     windowsHint:
-      'No Windows, o Remote Harness roda dentro do WSL2. No PowerShell: `irm https://remoteharness.app/install.ps1 | iex`',
+      'No Windows, o Remote Harness roda dentro do WSL2. No PowerShell: `irm https://remoteharness.app/install | iex`',
     detected: (distro: string) => `WSL2 (distribuição ${distro})`,
     unknownDistro: 'desconhecida',
     systemd: 'systemd rodando no WSL',

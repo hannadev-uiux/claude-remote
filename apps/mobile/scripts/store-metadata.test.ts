@@ -40,7 +40,7 @@ describe('store metadata', () => {
     for (const locale of LOCALES) {
       const text = `${STORE_METADATA[locale].description} ${STORE_METADATA[locale].promotionalText}`
       expect(text).toContain('Tailscale')
-      expect(text).toContain('curl -fsSL https://remoteharness.app/install.sh | bash')
+      expect(text).toContain('curl -fsSL https://remoteharness.app/install | bash')
       expect(text).toContain('Anthropic, PBC')
       expect(text).not.toMatch(/doctorx|acme|bypass/i)
     }

@@ -342,7 +342,7 @@ export const esES = {
   },
   wsl: {
     windowsHint:
-      'En Windows, Remote Harness funciona dentro de WSL2. En PowerShell: `irm https://remoteharness.app/install.ps1 | iex`',
+      'En Windows, Remote Harness funciona dentro de WSL2. En PowerShell: `irm https://remoteharness.app/install | iex`',
     detected: (distro: string) => `WSL2 (distribución ${distro})`,
     unknownDistro: 'desconocida',
     systemd: 'systemd en ejecución en WSL',

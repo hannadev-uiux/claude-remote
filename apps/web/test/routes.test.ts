@@ -58,15 +58,23 @@ describe('route', () => {
     expect(route('/robots.txt')).toEqual({ kind: 'robots' })
     expect(route('/favicon.svg')).toEqual({ kind: 'favicon' })
     expect(route('/favicon.ico')).toEqual({ kind: 'favicon' })
-    expect(route('/install.sh')).toEqual({
-      kind: 'installer',
-      url: 'https://raw.githubusercontent.com/maarkN/remote-harness/main/install.sh',
-    })
-    expect(route('/install.ps1')).toEqual({
-      kind: 'installer',
-      url: 'https://raw.githubusercontent.com/maarkN/remote-harness/main/install.ps1',
-    })
     expect(route('/install.sh/x')).toEqual({ kind: 'not-found' })
     expect(route('/anything-else')).toEqual({ kind: 'not-found' })
+  })
+
+  test('installers: /install picks by client, the named scripts stay, ?ref= is checked', () => {
+    expect(route('/install')).toEqual({ kind: 'install', ref: null })
+    expect(route('/install/')).toEqual({ kind: 'install', ref: null })
+    expect(route('/install', '?ref=development')).toEqual({ kind: 'install', ref: 'development' })
+    expect(route('/install.sh')).toEqual({ kind: 'script', name: 'install.sh', ref: null })
+    expect(route('/install.ps1', '?ref=v0.13.0')).toEqual({
+      kind: 'script',
+      name: 'install.ps1',
+      ref: 'v0.13.0',
+    })
+    expect(route('/install', '?ref=..%2Fx')).toEqual({ kind: 'bad-ref' })
+    expect(route('/install.sh', "?ref=x'y")).toEqual({ kind: 'bad-ref' })
+    expect(route('/install/x')).toEqual({ kind: 'not-found' })
+    expect(route('/installer')).toEqual({ kind: 'not-found' })
   })
 })

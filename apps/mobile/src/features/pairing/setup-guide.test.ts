@@ -3,8 +3,18 @@ import { createI18n } from '@/core/i18n/create'
 import { buildSetupGuide, INSTALL_COMMAND, SETUP_STEPS } from './setup-guide'
 
 describe('setup guide', () => {
-  test('installs through the HTTPS one-liner', () => {
-    expect(INSTALL_COMMAND).toBe('curl -fsSL https://remoteharness.app/install.sh | bash')
+  test('installs through the single HTTPS install URL', () => {
+    expect(INSTALL_COMMAND).toBe('curl -fsSL https://remoteharness.app/install | bash')
+    const install = buildSetupGuide(createI18n('en-US').t, 'ios')[2]
+    expect(install?.code).toBe(INSTALL_COMMAND)
+    expect(install?.body).toContain('irm https://remoteharness.app/install | iex')
+    expect(install?.actions).toEqual([
+      {
+        kind: 'share',
+        label: 'Send the install link to the computer',
+        text: 'https://remoteharness.app/install',
+      },
+    ])
   })
 
   test('walks from Tailscale to pairing, every link over HTTPS', () => {

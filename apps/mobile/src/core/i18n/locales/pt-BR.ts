@@ -97,8 +97,8 @@ const ptBR = {
       },
       install: {
         title: 'Remote Harness no computador',
-        body: 'Num terminal do computador, rode o instalador. Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
-        action: 'Enviar o comando para o computador',
+        body: 'Num terminal do computador, rode o instalador (no Windows, no PowerShell: `{{windows}}`). Ele verifica os pré-requisitos, pergunta quais contas do Claude Code você quer controlar (ou cria uma nova, com login) e o comando (alias) de cada uma.',
+        action: 'Enviar o link de instalação para o computador',
       },
       pair: {
         title: 'Parear',
