@@ -54,6 +54,17 @@ describe('targetMessage', () => {
     expect(plain.ok && plain.message.apns).toEqual({})
   })
 
+  test('an Android live status data message (no notification block) passes', () => {
+    const message = {
+      data: { sessionId: 's', event: 'live', live: '{"event":"update","props":{}}' },
+      android: { priority: 'high', collapseKey: 'live-s' },
+    }
+    expect(targetMessage(message, { ...payload, p: 'android', a: undefined })).toEqual({
+      ok: true,
+      message: { ...message, token: 'fcm-phone' },
+    })
+  })
+
   test('messages that pick their own target or are too large are rejected', () => {
     expect(targetMessage({ topic: 'all' }, payload).ok).toBe(false)
     expect(targetMessage({ condition: "'a' in topics" }, payload).ok).toBe(false)

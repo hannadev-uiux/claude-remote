@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from 'node:fs'
 import {
   type DevicePlatform,
   LIVE_ACTIVITY_NAME,
+  type LiveDataMessage,
   type LiveStatusProps,
+  liveNotificationText,
   type PushRelay,
 } from '@remote-harness/protocol'
 import type { Logger } from '../../core/logger.ts'
@@ -24,6 +26,8 @@ export type LiveMessage = {
   activityToken?: string
   /** Relay grant (it seals the FCM and activity tokens) for daemons without a service account. */
   relay?: PushRelay
+  /** Android: the app draws the notification from a data message (with Allow / Deny). */
+  androidDataMessages?: boolean
   props: LiveStatusProps
   /** `end` closes the activity (iOS) / leaves a dismissable notification (Android). */
   event: 'update' | 'end'
@@ -52,21 +56,39 @@ export const ANDROID_LIVE_CHANNEL_ID = 'live-status'
 
 const seconds = (ms: number) => Math.floor(ms / 1000)
 
+/** Working updates can wait; a state the user may act on (waiting, done, closed, end) cannot. */
+function urgent(message: LiveMessage): boolean {
+  return !(message.props.state === 'working' && message.event === 'update')
+}
+
 /**
  * FCM message for a live status. iOS: an ActivityKit push through `apns.liveActivityToken`, whose
- * `content-state` is what `expo-widgets` expects (`name` + props as a JSON string). Android: a
- * notification with a per-session tag, so each update replaces the previous one.
+ * `content-state` is what `expo-widgets` expects (`name` + props as a JSON string). Android: a data
+ * message the app draws (`data.live`) when the registration asked for it, otherwise a notification
+ * with a per-session tag; either way each update replaces the previous one.
  */
 export function buildLiveMessage(message: LiveMessage) {
   const { props } = message
   const data = { sessionId: message.sessionId, event: 'live' }
+  if (message.platform === 'android' && message.androidDataMessages) {
+    const live: LiveDataMessage = { event: message.event, props }
+    return {
+      token: message.fcmToken,
+      data: { ...data, live: JSON.stringify(live) },
+      android: {
+        priority: urgent(message) ? ('high' as const) : ('normal' as const),
+        // An offline phone gets only the latest update of each session.
+        collapseKey: `live-${message.sessionId}`,
+      },
+    }
+  }
   if (message.platform === 'ios') {
     return {
       token: message.fcmToken,
       data,
       apns: {
         ...(message.activityToken ? { liveActivityToken: message.activityToken } : {}),
-        headers: { 'apns-priority': props.state === 'working' && message.event === 'update' ? '5' : '10' },
+        headers: { 'apns-priority': urgent(message) ? '10' : '5' },
         payload: {
           aps: {
             timestamp: seconds(message.at),
@@ -81,9 +103,8 @@ export function buildLiveMessage(message: LiveMessage) {
       },
     }
   }
-  // Android has no activity: the body carries the state line and the glyph row (oldest → newest).
-  const glyphs = [...(props.glyphs ?? [])].reverse().join(' ')
-  const details = [props.step, props.tools, props.tasks, glyphs].filter(Boolean).join(' · ')
+  // Android has no activity: the body carries the state line and the glyph row.
+  const { title, body } = liveNotificationText(props)
   return {
     token: message.fcmToken,
     data,
@@ -92,8 +113,8 @@ export function buildLiveMessage(message: LiveMessage) {
       notification: {
         tag: `live-${message.sessionId}`,
         channelId: ANDROID_LIVE_CHANNEL_ID,
-        title: `${props.session || props.title} · ${props.status}`,
-        body: details || props.status,
+        title,
+        body,
         // A finished turn can be swiped away while it waits for the next one.
         sticky: message.event === 'update' && props.state !== 'done',
         notificationPriority: 'PRIORITY_LOW' as const,

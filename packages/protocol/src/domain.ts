@@ -364,6 +364,26 @@ export const LiveStatusPropsSchema = z.object({
 })
 export type LiveStatusProps = z.infer<typeof LiveStatusPropsSchema>
 
+/**
+ * Android live status sent as an FCM data message (`data.live`, JSON) to apps that draw the
+ * notification themselves: `end` leaves a notification that can be swiped away.
+ */
+export const LiveDataMessageSchema = z.object({
+  event: z.enum(['update', 'end']),
+  props: LiveStatusPropsSchema,
+})
+export type LiveDataMessage = z.infer<typeof LiveDataMessageSchema>
+
+/**
+ * Title and body of the Android live status notification: "<session> · <state>" and the state line
+ * with the glyph row (oldest → newest). The same text whether the system or the app draws it.
+ */
+export function liveNotificationText(props: LiveStatusProps): { title: string; body: string } {
+  const glyphs = [...props.glyphs].reverse().join(' ')
+  const details = [props.step, props.tools, props.tasks, glyphs].filter(Boolean).join(' · ')
+  return { title: `${props.session || props.title} · ${props.status}`, body: details || props.status }
+}
+
 export const QuestionKindSchema = z.enum(['choice', 'text', 'number'])
 export type QuestionKind = z.infer<typeof QuestionKindSchema>
 
