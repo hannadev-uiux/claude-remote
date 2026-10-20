@@ -18,7 +18,7 @@ import type { DaemonEvents } from './core/events.ts'
 import { KeyedMutex } from './core/keyed-mutex.ts'
 import type { Logger } from './core/logger.ts'
 import { pairingAddress, pairingUrl } from './core/pairing.ts'
-import { hostName } from './core/paths.ts'
+import { displayHostName } from './core/paths.ts'
 import { ensureHookSecret, ensureToken, generateToken, type TokenStore } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import { registerAttachmentsFeature } from './features/attachments/index.ts'
@@ -237,7 +237,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     hello: () => ({
       protocolVersion: PROTOCOL_VERSION,
       daemonVersion: DAEMON_VERSION,
-      host: hostName(),
+      host: displayHostName(config),
       profiles: appProfiles,
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),
@@ -336,6 +336,7 @@ async function registerFeatures(
         },
         phones: () => ({ count: push.devices.list().length, push: push.mode() !== 'off' }),
         closeSession: (id) => lifecycle.closer.close(id),
+        renameSession: (id, name) => input.service.sendText(id, `/rename ${name}`),
         ...pairing,
         keepAwake: {
           mode: () => power?.state().mode ?? ctx.config.keepAwake,

@@ -257,7 +257,8 @@ function fakeProcess() {
   }
   return {
     process,
-    click: (id: string) => message({ type: 'click', id }),
+    click: (id: string, value?: string) => message({ type: 'click', id, ...(value ? { value } : {}) }),
+    ready: (windows: boolean) => message({ type: 'ready', windows }),
     exit: (early: boolean) => exit(1, early),
   }
 }
@@ -280,6 +281,28 @@ describe('TrayHost', () => {
     expect(clicks).toEqual(['check'])
     host.stop()
     expect(fake.process.stop).toHaveBeenCalled()
+  })
+
+  test('reports a click value and whether the helper supports windows', async () => {
+    const fake = fakeProcess()
+    const clicks: [string, string | undefined][] = []
+    const ready: boolean[] = []
+    const host = new TrayHost(
+      async () => fake.process,
+      (id, value) => clicks.push([id, value]),
+      silentLogger,
+      undefined,
+      (windows) => ready.push(windows),
+    )
+    await host.launch()
+    fake.ready(true)
+    expect(ready).toEqual([true])
+    fake.click('rename:a', 'New name')
+    fake.click('check')
+    expect(clicks).toEqual([
+      ['rename:a', 'New name'],
+      ['check', undefined],
+    ])
   })
 
   test('stays headless after an early exit, retries a later crash', async () => {

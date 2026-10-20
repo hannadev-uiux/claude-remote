@@ -1,3 +1,4 @@
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { DaemonUpdateBlocker, PermissionRequestInfo, Profile } from '@remote-harness/protocol'
 import {
@@ -8,7 +9,7 @@ import {
   updateConfigFile,
 } from '../../core/config.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
-import { hostName, paths, shortenHome } from '../../core/paths.ts'
+import { displayHostName, paths, shortenHome } from '../../core/paths.ts'
 import { DAEMON_VERSION } from '../../core/version.ts'
 import { createDesktop, runDetachedUpdate } from '../../infra/desktop.ts'
 import { currentWsl, resolvePlatform } from '../../infra/platform.ts'
@@ -16,8 +17,11 @@ import { spawnJsonLines, trayAssetsDir, trayCommand } from '../../infra/tray-hel
 import type { DaemonContext } from '../../main.ts'
 import { showInTerminal } from '../pane/show-in-terminal.ts'
 import type { PushSetting } from '../push/mode.ts'
+import { LaunchdService } from '../service/launchd.ts'
+import type { ServiceManager } from '../service/service-manager.ts'
 import { stopService } from '../service/stop.ts'
 import type { SessionStore } from '../sessions/store.ts'
+import { installServiceFromCli } from '../setup/install.ts'
 import { installerSourceDir, SourceUpdater, type UpdateSource, updateSource } from '../update/update.ts'
 import { isQuietMoment, isUpdateChannel, underServiceManager, updateLabel } from './channel.ts'
 import { type AvailableUpdate, UpdateChecker } from './checker.ts'
@@ -29,6 +33,7 @@ import {
   TRAY_ACTIONS,
   TRAY_PREFIXES,
   type TrayPending,
+  type TrayProfile,
   type TraySession,
 } from './menu.ts'
 import { type LaunchResult, launchRefusal, RemoteUpdates } from './remote.ts'
@@ -53,6 +58,8 @@ export type TrayShellDeps = {
   phones: () => { count: number; push: boolean }
   /** Graceful close of a session (change 57). */
   closeSession: (sessionId: string) => Promise<unknown>
+  /** Delivers `/rename <name>` to a controllable session's pane, like any other input. */
+  renameSession: (sessionId: string, name: string) => Promise<void>
   /** The pairing link and `host:port` once the daemon listens for the app. */
   pairing: () => { url: string; address: string } | null
   /** Stores a new token and closes the app connections (phones pair again). */
@@ -88,12 +95,33 @@ export async function registerUpdatesFeature(
     update: ctx.config.update,
     tray: ctx.config.tray,
     trayPermissions: ctx.config.trayPermissions,
+    machineName: ctx.config.machineName,
   }
   let updating = false
   /** Commit whose update failed: automatic updates do not retry it (the menu still can). */
   let failedCommit: string | null = null
   const startedAt = new Date()
-  const machine = hostName()
+  /** The helper reported it can open the Preferences/Sessions windows (macOS). */
+  let helperWindows = false
+  /** Renamed while not controllable: sent as `/rename` once the session is controllable again. */
+  const pendingRenames = new Set<string>()
+
+  /** launchd on macOS; "Start at login" has no Linux/Windows helper yet (#230 is macOS-first). */
+  const startAtLoginManager = (): ServiceManager | null =>
+    platform === 'darwin'
+      ? new LaunchdService(ctx.exec, {
+          home: homedir(),
+          appDir: paths.app(),
+          legacyAppDir: paths.legacyApp(),
+          buildDir: paths.launcher(),
+        })
+      : null
+  let startAtLoginState: boolean | null = null
+  const refreshStartAtLogin = async () => {
+    const manager = startAtLoginManager()
+    startAtLoginState = manager ? (await manager.status()).loaded : null
+    refreshMenu()
+  }
 
   const notifyAvailable = (available: AvailableUpdate) => {
     const version = updateLabel(available, DAEMON_VERSION)
@@ -133,8 +161,14 @@ export async function registerUpdatesFeature(
             onStderr: (line) => ctx.logger.debug({ tray: line }, 'tray helper output'),
           })
         },
-        (id) => void onTrayClick(id),
+        (id, value) => void onTrayClick(id, value),
         ctx.logger,
+        undefined,
+        (windows) => {
+          helperWindows = windows
+          if (windows) void refreshStartAtLogin()
+          refreshMenu()
+        },
       )
     : null
 
@@ -151,6 +185,14 @@ export async function registerUpdatesFeature(
       state: s.state,
       worktree: s.cwd.includes('/.claude/worktrees/'),
       controllable: s.controllable,
+      agent: s.agent ?? 'claude',
+      updatedAt: s.updatedAt,
+    }))
+    const profiles: TrayProfile[] = shell.profiles.map((p) => ({
+      id: p.id,
+      name: p.name,
+      agent: p.agent ?? 'claude',
+      color: p.color,
     }))
     const oldest = shell
       .pendingPermissions()
@@ -168,18 +210,23 @@ export async function registerUpdatesFeature(
         }
       : null
     return {
-      machine,
+      machine: displayHostName(settings),
       since: startedAt.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
       sessions,
+      profiles,
       pending,
       phones: shell.phones(),
       canStart: shell.profiles.length > 0,
       pairing: shell.pairing(),
       qr: platform === 'darwin',
+      windows: helperWindows,
       prefs: {
         permissions: settings.trayPermissions,
         keepAwake: shell.keepAwake.mode(),
         push: shell.push.setting() !== 'off',
+        machineName: displayHostName(settings),
+        showInMenuBar: settings.tray,
+        startAtLogin: startAtLoginState,
       },
       canStopService: underServiceManager(),
     }
@@ -295,7 +342,12 @@ export async function registerUpdatesFeature(
   const reload = async () => {
     const config = await loadConfig(ctx.logger)
     const channelChanged = config.update.channel !== settings.update.channel
-    settings = { update: config.update, tray: config.tray, trayPermissions: config.trayPermissions }
+    settings = {
+      update: config.update,
+      tray: config.tray,
+      trayPermissions: config.trayPermissions,
+      machineName: config.machineName,
+    }
     refreshMenu()
     remote.broadcast()
     if (channelChanged) await check(true)
@@ -345,7 +397,7 @@ export async function registerUpdatesFeature(
 
   const quote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`
 
-  async function onTrayClick(id: string) {
+  async function onTrayClick(id: string, value?: string) {
     const shell = deps.shell
     try {
       if (id === TRAY_ACTIONS.check) await check(true)
@@ -392,6 +444,37 @@ export async function registerUpdatesFeature(
       else if (id.startsWith(TRAY_PREFIXES.focus)) await focusSession(id.slice(TRAY_PREFIXES.focus.length))
       else if (id.startsWith(TRAY_PREFIXES.close))
         await shell?.closeSession(id.slice(TRAY_PREFIXES.close.length))
+      else if (id.startsWith(TRAY_PREFIXES.rename) && shell) {
+        const sessionId = id.slice(TRAY_PREFIXES.rename.length)
+        const name = value?.trim()
+        if (!name) return
+        if (deps.store.get(sessionId)?.controllable) await shell.renameSession(sessionId, name)
+        else {
+          deps.store.upsert(sessionId, { title: name })
+          pendingRenames.add(sessionId)
+        }
+      } else if (id === TRAY_ACTIONS.prefMachineName) {
+        await updateConfigFile({ machineName: value?.trim() || undefined })
+        await reload()
+      } else if (id === TRAY_ACTIONS.prefShowInMenuBar) {
+        await updateConfigFile({ tray: false })
+        tray?.stop()
+      } else if (id === TRAY_ACTIONS.prefStartAtLogin) {
+        const manager = startAtLoginManager()
+        if (manager) {
+          if ((await manager.status()).loaded) await manager.uninstall()
+          else if (deps.options.cliPath)
+            await installServiceFromCli({
+              exec: ctx.exec,
+              cliPath: deps.options.cliPath,
+              nodePath: process.execPath,
+              platform,
+              rcFiles: [],
+              service: manager,
+            })
+          await refreshStartAtLogin()
+        }
+      }
     } catch (error) {
       ctx.logger.warn({ err: error, action: id }, 'tray action failed')
     }
@@ -407,7 +490,16 @@ export async function registerUpdatesFeature(
   })
 
   if (deps.shell) {
+    const shell = deps.shell
     deps.store.onChange(scheduleRefresh)
+    // A session renamed while not controllable gets the alias sent as `/rename` once it has a pane.
+    deps.store.onChange((session, previous) => {
+      if (!pendingRenames.has(session.id) || !session.controllable || previous?.controllable) return
+      pendingRenames.delete(session.id)
+      void shell.renameSession(session.id, session.title).catch((error: unknown) => {
+        ctx.logger.warn({ err: error, sessionId: session.id }, 'rename on resume failed')
+      })
+    })
     ctx.bus.on('permission.requested', scheduleRefresh)
     ctx.bus.on('permission.resolved', scheduleRefresh)
     ctx.bus.on('permission.handover', scheduleRefresh)

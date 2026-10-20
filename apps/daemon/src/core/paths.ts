@@ -24,6 +24,11 @@ export function hostName(raw = hostname(), env: NodeJS.ProcessEnv = process.env)
   return envVar('HOST_NAME', env) ?? raw.replace(/\.local$/i, '')
 }
 
+/** The host name shown to the app, the live status and the tray: `config.machineName` when set. */
+export function displayHostName(config: { machineName?: string }): string {
+  return config.machineName ?? hostName()
+}
+
 export const DATA_DIR = '.remote-harness'
 /** Data directory of installs made before the rename; kept in place, never moved. */
 export const LEGACY_DATA_DIR = '.claude-remote'

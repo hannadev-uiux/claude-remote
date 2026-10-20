@@ -2,7 +2,7 @@ import type { LiveFollowDevice } from '@remote-harness/protocol'
 import { effectiveLocale } from '../../core/config.ts'
 import { DaemonError } from '../../core/errors.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
-import { hostName, paths, shortenHome } from '../../core/paths.ts'
+import { displayHostName, paths, shortenHome } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { PushSender } from '../push/sender.ts'
 import { justEnded } from '../sessions/state.ts'
@@ -42,7 +42,7 @@ export async function registerLiveStatusFeature(
     follow: (sessionId: string, listener: EntryListener) => Promise<() => void>
   },
 ) {
-  const host = hostName()
+  const host = displayHostName(ctx.config)
   const messages = messagesFor(effectiveLocale(ctx.config))
   const service = new LiveStatusService(options.sender, ctx.logger, {
     messages: messages.live,
