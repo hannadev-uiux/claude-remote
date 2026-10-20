@@ -1,0 +1,27 @@
+# remoteharness.app behind the server's Traefik (external `web` network, `websecure` entry point,
+# `le` certificate resolver). `make deploy-web` copies this folder's files and `server.js` next to
+# `.env` (publish tokens, created on the server) and `data/` (updates and install links).
+name: remote-harness
+
+services:
+  web:
+    build: .
+    image: remote-harness/web:latest
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+    read_only: true
+    mem_limit: 256m
+    networks: [web]
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: web
+      traefik.http.routers.remote-harness.rule: Host(`remoteharness.app`)
+      traefik.http.routers.remote-harness.entrypoints: websecure
+      traefik.http.routers.remote-harness.tls.certresolver: le
+      traefik.http.services.remote-harness.loadbalancer.server.port: "8080"
+
+networks:
+  web:
+    external: true

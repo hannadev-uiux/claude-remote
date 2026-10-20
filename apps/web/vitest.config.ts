@@ -1,4 +1,4 @@
 import { defineConfig } from 'vitest/config'
 
-// Only the pure routing is tested here; the Worker runtime is exercised against the live domain.
+// Pure logic, the file-system stores on a temporary folder and the Node server on a free port.
 export default defineConfig({ test: { include: ['test/**/*.test.ts'] } })

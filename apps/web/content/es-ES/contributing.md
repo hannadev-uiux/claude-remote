@@ -7,7 +7,7 @@ Los informes de errores, las ideas, la documentación y el código son todos bie
 
 ## Cómo está construido
 
-Un monorepo de pnpm en TypeScript estricto: el daemon (`apps/daemon`, Node), la app (`apps/mobile`, Expo y React Native), el relay de push (`apps/push-relay`, una Cloud Function), este sitio (`apps/web`, un Worker de Cloudflare) y el protocolo WebSocket que comparten (`packages/protocol`, esquemas Zod). Cada funcionalidad empieza como un change de [OpenSpec](https://github.com/Fission-AI/OpenSpec) con propuesta, deltas de spec y tareas; los changes archivados son la historia del proyecto. La arquitectura y las convenciones están en [CLAUDE.md](https://github.com/maarkN/remote-harness/blob/main/CLAUDE.md).
+Un monorepo de pnpm en TypeScript estricto: el daemon (`apps/daemon`, Node), la app (`apps/mobile`, Expo y React Native), el relay de push (`apps/push-relay`, una Cloud Function), este sitio (`apps/web`, un servidor Node en Docker) y el protocolo WebSocket que comparten (`packages/protocol`, esquemas Zod). Cada funcionalidad empieza como un change de [OpenSpec](https://github.com/Fission-AI/OpenSpec) con propuesta, deltas de spec y tareas; los changes archivados son la historia del proyecto. La arquitectura y las convenciones están en [CLAUDE.md](https://github.com/maarkN/remote-harness/blob/main/CLAUDE.md).
 
 ## Preparación
 
