@@ -6,7 +6,7 @@ import {
 } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
-import { type Config, loadConfig, resolveProfiles } from './core/config.ts'
+import { type Config, loadConfig, profilesWithResolvableAgent, resolveProfiles } from './core/config.ts'
 import { EventBus } from './core/event-bus.ts'
 import type { DaemonEvents } from './core/events.ts'
 import { KeyedMutex } from './core/keyed-mutex.ts'
@@ -144,6 +144,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   resolvePlatform()
   const config = await loadConfig(logger, options.configPath)
   const profiles = await resolveProfiles(config, logger)
+  // Narrower than `profiles`: only what the app may offer for starting a new session (not used
+  // for `install`/`uninstall`, which manage a profile's launcher regardless of its CLI's PATH).
+  const appProfiles = await profilesWithResolvableAgent(profiles, options.exec, logger)
   let token = await ensureToken(options.tokenStore)
   const hookSecret = await ensureHookSecret()
 
@@ -211,7 +214,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       protocolVersion: PROTOCOL_VERSION,
       daemonVersion: DAEMON_VERSION,
       host: hostName(),
-      profiles,
+      profiles: appProfiles,
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),
       push: { mode: features.pushMode() },

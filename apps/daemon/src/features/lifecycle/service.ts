@@ -83,7 +83,8 @@ export class LifecycleService {
     if (this.settleMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.settleMs))
       if (!(await this.hasPane(paneId))) {
-        throw new DaemonError('internal', `Claude Code exited right after starting (pane ${paneId} closed)`)
+        const name = agentFor(profile).name
+        throw new DaemonError('internal', `${name} exited right after starting (pane ${paneId} closed)`)
       }
     }
     return { paneId }

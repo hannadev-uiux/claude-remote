@@ -66,7 +66,7 @@ import {
   installServiceFromCli,
   userRcFiles,
 } from './features/setup/install.ts'
-import { tildify } from './features/setup/profiles.ts'
+import { detectConfigDirs, isCodexDir, sameDir, tildify } from './features/setup/profiles.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { STATUS_LINE_SCRIPT } from './features/status-line/wrapper.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
@@ -404,13 +404,20 @@ program
       }
       // Codex profiles: the CLI on the PATH and the daemon's hooks in their hooks.json.
       const codexProfiles = (await resolveProfiles(config, logger)).filter((p) => agentFor(p).id === 'codex')
-      if (codexProfiles.length > 0) {
+      const codexDirs = (await detectConfigDirs()).filter(isCodexDir)
+      // Checked even without a configured profile when a Codex account was found (issue #244).
+      if (codexProfiles.length > 0 || codexDirs.length > 0) {
         const which = await execaExecutor('which', ['codex'])
         check(which.exitCode === 0, 'codex', d.notOnPath)
-        for (const profile of codexProfiles) {
-          check(await hasOurHooks(profile), d.codexHooks(profile.id, settingsPath(profile)), d.runInstall)
+      }
+      for (const profile of codexProfiles) {
+        check(await hasOurHooks(profile), d.codexHooks(profile.id, settingsPath(profile)), d.runInstall)
+      }
+      if (codexProfiles.length > 0) console.log(`· ${m.install.codexTrust}`)
+      for (const dir of codexDirs) {
+        if (!config.profiles.some((p) => sameDir(p.configDir, dir))) {
+          console.log(`· ${d.codexAccountWithoutProfile(dir)}`)
         }
-        console.log(`· ${m.install.codexTrust}`)
       }
       const { kind: storeKind } = await selectStore()
       for (const profile of config.profiles) {

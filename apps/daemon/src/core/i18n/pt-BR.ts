@@ -86,6 +86,8 @@ export const ptBR = {
       providerKey: (id: string, provider: string) => `chave do ${provider} do perfil ${id}`,
       runProviderKey: (id: string) => `rode \`remote-harness provider key ${id}\``,
       codexHooks: (id: string, path: string) => `hooks do Codex do perfil ${id} (${path})`,
+      codexAccountWithoutProfile: (dir: string) =>
+        `Conta do Codex encontrada em ${dir} sem um perfil. Rode \`remote-harness setup\` para adicioná-la.`,
       runInstall: 'rode `remote-harness install`',
       service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',

@@ -57,7 +57,7 @@ export function isCodexDir(configDir: string): boolean {
   return /(^|\/)\.codex(-[\w.-]+)?\/?$/.test(configDir)
 }
 
-function sameDir(a: string, b: string): boolean {
+export function sameDir(a: string, b: string): boolean {
   return expandHome(a).replace(/\/+$/, '') === expandHome(b).replace(/\/+$/, '')
 }
 
