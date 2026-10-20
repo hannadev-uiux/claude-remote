@@ -99,11 +99,11 @@ function svg(width: number, height: number, body: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${body}</svg>`
 }
 
-/** Dark vertical gradient and a soft amber glow centered low, behind the mark. */
-function backdrop(id: string, glow = true): { defs: string; rects: string } {
+/** Dark vertical gradient behind the mark — flat, no glow (keeps the mark crisp at small sizes). */
+function backdrop(id: string): { defs: string; rects: string } {
   return {
-    defs: `<linearGradient id="${id}-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BG_TOP}"/><stop offset="1" stop-color="${BG}"/></linearGradient><radialGradient id="${id}-glow" cx="0.5" cy="0.68" r="0.5"><stop offset="0" stop-color="${ACCENT}" stop-opacity="0.34"/><stop offset="1" stop-color="${ACCENT}" stop-opacity="0"/></radialGradient>`,
-    rects: `<rect width="100%" height="100%" fill="url(#${id}-bg)"/>${glow ? `<rect width="100%" height="100%" fill="url(#${id}-glow)"/>` : ''}`,
+    defs: `<linearGradient id="${id}-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${BG_TOP}"/><stop offset="1" stop-color="${BG}"/></linearGradient>`,
+    rects: `<rect width="100%" height="100%" fill="url(#${id}-bg)"/>`,
   }
 }
 
@@ -178,27 +178,54 @@ function text(content: string, weight: Weight, size: number, color: string, x: n
 const textWidth = (content: string, weight: Weight, size: number) =>
   FONTS[weight].getAdvanceWidth(content, size, { kerning: true })
 
+/**
+ * Small drawn glyphs for the banner's agent chips, replacing the `cl`/`cx` letter codes with
+ * something closer to a mark while #226 (official brand assets) is still open. Same technique as
+ * the Tether mark itself (stroked lines, filled nodes) rather than an imported logo.
+ */
+const AGENT_GLYPHS: Record<'claude' | 'codex', (color: string, cx: number, cy: number, r: number) => string> =
+  {
+    /** Three crossing strokes through the center, echoing the Tether's reins. */
+    claude: (color, cx, cy, r) =>
+      `<g stroke="${color}" stroke-width="${(r / 3.4).toFixed(2)}" stroke-linecap="round">${[0, 60, 120]
+        .map((deg) => {
+          const rad = (deg * Math.PI) / 180
+          const dx = r * Math.cos(rad)
+          const dy = r * Math.sin(rad)
+          return `<line x1="${(cx - dx).toFixed(2)}" y1="${(cy - dy).toFixed(2)}" x2="${(cx + dx).toFixed(2)}" y2="${(cy + dy).toFixed(2)}"/>`
+        })
+        .join('')}</g>`,
+    /** Six nodes around a ring, echoing the Tether's own node-and-ring language. */
+    codex: (color, cx, cy, r) =>
+      Array.from({ length: 6 }, (_, i) => {
+        const rad = (i * 60 * Math.PI) / 180
+        const x = cx + r * 0.72 * Math.cos(rad)
+        const y = cy + r * 0.72 * Math.sin(rad)
+        return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(r / 3.2).toFixed(2)}" fill="${color}"/>`
+      }).join(''),
+  }
+
 /** Open Graph / README banner, 1200 × 630: mark, name, tagline and the agent chips. */
 function bannerSvg(): string {
   const left = 392
   const parts = [
     text('Remote Harness', 'bold', 60, TEXT, left, 300),
-    text('Follow and drive your coding agents from your phone.', 'regular', 23, MUTED, left, 352),
+    text('Follow and drive your coding agents from your phone.', 'regular', 25, MUTED, left, 354),
   ]
 
-  // Chips: outline sized by the label, agent square with its two-letter code.
-  const top = 400
-  const height = 40
+  // Chips: outline sized by the label, agent square with a drawn glyph instead of a letter code.
+  const top = 404
+  const height = 44
   const pad = 14
-  const square = 22
+  const square = 24
   let x = left
   for (const item of [
-    { label: 'Claude Code', agent: { code: 'cl', color: AGENTS.claude } },
-    { label: 'Codex', agent: { code: 'cx', color: AGENTS.codex } },
+    { label: 'Claude Code', agent: { glyph: AGENT_GLYPHS.claude, color: AGENTS.claude } },
+    { label: 'Codex', agent: { glyph: AGENT_GLYPHS.codex, color: AGENTS.codex } },
     { label: '+ soon', agent: null },
   ]) {
     const lead = item.agent ? square + 10 : 0
-    const width = Math.round(pad + lead + textWidth(item.label, 'regular', 20) + pad)
+    const width = Math.round(pad + lead + textWidth(item.label, 'regular', 23) + pad)
     const dash = item.agent ? '' : ' stroke-dasharray="6 5"'
     parts.push(
       `<rect x="${x}" y="${top}" width="${width}" height="${height}" rx="${height / 2}" fill="none" stroke="${BORDER_STRONG}" stroke-width="2"${dash}/>`,
@@ -209,19 +236,17 @@ function bannerSvg(): string {
       parts.push(
         `<rect x="${sx}" y="${sy}" width="${square}" height="${square}" rx="6" fill="${item.agent.color}"/>`,
       )
-      const code = item.agent.code
-      parts.push(text(code, 'bold', 11, INK, sx + (square - textWidth(code, 'bold', 11)) / 2, sy + 15))
+      parts.push(item.agent.glyph(INK, sx + square / 2, sy + square / 2, square / 2 - 4))
     }
-    parts.push(text(item.label, 'regular', 20, MUTED, x + pad + lead, top + 27))
+    parts.push(text(item.label, 'regular', 23, TEXT, x + pad + lead, top + 30))
     x += width + 14
   }
 
-  const { defs, rects } = backdrop('og', false)
-  const glow = `<radialGradient id="og-mark-glow" cx="0.18" cy="0.55" r="0.32"><stop offset="0" stop-color="${ACCENT}" stop-opacity="0.22"/><stop offset="1" stop-color="${ACCENT}" stop-opacity="0"/></radialGradient>`
+  const { defs, rects } = backdrop('og')
   return svg(
     1200,
     630,
-    `<defs>${defs}${glow}</defs>${rects}<rect width="100%" height="100%" fill="url(#og-mark-glow)"/>${markAt('regular', ACCENT, 96, 183, 264)}${parts.join('')}`,
+    `<defs>${defs}</defs>${rects}${markAt('regular', ACCENT, 96, 183, 264)}${parts.join('')}`,
   )
 }
 
@@ -233,12 +258,11 @@ function featureGraphicSvg(): string {
     text('Follow and drive your coding agents', 'regular', 21, MUTED, left, 280),
     text('from your phone.', 'regular', 21, MUTED, left, 312),
   ]
-  const { defs, rects } = backdrop('fg', false)
-  const glow = `<radialGradient id="fg-mark-glow" cx="0.18" cy="0.5" r="0.34"><stop offset="0" stop-color="${ACCENT}" stop-opacity="0.22"/><stop offset="1" stop-color="${ACCENT}" stop-opacity="0"/></radialGradient>`
+  const { defs, rects } = backdrop('fg')
   return svg(
     1024,
     500,
-    `<defs>${defs}${glow}</defs>${rects}<rect width="100%" height="100%" fill="url(#fg-mark-glow)"/>${markAt('regular', ACCENT, 84, 128, 244)}${parts.join('')}`,
+    `<defs>${defs}</defs>${rects}${markAt('regular', ACCENT, 84, 128, 244)}${parts.join('')}`,
   )
 }
 
