@@ -832,6 +832,12 @@ const esES = {
     confirmOlder: 'Esto instala la {{version}}, anterior a la {{current}}, porque el canal cambió.',
     confirmBusy: 'Hay una sesión en marcha o esperándote ahora mismo.',
     confirm: 'Actualizar',
+    newCommits: '{{version}} · nuevos commits ({{commit}})',
+    refused: {
+      running: 'Ya hay una actualización en curso en el ordenador.',
+      nothing: 'El ordenador ya está actualizado.',
+      notInstaller: 'Este daemon no se ejecuta desde el instalador, así que no puede actualizarse.',
+    },
   },
   terminal: {
     space: 'espacio',
