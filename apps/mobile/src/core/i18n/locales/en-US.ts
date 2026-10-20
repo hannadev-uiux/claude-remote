@@ -828,6 +828,12 @@ const enUS = {
     confirmOlder: 'This installs {{version}}, older than {{current}}, because the channel changed.',
     confirmBusy: 'A session is running or waiting for you right now.',
     confirm: 'Update',
+    newCommits: '{{version}} · new commits ({{commit}})',
+    refused: {
+      running: 'An update is already running on the computer.',
+      nothing: 'The computer is already up to date.',
+      notInstaller: 'This daemon does not run from the installer, so it cannot update itself.',
+    },
   },
   terminal: {
     space: 'space',

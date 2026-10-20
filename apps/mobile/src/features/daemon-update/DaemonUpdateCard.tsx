@@ -7,7 +7,7 @@ import { errorMessage } from '@/core/connection/error-message'
 import { space } from '@/core/theme'
 import { Button, Card, Text } from '@/ui'
 import { checkDaemonUpdate, startDaemonUpdate, useDaemonUpdateStore } from './store'
-import { confirmationWarnings, daemonUpdatePhase, runNote } from './view'
+import { confirmationWarnings, daemonUpdatePhase, runNote, startRefusal } from './view'
 
 const CHANNELS: DaemonUpdateChannel[] = ['main', 'development']
 
@@ -24,12 +24,18 @@ export function DaemonUpdateCard() {
   const info = useDaemonUpdateStore((s) => s.info)
   const pending = useDaemonUpdateStore((s) => s.pending)
   const [error, setError] = useState<string | null>(null)
-  const phase = daemonUpdatePhase(info, supported)
+  const phase = daemonUpdatePhase(info, supported, (version, commit) =>
+    t('daemonUpdate.newCommits', { version, commit }),
+  )
   const note = info ? runNote(info.run, info.current, Date.now()) : null
 
   const run = (action: () => Promise<void>) => {
     setError(null)
-    action().catch((e: unknown) => setError(errorMessage(e, t)))
+    action().catch((e: unknown) => {
+      const message = errorMessage(e, t)
+      const refusal = startRefusal(message)
+      setError(refusal ? t(`daemonUpdate.refused.${refusal}`) : message)
+    })
   }
 
   const confirmUpdate = () => {

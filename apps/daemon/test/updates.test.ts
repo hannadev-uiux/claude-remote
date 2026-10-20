@@ -196,6 +196,48 @@ describe('UpdateChecker', () => {
     expect(again.checker.state.available?.commit).toBe('c1')
     expect(again.checker.due('main')).toBe(false)
   })
+
+  test('a saved offer of the commit already checked out is dropped on load (#225)', async () => {
+    const { checker } = setup([{ status: 'available', commit: 'c1', version: '0.11.0' }])
+    await checker.check('main')
+    const updated = new UpdateChecker({
+      fetch: async () => ({ status: 'current', commit: 'c1' }),
+      head: async () => 'c1',
+      statePath: paths.updates(),
+      currentVersion: '0.11.0',
+      logger: silentLogger,
+      onAvailable: () => undefined,
+    })
+    await updated.load()
+    expect(updated.state.available).toBeNull()
+    expect((await readUpdateState(paths.updates()))?.available).toBeNull()
+  })
+
+  test('a saved offer of another commit stays on load', async () => {
+    const { checker } = setup([{ status: 'available', commit: 'c1', version: '0.11.0' }])
+    await checker.check('main')
+    const behind = new UpdateChecker({
+      fetch: async () => ({ status: 'current', commit: 'c0' }),
+      head: async () => 'c0',
+      statePath: paths.updates(),
+      currentVersion: '0.10.0',
+      logger: silentLogger,
+      onAvailable: () => undefined,
+    })
+    await behind.load()
+    expect(behind.state.available?.commit).toBe('c1')
+  })
+
+  test('recheck runs now, past the rate limit of forced checks', async () => {
+    const { checker, fetch } = setup([
+      { status: 'available', commit: 'c1', version: '0.11.0' },
+      { status: 'current', commit: 'c1' },
+    ])
+    await checker.check('main', true)
+    expect(checker.state.available?.commit).toBe('c1')
+    expect((await checker.recheck('main')).available).toBeNull()
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
 })
 
 function fakeProcess() {
