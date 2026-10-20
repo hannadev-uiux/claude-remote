@@ -10,6 +10,9 @@ import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { AGENT_NAMES } from '@/core/theme/agents'
 import { shortPath } from '@/core/utils/time'
 import { profileAgent, profileDetail } from '@/features/lifecycle/new-session'
+import { useLiveFollowStore } from '@/features/live-status/follow-store'
+import { useLiveStatusSettings } from '@/features/live-status/settings-store'
+import { setAutoFollow } from '@/features/live-status/use-live-follow'
 import { setMuted, useMuteStore } from '@/features/mute/store'
 import { creditsLeft, formatCredits, providerName } from '@/features/providers/logic'
 import { ProfileProviderChip } from '@/features/providers/ProfileProviderChip'
@@ -107,12 +110,43 @@ function ProfileDetailsSheet({ profile, onClose }: { profile: Profile | null; on
                   trackColor={{ true: colors.accent, false: colors.borderStrong }}
                 />
               </View>
+              <AutoFollowRow profileId={profile.id} />
             </>
           ) : null}
           <Button label={t('common.close')} variant="ghost" onPress={onClose} />
         </Pressable>
       </Pressable>
     </Modal>
+  )
+}
+
+/** "Follow new sessions": live status of the profile's new sessions on this phone (daemon permitting). */
+function AutoFollowRow({ profileId }: { profileId: string }) {
+  const { t } = useTranslation()
+  const { colors } = useTheme()
+  const supported = useLiveFollowStore((s) => s.supported)
+  const liveEnabled = useLiveStatusSettings((s) => s.enabled)
+  const enabled = useLiveFollowStore((s) => s.autoFollowProfiles.includes(profileId))
+  if (!supported || !liveEnabled) return null
+  return (
+    <View style={layout.between}>
+      <View style={layout.flex}>
+        <Text size="sm">{t('liveFollow.autoFollow')}</Text>
+        <Text size="xs" color="textMuted">
+          {t('liveFollow.autoFollowHint')}
+        </Text>
+      </View>
+      <Switch
+        value={enabled}
+        onValueChange={(on) =>
+          void setAutoFollow(profileId, on).catch((error: unknown) =>
+            Alert.alert(t('sessionActions.failed'), errorMessage(error, t)),
+          )
+        }
+        accessibilityLabel={t('liveFollow.autoFollow')}
+        trackColor={{ true: colors.accent, false: colors.borderStrong }}
+      />
+    </View>
   )
 }
 

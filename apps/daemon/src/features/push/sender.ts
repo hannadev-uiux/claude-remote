@@ -29,8 +29,15 @@ export type LiveMessage = {
   /** Android: the app draws the notification from a data message (with Allow / Deny). */
   androidDataMessages?: boolean
   props: LiveStatusProps
-  /** `end` closes the activity (iOS) / leaves a dismissable notification (Android). */
-  event: 'update' | 'end'
+  /**
+   * `end` closes the activity (iOS) / leaves a dismissable notification (Android). `start` (iOS
+   * only) starts a Live Activity with the push-to-start token in `activityToken`.
+   */
+  event: 'update' | 'end' | 'start'
+  /** `start`: the deep link the new activity opens (its static attributes). */
+  url?: string
+  /** `start`: the alert iOS shows as the activity appears. */
+  alert?: { title: string; body: string }
   /** Epoch ms of this update. */
   at: number
   /** Epoch ms when iOS removes an ended activity; absent = right away. */
@@ -56,6 +63,9 @@ export const ANDROID_LIVE_CHANNEL_ID = 'live-status'
 
 const seconds = (ms: number) => Math.floor(ms / 1000)
 
+/** ActivityKit attributes type of `expo-widgets` (its Swift `LiveActivityAttributes`, holding `url`). */
+export const LIVE_ACTIVITY_ATTRIBUTES = 'LiveActivityAttributes'
+
 /** Working updates can wait; a state the user may act on (waiting, done, closed, end) cannot. */
 function urgent(message: LiveMessage): boolean {
   return !(message.props.state === 'working' && message.event === 'update')
@@ -71,7 +81,7 @@ export function buildLiveMessage(message: LiveMessage) {
   const { props } = message
   const data = { sessionId: message.sessionId, event: 'live' }
   if (message.platform === 'android' && message.androidDataMessages) {
-    const live: LiveDataMessage = { event: message.event, props }
+    const live: LiveDataMessage = { event: message.event === 'end' ? 'end' : 'update', props }
     return {
       token: message.fcmToken,
       data: { ...data, live: JSON.stringify(live) },
@@ -97,6 +107,13 @@ export function buildLiveMessage(message: LiveMessage) {
             ...(message.staleAt !== undefined ? { 'stale-date': seconds(message.staleAt) } : {}),
             ...(message.event === 'end'
               ? { 'dismissal-date': seconds(message.dismissAt ?? message.at) }
+              : {}),
+            ...(message.event === 'start'
+              ? {
+                  'attributes-type': LIVE_ACTIVITY_ATTRIBUTES,
+                  attributes: { url: message.url ?? null },
+                  ...(message.alert ? { alert: message.alert } : {}),
+                }
               : {}),
           },
         },

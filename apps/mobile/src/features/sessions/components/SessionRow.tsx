@@ -1,6 +1,6 @@
 import type { Profile, Session } from '@remote-harness/protocol'
 import { router } from 'expo-router'
-import { BellOff, ChevronRight, Pencil, Pin } from 'lucide-react-native'
+import { BellOff, ChevronRight, Pencil, Pin, Radio } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View } from 'react-native'
@@ -29,6 +29,8 @@ type Props = {
   keyboardFocused?: boolean
   /** Pinned to the top of the list on this device. */
   pinned?: boolean
+  /** This phone follows the session's live status. */
+  following?: boolean
   /** Long press opens the session's action sheet. */
   onLongPress?: () => void
 }
@@ -46,6 +48,7 @@ export const SessionRow = memo(function SessionRow({
   selected = false,
   keyboardFocused = false,
   pinned = false,
+  following = false,
   onLongPress,
 }: Props) {
   const { t } = useTranslation()
@@ -116,6 +119,9 @@ export const SessionRow = memo(function SessionRow({
         <ProfileTag profile={profile ?? { name: session.profileId, color: '' }} />
         {pinned ? (
           <Pin size={12} color={colors.accentText} accessibilityLabel={t('sessionActions.pinned')} />
+        ) : null}
+        {following ? (
+          <Radio size={12} color={colors.accentText} accessibilityLabel={t('liveFollow.following')} />
         ) : null}
         {muted ? <BellOff size={12} color={colors.textDim} accessibilityLabel={t('sessions.muted')} /> : null}
         {subagents > 0 ? <Badge label={t('sessions.subagents', { count: subagents })} /> : null}

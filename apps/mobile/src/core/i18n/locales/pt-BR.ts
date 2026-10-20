@@ -162,6 +162,8 @@ const ptBR = {
     history: 'Histórico da conversa',
     follow: 'Acompanhar a saída',
     stopFollowing: 'Parar de acompanhar a saída',
+    followLive: 'Acompanhar status ao vivo',
+    unfollowLive: 'Parar de acompanhar status ao vivo',
     readOnly: 'Sessão somente leitura (sem painel tmux): o terminal e os atalhos não estão disponíveis.',
     close: 'Encerrar sessão',
     /** `n` é um número simples entre parênteses, sem plural. */
@@ -181,6 +183,8 @@ const ptBR = {
     cleanupDetail_other: '{{path}} · {{count}} alterações',
     copyPath: 'Copiar caminho da pasta',
     hide: 'Ocultar da lista',
+    followLive: 'Acompanhar status ao vivo',
+    unfollowLive: 'Parar de acompanhar status ao vivo',
     failed: 'Não foi possível concluir a ação',
     /** Rótulos dos botões de swipe: uma palavra curta cada. */
     short: {
@@ -191,6 +195,8 @@ const ptBR = {
       pin: 'Fixar',
       unpin: 'Desafixar',
       hide: 'Ocultar',
+      followLive: 'Acompanhar',
+      unfollowLive: 'Parar',
       resume: 'Retomar',
       cleanup: 'Limpar',
       copyPath: 'Copiar',
@@ -754,6 +760,12 @@ const ptBR = {
     details: 'Detalhes',
     noSubagents: 'Nenhum subagente nesta sessão.',
     resize: 'Redimensionar o inspetor',
+  },
+  /** Acompanhar o status ao vivo de uma sessão por este celular. */
+  liveFollow: {
+    following: 'Acompanhando o status ao vivo',
+    autoFollow: 'Acompanhar novas sessões',
+    autoFollowHint: 'Status ao vivo de cada nova sessão deste perfil neste celular.',
   },
   /** Rótulos da fileira de dicas do teclado físico (curtos, em minúsculas). */
   keys: {

@@ -162,6 +162,8 @@ const esES = {
     history: 'Historial de la conversación',
     follow: 'Seguir la salida',
     stopFollowing: 'Dejar de seguir la salida',
+    followLive: 'Seguir estado en vivo',
+    unfollowLive: 'Dejar de seguir estado en vivo',
     readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
     close: 'Cerrar sesión',
     /** `n` es un número simple entre paréntesis, sin plural. */
@@ -181,6 +183,8 @@ const esES = {
     cleanupDetail_other: '{{path}} · {{count}} cambios',
     copyPath: 'Copiar ruta de la carpeta',
     hide: 'Ocultar de la lista',
+    followLive: 'Seguir estado en vivo',
+    unfollowLive: 'Dejar de seguir estado en vivo',
     failed: 'No se pudo completar la acción',
     /** Etiquetas de los botones de swipe: una palabra corta cada una. */
     short: {
@@ -191,6 +195,8 @@ const esES = {
       pin: 'Fijar',
       unpin: 'Desfijar',
       hide: 'Ocultar',
+      followLive: 'Seguir',
+      unfollowLive: 'Dejar',
       resume: 'Reanudar',
       cleanup: 'Limpiar',
       copyPath: 'Copiar',
@@ -755,6 +761,12 @@ const esES = {
     details: 'Detalles',
     noSubagents: 'No hay subagentes en esta sesión.',
     resize: 'Cambiar el tamaño del inspector',
+  },
+  /** Seguir el estado en vivo de una sesión desde este teléfono. */
+  liveFollow: {
+    following: 'Siguiendo el estado en vivo',
+    autoFollow: 'Seguir sesiones nuevas',
+    autoFollowHint: 'Estado en vivo de cada sesión nueva de este perfil en este teléfono.',
   },
   /** Etiquetas de la fila de atajos del teclado físico (cortas, en minúsculas). */
   keys: {

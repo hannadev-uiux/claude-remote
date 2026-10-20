@@ -533,6 +533,7 @@ export const ptBR = {
   },
   push: {
     sessionDone: 'Sessão concluída',
+    sessionWorking: 'Sessão trabalhando',
     sessionWaiting: 'Sessão aguardando você',
     permissionPending: 'Permissão pendente',
     questionPending: 'O agente está esperando sua resposta',
