@@ -244,7 +244,7 @@ export const esES: WebMessages = {
     items: [
       {
         q: '¿Funciona fuera de casa?',
-        a: 'Sí. Tailscale conecta tu móvil y tu máquina estén donde estén, sin abrir puertos. La máquina tiene que estar despierta; el README cubre las opciones de suspensión y bloqueo.',
+        a: 'Sí. Tailscale conecta tu móvil y tu máquina estén donde estén, sin abrir puertos. La máquina tiene que estar despierta; la página Solución de problemas de la documentación cubre las opciones de suspensión y bloqueo.',
       },
       {
         q: '¿Qué agentes están soportados?',

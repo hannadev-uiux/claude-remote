@@ -237,7 +237,7 @@ export const enUS = {
     items: [
       {
         q: 'Does it work away from home?',
-        a: 'Yes. Tailscale connects your phone and your machine wherever they are, with no port forwarding. The machine must be awake; the README covers sleep and lock settings.',
+        a: 'Yes. Tailscale connects your phone and your machine wherever they are, with no port forwarding. The machine must be awake; the Troubleshooting page of the docs covers sleep and lock settings.',
       },
       {
         q: 'Which agents are supported?',

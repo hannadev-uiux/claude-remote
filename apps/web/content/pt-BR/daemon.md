@@ -20,6 +20,7 @@ O daemon roda no computador: acompanha os transcripts das sessões, controla o t
 | `remote-harness update` | Baixa a nova versão, recompila, atualiza os hooks e reinicia o serviço. `--ref <branch|tag>` escolhe a versão. |
 | `remote-harness updates status` / `check` / `channel [main|development]` / `auto on|off` | A verificação de atualizações em segundo plano. |
 | `remote-harness push status` / `test` | Modo de push em uso e celulares registrados; envia uma notificação de teste. |
+| `remote-harness push off` / `on` | Para (ou volta a enviar) todos os pushes e o status ao vivo deste computador, sem reiniciar o daemon. |
 | `remote-harness provider key <perfil>` | Guarda a chave do provedor (OpenRouter) de um perfil no cofre do sistema. `--stdin` lê de um pipe. |
 | `remote-harness rules list` / `undo <id>` | As regras "permitir sempre" criadas pelo celular. |
 

@@ -42,10 +42,10 @@ Remote Harness solves this with tools you already trust: sessions run inside **t
 
 ## Status
 
-**Alpha.** The latest release is [v0.15.0-ALPHA](https://github.com/maarkN/remote-harness/releases); every release is tagged `-ALPHA` while the project is being tested. It is used every day by its authors, but expect rough edges and breaking changes between versions.
+**Alpha.** Releases are on [GitHub Releases](https://github.com/maarkN/remote-harness/releases), each tagged `-ALPHA` while the project is being tested. It is used every day by its authors, but expect rough edges and breaking changes between versions.
 
 - **Computer:** macOS, Linux and Windows (WSL2), installed with one command and updated with `remote-harness update` (or automatically, from the menu bar).
-- **Phone:** iOS/iPadOS and Android 10+. Not in the stores yet: build it yourself (below); TestFlight and Google Play are in progress ([#161](https://github.com/maarkN/remote-harness/issues/161)). Installed builds get JavaScript updates over the air.
+- **Phone:** iOS/iPadOS and Android 10+. Not in the stores yet: install the Android APK from the releases or build the app yourself ([getting started](https://remoteharness.app/docs/getting-started/#install-the-app)); TestFlight and Google Play are in progress ([#161](https://github.com/maarkN/remote-harness/issues/161)). Installed builds get JavaScript updates over the air.
 - **Agents:** Claude Code (any number of accounts, also through OpenRouter) and Codex CLI. Kimi and Qwen Code are planned.
 - **Languages:** the app, the CLI, notifications and the [site](https://remoteharness.app) in English, Brazilian Portuguese and Spanish.
 
@@ -99,218 +99,30 @@ Sessions started with plain `claude` (outside tmux) still show up — read-only 
 
 ## Security model
 
-The daemon is effectively a remote shell, so it is locked down by default:
-
-- The WebSocket listens **only on the Tailscale interface** (100.64.0.0/10) — or `127.0.0.1` with an explicit `--dev`.
-- Every connection must present a token (**Keychain** on macOS, the **Secret Service** via `secret-tool` or a `0600` file on Linux, **SecureStore** on the phone). `remote-harness rotate-token` invalidates it and drops all clients.
-- The hooks endpoint listens **only on `127.0.0.1`** and requires a local shared secret.
-- Push payloads carry **only** a title, profile and session id — never session content.
-- `bypassPermissions` is never offered by the app.
-- Edits to your files (`settings.json`, `~/.zshrc`, `~/.bashrc`) are merge → backup → atomic write, idempotent, and fully reverted by `remote-harness uninstall`.
-
-See [SECURITY.md](SECURITY.md) to report a vulnerability.
-
-## Requirements
-
-- macOS, Linux (systemd recommended) or Windows 10 2004+/11 through WSL2, with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` (and/or `codex`) on the `PATH` (the installer adds the missing tools)
-- Node 24+ (the one-line installer downloads a private Node into `~/.remote-harness/node` when it is missing; pnpm 12+ only for development)
-- [Tailscale](https://tailscale.com) on the computer and the phone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
-- For the app (Expo Go is not enough: it uses native modules): Xcode on a Mac for the iOS development build, or Android Studio / the Android SDK (JDK 17) for Android 10+
-- Optional, for push: a Firebase project (plus a paid Apple Developer account on iOS)
+The daemon is effectively a remote shell, so it is locked down by default: the WebSocket listens **only on the Tailscale interface** (or `127.0.0.1` with an explicit `--dev`) and every connection presents a token kept in the OS secret store; the hooks endpoint listens only on `127.0.0.1` with a local secret; push carries no session content; `bypassPermissions` is never offered; and every edit to your files is merged, backed up, written atomically and reverted by `remote-harness uninstall`. The details are in [Security & privacy](https://remoteharness.app/docs/security/); report a vulnerability through [SECURITY.md](SECURITY.md).
 
 ## Getting started
 
-### 1. Computer (macOS or Linux): one-line install
+On the computer (macOS, Linux or WSL2), one line installs the daemon and opens a guided setup that finds your Claude Code accounts, asks the alias of each one, installs the hooks and the background service, and shows the pairing QR code:
 
 ```bash
-curl -fsSL https://remoteharness.app/install | bash
+curl -fsSL https://remoteharness.app/install | bash     # macOS and Linux
+irm https://remoteharness.app/install | iex             # Windows PowerShell (installs WSL2 if needed)
 ```
 
-The same address serves every system: curl and wget get the macOS / Linux script, Windows PowerShell gets the WSL2 installer (see below), and a browser gets a page with the right command for that computer. `?ref=<branch|tag>` installs another version, e.g. `curl -fsSL "https://remoteharness.app/install?ref=development" | bash`.
+Then install the app and Tailscale on the phone, scan the code, and run your alias instead of `claude`. Everything else is in the [documentation](https://remoteharness.app/docs/), in English, Portuguese and Spanish:
 
-The installer checks the system (macOS or Linux) and Node, installs missing `tmux`/`ripgrep`/`zsh`/`git` (Homebrew on macOS; apt, dnf, pacman or zypper on Linux, with `sudo` after telling you why), puts the source in `~/.remote-harness/src`, builds the daemon and opens a guided setup (`remote-harness setup`) that:
-
-- finds your Claude Code accounts (`~/.claude`, `~/.claude-*`) and lets you pick which ones to control, or creates a new one (makes the folder and opens Claude Code there so you log in);
-- asks the **alias** of each one: the command that opens that account inside tmux (e.g. `pessoal`, `trabalho`);
-- installs the launchers, the `PATH` entry and the hooks (with backups), and the background service;
-- helps with Tailscale and shows the pairing QR code.
-
-To update, run `remote-harness update` (or `--ref <branch|tag>`): it fetches the new version, rebuilds, refreshes the hooks and restarts the service, without the setup questions; the same as `bash -s -- --update` with the line above. `remote-harness setup` changes accounts and aliases later; `bash -s -- --yes` skips the questions.
-
-**Update notifications and the menu bar icon.** The background service checks its update channel on the git remote every 6 hours. When there is a new version it shows a desktop notification. It never checks a development clone.
-- **Menu bar / tray icon:** shows that the daemon is running and its version. From it you can check for updates, update now, turn automatic updates on or off, pick the channel, open the logs, restart the daemon and run `doctor`.
-  - On macOS it is a small Swift helper built on first start with the Command Line Tools.
-  - On Linux it needs `python3` with GTK 3 and AyatanaAppIndicator3 or AppIndicator3 (`gir1.2-ayatanaappindicator3-0.1` on Debian/Ubuntu; GNOME also needs the AppIndicator extension).
-  - Without them, and in WSL, the daemon runs headless as before. `"tray": false` in the config turns it off.
-- `remote-harness updates channel main|development` picks the branch that `update` and the check follow. Going back from `development` to `main` warns that it installs an older version.
-- `remote-harness updates auto on` updates by itself. It only does so when no session is running or waiting and no permission is pending, and never to an older version.
-- `remote-harness updates status` and `remote-harness updates check` show the last result.
-
-<details>
-<summary>Linux notes</summary>
-
-- **Service**: a systemd user unit, `~/.config/systemd/user/claude-remote.service` (restarts on failure, logs in `~/.remote-harness/logs`). Check it with `remote-harness service status` or `systemctl --user status claude-remote`.
-- **Lingering**: user services stop when you log out. The setup asks before running `loginctl enable-linger $USER`, which keeps the daemon running after logout and starts it at boot (needed on servers you reach over SSH).
-- **No systemd** (containers, some WSL setups): the setup says so; run `remote-harness start` yourself, e.g. in a tmux window.
-- **Token**: kept in the Secret Service (GNOME Keyring, KWallet…) through `secret-tool` when it is available, otherwise in `~/.remote-harness/token` (mode `0600`), which is what headless servers use. `remote-harness doctor` shows which one; `REMOTE_HARNESS_TOKEN_STORE=secret-tool|file` forces it.
-- **Shell**: the `PATH` entry goes to `~/.bashrc` and/or `~/.zshrc`; the launchers themselves run with `zsh`.
-
-</details>
-
-<details>
-<summary>Windows (WSL2)</summary>
-
-Remote Harness drives Claude Code through tmux, so on Windows it runs inside **WSL2** (Linux on Windows), where Claude Code is best supported too. In PowerShell:
-
-```powershell
-irm https://remoteharness.app/install | iex
-```
-
-The script checks Windows 10 2004+ or Windows 11, installs WSL2 with Ubuntu when it is missing (Windows asks for administrator permission; reboot if asked, then run the same command again), helps create the Linux user, and then runs the Linux installer above inside the distribution. Options: `& ([scriptblock]::Create((irm https://remoteharness.app/install))) -Distro Ubuntu-24.04 -Ref main -Yes -NoService`.
-
-- **Node and Claude Code** must be installed **inside WSL** (not only on Windows); the installer says what is missing.
-- **systemd**: the background service is a systemd user unit, and WSL only boots systemd with `[boot] systemd=true` in `/etc/wsl.conf`. The setup shows the exact `sudo` command, runs it only if you agree (with a backup), and asks you to run `wsl --shutdown` from PowerShell.
-- **Starting at logon**: WSL only runs while something uses it. The setup can create a Windows Scheduled Task, "Remote Harness", that starts the distribution when you log in (`schtasks.exe /Create /SC ONLOGON … /TR "wsl.exe -d <distro> --exec /bin/true"`); `remote-harness service uninstall` removes it. If WSL still stops when idle, raise `vmIdleTimeout` in `[wsl2]` of `%UserProfile%\.wslconfig`.
-- **Tailscale**: WSL2 uses NAT by default, so a Tailscale running on Windows is not visible inside WSL. Either run Tailscale **inside WSL** (`curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`; works on any Windows), or keep it on Windows and turn on **mirrored networking** (Windows 11 22H2+): the setup can add `networkingMode=mirrored` to `[wsl2]` in `%UserProfile%\.wslconfig` (with a backup); then run `wsl --shutdown`.
-- `remote-harness doctor` shows the distribution, the networking mode, systemd and the logon task.
-
-</details>
-
-<details>
-<summary>Manual install (from a clone)</summary>
-
-```bash
-git clone https://github.com/maarkN/remote-harness.git
-cd remote-harness
-pnpm install
-pnpm --filter @remote-harness/daemon build
-node apps/daemon/dist/cli.js setup
-```
-
-</details>
-
-Profiles and ports live in `~/.remote-harness/config.json` (installs made before the rename to Remote Harness keep using `~/.claude-remote`, and the old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working):
-
-```json
-{
-  "profiles": [
-    { "id": "pessoal", "name": "Personal", "configDir": "~/.claude", "color": "#D97757" },
-    { "id": "trabalho", "name": "Work", "configDir": "~/.claude-work", "color": "#61AFEF" }
-  ]
-}
-```
-
-A profile can route Claude Code through **OpenRouter** instead of the Anthropic account: give it a `provider` (optionally with `baseUrl`, a default `model` and a `smallFastModel`) and store the key in the OS secret store. The key never goes into a file we write, nor to the phone; the app shows `via OpenRouter` on the profile and its sessions, lets you pick the model when starting a session (context, prices, capabilities, credits left) and switch it later from the session menu.
-
-```json
-{
-  "id": "openrouter",
-  "name": "OpenRouter",
-  "configDir": "~/.claude-openrouter",
-  "color": "#8A8784",
-  "provider": { "kind": "openrouter", "model": "anthropic/claude-sonnet-5.5" }
-}
-```
-
-```bash
-remote-harness install                  # regenerates the launchers with the provider variables
-remote-harness provider key openrouter  # asks for the key (hidden); `--stdin` reads it from a pipe
-```
-
-### 2. Phone: app
-
-```bash
-cd apps/mobile
-pnpm ios             # expo run:ios — development build on the simulator or a connected iPhone
-pnpm android         # expo run:android — development build on an emulator or a connected Android phone
-pnpm build:android   # release APK built locally (eas.json also has development/preview/production profiles)
-```
-
-Open the app, scan the QR code from `remote-harness pair`, and you are in. Installed the app first? The pairing screen has a step-by-step guide for setting up the computer.
-
-> **Trying it on the simulator without Tailscale?** Run `remote-harness start --dev` (binds to `127.0.0.1`) and `remote-harness pair --dev`. On the Android emulator also run `adb reverse tcp:7337 tcp:7337` so its `127.0.0.1` reaches the computer.
-
-### 3. Use it
-
-```bash
-pessoal              # your alias; same arguments as `claude`
-trabalho --resume    # another account
-```
-
-Both appear in the app, fully controllable. "Always allow" rules created from the phone: `remote-harness rules list` / `remote-harness rules undo <id>`.
-
-**Two sessions in the same repository?** They edit the same files and can switch the branch under each other. The app marks live sessions that share a git checkout ("shared checkout"), and **New session** warns before starting in a busy one. Turn on **Isolated copy (git worktree)** to start Claude Code with `--worktree`: it works on its own branch in `<repo>/.claude/worktrees/<name>` and asks on exit whether to keep or remove it (needs a Claude Code with `--worktree`).
-
-### Push notifications (optional)
-
-1. In one Firebase project, create the apps you need with the id `tech.doctorx.clauderemote`: an iOS app (upload your APNs key) and/or an Android app.
-2. Put `GoogleService-Info.plist` (iOS) and/or `google-services.json` (Android) in `apps/mobile/` (both git-ignored) and run `pnpm ios` / `pnpm android` again — Firebase is only linked on a platform when its file exists.
-3. Choose how the daemon sends:
-   - **Push relay** (no credential on the computer): build the app with `REMOTE_HARNESS_PUSH_RELAY_URL` pointing to your relay (see below). The app gets a *grant* from the relay (its FCM token, sealed) and hands it to the daemon, which posts each notification to the relay. A daemon can only reach the phones paired with it.
-   - **Self-hosted**: save the Firebase service account to `~/.remote-harness/firebase-service-account.json` and restart the daemon. It sends to FCM directly, and wins over the relay when both exist.
-
-   `remote-harness doctor` and `remote-harness push status` show the mode in use and the phones registered for push. In the app, **Settings → Notifications** shows the same, says what is missing, and has **Send test notification** (`remote-harness push test` sends one to every phone).
-
-   Push is on by default: the app asks for the permission right after pairing, for every event type. Use the mute controls to silence a profile or a session, or `remote-harness push off` to stop every push and live status update on this computer (`remote-harness push on` turns it back on; both apply without restarting the daemon).
-
-   **What the relay sees:** the grant (your FCM token and Live Activity token, sealed with a key only the relay has) and the same content-free message FCM gets: a generic title ("Session finished"), the profile name, the session id, the event type and the permission request id. For the live status it also sees the session title, folder and step categories. It stores nothing.
-
-**Deploying the push relay** (`apps/push-relay`, a Cloud Function in `southamerica-east1`; needs the **Blaze** plan, FCM is free and personal use stays within the free tier of Cloud Functions):
-
-```bash
-npx -y firebase-tools@15 login
-openssl rand -hex 32 | npx -y firebase-tools@15 functions:secrets:set GRANT_KEY --project <project-id> --data-file=-
-make deploy-push-relay PROJECT=<project-id>
-```
-
-The function runs with the project's default credentials, so no service account key is created. Use the URL printed by the deploy (`…/pushRelay`) as `REMOTE_HARNESS_PUSH_RELAY_URL` when building the app. The project's own builds use `https://push.remoteharness.app` instead, a Cloudflare Worker (`apps/push-edge`) in front of the function, so the relay can move without new builds. Rotating `GRANT_KEY` invalidates every grant; apps fetch new ones on their next connection.
-
-**App Check** is verified on `/grant` but only logged at first (`APP_CHECK=monitor`), so the relay works before App Check is set up. After registering the apps in Firebase App Check (DeviceCheck key on iOS; Play Integrity on Android, which needs the app in the Play Console), create `apps/push-relay/.env.<project-id>` with `APP_CHECK=enforce` and deploy again: grants then require a valid App Check token. Development builds use the debug provider; register the debug token printed in the native logs.
-
-**Live status** uses the same Firebase setup. On iOS the Live Activity updates go through FCM, which needs the APNs **authentication key** (`.p8`) in Firebase, not a certificate. It starts when a session begins working while the app is open (typically after sending a prompt from the phone) and can be turned off in **Settings → Live status**. Pushes carry only the profile name, the state, the step category ("running a command"), the tool count and times.
-
-On Android 13+ the app asks for the notification permission; notifications use the high-priority `claude-remote` channel (it can be tuned in the system settings) and, like on iOS, carry only the event and the profile.
-
-### Error reports (optional)
-
-The app keeps a small log of its own errors on the phone (the last 50: JS crashes, unhandled promise rejections, screens that failed to render, and daemon requests that were rejected or timed out). Nothing leaves the phone by itself. With Firebase in the build, errors can go to **Firebase Crashlytics** in the same project as push, according to **Settings → Error reports**:
-
-- **Ask each time** (default): after a crash, the next launch shows exactly what would be sent and asks first.
-- **Send automatically**: crashes and errors are sent as they happen.
-- **Never**: nothing is sent, Crashlytics collection stays off and crash reports waiting on the phone are deleted.
-
-Crashlytics collection is off in the native config (`apps/mobile/firebase.json`) and is only turned on by "Send automatically". **Settings → Report a problem** lets you describe a bug and send the recent log (and, if you want, the computer's recently rejected requests), share it as a file, or open a prefilled GitHub issue; Send is hidden with "Never" and in builds without Firebase.
-
-What a report contains, and nothing else: time, kind of error, error name, a scrubbed message and stack (quoted text, URLs, emails, paths, ids, IP addresses and token-like strings replaced by placeholders), the request type and error code, the screen's route pattern (`(main)/session/[id]`, never the values), and the app version, runtime, OTA update id and channel, platform, OS version and daemon version. Crashlytics adds the device model and an installation id. Reports never include prompts, conversation, terminal output, commands, file paths, project or session names, tokens or pairing data. JS stacks reference the bundle by OTA update id; symbolicate them with the source maps of that update's `expo export`.
-
-### App updates over the air (optional)
-
-Builds are created without an update server, so updates are off. To ship JavaScript changes without rebuilding on each phone, the app uses a self-hosted [Expo Updates](https://docs.expo.dev/technical-specs/expo-updates-1/) server — the project's, at `remoteharness.app/api/updates` (no EAS account or fees), or any other implementation of the protocol.
-
-1. **Signing key, once.** `cd apps/mobile && npx expo-updates codesigning:generate --key-output-directory ~/.remote-harness-keys --certificate-output-directory certs --certificate-validity-duration-years 10 --certificate-common-name "Remote Harness"`. Commit `certs/certificate.pem`; keep the private key out of the repo (and backed up: losing it means a new build for every phone).
-2. **Build** with the server URL, e.g. in `apps/mobile/.env.local` (git-ignored, read by the build and the publisher):
-   ```dotenv
-   REMOTE_HARNESS_UPDATES_URL=https://remoteharness.app/api/updates/manifest
-   ```
-   The server is the site in `apps/web` (Node in Docker on the project's server, see *Website* below), with the update files in its data folder; it implements the protocol itself and never holds the signing key. Asset URLs signed into each update default to `<updates base>/assets/`; `REMOTE_HARNESS_UPDATES_ASSETS_URL` changes that prefix for another server.
-   A custom URL without `certs/certificate.pem` is refused. The URL is part of the runtime version, so it never changes for installed builds. Builds made before the rename with `https://maarkn.dev/api/claude-remote/updates/manifest` are answered by that old server until they are replaced. (`EAS_PROJECT_ID=<id>` uses EAS Update instead; code signing there needs a paid plan.)
-3. **Publish** a JavaScript change:
-   ```bash
-   REMOTE_HARNESS_UPDATES_TOKEN=… REMOTE_HARNESS_UPDATES_KEY=~/.remote-harness-keys/private-key.pem \
-     pnpm --filter @remote-harness/mobile ota:publish          # --platform ios|android, --dry-run
-   ```
-   It runs `expo export`, signs one manifest per platform locally and uploads only the files the server does not have yet. The token is `UPDATES_TOKEN` in the site's `.env` on its server (generated by the first `make deploy-web`).
-
-**Channels.** Builds follow `production`, published by hand (`make publish-ota`, or `CHANNEL=…`). Every merge into `development` that touches the app is published to the `development` channel by the *OTA (development)* workflow; **Settings → App → channel** switches a phone to it (and back). The workflow needs two repository secrets: `OTA_SIGNING_KEY` (the private key PEM) and `OTA_DEV_TOKEN` (the site's `UPDATES_DEV_TOKEN`, which can only publish to `development`). Without them it does nothing. If builds pin `APPLE_TEAM_ID`, set the same value as the repository variable `APPLE_TEAM_ID` (it is part of the runtime version).
-
-The app checks at launch and when it returns to the foreground, downloads in the background and applies the update the next time it opens; **Settings → App** shows what is running and has *Check for updates*. Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
-
-### Uninstall
-
-```bash
-remote-harness service uninstall
-remote-harness uninstall   # removes launchers, the PATH block in ~/.zshrc / ~/.bashrc and only the hooks it created
-```
+| Topic | Where |
+|---|---|
+| Requirements, install on macOS, Linux and Windows (WSL2), install from a clone | [Getting started](https://remoteharness.app/docs/getting-started/) |
+| Installing the app, pairing, the first session, updating | [Getting started](https://remoteharness.app/docs/getting-started/#install-the-app) |
+| Session list, prompts, permissions, terminal, worktrees, live status, settings, iPad | [Using the app](https://remoteharness.app/docs/using-the-app/) |
+| Notifications and mute | [Using the app](https://remoteharness.app/docs/using-the-app/#notifications-and-mute) |
+| CLI commands, the config file (`~/.remote-harness/config.json`), OpenRouter and Codex profiles | [The daemon](https://remoteharness.app/docs/daemon/) |
+| Background service, updates and channels, menu bar / tray icon, logs | [The daemon](https://remoteharness.app/docs/daemon/#background-service) |
+| What leaves your machine, tokens, your files, error reports | [Security & privacy](https://remoteharness.app/docs/security/) · [Privacy policy](https://remoteharness.app/docs/privacy/) |
+| Linux service and lingering, WSL2 (systemd, logon task, Tailscale), sleep, push, read-only sessions | [Troubleshooting](https://remoteharness.app/docs/troubleshooting/) |
+| Uninstall: `remote-harness service uninstall`, then `remote-harness uninstall` | [The daemon](https://remoteharness.app/docs/daemon/#commands) |
 
 ## Tech stack
 
@@ -340,24 +152,14 @@ Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Development
 
-`make` lists shortcuts for the commands below: `make install`, `make check`, `make daemon-dev`, `make ios-dev` / `make android-dev` (development builds), `make install-ios` / `make install-android` (release build on a connected phone or iPad, `DEVICE="…"` to choose it; `install-ios` first checks that Xcode can reach the iPhone and `make ios-devices` lists them; with several Apple teams on the Mac, set `APPLE_TEAM_ID=…` in `apps/mobile/.env.local` so builds are always signed by the same one), `make install-ios-link` (same release build, installed from a Safari link served over Tailscale, so the iPhone needs no cable and can be on any network; it must already be registered in the Apple team, and the tailnet needs HTTPS certificates enabled; Tailscale cannot serve a folder on macOS, so a small server on `127.0.0.1` keeps running behind `tailscale serve`; with `IOS_LINK=web` the build is copied over SSH to the site's server instead (`REMOTE_HARNESS_WEB_SSH=user@host`) and the link is `https://remoteharness.app/app/<token>/`, so the phone needs no Tailscale: the random token in `IOS_LINK_DIR/.web-token` is the only protection, since a development-signed IPA lists the registered devices), `make install-android-link` (release APK on the same link and token, needs the Android SDK; build it from the same machine every time, since the APK keeps that machine's release signing and a newer one then installs over the previous one; the page shows the iPhone button to iPhones and iPads, the APK to Android phones, and both plus a QR code to a desktop browser, with "Not your device? Show all options" always there; links printed before as `/ios/<token>/` keep working) and `make publish-ota` (`CHANNEL=production|development`, `PLATFORM=ios|android`, key in `OTA_KEY`, default `~/.remote-harness-keys/private-key.pem`, or `~/.claude-remote-keys` when only that one exists; token in `REMOTE_HARNESS_UPDATES_TOKEN`). `make publish-ota-dry` exports and signs without uploading.
-
 ```bash
+pnpm install
 pnpm check                                             # typecheck + tests + Biome across the monorepo
 pnpm --filter @remote-harness/daemon dev start --dev    # daemon from source on 127.0.0.1
-pnpm --filter @remote-harness/mobile icons              # regenerate icon/splash
-pnpm --filter @remote-harness/mobile xterm              # regenerate the terminal HTML
+pnpm --filter @remote-harness/mobile ios               # app on the iOS simulator (android: emulator)
 ```
 
-### Website
-
-`remoteharness.app` (landing, docs, installers, the updates server and the install links) is `apps/web`, bundled by Vite into one Node file and run in Docker behind the server's Traefik (`apps/web/deploy/`: external `web` network, Let's Encrypt resolver `le`). `pnpm --filter @remote-harness/web dev` runs it on `localhost:8080` with a local `data/` folder.
-
-```bash
-REMOTE_HARNESS_WEB_SSH=root@<server> make deploy-web    # build, copy over SSH, docker compose up --wait
-```
-
-The server keeps `.env` (the publish tokens `UPDATES_TOKEN` and `UPDATES_DEV_TOKEN`, generated by the first deploy) and `data/` (`updates/` and the install links in `app/<token>/`) next to the compose file, in `REMOTE_HARNESS_WEB_DIR` (default `/srv/remote-harness-web`). `push.remoteharness.app` is a separate Cloudflare Worker (`apps/push-edge`, `cf deploy`) in front of the push relay.
+`make` lists the shortcuts. Building and signing the app, the Makefile targets and install links, Firebase for your own builds, the push relay, over-the-air updates and the website deploy are in [CONTRIBUTING.md → Building and releasing](CONTRIBUTING.md#building-and-releasing).
 
 ## Limitations
 

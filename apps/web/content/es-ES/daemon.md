@@ -20,6 +20,7 @@ El daemon se ejecuta en el ordenador: sigue los transcripts de las sesiones, con
 | `remote-harness update` | Descarga la nueva versión, recompila, actualiza los hooks y reinicia el servicio. `--ref <rama|etiqueta>` elige la versión. |
 | `remote-harness updates status` / `check` / `channel [main|development]` / `auto on|off` | La comprobación de actualizaciones en segundo plano. |
 | `remote-harness push status` / `test` | Modo de push en uso y móviles registrados; envía una notificación de prueba. |
+| `remote-harness push off` / `on` | Detiene (o reanuda) todos los push y el estado en vivo de este ordenador, sin reiniciar el daemon. |
 | `remote-harness provider key <perfil>` | Guarda la clave del proveedor (OpenRouter) de un perfil en el almacén seguro del sistema. `--stdin` la lee de una tubería. |
 | `remote-harness rules list` / `undo <id>` | Las reglas "permitir siempre" creadas desde el móvil. |
 
