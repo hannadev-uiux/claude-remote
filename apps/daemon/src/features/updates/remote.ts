@@ -14,6 +14,33 @@ import { advanceRun, isFinished, readRun, reconcileRun, STALE_RUN_MS, startRun, 
 /** How often the run record is re-read while an update runs. */
 const POLL_MS = 1000
 
+/** Why an update cannot start now (checked before a run is recorded). */
+export type LaunchRefusal = 'running' | 'not-installer' | 'nothing'
+
+/** The reply texts of a refused start; the app translates them. */
+export const REFUSAL_MESSAGES: Record<LaunchRefusal, string> = {
+  running: 'an update is already running',
+  'not-installer': 'cannot update: not-installer',
+  nothing: 'already up to date',
+}
+
+/** Whether the detached updater was spawned; `error` when spawning it failed. */
+export type LaunchResult = { ok: true } | { ok: false; error: string }
+
+/** Why an update cannot start, or null when it can. Pure. */
+export function launchRefusal(o: {
+  updating: boolean
+  installer: boolean
+  available: boolean
+}): LaunchRefusal | null {
+  if (o.updating) return 'running'
+  if (!o.installer) return 'not-installer'
+  if (!o.available) return 'nothing'
+  return null
+}
+
+export type BeginResult = { ok: true } | { ok: false; refused: LaunchRefusal | null; error: string }
+
 export type RemoteUpdatesDeps = {
   hub: Broadcaster
   router: MessageRouter
@@ -30,8 +57,12 @@ export type RemoteUpdatesDeps = {
   check: (force: boolean) => Promise<unknown>
   /** Saves the channel to the config and applies it (checks when it changed). */
   saveChannel: (channel: DaemonUpdateChannel) => Promise<void>
-  /** Starts the detached update of the configured channel; false when it could not start. */
-  launch: (onFailure: (code: number | null) => void) => boolean
+  /** Why an update cannot start now, or null. */
+  refusal: () => LaunchRefusal | null
+  /** Starts the detached update of the configured channel. */
+  launch: (onFailure: (code: number | null) => void) => LaunchResult
+  /** A followed run finished while this daemon still runs (it did not restart into a new version). */
+  onFinished?: (run: DaemonUpdateRun) => void
   pollMs?: number
   now?: () => Date
 }
@@ -92,15 +123,20 @@ export class RemoteUpdates {
     })
     this.deps.router.register('daemon.update.start', async (msg) => {
       if (this.deps.blocked) throw new DaemonError('bad_request', `cannot update: ${this.deps.blocked}`)
-      if (runInProgress(this.run, this.now())) throw new DaemonError('bad_request', 'an update is running')
+      if (runInProgress(this.run, this.now())) throw new DaemonError('bad_request', REFUSAL_MESSAGES.running)
       if (msg.channel !== this.deps.channel()) {
         await this.deps.saveChannel(msg.channel)
         await this.deps.check(true)
       }
-      if (!this.deps.checker()?.state.available) throw new DaemonError('bad_request', 'already up to date')
-      if (!(await this.begin())) throw new DaemonError('internal', 'could not start the update')
+      const result = await this.begin()
+      if (!result.ok) throw new DaemonError(result.refused ? 'bad_request' : 'internal', result.error)
       return { type: 'daemon.update.info', info: this.info() }
     })
+  }
+
+  /** Whether the recorded run still goes on (whoever started it). */
+  running(): boolean {
+    return runInProgress(this.run, this.now())
   }
 
   info(): DaemonUpdateInfo {
@@ -114,19 +150,25 @@ export class RemoteUpdates {
     })
   }
 
-  /** Records a new run and starts the detached updater (app or tray). */
-  async begin(): Promise<boolean> {
+  /**
+   * Records a new run and starts the detached updater (app, tray or automatic). A refusal (already
+   * running, not the installer, nothing available) records nothing; a failed spawn is a failed run.
+   */
+  async begin(): Promise<BeginResult> {
+    const refused = this.deps.refusal()
+    if (refused) return { ok: false, refused, error: REFUSAL_MESSAGES[refused] }
     const run = startRun({ channel: this.deps.channel(), from: this.deps.current, now: this.now() })
     await writeRun(this.deps.runPath, run).catch(() => undefined)
     this.run = run
     const started = this.deps.launch((code) => void this.failed(code))
-    if (!started) {
-      await this.failed(null)
-      return false
+    if (!started.ok) {
+      const error = `could not start the updater: ${started.error}`
+      await this.failed(null, error)
+      return { ok: false, refused: null, error }
     }
     this.track()
     this.broadcast()
-    return true
+    return { ok: true }
   }
 
   /** Broadcasts the info (check results, channel changes, run steps). */
@@ -140,10 +182,12 @@ export class RemoteUpdates {
   }
 
   /** The updater exited with an error; the record is completed when the CLI did not do it. */
-  private async failed(code: number | null): Promise<void> {
+  private async failed(code: number | null, error?: string): Promise<void> {
     const run = (await readRun(this.deps.runPath)) ?? this.run
     if (run && !isFinished(run.step)) {
-      const failed = advanceRun(run, 'failed', this.now(), { error: `updater exited (${code ?? 'error'})` })
+      const failed = advanceRun(run, 'failed', this.now(), {
+        error: error ?? `updater exited (${code ?? 'error'})`,
+      })
       await writeRun(this.deps.runPath, failed).catch(() => undefined)
       this.run = failed
     } else this.run = run
@@ -161,8 +205,11 @@ export class RemoteUpdates {
     const run = await readRun(this.deps.runPath)
     if (!run || JSON.stringify(run) === JSON.stringify(this.run)) return
     this.run = run
-    if (isFinished(run.step)) this.stop()
     this.broadcast()
+    if (isFinished(run.step)) {
+      this.stop()
+      this.deps.onFinished?.(run)
+    }
   }
 
   private now(): Date {

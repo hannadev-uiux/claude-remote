@@ -29,6 +29,8 @@ export type UpdateState = z.infer<typeof UpdateStateSchema>
 export type UpdateCheckerDeps = {
   /** `SourceUpdater.fetch` of the installer's checkout. */
   fetch: (ref: string) => Promise<FetchResult>
+  /** The checkout's commit (`SourceUpdater.head`): a saved offer of it is stale. */
+  head?: () => Promise<string | null>
   statePath: string
   currentVersion: string
   logger: Logger
@@ -55,7 +57,30 @@ export class UpdateChecker {
 
   async load(): Promise<void> {
     const parsed = UpdateStateSchema.safeParse(await readJsonFile(this.deps.statePath).catch(() => undefined))
-    if (parsed.success) this.current = parsed.data
+    if (!parsed.success) return
+    this.current = parsed.data
+    // Saved before the update that installed it: the restarted daemon must not offer it again.
+    const available = this.current.available
+    if (!available || !this.deps.head) return
+    const head = await this.deps.head().catch(() => null)
+    if (head !== available.commit) return
+    this.current = { ...this.current, available: null }
+    await this.save()
+  }
+
+  /** Checks now, whatever the due time and the forced-check rate limit (after an updater run). */
+  async recheck(channel: UpdateChannel): Promise<UpdateState> {
+    if (this.running) await this.running.catch(() => undefined)
+    this.running = this.run(channel).finally(() => {
+      this.running = null
+    })
+    return this.running
+  }
+
+  private save(): Promise<void> {
+    return writeJsonAtomic(this.deps.statePath, this.current).catch((error: Error) =>
+      this.deps.logger.warn({ err: error }, 'could not save the update check'),
+    )
   }
 
   /** Whether a check is due for `channel` (`force`: asked by the user). */
@@ -104,9 +129,7 @@ export class UpdateChecker {
       available,
       notifiedCommit: notify ? available.commit : this.current.notifiedCommit,
     }
-    await writeJsonAtomic(this.deps.statePath, this.current).catch((error: Error) =>
-      this.deps.logger.warn({ err: error }, 'could not save the update check'),
-    )
+    await this.save()
     this.deps.logger.info({ channel, available: available?.version ?? null }, 'update check')
     if (notify) await this.deps.onAvailable(available)
     return this.current

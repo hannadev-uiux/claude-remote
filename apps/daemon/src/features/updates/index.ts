@@ -21,7 +21,7 @@ import {
   type TrayPending,
   type TraySession,
 } from './menu.ts'
-import { RemoteUpdates } from './remote.ts'
+import { type LaunchResult, launchRefusal, RemoteUpdates } from './remote.ts'
 import { TrayHost } from './tray-host.ts'
 
 /** Given only to the service daemon (`start` without `--dev`). */
@@ -83,6 +83,7 @@ export async function registerUpdatesFeature(
   const checker = source.ok
     ? new UpdateChecker({
         fetch: (ref) => new SourceUpdater(ctx.exec, source.root).fetch(ref),
+        head: () => new SourceUpdater(ctx.exec, source.root).head(),
         statePath: paths.updates(),
         currentVersion: DAEMON_VERSION,
         logger: ctx.logger,
@@ -188,27 +189,39 @@ export async function registerUpdatesFeature(
     refreshTimer.unref()
   }
 
-  /** Starts the detached `remote-harness update`; false when it cannot (nothing available, running). */
-  const launch = (onFailure: (code: number | null) => void): boolean => {
+  // Running: this process spawned the updater and it has not exited, or the run record is still
+  // going (an updater under systemd, or one started by another daemon process).
+  const refusal = () =>
+    launchRefusal({
+      updating: updating || remote.running(),
+      installer: source.ok && deps.options.cliPath !== null,
+      available: Boolean(checker?.state.available),
+    })
+
+  /** Starts the detached `remote-harness update`; `begin` checked `refusal()` first. */
+  const launch = (onFailure: (code: number | null) => void): LaunchResult => {
     const available = checker?.state.available
-    if (updating || !source.ok || !deps.options.cliPath || !available) return false
+    const cliPath = deps.options.cliPath
+    if (refusal() || !available || !cliPath) return { ok: false, error: 'nothing to update' }
     updating = true
     ctx.logger.info({ version: available.version, channel: settings.update.channel }, 'updating')
     void desktop.notify(m.updating(updateLabel(available, DAEMON_VERSION)), '')
     try {
       runDetachedUpdate({
         nodePath: process.execPath,
-        cliPath: deps.options.cliPath,
+        cliPath,
         ref: settings.update.channel,
         logFile: join(paths.logs(), 'update.log'),
         systemdRun: Boolean(process.env.INVOCATION_ID),
-        // A successful update restarts this daemon; still being here after a failure frees the menu.
+        // A successful update restarts this daemon: still being here means it was not replaced, so
+        // the next update must be able to start whatever the exit code. (Under systemd this is
+        // `systemd-run`, which returns once the unit started: the run record tells the rest.)
         onExit: (code) => {
+          updating = false
+          refreshMenu()
           if (code === 0) return
           ctx.logger.warn({ code, log: join(paths.logs(), 'update.log') }, 'update failed')
-          updating = false
           failedCommit = available.commit
-          refreshMenu()
           onFailure(code)
         },
       })
@@ -217,10 +230,10 @@ export async function registerUpdatesFeature(
       updating = false
       failedCommit = available.commit
       refreshMenu()
-      return false
+      return { ok: false, error: error instanceof Error ? error.message : String(error) }
     }
     refreshMenu()
-    return true
+    return { ok: true }
   }
 
   /** The tray's "Update now" and automatic updates take the same recorded path as the app. */
@@ -276,7 +289,21 @@ export async function registerUpdatesFeature(
     busy: () => !isQuietMoment(deps.store.all(), deps.hasPendingPermission),
     check: (force) => check(force),
     saveChannel: (channel) => saveUpdateSettings({ channel }),
+    refusal,
     launch,
+    // A run that finished while this daemon still runs did not replace it ("Already up to date", or
+    // a failure): the offer may be stale, so look at the channel again now.
+    onFinished: (run) => {
+      updating = false
+      ctx.logger.info(
+        { step: run.step, channel: settings.update.channel },
+        'update finished without a restart',
+      )
+      void checker?.recheck(settings.update.channel).then(() => {
+        refreshMenu()
+        remote.broadcast()
+      })
+    },
   })
   await remote.load()
   remote.register()
@@ -377,7 +404,8 @@ export async function registerBlockedRemoteUpdates(ctx: DaemonContext): Promise<
     busy: () => false,
     check: async () => undefined,
     saveChannel: async () => undefined,
-    launch: () => false,
+    refusal: () => 'not-installer',
+    launch: () => ({ ok: false, error: 'no-service' }),
   })
   await remote.load()
   remote.register()
