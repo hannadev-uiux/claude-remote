@@ -4,12 +4,25 @@ import { router } from 'expo-router'
 import { ChevronRight, Folder, FolderGit2, FolderSearch, GitBranch } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native'
+import {
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TextInput,
+  View,
+} from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } from '@/core/connection'
+import { keyboardBehavior } from '@/core/platform/platform'
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { AGENT_NAMES } from '@/core/theme/agents'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { useDebounced } from '@/core/utils/use-debounced'
+import { keyboardOffset } from '@/features/conversation/autocorrect'
 import { providerName } from '@/features/providers/logic'
 import { ModelPickerSheet } from '@/features/providers/ModelPickerSheet'
 import { ProfileProviderChip } from '@/features/providers/ProfileProviderChip'
@@ -32,6 +45,8 @@ import {
   worktreeCarryOver,
 } from './new-session'
 import { useOpenAfterCreateSettings } from './open-after-create-store'
+import { RecentFoldersSheet } from './RecentFoldersSheet'
+import { inlineRecent } from './recent'
 import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
 import { useDirectories, useDirectoriesSupported } from './use-directories'
 
@@ -40,7 +55,8 @@ const MAX_SUGGESTIONS = 8
 
 /**
  * Agent & profile (radio list with the agent badge) → Model (only when the provider lists models,
- * #109) → Directory (field, Browse, suggestions, branch) → Recent → worktree toggle → Start.
+ * #109) → Directory (field, Browse, suggestions, branch) → Recent (three rows, worktrees folded into
+ * their repository, and "See all", #221) → worktree toggle; Start sits in a footer above the keyboard.
  */
 export function NewSessionScreen() {
   const { t } = useTranslation()
@@ -119,6 +135,17 @@ export function NewSessionScreen() {
   useDirectories({ path: '~', limit: 1 })
   const [focused, setFocused] = useState(false)
   const [picking, setPicking] = useState(false)
+  const [allRecent, setAllRecent] = useState(false)
+  // Where the form starts in the window: the keyboard offset that keeps the Start footer above it.
+  const anchor = useRef<View>(null)
+  const [windowY, setWindowY] = useState<number | null>(null)
+  const recent = projects.data ?? []
+  const { rows: recentRows, more: hiddenRecent } = inlineRecent(recent)
+  const chooseRecent = (dir: string) => {
+    setCwd(dir)
+    setAllRecent(false)
+    Keyboard.dismiss()
+  }
   const typed = splitDirectoryInput(cwd)
   const debouncedQuery = splitDirectoryInput(useDebounced(cwd, 250))
   const listing = useDirectories(
@@ -211,248 +238,293 @@ export function NewSessionScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text size="xs" color="textMuted">
-          {t('newSession.profile')}
-        </Text>
-        <View style={styles.list}>
-          {profiles.map((p) => {
-            const selected = p.id === profileId
-            return (
+      <View
+        ref={anchor}
+        style={styles.flex}
+        onLayout={() => anchor.current?.measureInWindow((_x, y) => setWindowY(y))}
+      >
+        <KeyboardAvoidingView
+          behavior={keyboardBehavior(Platform.OS)}
+          keyboardVerticalOffset={keyboardOffset(windowY)}
+          style={styles.flex}
+        >
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <Text size="xs" color="textMuted">
+              {t('newSession.profile')}
+            </Text>
+            <View style={styles.list}>
+              {profiles.map((p) => {
+                const selected = p.id === profileId
+                return (
+                  <Pressable
+                    key={p.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    onPress={() => {
+                      if (p.id !== profileId) setModel(null)
+                      setProfileId(p.id)
+                    }}
+                    style={({ pressed }) => [
+                      styles.profile,
+                      selected && styles.selected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <AgentBadge agent={profileAgent(p)} />
+                    <View style={styles.flex}>
+                      <View style={styles.nameRow}>
+                        <Text
+                          weight="medium"
+                          numberOfLines={1}
+                          style={[styles.shrink, { color: p.color || colors.text }]}
+                        >
+                          {p.name}
+                        </Text>
+                        <ProfileProviderChip profile={p} />
+                      </View>
+                      <Text size="xs" color="textMuted" numberOfLines={1}>
+                        {profileDetail(p)}
+                      </Text>
+                    </View>
+                    <Text color={selected ? 'accentText' : 'textDim'}>{selected ? '●' : '○'}</Text>
+                  </Pressable>
+                )
+              })}
+            </View>
+            {provider && selectedProfile ? (
               <Pressable
-                key={p.id}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => {
-                  if (p.id !== profileId) setModel(null)
-                  setProfileId(p.id)
-                }}
-                style={({ pressed }) => [
-                  styles.profile,
-                  selected && styles.selected,
-                  pressed && styles.pressed,
-                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('newSession.model')}
+                onPress={() => setModelPicking(true)}
+                style={({ pressed }) => [styles.modelRow, pressed && styles.pressed]}
               >
-                <AgentBadge agent={profileAgent(p)} />
                 <View style={styles.flex}>
-                  <View style={styles.nameRow}>
-                    <Text
-                      weight="medium"
-                      numberOfLines={1}
-                      style={[styles.shrink, { color: p.color || colors.text }]}
-                    >
-                      {p.name}
-                    </Text>
-                    <ProfileProviderChip profile={p} />
-                  </View>
-                  <Text size="xs" color="textMuted" numberOfLines={1}>
-                    {profileDetail(p)}
+                  <Text size="xs" color="textMuted">
+                    {t('newSession.model')}
+                  </Text>
+                  <Text size="sm" numberOfLines={1}>
+                    {model ?? selectedProfile.provider?.model ?? t('newSession.modelDefault')}
                   </Text>
                 </View>
-                <Text color={selected ? 'accentText' : 'textDim'}>{selected ? '●' : '○'}</Text>
+                <ChevronRight size={16} color={colors.textDim} />
               </Pressable>
-            )
-          })}
-        </View>
-        {provider && selectedProfile ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('newSession.model')}
-            onPress={() => setModelPicking(true)}
-            style={({ pressed }) => [styles.modelRow, pressed && styles.pressed]}
-          >
-            <View style={styles.flex}>
-              <Text size="xs" color="textMuted">
-                {t('newSession.model')}
-              </Text>
-              <Text size="sm" numberOfLines={1}>
-                {model ?? selectedProfile.provider?.model ?? t('newSession.modelDefault')}
-              </Text>
-            </View>
-            <ChevronRight size={16} color={colors.textDim} />
-          </Pressable>
-        ) : null}
+            ) : null}
 
-        <Text size="xs" color="textMuted" style={styles.section}>
-          {t('newSession.directory')}
-        </Text>
-        <View style={styles.inputRow}>
-          <TextInput
-            value={cwd}
-            onChangeText={setCwd}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder={t('newSession.placeholder')}
-            placeholderTextColor={colors.textDim}
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={[styles.input, styles.flex]}
-          />
-          {directoriesSupported ? (
-            <Button
-              label={t('newSession.browse')}
-              compact
-              variant="secondary"
-              icon={<FolderSearch size={16} color={colors.text} />}
-              onPress={() => setPicking(true)}
-            />
-          ) : null}
-        </View>
-        {typed && suggestions.length > 0 ? (
-          <View style={styles.suggestions}>
-            {suggestions.map((item) => (
-              <Pressable
-                key={item.path}
-                accessibilityRole="button"
-                accessibilityLabel={item.name}
-                onPress={() => setCwd(completeDirectory(typed.dir, item.name))}
-                style={({ pressed }) => [styles.suggestion, pressed && styles.pressed]}
-              >
-                {item.git ? (
-                  <FolderGit2 size={14} color={colors.accentText} />
-                ) : (
-                  <Folder size={14} color={colors.info} />
-                )}
-                <Text size="sm" numberOfLines={1} style={styles.flex}>
-                  {item.name}/
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-        {checkout ? (
-          <View style={styles.branch}>
-            <GitBranch size={14} color={colors.textMuted} />
-            <Text size="xs" color="textMuted" numberOfLines={1} style={styles.flex}>
-              {checkout.branch ?? t('newSession.detached')}
+            <Text size="xs" color="textMuted" style={styles.section}>
+              {t('newSession.directory')}
             </Text>
-          </View>
-        ) : null}
-
-        <Text size="xs" color="textMuted" style={styles.section}>
-          {t('newSession.name')}
-        </Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder={t('newSession.namePlaceholder')}
-          placeholderTextColor={colors.textDim}
-          maxLength={SESSION_NAME_MAX}
-          returnKeyType="done"
-          accessibilityLabel={t('newSession.name')}
-          style={styles.input}
-        />
-        {nameChips.length > 0 ? (
-          <View style={styles.chips}>
-            {nameChips.map((chip) => (
-              <Chip key={chip} label={chip} selected={chip === name.trim()} onPress={() => setName(chip)} />
-            ))}
-          </View>
-        ) : null}
-
-        <Text size="xs" color="textMuted" style={styles.section}>
-          {t('newSession.recent')}
-        </Text>
-        {(projects.data ?? []).map((p) => {
-          const detail = recentDetail(p, t)
-          return (
-            <Pressable
-              key={p.cwd}
-              accessibilityRole="button"
-              onPress={() => setCwd(p.cwd)}
-              style={({ pressed }) => [
-                styles.project,
-                pressed && styles.pressed,
-                p.cwd === cwd && styles.selected,
-              ]}
-            >
-              <Folder size={16} color={colors.info} />
-              <View style={styles.flex}>
-                <Text size="sm" numberOfLines={1}>
-                  {shortPath(p.cwd)}
-                </Text>
-                {detail ? (
-                  <Text size="xs" color="textMuted" numberOfLines={1}>
-                    {detail}
-                  </Text>
-                ) : null}
+            <View style={styles.inputRow}>
+              <TextInput
+                value={cwd}
+                onChangeText={setCwd}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder={t('newSession.placeholder')}
+                placeholderTextColor={colors.textDim}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={() => Keyboard.dismiss()}
+                accessibilityLabel={t('newSession.directory')}
+                style={[styles.input, styles.flex]}
+              />
+              {directoriesSupported ? (
+                <Button
+                  label={t('newSession.browse')}
+                  compact
+                  variant="secondary"
+                  icon={<FolderSearch size={16} color={colors.text} />}
+                  onPress={() => setPicking(true)}
+                />
+              ) : null}
+            </View>
+            {typed && suggestions.length > 0 ? (
+              <View style={styles.suggestions}>
+                {suggestions.map((item) => (
+                  <Pressable
+                    key={item.path}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.name}
+                    onPress={() => setCwd(completeDirectory(typed.dir, item.name))}
+                    style={({ pressed }) => [styles.suggestion, pressed && styles.pressed]}
+                  >
+                    {item.git ? (
+                      <FolderGit2 size={14} color={colors.accentText} />
+                    ) : (
+                      <Folder size={14} color={colors.info} />
+                    )}
+                    <Text size="sm" numberOfLines={1} style={styles.flex}>
+                      {item.name}/
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
-              <Text size="xs" color="textDim">
-                {relativeTime(p.lastUsedAt, t)}
-              </Text>
-            </Pressable>
-          )
-        })}
-        {projects.data?.length === 0 ? (
-          <Text size="sm" color="textDim">
-            {t('newSession.noRecent')}
-          </Text>
-        ) : null}
+            ) : null}
+            {checkout ? (
+              <View style={styles.branch}>
+                <GitBranch size={14} color={colors.textMuted} />
+                <Text size="xs" color="textMuted" numberOfLines={1} style={styles.flex}>
+                  {checkout.branch ?? t('newSession.detached')}
+                </Text>
+              </View>
+            ) : null}
 
-        {checkout && worktreeAllowed ? (
-          <View style={[styles.option, styles.section]}>
-            <View style={styles.flex}>
-              <Text size="sm">{t('newSession.worktree')}</Text>
-              <Text size="xs" color="textDim">
-                {t('newSession.worktreeHint')}
-              </Text>
-              {carryOver.items.length > 0 ? (
-                <Text size="xs" color="textMuted">
-                  {t('newSession.carryOver', { items: carryOver.items.join(' · ') })}
-                </Text>
-              ) : null}
-              {carryOver.hint ? (
-                <Text size="xs" color="textDim">
-                  {carryOver.hint}
-                </Text>
-              ) : null}
-            </View>
-            <Switch
-              value={worktree}
-              onValueChange={setWorktree}
-              accessibilityLabel={t('newSession.worktree')}
-              trackColor={{ true: colors.accent, false: colors.borderStrong }}
+            <Text size="xs" color="textMuted" style={styles.section}>
+              {t('newSession.name')}
+            </Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={t('newSession.namePlaceholder')}
+              placeholderTextColor={colors.textDim}
+              maxLength={SESSION_NAME_MAX}
+              returnKeyType="done"
+              accessibilityLabel={t('newSession.name')}
+              style={styles.input}
             />
-          </View>
-        ) : null}
-        {peers.length > 0 ? (
-          <Card accent={colors.warning}>
-            <Text color="warning" size="sm">
-              {t('newSession.busy', { count: peers.length })}
+            {nameChips.length > 0 ? (
+              <View style={styles.chips}>
+                {nameChips.map((chip) => (
+                  <Chip
+                    key={chip}
+                    label={chip}
+                    selected={chip === name.trim()}
+                    onPress={() => setName(chip)}
+                  />
+                ))}
+              </View>
+            ) : null}
+
+            <Text size="xs" color="textMuted" style={styles.section}>
+              {t('newSession.recent')}
             </Text>
-            {peers.map((p) => (
-              <Text key={p.id} size="sm" numberOfLines={1}>
-                • {p.title || t('common.session')}
-              </Text>
-            ))}
-            <Text size="xs" color="textMuted">
-              {t('newSession.busyHint')}
-            </Text>
-          </Card>
-        ) : null}
-        <Button
-          label={t('newSession.start')}
-          variant="primary"
-          loading={busy}
-          disabled={!cwd.trim() || !profileId}
-          onPress={() => void start()}
-        />
-        {startingPane ? (
-          <Text size="sm" color="textMuted">
-            {t('newSession.starting', {
-              agent: selectedProfile ? AGENT_NAMES[profileAgent(selectedProfile)] : '',
-              path: shortPath(cwd.trim()),
+            {recentRows.map((p) => {
+              const detail = recentDetail(p, t)
+              return (
+                <Pressable
+                  key={p.cwd}
+                  accessibilityRole="button"
+                  onPress={() => chooseRecent(p.cwd)}
+                  style={({ pressed }) => [
+                    styles.project,
+                    pressed && styles.pressed,
+                    p.cwd === cwd && styles.selected,
+                  ]}
+                >
+                  {p.worktrees > 0 ? (
+                    <FolderGit2 size={16} color={colors.accentText} />
+                  ) : (
+                    <Folder size={16} color={colors.info} />
+                  )}
+                  <View style={styles.flex}>
+                    <Text size="sm" numberOfLines={1} ellipsizeMode="head">
+                      {shortPath(p.cwd)}
+                    </Text>
+                    {detail ? (
+                      <Text size="xs" color="textMuted" numberOfLines={1}>
+                        {detail}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text size="xs" color="textDim">
+                    {relativeTime(p.lastUsedAt, t)}
+                  </Text>
+                </Pressable>
+              )
             })}
-          </Text>
-        ) : null}
-        {error ? (
-          <Card accent={colors.danger}>
-            <Text color="danger" size="sm">
-              {error}
-            </Text>
-          </Card>
-        ) : null}
-      </ScrollView>
+            {hiddenRecent ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setAllRecent(true)}
+                style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}
+              >
+                <Text size="sm" color="accentText" style={styles.flex}>
+                  {t('newSession.seeAllRecent', { count: recent.length })}
+                </Text>
+                <ChevronRight size={16} color={colors.textDim} />
+              </Pressable>
+            ) : null}
+            {projects.data?.length === 0 ? (
+              <Text size="sm" color="textDim">
+                {t('newSession.noRecent')}
+              </Text>
+            ) : null}
+
+            {checkout && worktreeAllowed ? (
+              <View style={[styles.option, styles.section]}>
+                <View style={styles.flex}>
+                  <Text size="sm">{t('newSession.worktree')}</Text>
+                  <Text size="xs" color="textDim">
+                    {t('newSession.worktreeHint')}
+                  </Text>
+                  {carryOver.items.length > 0 ? (
+                    <Text size="xs" color="textMuted">
+                      {t('newSession.carryOver', { items: carryOver.items.join(' · ') })}
+                    </Text>
+                  ) : null}
+                  {carryOver.hint ? (
+                    <Text size="xs" color="textDim">
+                      {carryOver.hint}
+                    </Text>
+                  ) : null}
+                </View>
+                <Switch
+                  value={worktree}
+                  onValueChange={setWorktree}
+                  accessibilityLabel={t('newSession.worktree')}
+                  trackColor={{ true: colors.accent, false: colors.borderStrong }}
+                />
+              </View>
+            ) : null}
+            {peers.length > 0 ? (
+              <Card accent={colors.warning}>
+                <Text color="warning" size="sm">
+                  {t('newSession.busy', { count: peers.length })}
+                </Text>
+                {peers.map((p) => (
+                  <Text key={p.id} size="sm" numberOfLines={1}>
+                    • {p.title || t('common.session')}
+                  </Text>
+                ))}
+                <Text size="xs" color="textMuted">
+                  {t('newSession.busyHint')}
+                </Text>
+              </Card>
+            ) : null}
+            {error ? (
+              <Card accent={colors.danger}>
+                <Text color="danger" size="sm">
+                  {error}
+                </Text>
+              </Card>
+            ) : null}
+          </ScrollView>
+          <View style={styles.footer}>
+            <Button
+              label={t('newSession.start')}
+              variant="primary"
+              loading={busy}
+              disabled={!cwd.trim() || !profileId}
+              onPress={() => void start()}
+            />
+            {startingPane ? (
+              <Text size="sm" color="textMuted">
+                {t('newSession.starting', {
+                  agent: selectedProfile ? AGENT_NAMES[profileAgent(selectedProfile)] : '',
+                  path: shortPath(cwd.trim()),
+                })}
+              </Text>
+            ) : null}
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+      <RecentFoldersSheet
+        visible={allRecent}
+        items={recent}
+        selected={cwd}
+        onChoose={chooseRecent}
+        onClose={() => setAllRecent(false)}
+      />
       {directoriesSupported ? (
         <DirectoryPickerSheet
           visible={picking}
@@ -546,6 +618,21 @@ const useStyles = makeStyles((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
+  },
+  seeAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+  },
+  footer: {
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   pressed: { opacity: 0.7 },
   selected: { borderColor: theme.colors.accent },

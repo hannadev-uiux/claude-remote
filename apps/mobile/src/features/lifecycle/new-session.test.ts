@@ -75,4 +75,10 @@ describe('recentDetail', () => {
     expect(recentDetail({ branch: null, sessions: 0 }, en)).toBeNull()
     expect(recentDetail({ branch: null, sessions: 3 }, pt)).toBe('3 sessões esta semana')
   })
+
+  test('worktrees folded into a repository row', () => {
+    expect(recentDetail({ branch: 'main', sessions: 0, worktrees: 3 }, en)).toBe('⎇ main · 3 worktrees')
+    expect(recentDetail({ branch: null, sessions: 0, worktrees: 1 }, en)).toBe('1 worktree')
+    expect(recentDetail({ branch: null, sessions: 0, worktrees: 0 }, en)).toBeNull()
+  })
 })

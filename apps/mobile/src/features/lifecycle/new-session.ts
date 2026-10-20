@@ -73,11 +73,18 @@ export function worktreeCarryOver(
   return { items, hint: copy.include.length === 0 ? t('newSession.carryHint') : null }
 }
 
-/** `⎇ main · 2 sessions this week` for a recent directory; `null` when nothing is known. */
-export function recentDetail(item: Pick<ProjectItem, 'branch' | 'sessions'>, t: TFunction): string | null {
+/**
+ * `⎇ main · 2 sessions this week · 3 worktrees` for a recent directory (worktrees only on a
+ * repository row); `null` when nothing is known.
+ */
+export function recentDetail(
+  item: Pick<ProjectItem, 'branch' | 'sessions'> & { worktrees?: number },
+  t: TFunction,
+): string | null {
   const parts = [
     item.branch ? `⎇ ${item.branch}` : null,
     item.sessions > 0 ? t('newSession.sessionsThisWeek', { count: item.sessions }) : null,
+    item.worktrees ? t('newSession.worktreeCount', { count: item.worktrees }) : null,
   ].filter(Boolean)
   return parts.length > 0 ? parts.join(' · ') : null
 }
