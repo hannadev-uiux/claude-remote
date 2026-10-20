@@ -119,6 +119,13 @@ export function findImage(raw: string, index: number): ImageData | null {
   return null
 }
 
+/**
+ * The boilerplate Claude Code appends to a compaction summary for the model, not for a person: the
+ * transcript path and the instruction to continue without acknowledging it. Cutting at this marker
+ * (rather than matching the whole sentence) keeps the summary even if the wording around it changes.
+ */
+const COMPACT_SUMMARY_BOILERPLATE = '\nIf you need specific details from before compaction'
+
 const COMMAND_NAME = /<command-name>([\s\S]*?)<\/command-name>/
 const COMMAND_ARGS = /<command-args>([\s\S]*?)<\/command-args>/
 const COMMAND_STDOUT = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/
@@ -220,10 +227,21 @@ function userDrafts(text: string): Draft[] {
   })
 }
 
+/** A compaction summary, stripped of the boilerplate written for the model, not for a person. */
+function compactSummaryDraft(content: string): SystemDraft {
+  const cut = content.indexOf(COMPACT_SUMMARY_BOILERPLATE)
+  const text = cut >= 0 ? content.slice(0, cut) : content
+  return { kind: 'system', subtype: 'compact_summary', text: text.trim() }
+}
+
 function parseUser(line: Json, cursor: number): Draft[] {
   if (line.isMeta === true) return []
   const message = isObject(line.message) ? line.message : {}
   const content = message.content
+  if (line.isCompactSummary === true && typeof content === 'string') {
+    const draft = compactSummaryDraft(content)
+    return draft.text ? [draft] : []
+  }
   if (typeof content === 'string') return userDrafts(content)
   if (!Array.isArray(content)) return []
   const drafts: Draft[] = []
@@ -313,7 +331,10 @@ function parseSystem(line: Json): Draft[] {
     const durationMs = line.durationMs
     return [{ kind: 'system', subtype, text: `Turn completed in ${formatDuration(durationMs)}`, durationMs }]
   }
-  if (subtype === 'compact_boundary') return [{ kind: 'system', subtype, text: 'Conversation compacted' }]
+  if (subtype === 'compact_boundary') {
+    const trigger = isObject(line.compactMetadata) ? str(line.compactMetadata.trigger) : null
+    return [{ kind: 'system', subtype, text: 'Conversation compacted', ...(trigger ? { trigger } : {}) }]
+  }
   const text = str(line.content)
   return text?.trim() ? [{ kind: 'system', subtype, text }] : []
 }

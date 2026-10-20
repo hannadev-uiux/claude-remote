@@ -250,6 +250,8 @@ export const TranscriptEntrySchema = z.discriminatedUnion('kind', [
     note: z.string().optional(),
     /** `tagged` only: the first tag name of an entry made of tags the daemon does not know. */
     tag: z.string().optional(),
+    /** `compact_boundary` only: the compaction trigger (`manual`, `auto`), when Claude Code reports one. */
+    trigger: z.string().optional(),
   }),
   z.object({ ...entryBase, kind: z.literal('unknown'), raw: z.string() }),
 ])
