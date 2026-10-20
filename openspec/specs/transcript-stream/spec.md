@@ -6,7 +6,7 @@ Delivers session content to the app in real time, with paginated history and los
 ## Requirements
 
 ### Requirement: Tolerant normalization
-The daemon SHALL convert each transcript line into zero or more normalized entries (`user`, `assistant_text`, `thinking`, `tool_use`, `tool_result`, `system`, `unknown`). Invalid lines or lines of an unknown type MUST NOT interrupt reading. User entries that Claude Code writes as XML-like tags MUST NOT become `user` entries: each `<task-notification>` SHALL become a `system` entry with subtype `task_notification`, the summary as text, its `status` and its optional `note`, without the task id, tool use id, output file, usage or result; `<bash-input>` SHALL become a `bash_input` system entry with the command, and `<bash-stdout>`/`<bash-stderr>` a `bash_output` system entry with both outputs (none when both are empty); any other entry made only of tag blocks SHALL become a `tagged` system entry with the first tag name in `tag` and the raw text.
+The daemon SHALL convert each transcript line into zero or more normalized entries (`user`, `assistant_text`, `thinking`, `tool_use`, `tool_result`, `system`, `unknown`). Invalid lines or lines of an unknown type MUST NOT interrupt reading. User entries that Claude Code writes as XML-like tags MUST NOT become `user` entries: each `<task-notification>` SHALL become a `system` entry with subtype `task_notification`, the summary as text, its `status` and its optional `note`, without the task id, tool use id, output file, usage or result; `<bash-input>` SHALL become a `bash_input` system entry with the command, and `<bash-stdout>`/`<bash-stderr>` a `bash_output` system entry with both outputs (none when both are empty); any other entry made only of tag blocks SHALL become a `tagged` system entry with the first tag name in `tag` and the raw text. The `(no content)` placeholder Claude Code writes for an empty command output or an empty assistant reply MUST NOT become an entry.
 
 #### Scenario: Corrupted line
 - **WHEN** a `.jsonl` line is not valid JSON
@@ -31,6 +31,10 @@ The daemon SHALL convert each transcript line into zero or more normalized entri
 #### Scenario: Unknown tag
 - **WHEN** a user entry is only `<new-thing>…</new-thing>`
 - **THEN** a `tagged` system entry with tag `new-thing` is sent, not a `user` entry
+
+#### Scenario: Empty command output
+- **WHEN** the user runs `/exit` and Claude Code records the command output as `(no content)`
+- **THEN** only the `/exit` command entry is sent, without a `(no content)` line
 
 ### Requirement: Real-time streaming
 After `session.subscribe`, the daemon SHALL send each new entry as `transcript.entry` with an increasing `cursor` less than 1 s after it is written to the file.

@@ -187,6 +187,36 @@ describe('session state from hooks', () => {
     expect(store.get('new')).toMatchObject({ controllable: true })
   })
 
+  test('late hooks after SessionEnd do not bring the session back (#220)', async () => {
+    const { service, store } = setup()
+    await service.handleHook(hookEvent('SessionStart', { session_id: 's', cwd: '/w' }, { paneId: '%1' }))
+    await service.handleHook(hookEvent('SessionEnd', { session_id: 's', reason: 'prompt_input_exit' }))
+    for (const late of [
+      hookEvent('Notification', { session_id: 's', notification_type: 'idle_prompt' }, { paneId: '%1' }),
+      hookEvent('PermissionRequest', { session_id: 's', tool_name: 'Bash' }, { paneId: '%1' }),
+      hookEvent('Stop', { session_id: 's' }, { paneId: '%1' }),
+      hookEvent('UserPromptSubmit', { session_id: 's', prompt: 'x' }),
+    ]) {
+      await service.handleHook(late)
+      expect(store.get('s')).toMatchObject({ state: 'ended', controllable: false, paneId: null })
+    }
+  })
+
+  test('a resume (SessionStart) or a prompt typed in a pane revives an ended session', async () => {
+    const { service, store } = setup(['%1', '%2'])
+    await service.handleHook(hookEvent('SessionStart', { session_id: 's', cwd: '/w' }, { paneId: '%1' }))
+    await service.handleHook(hookEvent('SessionEnd', { session_id: 's' }))
+    await service.handleHook(
+      hookEvent('SessionStart', { session_id: 's', cwd: '/w', source: 'resume' }, { paneId: '%2' }),
+    )
+    expect(store.get('s')).toMatchObject({ state: 'idle', controllable: true, paneId: '%2' })
+    await service.handleHook(hookEvent('SessionEnd', { session_id: 's' }))
+    await service.handleHook(
+      hookEvent('UserPromptSubmit', { session_id: 's', prompt: 'oi' }, { paneId: '%2' }),
+    )
+    expect(store.get('s')).toMatchObject({ state: 'running', controllable: true, paneId: '%2' })
+  })
+
   test('sessions outside tmux are read-only', async () => {
     const { service, store } = setup()
     await service.handleHook(hookEvent('SessionStart', { session_id: 's', cwd: '/w' }))

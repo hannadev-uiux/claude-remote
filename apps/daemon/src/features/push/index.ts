@@ -12,7 +12,12 @@ import { PushService } from './service.ts'
 
 export async function registerPushFeature(
   ctx: DaemonContext,
-  options: { isMuted: (profileId: string | null, sessionId: string) => boolean; sender?: PushSender | null },
+  options: {
+    isMuted: (profileId: string | null, sessionId: string) => boolean
+    /** Late hooks of an ended session (an idle notification after `/exit`) send no push. */
+    isEnded?: (sessionId: string) => boolean
+    sender?: PushSender | null
+  },
 ) {
   const devices = new DeviceRegistry(paths.devices())
   await devices.load()
@@ -72,7 +77,10 @@ export async function registerPushFeature(
     const { result, sent } = await service.sendTest()
     return { mode: sender.mode, result, sent }
   })
-  ctx.bus.on('hook', (hook) => void service.notify(service.messageForHook(hook)))
+  ctx.bus.on('hook', (hook) => {
+    if (options.isEnded?.(hook.payload.session_id)) return
+    void service.notify(service.messageForHook(hook))
+  })
   ctx.bus.on('permission.requested', (info) => void service.notify(service.messageForPermission(info)))
   return { service, devices, sender, mode: () => sender.mode }
 }

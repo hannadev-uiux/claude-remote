@@ -1,16 +1,12 @@
 import { stat } from 'node:fs/promises'
 import { basename } from 'node:path'
-import {
-  type PermissionMode,
-  PermissionModeSchema,
-  type Profile,
-  type SessionState,
-} from '@remote-harness/protocol'
+import { type PermissionMode, PermissionModeSchema, type Profile } from '@remote-harness/protocol'
 import type { Logger } from '../../core/logger.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
 import { type AgentAdapter, adapterOf, profileAgentId, type TranscriptSummary } from '../agents/index.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import { scanRecentTranscripts } from './recent-scan.ts'
+import { acceptsHook, hookState } from './state.ts'
 import type { SessionStore } from './store.ts'
 import { oneLine } from './transcript-meta.ts'
 import type { SessionRecord } from './types.ts'
@@ -21,8 +17,6 @@ export type SessionServiceOptions = {
   /** Minimum interval between disk scans triggered by `sessions.list`. */
   scanCacheMs?: number
 }
-
-const NOTIFICATIONS_NOT_WAITING = new Set(['auth_success', 'agent_completed'])
 
 /** Minimum interval between two `updatedAt` touches from transcript activity, per session. */
 export const ACTIVITY_THROTTLE_MS = 5_000
@@ -97,12 +91,15 @@ export class SessionService {
     if (hook.payload.cwd) patch.cwd = hook.payload.cwd
     if (hook.payload.transcript_path) patch.transcriptPath = hook.payload.transcript_path
     if (hook.profileId) patch.profileId = hook.profileId
-    if (hook.paneId) {
+    // A hook delivered after the session ended (an idle notification, a late Stop) only refreshes
+    // metadata: it must not bring the session back as waiting, running or controllable.
+    const accepted = acceptsHook(this.store.get(id), hook.event, Boolean(hook.paneId))
+    if (hook.paneId && accepted) {
       patch.paneId = hook.paneId
       patch.controllable = true
     }
 
-    const state = this.stateFor(hook)
+    const state = accepted ? hookState(hook.event, hook.payload.notification_type) : undefined
     if (state) patch.state = state
 
     switch (hook.event) {
@@ -130,26 +127,6 @@ export class SessionService {
         break
     }
     this.store.upsert(id, patch, () => this.defaults(id, hook))
-  }
-
-  private stateFor(hook: HookEvent): SessionState | undefined {
-    switch (hook.event) {
-      case 'SessionStart':
-      case 'Stop':
-        return 'idle'
-      case 'UserPromptSubmit':
-        return 'running'
-      case 'PermissionRequest':
-        return 'waiting'
-      case 'Notification': {
-        const type = hook.payload.notification_type
-        return typeof type === 'string' && NOTIFICATIONS_NOT_WAITING.has(type) ? undefined : 'waiting'
-      }
-      case 'SessionEnd':
-        return 'ended'
-      default:
-        return undefined
-    }
   }
 
   /** A pane hosts one live session; `/clear` or `--resume` replace it with a new id. */

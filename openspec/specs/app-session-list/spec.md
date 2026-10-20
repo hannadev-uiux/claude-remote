@@ -82,7 +82,7 @@ Every session row and the recent-directories list SHALL show a compact relative 
 - **THEN** its row shows "yesterday" (pt-BR "ontem", es-ES "ayer")
 
 ### Requirement: Waiting strip
-When at least one session is waiting for the user (a pending permission request or a session in the `waiting` state), the list screen SHALL pin a strip above the list with the header "WAITING FOR YOU · N" (N = sessions waiting) and the elapsed time since the oldest item, updated every second; the oldest item with its agent badge, session title, profile tag and `Tool · argument`; and the answer buttons (Deny, Always, Allow) for a tool permission, or a status line ("has a question", "plan ready for review", "waiting for you") with an Open button for questions, plans and sessions without a request. With more than one item it SHALL show "+N more", which opens the session of the next item. The strip MUST NOT change the order of the list, and the waiting row keeps its warning border.
+When at least one session is waiting for the user (a pending permission request of a session that has not ended, or a controllable session in the `waiting` state), the list screen SHALL pin a strip above the list with the header "WAITING FOR YOU · N" (N = sessions waiting) and the elapsed time since the oldest item, updated every second; the oldest item with its agent badge, session title, profile tag and `Tool · argument`; and the answer buttons (Deny, Always, Allow) for a tool permission, or a status line ("has a question", "plan ready for review", "waiting for you") with an Open button for questions, plans and sessions without a request. With more than one item it SHALL show "+N more", which opens the session of the next item. The strip MUST NOT change the order of the list, and the waiting row keeps its warning border. Read-only sessions without a request and requests of ended sessions MUST NOT appear in it.
 
 #### Scenario: One Bash permission pending
 - **WHEN** one session waits for `Bash · gh pr create --fill`
@@ -95,6 +95,10 @@ When at least one session is waiting for the user (a pending permission request 
 #### Scenario: Nothing waiting
 - **WHEN** the last pending request is resolved
 - **THEN** the strip disappears and the list keeps its order
+
+#### Scenario: Read-only session marked waiting
+- **WHEN** an older daemon reports a read-only session as `waiting` with no pending request
+- **THEN** the strip does not show it
 
 ### Requirement: Swipe actions and action sheet
 Each session row SHALL support swipe actions: swipe left reveals **Close** (danger) and **More**; swipe right reveals **Mute** / **Unmute** (accent) and **Pin** / **Unpin**. A full swipe SHALL trigger the first action of that side with a haptic; only one row MAY be open at a time, and tapping elsewhere or scrolling closes it. Long press on a row and **More** SHALL open the same action sheet: Close session (controllable) or Resume (read-only), Mute / Unmute, Pin to top / Unpin, Clean up worktree (when the session's folder is a worktree, with its path and change count), Copy folder path, Hide from list (read-only). Close SHALL open a confirmation sheet that explains the graceful sequence, warns more strongly when the session is running or waiting, and offers the worktree cleanup with its outcomes; "Discard" requires a second confirmation. The session screen's More options menu SHALL also offer Close session.
