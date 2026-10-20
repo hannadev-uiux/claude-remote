@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx src/cli.ts",
+    "demo": "tsx scripts/demo.mts",
     "build": "tsup",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"

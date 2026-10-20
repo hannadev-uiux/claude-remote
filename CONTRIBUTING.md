@@ -139,6 +139,21 @@ Builds are created without an update server, so updates are off. To ship JavaScr
 
 Updates only reach builds with the same native code (fingerprint runtime version): a release that adds native modules still needs a new build.
 
+### Screenshots
+
+The README screenshots come from the demo: the real daemon in a throwaway environment full of fictional sessions (its own data home, token, ports, tmux server and `HOME`; on macOS under `/Users/Shared`, so paths show as `~/code/…`). Nothing real shows up in it.
+
+```bash
+pnpm --filter @remote-harness/daemon demo           # prints a remoteharness://pair link; Ctrl+C removes everything
+pnpm --filter @remote-harness/daemon demo --clean   # after an interrupted run
+```
+
+Install a Release build on the simulator (`cd apps/mobile && npx expo run:ios --configuration Release`, so the dev menu stays out of the shots), set the dark appearance and a clean status bar (`xcrun simctl ui booted appearance dark`, `xcrun simctl status_bar booted override --time 9:41`), open the pair link with `xcrun simctl openurl booted '<link>'`, and move between screens with links such as `remoteharness://session/<id>`, `…/terminal`, `remoteharness://new` and `remoteharness://settings`. Save the shots with `xcrun simctl io booted screenshot <name>.png` in one folder, then:
+
+```bash
+pnpm --filter @remote-harness/mobile screenshots <folder>   # half size, palette PNGs, into docs/screenshots
+```
+
 ### Website
 
 `remoteharness.app` (landing, docs, installers, the updates server and the install links) is `apps/web`, bundled by Vite into one Node file and run in Docker behind the server's Traefik (`apps/web/deploy/`: external `web` network, Let's Encrypt resolver `le`). `pnpm --filter @remote-harness/web dev` runs it on `localhost:8080` with a local `data/` folder. The docs pages are Markdown in `apps/web/content/<locale>/`.
