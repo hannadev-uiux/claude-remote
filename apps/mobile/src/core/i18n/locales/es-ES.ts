@@ -767,6 +767,7 @@ const esES = {
     mode: 'modo',
     answer: 'responder',
     shortcuts: 'atajos',
+    newline: 'nueva línea',
   },
   shortcuts: {
     title: 'Atajos de teclado',
@@ -791,6 +792,7 @@ const esES = {
     send: 'Enviar (a la cola si está ocupada)',
     sendNow: 'Enviar ahora',
     blur: 'Salir del campo de mensaje',
+    newline: 'Nueva línea',
   },
   subagents: {
     title: 'Subagentes',
@@ -845,6 +847,10 @@ const esES = {
     newSessionCard: 'Nueva sesión',
     openAfterCreate: 'Abrir la sesión después de crearla',
     openAfterCreateHint: 'Abre la nueva sesión con el teclado abierto en lugar de volver a la lista.',
+    keyboardCard: 'Teclado',
+    returnSends: 'Intro envía',
+    returnSendsHint:
+      'El teclado en pantalla envía el mensaje; las líneas nuevas, solo con teclado físico (⇧⏎).',
     notifications: 'Notificaciones',
     push: 'Notificaciones push',
     pushHint: 'Solo este teléfono · nunca la conversación',

@@ -82,6 +82,7 @@ export function shortcutSheet(t: TFunction): ShortcutGroup[] {
       items: [
         { keys: '⏎', label: t('shortcuts.send') },
         { keys: '⌘⏎', label: t('shortcuts.sendNow') },
+        { keys: '⇧⏎', label: t('shortcuts.newline') },
         { keys: 'Esc', label: t('shortcuts.blur') },
       ],
     },

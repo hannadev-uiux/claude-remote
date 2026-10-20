@@ -13,7 +13,7 @@ import { composerActions } from '../composer-actions'
 import { COMPOSER_MAX_HEIGHT, COMPOSER_MIN_HEIGHT, composerHeight } from '../composer-height'
 import { composerPlaceholder } from '../composer-placeholder'
 import type { KeyboardHint } from '../keyboard-hints'
-import { hardwareKeyboard, keyboardToolbar } from '../keyboard-toolbar'
+import { keyboardToolbar } from '../keyboard-toolbar'
 import { hideKeyBar, releaseKeyBar, useKeyboardToolbarStore } from '../keyboard-toolbar-store'
 import { KeyboardHints } from './KeyboardHints'
 import { KeyboardToolbar } from './KeyboardToolbar'
@@ -48,12 +48,14 @@ type Props = {
   onSendNow?: () => void
   /** Shown over the send button while the prompt would be queued (`Hold: send now · ⌘⏎`). */
   hint?: string | null
-  /**
-   * Tablet: with a hardware keyboard, Return sends instead of inserting a newline and the shortcut
-   * hints row shows under the field.
-   */
-  tablet?: boolean
+  /** Return calls `onSubmit` instead of inserting a newline (hardware keyboard, or "Return key sends"). */
+  submit?: boolean
+  onSubmit?: () => void
+  /** The on-screen keyboard's return key reads Send ("Return key sends" without a hardware keyboard). */
+  returnKeySends?: boolean
+  /** Shortcut hints shown under the field (only passed while a hardware keyboard is in use). */
   hints?: KeyboardHint[]
+  onFocusChange?: (focused: boolean) => void
   /** Inserts `@` or `/` from the keyboard toolbar; without it the toolbar shows no trigger buttons. */
   onTrigger?: (trigger: '@' | '/') => void
 }
@@ -88,8 +90,6 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
   const keyboardHeight = useKeyboardHeight()
   const expanded = useKeyboardToolbarStore((s) => s.expanded)
   const toolbar = keyboardToolbar({ os: Platform.OS, focused, keyboardHeight, expanded })
-  // Tablet with a hardware keyboard: Return sends and the shortcut hints show.
-  const hardware = (props.tablet ?? false) && hardwareKeyboard({ focused, keyboardHeight })
   const hidesKeyBar = props.onKey != null && toolbar.hideKeyBar
   const [owner] = useState(() => Symbol('composer'))
   // Layout effect: the key bar under the conversation leaves in the same frame the toolbar's keys
@@ -125,12 +125,19 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
             onSelectionChange={props.onSelectionChange}
             onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
             selection={props.selection}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
+            onFocus={() => {
+              setFocused(true)
+              props.onFocusChange?.(true)
+            }}
+            onBlur={() => {
+              setFocused(false)
+              props.onFocusChange?.(false)
+            }}
             editable={!props.disabled}
             multiline
-            submitBehavior={hardware ? 'submit' : 'newline'}
-            onSubmitEditing={hardware && canSend ? props.onSend : undefined}
+            submitBehavior={props.submit ? 'submit' : 'newline'}
+            onSubmitEditing={props.submit ? props.onSubmit : undefined}
+            returnKeyType={props.returnKeySends ? 'send' : 'default'}
             accessibilityLabel={placeholder}
             autoCapitalize="none"
             autoCorrect={false}
@@ -192,7 +199,7 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
           ) : null}
         </LayoutAnimationConfig>
       </View>
-      {hardware && props.hints && props.hints.length > 0 ? <KeyboardHints hints={props.hints} /> : null}
+      {props.hints && props.hints.length > 0 ? <KeyboardHints hints={props.hints} /> : null}
       {props.onKey && toolbar.visible ? (
         <KeyboardToolbar
           onKey={props.onKey}

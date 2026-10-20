@@ -1,0 +1,132 @@
+diff --git a/ios/HardwareShortcut.h b/ios/HardwareShortcut.h
+index 5560bbd4dfe86b0dbe0c92c35bc7da9c7a8d75c1..fb68e42e889e97b676904fc06b4151a2470d8218 100644
+--- a/ios/HardwareShortcut.h
++++ b/ios/HardwareShortcut.h
+@@ -6,12 +6,14 @@
+ @interface HardwareShortcut : NSObject <NSCopying>
+ 
+ - (instancetype)init:(NSString *)input modifierFlags:(UIKeyModifierFlags)modifierFlags block:(void (^)(UIKeyCommand *))block;
++- (instancetype)init:(NSString *)input modifierFlags:(UIKeyModifierFlags)modifierFlags priority:(BOOL)priority block:(void (^)(UIKeyCommand *))block;
+ 
+ - (BOOL)matchesInput:(NSString *)input modifierFlags:(UIKeyModifierFlags)modifierFlags;
+ - (BOOL)matchesInput:(UIKeyCommand *)keyCommand;
+ 
+ @property (nonatomic, copy, readonly) NSString *input;
+ @property (nonatomic, readonly) UIKeyModifierFlags modifierFlags;
++@property (nonatomic, readonly) BOOL priority;
+ @property (nonatomic, copy) void (^block)(UIKeyCommand *);
+ 
+ @end
+diff --git a/ios/HardwareShortcut.m b/ios/HardwareShortcut.m
+index 2b4a4f1b43283589a78648d58dd5f478b0a04478..fcabf3fbdcfa5eac9992b612017c6525694c5aa7 100644
+--- a/ios/HardwareShortcut.m
++++ b/ios/HardwareShortcut.m
+@@ -4,10 +4,16 @@
+ @implementation HardwareShortcut
+ 
+ - (instancetype)init:(NSString *)input modifierFlags:(UIKeyModifierFlags)modifierFlags block:(void (^)(UIKeyCommand *))block
++{
++  return [self init:input modifierFlags:modifierFlags priority:NO block:block];
++}
++
++- (instancetype)init:(NSString *)input modifierFlags:(UIKeyModifierFlags)modifierFlags priority:(BOOL)priority block:(void (^)(UIKeyCommand *))block
+ {
+   if ((self = [super init])) {
+     _input = input;
+     _modifierFlags = modifierFlags;
++    _priority = priority;
+     _block = block;
+   }
+   return self;
+@@ -20,12 +26,12 @@
+ 
+ - (BOOL)matchesInput:(NSString *)input modifierFlags:(UIKeyModifierFlags)modifierFlags
+ {
+-  return _input == input && _modifierFlags == modifierFlags;
++  return [_input isEqualToString:input] && _modifierFlags == modifierFlags;
+ }
+ 
+ - (BOOL)matchesInput:(UIKeyCommand *)keyCommand
+ {
+-  return _input == keyCommand.input && _modifierFlags == keyCommand.modifierFlags;
++  return [_input isEqualToString:keyCommand.input] && _modifierFlags == keyCommand.modifierFlags;
+ }
+ 
+ @end
+diff --git a/ios/HardwareShortcuts.h b/ios/HardwareShortcuts.h
+index 743643570e60ae68bb5bf8b0c1620e77aeb8884c..d424a9de3dde7c7362e330718a65944625428224 100644
+--- a/ios/HardwareShortcuts.h
++++ b/ios/HardwareShortcuts.h
+@@ -16,6 +16,11 @@
+              modifierFlags:(UIKeyModifierFlags)modifierFlags
+                     action:(void (^)(UIKeyCommand *))block;
+ 
++- (void)registerKeyCommand:(NSString *)input
++             modifierFlags:(UIKeyModifierFlags)modifierFlags
++                  priority:(BOOL)priority
++                    action:(void (^)(UIKeyCommand *))block;
++
+ - (void)unregisterKeyCommand:(NSString *)input modifierFlags:(UIKeyModifierFlags)modifierFlags;
+ 
+ - (void)resetKeyCommands;
+diff --git a/ios/HardwareShortcuts.m b/ios/HardwareShortcuts.m
+index 5a177166c9f39893c1cf776890997625b3c6d38b..18fe185473ff5bf4819be23ba273d16224944ebc 100644
+--- a/ios/HardwareShortcuts.m
++++ b/ios/HardwareShortcuts.m
+@@ -26,9 +26,13 @@
+   NSMutableArray *commands = [NSMutableArray array];
+ 
+   [[_commands allObjects] enumerateObjectsUsingBlock:^(HardwareShortcut* hardwareShortcut, NSUInteger idx, BOOL *stop) {
+-    id command = [UIKeyCommand keyCommandWithInput:[hardwareShortcut input]
+-                                     modifierFlags:[hardwareShortcut modifierFlags]
+-                                            action:@selector(handleKeyCommand:)];
++    UIKeyCommand *command = [UIKeyCommand keyCommandWithInput:[hardwareShortcut input]
++                                                modifierFlags:[hardwareShortcut modifierFlags]
++                                                       action:@selector(handleKeyCommand:)];
++    // Keys a focused text view uses itself (Return, arrows, Tab) only reach the command with priority.
++    if (@available(iOS 15.0, *)) {
++      command.wantsPriorityOverSystemBehavior = [hardwareShortcut priority];
++    }
+     [commands addObject:command];
+   }];
+ 
+@@ -48,10 +52,18 @@
+ - (void)registerKeyCommand:(NSString *)input
+              modifierFlags:(UIKeyModifierFlags)modifierFlags
+                     action:(void (^)(UIKeyCommand *))block
++{
++  [self registerKeyCommand:input modifierFlags:modifierFlags priority:NO action:block];
++}
++
++- (void)registerKeyCommand:(NSString *)input
++             modifierFlags:(UIKeyModifierFlags)modifierFlags
++                  priority:(BOOL)priority
++                    action:(void (^)(UIKeyCommand *))block
+ {
+   RCTAssertMainQueue();
+ 
+-  HardwareShortcut *keyCommand = [[HardwareShortcut alloc] init:input modifierFlags:modifierFlags block:block];
++  HardwareShortcut *keyCommand = [[HardwareShortcut alloc] init:input modifierFlags:modifierFlags priority:priority block:block];
+   [_commands removeObject:keyCommand];
+   [_commands addObject:keyCommand];
+ }
+diff --git a/ios/KeyCommand.mm b/ios/KeyCommand.mm
+index 7554d2b97f891e0314507cb9aaa851b677656426..b36041eabc1ebc91032f7e2d283859c66eea8343 100644
+--- a/ios/KeyCommand.mm
++++ b/ios/KeyCommand.mm
+@@ -53,6 +53,7 @@ RCT_REMAP_METHOD(registerKeyCommands,
+   for (NSDictionary *commandJSON in commandsArray) {
+     NSString *input = commandJSON[@"input"];
+     NSNumber *modifierFlags = commandJSON[@"modifierFlags"];
++    BOOL priority = [commandJSON[@"priority"] boolValue];
+ 
+     if (!modifierFlags) {
+       modifierFlags = @0;
+@@ -72,6 +73,7 @@ RCT_REMAP_METHOD(registerKeyCommands,
+       [[HardwareShortcuts sharedInstance]
+         registerKeyCommand:input
+         modifierFlags:[modifierFlags integerValue]
++        priority:priority
+         action:action];
+     });
+   }

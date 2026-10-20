@@ -43,15 +43,21 @@ export function keyboardToolbar({
 }
 
 /**
- * A hardware keyboard is in use: the field is focused but no software keyboard is on screen (iPad
- * reports 0, or only the shortcut bar's height). Drives the hints row and Return-to-send on tablets.
+ * A hardware keyboard is in use: the field is focused but no software keyboard is on screen (iOS
+ * reports 0, or only the shortcut bar's height). Drives the hints row and Return-to-send. Android
+ * phones are left out: the field stays focused after the back button hides the keyboard there, so
+ * the same signal would turn Return into Send by mistake.
  */
 export function hardwareKeyboard({
+  os,
+  tablet,
   focused,
   keyboardHeight,
 }: {
+  os: string
+  tablet: boolean
   focused: boolean
   keyboardHeight: number
 }): boolean {
-  return focused && keyboardHeight < SOFT_KEYBOARD_MIN_HEIGHT
+  return (os === 'ios' || tablet) && focused && keyboardHeight < SOFT_KEYBOARD_MIN_HEIGHT
 }

@@ -20,7 +20,8 @@ declare module 'react-native-key-command' {
     keyInputEnter: string
   }
 
-  export type KeyCommandInput = { input: string; modifierFlags?: number }
+  /** `priority` comes from patches/react-native-key-command (iOS `wantsPriorityOverSystemBehavior`). */
+  export type KeyCommandInput = { input: string; modifierFlags?: number; priority?: boolean }
   export type KeyCommandEvent = { input: string; modifierFlags: number }
 
   /** Registers the shortcut and listens for it; returns the unsubscribe function. */

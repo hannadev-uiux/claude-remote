@@ -1,5 +1,25 @@
 import { expect, test } from 'vitest'
-import { comboId, createKeyStack } from './key-stack'
+import { comboId, createDuplicateFilter, createKeyStack } from './key-stack'
+
+test('nativeState asks for priority while any live handler wants it', () => {
+  const stack = createKeyStack()
+  expect(stack.nativeState('down')).toBe('none')
+  stack.add('down', () => undefined)
+  expect(stack.nativeState('down')).toBe('normal')
+  const remove = stack.add('down', () => undefined, { priority: true })
+  expect(stack.nativeState('down')).toBe('priority')
+  remove()
+  expect(stack.nativeState('down')).toBe('normal')
+})
+
+test('the duplicate filter drops a repeat of the same key within the window only', () => {
+  const isDuplicate = createDuplicateFilter(15)
+  expect(isDuplicate('down', 1000)).toBe(false)
+  expect(isDuplicate('down', 1005)).toBe(true)
+  expect(isDuplicate('up', 1006)).toBe(false)
+  expect(isDuplicate('up', 1030)).toBe(false)
+  expect(isDuplicate('up', 1031)).toBe(true)
+})
 
 test('comboId lowercases the input and defaults the flags to 0', () => {
   expect(comboId({ input: 'K', modifierFlags: 8 })).toBe('k|8')
