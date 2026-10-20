@@ -537,6 +537,8 @@ export const esES = {
     permissionPending: 'Permiso pendiente',
     questionPending: 'El agente está esperando tu respuesta',
     planPending: 'Plan listo para revisar',
+    questionReminder: 'Todavía esperando tu respuesta',
+    planReminder: 'El plan todavía espera tu revisión',
     testTitle: 'Notificación de prueba',
     testBody: (host: string) => `Las notificaciones de ${host} funcionan`,
   },

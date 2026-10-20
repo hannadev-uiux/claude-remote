@@ -404,6 +404,7 @@ const ptBR = {
       plan: 'plano pronto para revisão',
       waiting: 'esperando você',
       open: 'Abrir',
+      terminal: 'responda no terminal',
     },
     detail: {
       command: 'comando',
@@ -421,6 +422,13 @@ const ptBR = {
       profile: 'Perfil {{name}}',
       profileDetail: 'settings.json do perfil — todas as sessões dele',
       confirm: 'Gravar e permitir',
+    },
+    handover: {
+      label: 'Responda no terminal',
+      body: 'O agente ainda está esperando, mas o app não consegue mais responder. Responda no terminal.',
+      onComputer:
+        'O agente ainda está esperando, mas o app não consegue mais responder. Responda no computador.',
+      openTerminal: 'Abrir terminal',
     },
     question: {
       title: '{{agent}} tem uma pergunta',

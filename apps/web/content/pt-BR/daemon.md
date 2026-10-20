@@ -39,6 +39,7 @@ O comando antigo `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam fun
   "hookPort": 7338,
   "defaultRuleScope": "project",
   "permissionTimeoutSec": 280,
+  "questionTimeoutSec": 3300,
   "inputStrategy": "paste",
   "recentDays": 7,
   "tmuxSession": "claude-remote",
@@ -51,7 +52,8 @@ O comando antigo `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam fun
 - `profiles`: um por conta do Claude Code. `id` é o alias (o nome do atalho), `configDir` o `CLAUDE_CONFIG_DIR` da conta, `color` a cor da etiqueta no app. Opcionais: `agent` (`claude` por padrão) e `provider` (abaixo).
 - `wsPort`, `hookPort`: as portas do app e dos hooks.
 - `defaultRuleScope`: para onde vão as regras "permitir sempre" por padrão, `project` ou `user`.
-- `permissionTimeoutSec`: quanto tempo o daemon segura um pedido de permissão para o celular antes de o diálogo do terminal assumir.
+- `permissionTimeoutSec`: quanto tempo o daemon segura um pedido de permissão para o celular antes de o diálogo do terminal assumir. O pedido continua no app como "Responda no terminal" até a sessão seguir.
+- `questionTimeoutSec`: o mesmo para perguntas e aprovação de plano (3300 por padrão). Uma pergunta ainda aberta depois de 10 minutos manda um push de lembrete. O timeout do hook gravado nas configurações do agente cobre os dois, e `remote-harness install` ou `update` o reescreve.
 - `inputStrategy`: `paste` (padrão) ou `type` para os prompts enviados pelo celular.
 - `recentDays`: até quando sessões encerradas são listadas.
 - `tmuxSession`: a sessão do tmux que os atalhos usam.

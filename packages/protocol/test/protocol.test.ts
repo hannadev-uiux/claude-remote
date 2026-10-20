@@ -241,6 +241,7 @@ const serverSamples: ServerMessage[] = [
           },
         ],
       },
+      terminal: true,
     },
   },
   { type: 'permission.resolved', requestId: 'r', sessionId: 's', outcome: 'expired' },

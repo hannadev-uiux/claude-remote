@@ -1,9 +1,42 @@
 import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
-import { buildRespond, describePermission, permissionTimer, secondsLeft } from './describe'
+import { buildRespond, describePermission, handoverSummary, permissionTimer, secondsLeft } from './describe'
 
 const en = createI18n('en-US').t
 const pt = createI18n('pt-BR').t
+
+test('a handed-over request keeps its title and a plain summary', () => {
+  const question = {
+    tool: 'AskUserQuestion',
+    input: {},
+    interaction: {
+      kind: 'question' as const,
+      title: null,
+      questions: [
+        {
+          question: 'Which database?',
+          header: null,
+          kind: 'choice' as const,
+          options: [],
+          multiSelect: false,
+        },
+        { question: 'Which port?', header: null, kind: 'number' as const, options: [], multiSelect: false },
+      ],
+    },
+  }
+  expect(handoverSummary(question, en, 'Claude has a question')).toEqual({
+    title: 'Claude has a question',
+    detail: 'Which database?\nWhich port?',
+  })
+  const plan = { tool: 'ExitPlanMode', input: {}, interaction: { kind: 'plan' as const, plan: null } }
+  expect(handoverSummary(plan, en, '')).toEqual({
+    title: 'Plan ready for review',
+    detail: 'The plan is shown in the terminal.',
+  })
+  expect(handoverSummary({ tool: 'Bash', input: { command: 'rm -rf dist' } }, en, '').detail).toBe(
+    'rm -rf dist',
+  )
+})
 
 test('permissionTimer counts the wait and flags the last 30 seconds', () => {
   const created = '2026-10-18T12:00:00Z'

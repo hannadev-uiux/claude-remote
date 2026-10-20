@@ -39,6 +39,7 @@ The old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working for
   "hookPort": 7338,
   "defaultRuleScope": "project",
   "permissionTimeoutSec": 280,
+  "questionTimeoutSec": 3300,
   "inputStrategy": "paste",
   "recentDays": 7,
   "tmuxSession": "claude-remote",
@@ -51,7 +52,8 @@ The old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working for
 - `profiles`: one per Claude Code account. `id` is the alias (the launcher's name), `configDir` the account's `CLAUDE_CONFIG_DIR`, `color` the tag color in the app. Optional `agent` (`claude` by default) and `provider` (below).
 - `wsPort`, `hookPort`: the app and the hooks ports.
 - `defaultRuleScope`: where "always allow" rules go by default, `project` or `user`.
-- `permissionTimeoutSec`: how long the daemon holds a permission request for the phone before the terminal dialog takes over.
+- `permissionTimeoutSec`: how long the daemon holds a permission request for the phone before the terminal dialog takes over. The request stays in the app as "Answer in the terminal" until the session moves on.
+- `questionTimeoutSec`: the same for questions and plan approvals (3300 by default). A question still open after 10 minutes sends one reminder push. The hook timeout written into the agent's settings covers both, and `remote-harness install` or `update` rewrites it.
 - `inputStrategy`: `paste` (default) or `type` for prompts sent from the phone.
 - `recentDays`: how far back ended sessions are listed.
 - `tmuxSession`: the tmux session the launchers use.

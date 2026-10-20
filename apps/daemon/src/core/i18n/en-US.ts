@@ -537,6 +537,8 @@ export const enUS = {
     permissionPending: 'Permission pending',
     questionPending: 'The agent is waiting for your answer',
     planPending: 'Plan ready for review',
+    questionReminder: 'Still waiting for your answer',
+    planReminder: 'Plan still waiting for review',
     testTitle: 'Test notification',
     testBody: (host: string) => `Notifications from ${host} are working`,
   },

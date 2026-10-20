@@ -82,5 +82,6 @@ export async function registerPushFeature(
     void service.notify(service.messageForHook(hook))
   })
   ctx.bus.on('permission.requested', (info) => void service.notify(service.messageForPermission(info)))
+  ctx.bus.on('permission.reminder', (info) => void service.notify(service.messageForReminder(info)))
   return { service, devices, sender, mode: () => sender.mode }
 }

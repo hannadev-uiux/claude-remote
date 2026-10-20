@@ -259,7 +259,7 @@ async function registerFeatures(
   registerStatusLineFeature(ctx, sessions.store)
   const sessionLock = new KeyedMutex()
   const attachments = registerAttachmentsFeature(ctx, sessions.store)
-  const permissions = registerPermissionsFeature(ctx)
+  const permissions = registerPermissionsFeature(ctx, transcript.follow)
   const hasPendingPermission = (id: string) => permissions.broker.hasPending(id)
   const input = registerInputFeature(ctx, sessions.store, sessionLock, attachments.store)
   const queue = registerQueueFeature(ctx, sessions.store, input.service, hasPendingPermission)

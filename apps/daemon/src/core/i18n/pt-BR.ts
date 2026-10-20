@@ -538,6 +538,8 @@ export const ptBR = {
     permissionPending: 'Permissão pendente',
     questionPending: 'O agente está esperando sua resposta',
     planPending: 'Plano pronto para revisão',
+    questionReminder: 'Ainda esperando sua resposta',
+    planReminder: 'O plano ainda espera sua revisão',
     testTitle: 'Notificação de teste',
     testBody: (host: string) => `As notificações de ${host} estão funcionando`,
   },

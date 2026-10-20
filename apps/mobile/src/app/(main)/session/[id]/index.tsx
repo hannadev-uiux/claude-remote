@@ -239,7 +239,12 @@ export default function SessionRoute() {
         footer={
           session ? (
             <>
-              <SessionPermissions sessionId={id} cwd={session.cwd} profileId={session.profileId} />
+              <SessionPermissions
+                sessionId={id}
+                cwd={session.cwd}
+                profileId={session.profileId}
+                onOpenTerminal={controllable ? actions.terminal : undefined}
+              />
               <QueueCard sessionId={id} />
               <ResumeBanner session={session} />
             </>
