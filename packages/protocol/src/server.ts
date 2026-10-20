@@ -53,6 +53,13 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sessions.snapshot'), replyTo, sessions: z.array(SessionSchema) }),
   z.object({ type: z.literal('session.updated'), session: SessionSchema }),
   z.object({ type: z.literal('session.removed'), sessionId: z.string() }),
+  /** Reply to `session.start`; `sessionId` is `null` until the pane's `SessionStart` hook registers it. */
+  z.object({
+    type: z.literal('session.started'),
+    replyTo,
+    paneId: z.string(),
+    sessionId: z.string().nullable(),
+  }),
   z.object({
     type: z.literal('session.state'),
     sessionId: z.string(),

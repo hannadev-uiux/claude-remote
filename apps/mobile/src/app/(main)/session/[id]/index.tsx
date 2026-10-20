@@ -36,7 +36,7 @@ export default function SessionRoute() {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useStyles()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, autofocus } = useLocalSearchParams<{ id: string; autofocus?: string }>()
   const session = useSessionsStore((s) => s.sessions[id])
   const profile = useConnectionStore((s) => s.hello?.profiles.find((p) => p.id === session?.profileId))
   const provider = providerName(profile)
@@ -218,7 +218,14 @@ export default function SessionRoute() {
             </>
           ) : null
         }
-        composer={<SmartComposer sessionId={id} prompt={prompt} disabled={!controllable} />}
+        composer={
+          <SmartComposer
+            sessionId={id}
+            prompt={prompt}
+            disabled={!controllable}
+            autoFocus={autofocus === '1'}
+          />
+        }
       />
     </>
   )

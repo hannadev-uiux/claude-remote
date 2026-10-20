@@ -2,7 +2,8 @@ import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 import { silentLogger } from '../src/core/logger.ts'
-import { LifecycleService, validateCwd } from '../src/features/lifecycle/service.ts'
+import { waitForPaneSession } from '../src/features/lifecycle/index.ts'
+import { LifecycleService, validateCwd, WAIT_FOR_SESSION_MS } from '../src/features/lifecycle/service.ts'
 import { SessionStore } from '../src/features/sessions/store.ts'
 import type { SessionRecord } from '../src/features/sessions/types.ts'
 import { fakeExecutor, useTempHome } from './helpers.ts'
@@ -62,7 +63,7 @@ describe('validateCwd', () => {
 describe('LifecycleService', () => {
   test('starts the profile launcher without attaching', async () => {
     const { exec, service, project } = await setup()
-    expect(await service.start('claudin', project)).toEqual({ paneId: '%9' })
+    expect(await service.start('claudin', project)).toEqual({ paneId: '%9', sessionId: null })
     expect(exec.calls[0]).toMatchObject({
       file: '/bin-dir/claudin',
       args: [],
@@ -92,7 +93,46 @@ describe('LifecycleService', () => {
       message: expect.stringContaining('exited right after starting'),
     })
     alive.add('%9')
-    expect(await service.start('claudin', project)).toEqual({ paneId: '%9' })
+    expect(await service.start('claudin', project)).toEqual({ paneId: '%9', sessionId: null })
+  })
+
+  test('resolves the session id once the launched pane registers', async () => {
+    const { exec, store, project } = await setup()
+    const waitForSession = async (paneId: string) => (paneId === '%9' ? 'new-session' : null)
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      undefined,
+      undefined,
+      undefined,
+      0,
+      waitForSession,
+    )
+    expect(await service.start('claudin', project)).toEqual({ paneId: '%9', sessionId: 'new-session' })
+  })
+
+  test('resolves a null session id when the wait times out', async () => {
+    const { exec, store, project } = await setup()
+    const waitForSession = async (_paneId: string, timeoutMs: number) => {
+      expect(timeoutMs).toBe(WAIT_FOR_SESSION_MS)
+      return null
+    }
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      undefined,
+      undefined,
+      undefined,
+      0,
+      waitForSession,
+    )
+    expect(await service.start('claudin', project)).toEqual({ paneId: '%9', sessionId: null })
   })
 
   test('names the actual agent when a Codex profile exits before the settle check', async () => {
@@ -242,5 +282,32 @@ describe('LifecycleService', () => {
       { cwd: '/w/a', lastUsedAt: '2026-10-14T13:00:00Z', branch: 'main', sessions: 2 },
       { cwd: '/w/b', lastUsedAt: '2026-10-14T12:00:00Z', branch: null, sessions: 1 },
     ])
+  })
+})
+
+describe('waitForPaneSession', () => {
+  test('resolves right away when a session is already linked to the pane', async () => {
+    const { store } = await setup()
+    store.upsert('s1', {}, () => record('s1', { paneId: '%9', controllable: true, state: 'idle' }))
+    expect(await waitForPaneSession(store, '%9', 1_000)).toBe('s1')
+  })
+
+  test('resolves once a session registers against the pane mid-wait', async () => {
+    const { store } = await setup()
+    const pending = waitForPaneSession(store, '%9', 1_000)
+    store.upsert('s2', {}, () => record('s2', { paneId: '%9', controllable: true, state: 'idle' }))
+    expect(await pending).toBe('s2')
+  })
+
+  test('ignores a registration for a different pane', async () => {
+    const { store } = await setup()
+    const pending = waitForPaneSession(store, '%9', 50)
+    store.upsert('other', {}, () => record('other', { paneId: '%1', controllable: true, state: 'idle' }))
+    expect(await pending).toBeNull()
+  })
+
+  test('resolves null when nothing registers before the timeout', async () => {
+    const { store } = await setup()
+    expect(await waitForPaneSession(store, '%9', 50)).toBeNull()
   })
 })

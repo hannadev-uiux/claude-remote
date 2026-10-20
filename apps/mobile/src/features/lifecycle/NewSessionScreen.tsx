@@ -6,11 +6,13 @@ import { useTranslation } from 'react-i18next'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native'
 import { selectProfiles, useConnectionStore, useDaemonClient, useIsConnected } from '@/core/connection'
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
+import { AGENT_NAMES } from '@/core/theme/agents'
 import { relativeTime, shortPath } from '@/core/utils/time'
 import { useDebounced } from '@/core/utils/use-debounced'
 import { providerName } from '@/features/providers/logic'
 import { ModelPickerSheet } from '@/features/providers/ModelPickerSheet'
 import { ProfileProviderChip } from '@/features/providers/ProfileProviderChip'
+import { useSessionsStore } from '@/features/sessions/store'
 import { AgentBadge, Button, Card, Screen, Text } from '@/ui'
 import { DirectoryPickerSheet } from './DirectoryPickerSheet'
 import {
@@ -20,6 +22,7 @@ import {
   splitDirectoryInput,
 } from './directory-input'
 import { canStartInWorktree, profileAgent, profileDetail, recentDetail } from './new-session'
+import { useOpenAfterCreateSettings } from './open-after-create-store'
 import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
 import { useDirectories, useDirectoriesSupported } from './use-directories'
 
@@ -49,6 +52,21 @@ export function NewSessionScreen() {
   const [modelPicking, setModelPicking] = useState(false)
   const selectedProfile = profiles.find((p) => p.id === profileId) ?? null
   const provider = providerName(selectedProfile)
+  const openAfterCreate = useOpenAfterCreateSettings((s) => s.enabled)
+  // Set once `session.started` came back with no `sessionId` yet: the pane whose session we're
+  // waiting to register, so we can navigate in as soon as it appears in the sessions store.
+  const [startingPane, setStartingPane] = useState<string | null>(null)
+  const sessions = useSessionsStore((s) => s.sessions)
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `finish` only resets setters/refs.
+  useEffect(() => {
+    if (!startingPane) return
+    const started = Object.values(sessions).find((s) => s.paneId === startingPane)
+    if (!started) return
+    setStartingPane(null)
+    finish()
+    router.replace({ pathname: '/session/[id]', params: { id: started.id, autofocus: '1' } })
+  }, [startingPane, sessions])
 
   useEffect(() => {
     if (!profileId && profiles[0]) setProfileId(profiles[0].id)
@@ -122,17 +140,28 @@ export function NewSessionScreen() {
     setBusy(true)
     setError(null)
     try {
-      await client.request({
+      const reply = await client.request({
         type: 'session.start',
         profileId,
         cwd: cwd.trim(),
         ...(inWorktree ? { worktree: true } : {}),
         ...(model ? { model } : {}),
       })
-      router.back()
+      const started = reply.type === 'session.started' ? reply : null
+      if (openAfterCreate && started && !started.sessionId) {
+        // Not registered yet: keep the busy state and wait for it in the effect above, instead
+        // of `finish()`-ing here (a `finally` would run even on this early return).
+        setStartingPane(started.paneId)
+        return
+      }
+      if (openAfterCreate && started?.sessionId) {
+        router.replace({ pathname: '/session/[id]', params: { id: started.sessionId, autofocus: '1' } })
+      } else {
+        router.back()
+      }
+      finish()
     } catch (e) {
       setError(startErrorMessage(e, t))
-    } finally {
       finish()
     }
   }
@@ -361,6 +390,14 @@ export function NewSessionScreen() {
           disabled={!cwd.trim() || !profileId}
           onPress={() => void start()}
         />
+        {startingPane ? (
+          <Text size="sm" color="textMuted">
+            {t('newSession.starting', {
+              agent: selectedProfile ? AGENT_NAMES[profileAgent(selectedProfile)] : '',
+              path: shortPath(cwd.trim()),
+            })}
+          </Text>
+        ) : null}
         {error ? (
           <Card accent={colors.danger}>
             <Text color="danger" size="sm">
