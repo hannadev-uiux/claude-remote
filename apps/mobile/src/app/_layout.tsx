@@ -17,6 +17,7 @@ import '@/core/i18n'
 import { restoreThemePreference, ThemeProvider, useTheme } from '@/core/theme'
 import { useBackgroundUpdates } from '@/core/updates'
 import { restoreCommandRecents } from '@/features/autocomplete/recents-store'
+import { restoreAutocorrectSetting } from '@/features/conversation/autocorrect-store'
 import { restoreFollow } from '@/features/conversation/follow-store'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
@@ -70,6 +71,7 @@ export default function RootLayout() {
     void restorePushSettings()
     void restoreOpenAfterCreateSettings()
     void restoreReturnKeySettings()
+    void restoreAutocorrectSetting()
     void restoreKeyBar()
     void restoreKeyboardToolbar()
     void restoreFollow()

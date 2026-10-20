@@ -878,6 +878,8 @@ const enUS = {
     returnSends: 'Return key sends',
     returnSendsHint:
       'The on-screen keyboard sends the message; new lines then only with a hardware keyboard (⇧⏎).',
+    autocorrect: 'Autocorrect in the message input',
+    autocorrectHint: 'Fixes accents and typos as you type. Never while typing a /command or an @file.',
     notifications: 'Notifications',
     push: 'Push notifications',
     pushHint: 'Only this phone · never the conversation',

@@ -877,6 +877,9 @@ const esES = {
     returnSends: 'Intro envía',
     returnSendsHint:
       'El teclado en pantalla envía el mensaje; las líneas nuevas, solo con teclado físico (⇧⏎).',
+    autocorrect: 'Autocorrección en el mensaje',
+    autocorrectHint:
+      'Corrige acentos y erratas mientras escribes. Nunca al escribir un /comando o un @archivo.',
     notifications: 'Notificaciones',
     push: 'Notificaciones push',
     pushHint: 'Solo este teléfono · nunca la conversación',

@@ -22,6 +22,8 @@ type Props = {
   value: string
   onChangeText: (text: string) => void
   onSelectionChange?: TextInputProps['onSelectionChange']
+  /** Keyboard corrections and spell check (accents, typos); off for commands and mentions. */
+  autoCorrect?: boolean
   selection?: TextInputProps['selection']
   onSend: () => void
   sending: boolean
@@ -140,7 +142,8 @@ export const PromptComposer = forwardRef<TextInput, Props>(function PromptCompos
             returnKeyType={props.returnKeySends ? 'send' : 'default'}
             accessibilityLabel={placeholder}
             autoCapitalize="none"
-            autoCorrect={false}
+            autoCorrect={props.autoCorrect ?? false}
+            spellCheck={props.autoCorrect ?? false}
             style={[styles.input, { height }]}
           />
           {/* A multiline input wraps its native placeholder; this one stays on one line. */}

@@ -876,6 +876,9 @@ const ptBR = {
     keyboardCard: 'Teclado',
     returnSends: 'Return envia',
     returnSendsHint: 'O teclado da tela envia a mensagem; nova linha então só com teclado físico (⇧⏎).',
+    autocorrect: 'Correção automática na mensagem',
+    autocorrectHint:
+      'Corrige acentos e erros de digitação enquanto você escreve. Nunca ao digitar um /comando ou um @arquivo.',
     notifications: 'Notificações',
     push: 'Notificações push',
     pushHint: 'Só este celular · nunca a conversa',
