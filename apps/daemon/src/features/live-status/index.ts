@@ -54,6 +54,7 @@ export function registerLiveStatusFeature(
       ...(msg.activityToken ? { activityToken: msg.activityToken } : {}),
       ...(msg.relay ? { relay: msg.relay } : {}),
       ...(msg.palette ? { palette: msg.palette } : {}),
+      ...(msg.androidDataMessages ? { androidDataMessages: true } : {}),
     })
     return undefined
   })

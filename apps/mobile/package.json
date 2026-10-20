@@ -1,7 +1,7 @@
 {
   "name": "@remote-harness/mobile",
   "version": "0.15.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo/ui": "~57.0.25",
@@ -33,6 +33,7 @@
     "expo-splash-screen": "~57.0.10",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "expo-task-manager": "~57.0.21",
     "expo-updates": "~57.0.26",
     "expo-widgets": "~57.0.26",
     "i18next": "^26.4.4",
