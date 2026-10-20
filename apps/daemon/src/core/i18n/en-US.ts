@@ -477,7 +477,7 @@ export const enUS = {
       allow: 'Allow',
       always: 'Always allow',
       deny: 'Deny',
-      focus: 'Focus in tmux',
+      focus: 'Open in terminal (tmux)',
       close: 'Close session',
       sessions: (total: number, running: number) =>
         running > 0 ? `Sessions · ${total} · ${running} running` : `Sessions · ${total}`,

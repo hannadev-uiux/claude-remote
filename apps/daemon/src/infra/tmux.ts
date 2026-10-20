@@ -97,6 +97,26 @@ export class TmuxClient {
     await this.run(['select-pane', '-t', paneId])
   }
 
+  /** Terminal clients currently attached to `target`'s session; `[]` when no tmux server runs. */
+  async listClients(target: string): Promise<{ tty: string }[]> {
+    let out: string
+    try {
+      out = await this.run(['list-clients', '-t', target, '-F', '#{client_tty}'])
+    } catch (error) {
+      if (error instanceof TmuxError && NO_SERVER.test(error.message)) return []
+      throw error
+    }
+    return out
+      .split('\n')
+      .filter(Boolean)
+      .map((tty) => ({ tty }))
+  }
+
+  /** Switches one attached client (by tty) to `target`'s session, without touching other clients. */
+  async switchClient(clientTty: string, target: string): Promise<void> {
+    await this.run(['switch-client', '-c', clientTty, '-t', target])
+  }
+
   /** Types text literally, key by key. */
   async sendLiteral(paneId: string, text: string): Promise<void> {
     await this.run(['send-keys', '-t', paneId, '-l', '--', text])

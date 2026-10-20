@@ -476,7 +476,7 @@ export const esES = {
       allow: 'Permitir',
       always: 'Permitir siempre',
       deny: 'Denegar',
-      focus: 'Enfocar en tmux',
+      focus: 'Abrir en la terminal (tmux)',
       close: 'Cerrar sesión',
       sessions: (total: number, running: number) =>
         running > 0 ? `Sesiones · ${total} · ${running} en marcha` : `Sesiones · ${total}`,

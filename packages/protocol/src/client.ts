@@ -156,7 +156,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('worktree.inspect'), id, sessionId }),
   z.object({ type: z.literal('worktree.cleanup'), id, sessionId, action: WorktreeActionSchema }),
   z.object({ type: z.literal('pane.subscribe'), id, sessionId }),
-  /** Selects the session's tmux window and pane on the computer (tray "Focus in tmux"). */
+  /** Shows the session's pane in a terminal on the computer (tray "Open in terminal (tmux)"). */
   z.object({ type: z.literal('pane.focus'), id, sessionId }),
   z.object({ type: z.literal('pane.unsubscribe'), id, sessionId }),
   /** Update info of the daemon; a `channel` is saved to its config first, `force` skips the rate limit. */

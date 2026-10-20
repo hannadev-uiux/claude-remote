@@ -8,6 +8,7 @@ import { createDesktop, runDetachedUpdate } from '../../infra/desktop.ts'
 import { currentWsl, resolvePlatform } from '../../infra/platform.ts'
 import { spawnJsonLines, trayAssetsDir, trayCommand } from '../../infra/tray-helper.ts'
 import type { DaemonContext } from '../../main.ts'
+import { showInTerminal } from '../pane/show-in-terminal.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { installerSourceDir, SourceUpdater, type UpdateSource, updateSource } from '../update/update.ts'
 import { isQuietMoment, isUpdateChannel, underServiceManager, updateLabel } from './channel.ts'
@@ -310,7 +311,7 @@ export async function registerUpdatesFeature(
 
   const focusSession = async (sessionId: string) => {
     const session = deps.store.get(sessionId)
-    if (session?.paneId) await ctx.tmux.focusPane(session.paneId)
+    if (session?.paneId) await showInTerminal(ctx.tmux, desktop, platform, wsl, session.paneId)
   }
 
   const quote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`
