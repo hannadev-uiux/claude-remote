@@ -199,8 +199,8 @@ export const esES: WebMessages = {
         body: 'La app nunca ofrece el modo “bypass permissions” del agente. Los cambios en tus dotfiles se fusionan, se respaldan y son totalmente reversibles.',
       },
       {
-        title: 'Sin telemetría',
-        body: 'No se envía nada a ninguna parte, salvo que configures push con tu propio proyecto de Firebase o con el relay sin contenido.',
+        title: 'Solo si tú quieres',
+        body: 'No se envía nada a ninguna parte sin tu elección: push con tu propio proyecto de Firebase o con el relay sin contenido, informes de errores y datos de rendimiento, siempre sin contenido de las sesiones.',
       },
       {
         title: 'Código abierto',

@@ -2,6 +2,7 @@ import { router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, View } from 'react-native'
 import { space } from '@/core/theme'
+import { PerformanceSwitch } from '@/features/performance/PerformanceSwitch'
 import { Button, Card, Text } from '@/ui'
 import { firebaseInBuild } from '../crashlytics'
 import { useErrorReportsStore } from '../store'
@@ -20,7 +21,10 @@ export function ErrorReportsCard() {
           {t('errorReports.hint')}
         </Text>
         {firebase ? (
-          <PreferenceChoice />
+          <>
+            <PreferenceChoice />
+            <PerformanceSwitch />
+          </>
         ) : (
           <Text size="xs" color="textMuted">
             {t('errorReports.unavailable')}

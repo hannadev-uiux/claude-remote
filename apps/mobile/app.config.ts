@@ -333,8 +333,11 @@ const withFcmManifestDefaults: ConfigPlugin = (config) =>
 
 /**
  * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
- * drop the native mods of the platforms that have no file. Crashlytics collection stays off until
- * the user opts in (`firebase.json`, `src/features/error-reports`).
+ * drop the native mods of the platforms that have no file. Crashlytics and Performance collection
+ * stay off until the user opts in (`firebase.json`, `src/features/error-reports`,
+ * `src/features/performance`). `@react-native-firebase/perf`'s plugin is left out on purpose: it
+ * only adds the Gradle plugin that instruments network requests, which would include the
+ * WebSocket to the daemon on Android.
  */
 const withFirebase: ConfigPlugin = (config) => {
   const skipped = (['ios', 'android'] as const).filter((platform) => !firebase[platform])

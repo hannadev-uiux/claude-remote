@@ -199,8 +199,8 @@ export const ptBR: WebMessages = {
         body: 'O app nunca oferece o modo “bypass permissions” do agente. Edições nos seus dotfiles são mescladas, com backup e totalmente reversíveis.',
       },
       {
-        title: 'Sem telemetria',
-        body: 'Nada é enviado a lugar nenhum, a menos que você configure push pelo seu próprio projeto Firebase ou pelo relay sem conteúdo.',
+        title: 'Só se você quiser',
+        body: 'Nada é enviado a lugar nenhum sem a sua escolha: push pelo seu próprio projeto Firebase ou pelo relay sem conteúdo, relatórios de erro e dados de desempenho, sempre sem conteúdo das sessões.',
       },
       {
         title: 'Código aberto',

@@ -892,6 +892,9 @@ const enUS = {
     title: 'Error reports',
     hint: 'Help fix bugs by sending error reports. They never include your sessions: no prompts, conversation, terminal output, paths or names.',
     preferences: { auto: 'Send automatically', ask: 'Ask each time', never: 'Never' },
+    performance: 'Send performance data',
+    performanceHint:
+      'App start, frozen screens and slow moments of the app, to find what makes it slow. Never your sessions or the address of your computer.',
     unavailable: 'This build has no Firebase: reports can only be shared or posted as a GitHub issue.',
     recorded_one: '{{count}} error recorded on this phone',
     recorded_other: '{{count}} errors recorded on this phone',

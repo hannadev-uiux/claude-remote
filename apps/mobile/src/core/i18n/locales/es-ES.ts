@@ -891,6 +891,9 @@ const esES = {
     title: 'Informes de errores',
     hint: 'Ayuda a corregir fallos enviando informes de errores. Nunca incluyen tus sesiones: ni prompts, ni conversación, ni salida del terminal, rutas o nombres.',
     preferences: { auto: 'Enviar automáticamente', ask: 'Preguntar cada vez', never: 'Nunca' },
+    performance: 'Enviar datos de rendimiento',
+    performanceHint:
+      'Inicio de la app, pantallas congeladas y momentos lentos de la app, para encontrar qué la hace lenta. Nunca tus sesiones ni la dirección de tu ordenador.',
     unavailable:
       'Esta compilación no tiene Firebase: los informes solo se pueden compartir o publicar como issue en GitHub.',
     recorded_one: '{{count}} error registrado en este teléfono',

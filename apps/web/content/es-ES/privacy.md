@@ -1,16 +1,18 @@
 ---
 title: Política de privacidad
-description: Qué recopila Remote Harness (solo los informes de errores que aceptes enviar), qué se queda en tus dispositivos, qué sale de tu máquina y cuándo, y cómo contactarnos.
+description: Qué recopila Remote Harness (solo los informes de errores y los datos de rendimiento que aceptes enviar), qué se queda en tus dispositivos, qué sale de tu máquina y cuándo, y cómo contactarnos.
 applies: 0.7+
 ---
 
-Remote Harness es software autoalojado: el daemon se ejecuta en tu ordenador, la app en tu móvil, y ambos hablan por tu propia red Tailscale. Esta página es la política de privacidad de la app distribuida por las tiendas, del daemon y de este sitio web. Última actualización: 2026-10-19.
+Remote Harness es software autoalojado: el daemon se ejecuta en tu ordenador, la app en tu móvil, y ambos hablan por tu propia red Tailscale. Esta página es la política de privacidad de la app distribuida por las tiendas, del daemon y de este sitio web. Última actualización: 2026-10-20.
 
 ## Qué recopilamos
 
-Solo los informes de errores que aceptes enviar. No hay cuenta, ni analítica, ni telemetría en la app, en el daemon ni en este sitio. Los mantenedores nunca reciben tus conversaciones, tus archivos, tus prompts, tus tokens ni tus claves.
+Solo los informes de errores y los datos de rendimiento que aceptes enviar. No hay cuenta ni analítica, y la app, el daemon y este sitio no recopilan nada más. Los mantenedores nunca reciben tus conversaciones, tus archivos, tus prompts, tus tokens ni tus claves.
 
 **Informes de errores (opcionales).** La app guarda en el móvil un pequeño registro de sus propios errores. Los envía a Firebase Crashlytics (Google) solo como elijas en Ajustes → Informes de errores: tras preguntarte, que es lo predeterminado, automáticamente, o nunca. Un informe contiene la hora y el tipo de error, el nombre del error, el mensaje y la pila ya filtrados, el tipo de la petición que falló y el código de error, el patrón de ruta de la pantalla, y las versiones de la app, de la actualización, del sistema y del daemon; Crashlytics añade el modelo del dispositivo y un id de instalación. Los informes nunca incluyen prompts, conversación, salida del terminal, comandos, rutas de archivos, nombres de proyectos o sesiones, tokens ni datos de emparejamiento. En Ajustes → Informar de un problema también puedes compartir un informe o publicarlo como issue en GitHub. El tratamiento de los datos de Crashlytics por parte de Google se rige por la política de privacidad de Google.
+
+**Datos de rendimiento (opcionales, desactivados por defecto).** Con Ajustes → Informes de errores → Enviar datos de rendimiento activado, la app envía a Firebase Performance Monitoring (Google) cuánto tarda en arrancar y en llegar a tu ordenador, sus fotogramas lentos y congelados, con qué frecuencia y durante cuánto tiempo se bloquea su JavaScript (con la clase de diseño: móvil, tableta o ancho) y, en iOS, el tiempo de sus propias peticiones al relay de push y al servidor de actualizaciones. Firebase añade el modelo del dispositivo, las versiones del sistema y de la app, el país y un id de instalación. Estos datos nunca incluyen tus sesiones, prompts, rutas, nombres ni la dirección de tu ordenador. Desactivar la opción detiene el envío en ese móvil.
 
 ## Qué se queda en tus dispositivos
 
