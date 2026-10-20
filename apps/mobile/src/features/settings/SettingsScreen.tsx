@@ -5,6 +5,7 @@ import { space } from '@/core/theme'
 import { DaemonUpdateCard } from '@/features/daemon-update/DaemonUpdateCard'
 import { Screen, Text } from '@/ui'
 import { AppearanceCard } from './AppearanceCard'
+import { KeyboardCard } from './KeyboardCard'
 import { MachineCard } from './MachineCard'
 import { NewSessionCard } from './NewSessionCard'
 import { NotificationsCard } from './NotificationsCard'
@@ -20,6 +21,7 @@ export function SettingsScreen({ children }: { children?: ReactNode }) {
         <AppearanceCard />
         <ProfilesCard />
         <NewSessionCard />
+        <KeyboardCard />
         <NotificationsCard />
         <PermissionsCard />
         <DaemonUpdateCard />

@@ -767,6 +767,7 @@ const enUS = {
     mode: 'mode',
     answer: 'answer',
     shortcuts: 'shortcuts',
+    newline: 'new line',
   },
   shortcuts: {
     title: 'Keyboard shortcuts',
@@ -791,6 +792,7 @@ const enUS = {
     send: 'Send (queues while busy)',
     sendNow: 'Send now',
     blur: 'Leave the message field',
+    newline: 'New line',
   },
   subagents: {
     title: 'Subagents',
@@ -845,6 +847,10 @@ const enUS = {
     newSessionCard: 'New session',
     openAfterCreate: 'Open the session after creating it',
     openAfterCreateHint: 'Opens the new session with the keyboard up instead of returning to the list.',
+    keyboardCard: 'Keyboard',
+    returnSends: 'Return key sends',
+    returnSendsHint:
+      'The on-screen keyboard sends the message; new lines then only with a hardware keyboard (⇧⏎).',
     notifications: 'Notifications',
     push: 'Push notifications',
     pushHint: 'Only this phone · never the conversation',

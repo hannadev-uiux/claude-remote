@@ -766,6 +766,7 @@ const ptBR = {
     mode: 'modo',
     answer: 'responder',
     shortcuts: 'atalhos',
+    newline: 'nova linha',
   },
   shortcuts: {
     title: 'Atalhos de teclado',
@@ -790,6 +791,7 @@ const ptBR = {
     send: 'Enviar (entra na fila se ocupada)',
     sendNow: 'Enviar agora',
     blur: 'Sair do campo de mensagem',
+    newline: 'Nova linha',
   },
   subagents: {
     title: 'Subagentes',
@@ -844,6 +846,9 @@ const ptBR = {
     newSessionCard: 'Nova sessão',
     openAfterCreate: 'Abrir a sessão após criá-la',
     openAfterCreateHint: 'Abre a nova sessão com o teclado aberto em vez de voltar para a lista.',
+    keyboardCard: 'Teclado',
+    returnSends: 'Return envia',
+    returnSendsHint: 'O teclado da tela envia a mensagem; nova linha então só com teclado físico (⇧⏎).',
     notifications: 'Notificações',
     push: 'Notificações push',
     pushHint: 'Só este celular · nunca a conversa',

@@ -1,5 +1,6 @@
 import type { CommandItem, FileItem } from '@remote-harness/protocol'
 import { AppWindow, File, Folder, Terminal } from 'lucide-react-native'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ActivityIndicator,
@@ -13,22 +14,45 @@ import { useKeyboardHeight } from '@/core/platform/use-keyboard-height'
 import { makeStyles, space, useTheme } from '@/core/theme'
 import { Text } from '@/ui'
 import { commandDescription } from './describe-command'
+import type { PickableRow } from './keyboard'
 import { suggestionListHeight } from './list-height'
-import { type CommandRow, highlightRuns } from './ranking'
+import { type CommandRow, type CommandSection, highlightRuns } from './ranking'
 import type { Suggestions } from './use-suggestions'
 
 type Props = {
   suggestions: Suggestions
   onPickFile: (item: FileItem) => void
   onPickCommand: (item: CommandItem) => void
+  /** Row Return / Tab would accept, drawn like a pressed row and kept in view. */
+  highlighted?: PickableRow
 }
 
-export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props) {
+export function SuggestionList({ suggestions, onPickFile, onPickCommand, highlighted }: Props) {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useStyles()
   const { height } = useWindowDimensions()
   const keyboardHeight = useKeyboardHeight()
+  const fileList = useRef<ScrollView>(null)
+  const fileRowY = useRef(new Map<string, number>())
+  const commandList = useRef<SectionList<CommandRow, CommandSection>>(null)
+  const highlightedFile = highlighted?.kind === 'file' ? highlighted.item.path : null
+  const highlightedCommand = highlighted?.kind === 'command' ? highlighted.item.name : null
+  useEffect(() => {
+    if (highlightedFile === null) return
+    const y = fileRowY.current.get(highlightedFile)
+    if (y !== undefined) fileList.current?.scrollTo({ y: Math.max(0, y - 44), animated: true })
+  }, [highlightedFile])
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a new highlighted row scrolls.
+  useEffect(() => {
+    if (highlightedCommand === null || suggestions?.kind !== 'command') return
+    suggestions.sections.forEach((section, sectionIndex) => {
+      const itemIndex = section.data.findIndex((row) => row.item.name === highlightedCommand)
+      if (itemIndex !== -1) {
+        commandList.current?.scrollToLocation({ sectionIndex, itemIndex, viewPosition: 0.5 })
+      }
+    })
+  }, [highlightedCommand])
   if (!suggestions) return null
   const maxHeight = suggestionListHeight(height, keyboardHeight)
   const empty =
@@ -45,12 +69,16 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
         </Text>
       ) : null}
       {suggestions.kind === 'file' ? (
-        <ScrollView keyboardShouldPersistTaps="always" style={{ maxHeight }}>
+        <ScrollView ref={fileList} keyboardShouldPersistTaps="always" style={{ maxHeight }}>
           {suggestions.items.map((item) => (
             <Pressable
               key={item.path}
               onPress={() => onPickFile(item)}
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              onLayout={(e) => fileRowY.current.set(item.path, e.nativeEvent.layout.y)}
+              style={({ pressed }) => [
+                styles.row,
+                (pressed || item.path === highlightedFile) && styles.pressed,
+              ]}
             >
               {item.kind === 'dir' ? (
                 <Folder size={14} color={colors.info} />
@@ -65,7 +93,10 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
         </ScrollView>
       ) : (
         <SectionList
+          ref={commandList}
           sections={suggestions.sections}
+          // Rows past the rendered window cannot be scrolled to yet; the highlight is still drawn.
+          onScrollToIndexFailed={() => undefined}
           keyExtractor={(row) => row.item.name}
           keyboardShouldPersistTaps="always"
           stickySectionHeadersEnabled={false}
@@ -78,14 +109,28 @@ export function SuggestionList({ suggestions, onPickFile, onPickCommand }: Props
               </Text>
             )
           }
-          renderItem={({ item: row }) => <CommandRowView row={row} onPick={onPickCommand} />}
+          renderItem={({ item: row }) => (
+            <CommandRowView
+              row={row}
+              onPick={onPickCommand}
+              highlighted={row.item.name === highlightedCommand}
+            />
+          )}
         />
       )}
     </View>
   )
 }
 
-function CommandRowView({ row, onPick }: { row: CommandRow; onPick: (item: CommandItem) => void }) {
+function CommandRowView({
+  row,
+  onPick,
+  highlighted,
+}: {
+  row: CommandRow
+  onPick: (item: CommandItem) => void
+  highlighted: boolean
+}) {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useStyles()
@@ -97,7 +142,7 @@ function CommandRowView({ row, onPick }: { row: CommandRow; onPick: (item: Comma
       accessibilityRole="button"
       accessibilityLabel={`/${item.name}${description ? `, ${description}` : ''}`}
       accessibilityHint={item.interactive ? t('autocomplete.interactive') : undefined}
-      style={({ pressed }) => [styles.row, styles.commandRow, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.row, styles.commandRow, (pressed || highlighted) && styles.pressed]}
     >
       <Terminal size={14} color={colors.accentText} />
       <View style={styles.flex}>

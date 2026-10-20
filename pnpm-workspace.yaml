@@ -29,3 +29,4 @@ allowBuilds:
   workerd: true
 patchedDependencies:
   expo-modules-jsi@57.1.2: patches/expo-modules-jsi@57.1.2.patch
+  react-native-key-command@1.0.18: patches/react-native-key-command@1.0.18.patch
