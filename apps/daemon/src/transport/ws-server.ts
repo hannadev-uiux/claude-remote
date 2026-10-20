@@ -87,6 +87,7 @@ export async function startWsServer(options: WsServerOptions): Promise<WebSocket
           code: parsed.error.code,
           message: parsed.error.message,
         })
+        router.reportRejected(parsed.error.type ?? '(malformed)', parsed.error.code)
         if (!authenticated) socket.close(4001, 'unauthorized')
         return
       }

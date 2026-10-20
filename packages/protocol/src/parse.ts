@@ -7,6 +7,8 @@ export type ParseError = {
   code: Extract<ErrorCode, 'bad_request' | 'unknown_type'>
   message: string
   id?: string
+  /** The raw `type` field, when it was a string, even an unknown one; for server-side logging only. */
+  type?: string
 }
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: ParseError }
 
@@ -30,7 +32,15 @@ function parseWith<T>(
   const id = typeof record.id === 'string' ? record.id : undefined
   const type = record.type
   if (typeof type !== 'string' || !knownTypes.has(type)) {
-    return { ok: false, error: { code: 'unknown_type', message: `unknown type: ${String(type)}`, id } }
+    return {
+      ok: false,
+      error: {
+        code: 'unknown_type',
+        message: `unknown type: ${String(type)}`,
+        id,
+        type: typeof type === 'string' ? type : undefined,
+      },
+    }
   }
   const result = schema.safeParse(data)
   if (!result.success) {
@@ -38,7 +48,7 @@ function parseWith<T>(
     const path = issue?.path.join('.') || '(root)'
     return {
       ok: false,
-      error: { code: 'bad_request', message: `${path}: ${issue?.message ?? 'invalid'}`, id },
+      error: { code: 'bad_request', message: `${path}: ${issue?.message ?? 'invalid'}`, id, type },
     }
   }
   return { ok: true, value: result.data }

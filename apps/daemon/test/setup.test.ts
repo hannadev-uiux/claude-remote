@@ -5,9 +5,11 @@ import { describe, expect, test } from 'vitest'
 import { messagesFor } from '../src/core/i18n/index.ts'
 import {
   detectConfigDirs,
+  isCodexDir,
   mergeConfig,
   profilesToRemove,
   readLogin,
+  sameDir,
   suggestNewConfigDir,
   suggestProfile,
   suggestProviderProfile,
@@ -35,6 +37,18 @@ describe('setup profiles', () => {
     await mkdir(join(dir, '.claude-empty'))
     expect(await detectConfigDirs(dir)).toEqual(['~/.claude', '~/.claude-b', '~/.claude-work'])
     expect(await detectConfigDirs(join(dir, 'missing'))).toEqual([])
+  })
+
+  test('isCodexDir matches ~/.codex and its suffixed variants only', () => {
+    expect(isCodexDir('~/.codex')).toBe(true)
+    expect(isCodexDir('~/.codex-work')).toBe(true)
+    expect(isCodexDir('~/.claude')).toBe(false)
+    expect(isCodexDir('~/.codex-remote')).toBe(true)
+  })
+
+  test('sameDir compares expanded, trailing-slash-insensitive paths', () => {
+    expect(sameDir('~/.codex', '~/.codex/')).toBe(true)
+    expect(sameDir('~/.codex', '~/.claude')).toBe(false)
   })
 
   test('suggests alias and name, keeping what is already configured', () => {

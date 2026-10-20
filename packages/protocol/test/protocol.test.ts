@@ -351,18 +351,23 @@ describe('client messages', () => {
     if (!result.ok) {
       expect(result.error.code).toBe('bad_request')
       expect(result.error.id).toBe('1')
+      expect(result.error.type).toBe('session.input')
     }
   })
 
-  test('rejects invalid JSON', () => {
-    expect(parseClientMessage('{oops')).toMatchObject({ ok: false, error: { code: 'bad_request' } })
+  test('rejects invalid JSON, with no type to report', () => {
+    const result = parseClientMessage('{oops')
+    expect(result).toMatchObject({ ok: false, error: { code: 'bad_request' } })
+    expect(result.ok ? undefined : result.error.type).toBeUndefined()
   })
 
-  test('rejects unknown type', () => {
+  test('rejects unknown type, reporting it for logging even though it is invalid', () => {
     expect(parseClientMessage({ type: 'nope', id: '1' })).toMatchObject({
       ok: false,
-      error: { code: 'unknown_type' },
+      error: { code: 'unknown_type', type: 'nope' },
     })
+    const result = parseClientMessage({ type: 42, id: '1' })
+    expect(result.ok ? undefined : result.error.type).toBeUndefined()
   })
 
   test('strips unknown fields', () => {
