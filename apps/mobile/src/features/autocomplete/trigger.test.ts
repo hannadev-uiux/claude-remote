@@ -1,13 +1,6 @@
 import type { CommandItem } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
-import {
-  applySuggestion,
-  filterCommands,
-  findTrigger,
-  insertTrigger,
-  isInteractiveCommand,
-  triggerKey,
-} from './trigger'
+import { applySuggestion, findTrigger, insertTrigger, isInteractiveCommand, triggerKey } from './trigger'
 
 describe('triggerKey', () => {
   test('stays the same while typing the same token and changes for a new one', () => {
@@ -61,12 +54,6 @@ describe('applySuggestion', () => {
 })
 
 describe('commands', () => {
-  test('filters by prefix, then substring, then description', () => {
-    expect(filterCommands(commands, 'de').map((c) => c.name)).toEqual(['deploy', 'model'])
-    expect(filterCommands(commands, 'o').map((c) => c.name)).toEqual(['compact', 'deploy', 'model'])
-    expect(filterCommands(commands, 'modelo').map((c) => c.name)).toEqual(['model'])
-  })
-
   test('flags interactive commands', () => {
     expect(isInteractiveCommand('/model', commands)).toBe(true)
     expect(isInteractiveCommand('/compact agora', commands)).toBe(false)

@@ -24,6 +24,8 @@ import { RecordingOverlay } from '../voice/components/RecordingOverlay'
 import { VoiceButton } from '../voice/components/VoiceButton'
 import { insertTranscriptAtCursor } from '../voice/insert-at-cursor'
 import { useVoiceRecording } from '../voice/use-voice-recording'
+import { sentCommand } from './recents'
+import { recordCommandUse } from './recents-store'
 import { SuggestionList } from './SuggestionList'
 import { applySuggestion, findTrigger, insertTrigger, isInteractiveCommand, triggerKey } from './trigger'
 import { useCommands, useSuggestions } from './use-suggestions'
@@ -97,7 +99,9 @@ export function SmartComposer({ sessionId, prompt, disabled }: Props) {
   const send = async (mode: 'auto' | 'now' = 'auto') => {
     const text = prompt.text
     const interactive = isInteractiveCommand(text, commands.data ?? [])
+    const command = sentCommand(text, commands.data ?? [])
     const ok = await prompt.send(mode)
+    if (ok && command && session) void recordCommandUse(session.profileId, command)
     // Menus like /model only exist in the TUI: show the raw terminal to drive them.
     if (interactive && ok) router.push({ pathname: '/session/[id]/terminal', params: { id: sessionId } })
   }

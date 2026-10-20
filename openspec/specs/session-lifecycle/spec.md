@@ -129,7 +129,7 @@ The new-session screen SHALL suggest the subfolders matching the typed directory
 - **THEN** the daemon does not kill it and reports the old session as `already` ended
 
 ### Requirement: Worktree cleanup
-`worktree.inspect { sessionId }` SHALL reply `worktree.info { worktree }`, where `worktree` is `null` unless the session's folder is inside a linked git worktree (never the repository's main checkout), and otherwise carries its `path`, `branch`, `mainRoot`, the number of modified or untracked files (`dirty`) and the number of commits reachable from HEAD and from no remote ref (`unpushed`). `worktree.cleanup { sessionId, action }` and the `worktree` option of `session.close` SHALL apply one action: `delete` only when the worktree is clean and pushed (otherwise `error` `bad_request`); `push-delete` commits any changes ("WIP from Remote Harness"), pushes the branch to `origin` creating the upstream when missing, then deletes; `discard-delete` removes the worktree and its branch without pushing. After a successful push or on a clean worktree the daemon removes the worktree with git and deletes the local branch when it is merged. A failed push MUST keep the worktree and report `error` `internal` with git's message. Git MUST be called only from `infra/`.
+`worktree.inspect { sessionId }` SHALL reply `worktree.info { worktree }`, where `worktree` is `null` unless the session's folder is inside a linked git worktree (never the repository's main checkout), and otherwise carries its `path`, `branch`, `mainRoot`, the number of modified or untracked files that are not ignored (`dirty`) and the number of commits reachable from HEAD and from no remote ref (`unpushed`). `worktree.cleanup { sessionId, action }` and the `worktree` option of `session.close` SHALL apply one action: `delete` only when the worktree is clean and pushed (otherwise `error` `bad_request`); `push-delete` commits any changes ("WIP from Remote Harness"), pushes the branch to `origin` creating the upstream when missing, then deletes; `discard-delete` removes the worktree and its branch without pushing. Before a removal that is not `discard-delete`, the daemon MUST inspect the worktree again and stop with `bad_request` if it has changes or unpushed commits. The removal MUST either complete or leave the worktree untouched: the daemon removes a stale lock (one whose process is not running, such as Claude Code's `claude session … (pid N …)` lock after the session ended), moves the whole folder out of place in one step, prunes the worktree entry, deletes the local branch when it is merged, and deletes the moved folder in the background with no time limit. Ignored files (such as `node_modules`) MUST NOT block a clean removal. A lock held by a running process, a failed move or a failed push MUST keep the worktree and its branch and report `error` `internal` with the real reason (git's message, a timeout, an exit code or the file system error), which the daemon also logs with the worktree path. Git MUST be called only from `infra/`.
 
 #### Scenario: Clean worktree
 - **WHEN** the app closes a session whose worktree has no changes and no unpushed commits with `worktree: "delete"`
@@ -146,6 +146,26 @@ The new-session screen SHALL suggest the subfolders matching the typed directory
 #### Scenario: Main checkout
 - **WHEN** the session runs in the repository's main checkout
 - **THEN** `worktree.inspect` replies `null` and no cleanup is offered
+
+#### Scenario: Large ignored folders
+- **WHEN** a clean, merged worktree holds a `node_modules` folder that takes a minute to delete
+- **THEN** the cleanup succeeds at once, the worktree is gone from `git worktree list`, the branch is deleted and the folder is deleted in the background
+
+#### Scenario: Stale Claude Code lock
+- **WHEN** the worktree is locked with `claude session remote-1 (pid 4242 start …)` and process 4242 is not running
+- **THEN** the daemon unlocks and removes it
+
+#### Scenario: Locked by a running process
+- **WHEN** the lock names a process that is still running
+- **THEN** nothing is removed and the error names the process
+
+#### Scenario: Move fails
+- **WHEN** the worktree folder cannot be moved (for example "Operation not permitted")
+- **THEN** every file of the worktree is still in place and the error carries the file system message
+
+#### Scenario: Untracked file
+- **WHEN** the worktree has one untracked file that is not ignored and the action is `delete`
+- **THEN** the daemon replies `bad_request` and keeps the worktree
 
 ### Requirement: New session screen
 The new-session screen SHALL be laid out as: an "Agent & profile" radio list, a Model row, the Directory field, the Recent list, the worktree toggle and the `Start session` primary button. Each profile row SHALL show the agent badge, the profile name in the profile color with the dashed `via <provider>` chip when the profile has a provider, `<agent> · <config dir>` (for example `Claude Code · ~/.claude`), and a selected mark on the chosen one. The Model row SHALL be shown only when the selected profile has a provider; it shows the chosen model, else the profile's default model, else "Provider default", and tapping it opens the model picker; the chosen model is sent as `model` in `session.start` and is reset when the profile changes. Each Recent row SHALL show the directory, its branch (`⎇`) and the number of sessions used there in the last 7 days when known, and the relative time of the last use. All texts MUST be translated.

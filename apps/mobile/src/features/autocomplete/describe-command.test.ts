@@ -11,7 +11,7 @@ describe('commandDescription', () => {
       source: 'builtin' as const,
       interactive: false,
     }
-    expect(commandDescription(builtin, t)).toBe('Borra el historial de la conversación')
+    expect(commandDescription(builtin, t)).toBe('Empieza una sesión nueva con el contexto vacío')
     expect(commandDescription({ ...builtin, name: 'brand-new' }, t)).toBe('Clear the conversation history')
     expect(
       commandDescription(

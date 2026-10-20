@@ -10,6 +10,7 @@ import { shortPath } from '@/core/utils/time'
 import { Button, Text } from '@/ui'
 import { closeOptions } from '../actions'
 import { agentLabel, sessionAgent } from '../agent'
+import { useSessionsStore } from '../store'
 
 type Mode = 'close' | 'cleanup'
 
@@ -39,13 +40,18 @@ export function CloseSessionSheet({
   const [deleteWorktree, setDeleteWorktree] = useState(mode === 'cleanup')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // The worktree action whose cleanup failed: the sheet then offers Retry and Keep the worktree.
+  const [failed, setFailed] = useState<WorktreeAction | null>(null)
   const sessionId = session?.id
+  // Live copy: after a close whose worktree step failed, the session has already ended.
+  const live = useSessionsStore((s) => (sessionId ? s.sessions[sessionId] : undefined))
 
   useEffect(() => {
     if (!client || !sessionId) return
     let cancelled = false
     setWorktree('loading')
     setError(null)
+    setFailed(null)
     setDeleteWorktree(mode === 'cleanup')
     client.request({ type: 'worktree.inspect', sessionId }).then(
       (reply) => {
@@ -83,13 +89,13 @@ export function CloseSessionSheet({
           .join(` ${t('closeSession.and')} `)
       : null
 
-  const run = async (action: WorktreeAction | null) => {
+  const run = async (action: WorktreeAction | null, cleanupOnly = mode === 'cleanup') => {
     if (!client) return
     setBusy(true)
     setError(null)
     try {
       const options = { timeoutMs: REQUEST_TIMEOUT_MS }
-      if (mode === 'cleanup') {
+      if (cleanupOnly) {
         if (action) await client.request({ type: 'worktree.cleanup', sessionId: session.id, action }, options)
       } else {
         await client.request(
@@ -100,10 +106,14 @@ export function CloseSessionSheet({
       onDone()
     } catch (e) {
       setError(errorMessage(e, t))
+      setFailed(action)
     } finally {
       setBusy(false)
     }
   }
+  // Retry only the worktree step once the session is no longer running (the close went through).
+  const retry = (action: WorktreeAction) =>
+    void run(action, mode === 'cleanup' || !(live ?? session).controllable)
   const confirmDiscard = () =>
     Alert.alert(t('closeSession.discardTitle'), t('closeSession.discardBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -120,7 +130,22 @@ export function CloseSessionSheet({
     variant: 'primary' | 'danger' | 'secondary'
     onPress: () => void
   }[] = []
-  if (choices.includes('push-delete') && info) {
+  if (failed) {
+    buttons.push({
+      key: 'retry',
+      label: t('closeSession.retry'),
+      variant: 'primary',
+      onPress: () => retry(failed),
+    })
+    // Still running (the close itself was refused): keeping the worktree still closes the session.
+    const stillOpen = mode === 'close' && (live ?? session).controllable
+    buttons.push({
+      key: 'keep',
+      label: stillOpen ? t('closeSession.keep') : t('closeSession.keepAfterFailure'),
+      variant: 'secondary',
+      onPress: stillOpen ? () => void run(null) : onDone,
+    })
+  } else if (choices.includes('push-delete') && info) {
     buttons.push({
       key: 'push',
       label: info.dirty > 0 ? t('closeSession.pushDelete') : t('closeSession.pushOnlyDelete'),
@@ -212,7 +237,17 @@ export function CloseSessionSheet({
               </View>
             </View>
           ) : null}
-          {warn ? (
+          {failed && error ? (
+            <View style={styles.failure} accessibilityLiveRegion="polite">
+              <Text size="xs" weight="bold" color="danger">
+                {t('closeSession.cleanupFailed')}
+              </Text>
+              <Text size="xs" color="danger" selectable>
+                {error}
+              </Text>
+            </View>
+          ) : null}
+          {warn && !failed ? (
             <View style={styles.warn}>
               <Text size="xs" color="warning">
                 ⚠{' '}
@@ -236,7 +271,7 @@ export function CloseSessionSheet({
             ))}
             <Button label={t('common.cancel')} variant="ghost" disabled={busy} onPress={onDone} />
           </View>
-          {error ? (
+          {error && !failed ? (
             <Text size="xs" color="danger">
               {error}
             </Text>
@@ -273,6 +308,12 @@ const useStyles = makeStyles((theme) => ({
     padding: space.md,
     borderRadius: radius.md,
     backgroundColor: theme.colors.warningSoft,
+  },
+  failure: {
+    padding: space.md,
+    gap: space.xs,
+    borderRadius: radius.md,
+    backgroundColor: theme.colors.dangerSoft,
   },
   actions: { gap: space.sm },
 }))
