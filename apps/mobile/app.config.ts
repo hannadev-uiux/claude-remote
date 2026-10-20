@@ -4,6 +4,7 @@ import type { ConfigContext, ExpoConfig } from 'expo/config'
 import {
   type ConfigPlugin,
   type ExportedConfig,
+  withAndroidManifest,
   withAppDelegate,
   withDangerousMod,
   withInfoPlist,
@@ -258,6 +259,33 @@ const withLiveActivityIcon: ConfigPlugin = (config) => {
   })
 }
 
+/** Attributes of FCM's notification defaults that both expo-notifications and RNFirebase messaging set. */
+const FCM_DEFAULTS: Record<string, 'android:value' | 'android:resource'> = {
+  'com.google.firebase.messaging.default_notification_channel_id': 'android:value',
+  'com.google.firebase.messaging.default_notification_color': 'android:resource',
+  'com.google.firebase.messaging.default_notification_icon': 'android:resource',
+}
+
+/**
+ * expo-notifications writes FCM's default channel, color and icon into the app manifest, and
+ * `@react-native-firebase/messaging` ships the same `<meta-data>` with its own values, so the
+ * release manifest merge fails. The app's values win (`tools:replace`).
+ */
+const withFcmManifestDefaults: ConfigPlugin = (config) =>
+  withAndroidManifest(config, (mod) => {
+    const manifest = mod.modResults.manifest
+    manifest.$ = { ...manifest.$, 'xmlns:tools': 'http://schemas.android.com/tools' }
+    for (const application of manifest.application ?? []) {
+      for (const item of application['meta-data'] ?? []) {
+        const attribute = FCM_DEFAULTS[item.$['android:name']]
+        if (attribute && item.$[attribute] !== undefined) {
+          item.$ = { ...item.$, 'tools:replace': attribute } as typeof item.$
+        }
+      }
+    }
+    return mod
+  })
+
 /**
  * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
  * drop the native mods of the platforms that have no file. Crashlytics collection stays off until
@@ -275,7 +303,8 @@ const withFirebase: ConfigPlugin = (config) => {
     '@react-native-firebase/crashlytics',
   ])
   for (const [platform, mods] of saved) next.mods = { ...next.mods, [platform]: mods }
-  return firebase.ios ? withFirebaseCocoaPods(next) : next
+  const android = firebase.android ? withFcmManifestDefaults(next) : next
+  return firebase.ios ? withFirebaseCocoaPods(android) : android
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
