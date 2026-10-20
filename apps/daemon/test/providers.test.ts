@@ -7,6 +7,7 @@ import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
 import { providerKeyStore } from '../src/core/secrets.ts'
 import { renderLauncher } from '../src/features/hooks/launcher.ts'
+import { checkProviderKey } from '../src/features/providers/key-check.ts'
 import { parseCredits, parseModels, perMillion, providerEnv } from '../src/features/providers/openrouter.ts'
 import { MODELS_TTL_MS, type ProviderFetch, ProviderService } from '../src/features/providers/service.ts'
 import { fakeExecutor, useTempHome } from './helpers.ts'
@@ -187,6 +188,91 @@ describe('provider key store (file backend)', () => {
     expect(file.endsWith('/secrets/provider-work')).toBe(true)
     expect((await stat(file)).mode & 0o777).toBe(0o600)
     expect((await stat(join(file, '..'))).mode & 0o777).toBe(0o700)
+  })
+
+  test('removes a stored key, and removing a missing one is not an error', async () => {
+    const store = providerKeyStore('file', fakeExecutor(), 'work')
+    await store.set('sk-or-v1-abc')
+    await store.delete()
+    expect(await store.get()).toBeNull()
+    await expect(store.delete()).resolves.toBeUndefined()
+  })
+
+  test('Keychain and Secret Service removal ignore a missing key', async () => {
+    const keychain = fakeExecutor(() => ({ exitCode: 44, stderr: 'could not be found' }))
+    await providerKeyStore('keychain', keychain, 'work').delete()
+    expect(keychain.calls[0]?.args).toEqual([
+      'delete-generic-password',
+      '-s',
+      'claude-remote',
+      '-a',
+      'provider-work',
+    ])
+    const secretTool = fakeExecutor()
+    await providerKeyStore('secret-tool', secretTool, 'work').delete()
+    expect(secretTool.calls[0]?.args).toEqual([
+      'clear',
+      'service',
+      'claude-remote',
+      'account',
+      'provider-work',
+    ])
+    const locked = fakeExecutor(() => ({ exitCode: 1, stderr: 'locked' }))
+    await expect(providerKeyStore('secret-tool', locked, 'work').delete()).rejects.toThrow('locked')
+  })
+})
+
+describe('provider key check', () => {
+  const responder = (
+    answers: Record<string, number | Error>,
+    body: unknown = {},
+  ): ProviderFetch & { urls: string[] } => {
+    const urls: string[] = []
+    const fetch = (async (url: string, init?: { headers?: Record<string, string> }) => {
+      urls.push(url)
+      expect(init?.headers?.Authorization).toBe('Bearer sk-or-v1-abc')
+      const answer = answers[url.replace('https://openrouter.ai/api', '')]
+      if (answer instanceof Error) throw answer
+      const status = answer ?? 404
+      return { ok: status === 200, status, json: async () => body }
+    }) as ProviderFetch & { urls: string[] }
+    fetch.urls = urls
+    return fetch
+  }
+
+  test('a management key is valid with the credits', async () => {
+    const fetch = responder({ '/v1/credits': 200 }, { data: { total_credits: 50, total_usage: 7.9 } })
+    expect(await checkProviderKey(fetch, {}, 'sk-or-v1-abc')).toEqual({
+      status: 'valid',
+      credits: { total: 50, used: 7.9 },
+    })
+    expect(fetch.urls).toEqual(['https://openrouter.ai/api/v1/credits'])
+  })
+
+  test('a regular key (403 on credits) is confirmed by /v1/key', async () => {
+    const fetch = responder({ '/v1/credits': 403, '/v1/key': 200 })
+    expect(await checkProviderKey(fetch, {}, 'sk-or-v1-abc')).toEqual({ status: 'valid', credits: null })
+  })
+
+  test('401 is a rejected key', async () => {
+    expect(await checkProviderKey(responder({ '/v1/credits': 401 }), {}, 'sk-or-v1-abc')).toEqual({
+      status: 'invalid',
+    })
+    const fetch = responder({ '/v1/credits': 403, '/v1/key': 401 })
+    expect(await checkProviderKey(fetch, {}, 'sk-or-v1-abc')).toEqual({ status: 'invalid' })
+  })
+
+  test('an unreachable gateway is unknown, with the reason', async () => {
+    const fetch = responder({ '/v1/credits': new Error('getaddrinfo ENOTFOUND') })
+    expect(await checkProviderKey(fetch, {}, 'sk-or-v1-abc')).toEqual({
+      status: 'unknown',
+      reason: 'getaddrinfo ENOTFOUND',
+    })
+    const down = responder({ '/v1/credits': 503, '/v1/key': 503 })
+    expect(await checkProviderKey(down, {}, 'sk-or-v1-abc')).toEqual({
+      status: 'unknown',
+      reason: 'HTTP 503',
+    })
   })
 })
 
