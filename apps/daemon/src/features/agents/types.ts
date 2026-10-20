@@ -65,4 +65,6 @@ export type AgentAdapter = {
    * a failed hook, so its requests get Allow / Deny only.
    */
   permissionRules: boolean
+  /** Rewrites a dictated transcript in one non-interactive call; `null` when the CLI has no such mode. */
+  polish: { args(text: string): string[] } | null
 }

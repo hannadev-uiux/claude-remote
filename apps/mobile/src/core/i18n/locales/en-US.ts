@@ -620,6 +620,16 @@ const enUS = {
     languageHint:
       'Which language dictation expects to hear — lets you use the app in one language and dictate in another.',
     languageApp: 'Same as the app',
+    pause: 'Pause recording',
+    resume: 'Resume recording',
+    paused: 'Paused — Resume to keep recording',
+    reviewTitle: 'Polished dictation',
+    useOriginal: 'Use original',
+    usePolished: 'Use polished',
+    polishTitle: 'Polish dictation',
+    polishHint: 'Rewrites the transcript into a clean prompt before inserting it. Claude Code sessions only.',
+    pushToTalkTitle: 'Press and hold to record',
+    pushToTalkHint: 'Hold the microphone button to record, release to stop, instead of tapping to toggle.',
   },
   newSession: {
     profile: 'Agent & profile',

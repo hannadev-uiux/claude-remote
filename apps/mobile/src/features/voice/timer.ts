@@ -5,3 +5,10 @@ export function formatElapsed(ms: number): string {
   const seconds = totalSeconds % 60
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
+
+/** A single recording (across pauses/resumes) stops and finalizes on its own past this long. */
+export const MAX_RECORDING_MS = 10 * 60_000
+
+export function hasReachedMaxDuration(elapsedMs: number): boolean {
+  return elapsedMs >= MAX_RECORDING_MS
+}

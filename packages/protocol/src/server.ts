@@ -143,6 +143,13 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     credits: ProviderCreditsSchema.nullable(),
   }),
   z.object({
+    type: z.literal('voice.polish.result'),
+    replyTo,
+    text: z.string(),
+    /** `false` when polishing was unsupported, failed, timed out, or left the text unchanged. */
+    applied: z.boolean(),
+  }),
+  z.object({
     type: z.literal('diagnostics.result'),
     replyTo,
     daemonVersion: z.string(),

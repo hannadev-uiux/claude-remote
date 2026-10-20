@@ -150,6 +150,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('models.list'), id, profileId: z.string().min(1) }),
   /** Whether the profile's provider key is stored, and the credits left. */
   z.object({ type: z.literal('provider.status'), id, profileId: z.string().min(1) }),
+  /** Rewrites a dictated transcript through the session's agent CLI; falls back to `text` unchanged. */
+  z.object({ type: z.literal('voice.polish'), id, sessionId, text: z.string().min(1) }),
   /** Subdirectories of `path` (`~`, `~/…` or absolute, inside the home folder), filtered by name `prefix`. */
   z.object({
     type: z.literal('directories.list'),

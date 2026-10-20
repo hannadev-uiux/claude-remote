@@ -51,6 +51,7 @@ import {
   registerUpdatesFeature,
   type TrayShellDeps,
 } from './features/updates/index.ts'
+import { registerVoicePolishFeature } from './features/voice-polish/index.ts'
 import type { Executor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import { resolvePlatform } from './infra/platform.ts'
@@ -290,6 +291,7 @@ async function registerFeatures(
   const queue = registerQueueFeature(ctx, sessions.store, input.service, hasPendingPermission)
   registerModeFeature(ctx, sessions.store, sessionLock, hasPendingPermission)
   registerAutocompleteFeature(ctx, sessions.store)
+  registerVoicePolishFeature(ctx, sessions.store)
   registerDiagnosticsFeature(ctx)
   registerPaneFeature(ctx, sessions.store)
   registerProvidersFeature(ctx, { key: ctx.providerKey })

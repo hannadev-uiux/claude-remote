@@ -619,6 +619,18 @@ const ptBR = {
     languageTitle: 'Idioma da transcrição por voz',
     languageHint: 'Qual idioma o ditado espera ouvir — permite usar o app num idioma e falar em outro.',
     languageApp: 'Mesmo do app',
+    pause: 'Pausar gravação',
+    resume: 'Retomar gravação',
+    paused: 'Pausado — toque em Retomar para continuar gravando',
+    reviewTitle: 'Ditado aprimorado',
+    useOriginal: 'Usar original',
+    usePolished: 'Usar aprimorado',
+    polishTitle: 'Aprimorar ditado',
+    polishHint:
+      'Reescreve a transcrição como um prompt limpo antes de inseri-la. Somente sessões do Claude Code.',
+    pushToTalkTitle: 'Pressionar e segurar para gravar',
+    pushToTalkHint:
+      'Segure o botão do microfone para gravar e solte para parar, em vez de tocar para alternar.',
   },
   newSession: {
     profile: 'Agente e perfil',

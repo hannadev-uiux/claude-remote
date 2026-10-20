@@ -99,4 +99,5 @@ export const codex: AgentAdapter = {
   providers: false,
   modes: false,
   permissionRules: false,
+  polish: null,
 }

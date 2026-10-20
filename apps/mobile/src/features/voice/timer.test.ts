@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { formatElapsed } from './timer'
+import { formatElapsed, hasReachedMaxDuration, MAX_RECORDING_MS } from './timer'
 
 describe('formatElapsed', () => {
   test('formats zero', () => {
@@ -20,5 +20,13 @@ describe('formatElapsed', () => {
 
   test('never goes negative', () => {
     expect(formatElapsed(-500)).toBe('0:00')
+  })
+})
+
+describe('hasReachedMaxDuration', () => {
+  test('false just under the cap, true at and past it', () => {
+    expect(hasReachedMaxDuration(MAX_RECORDING_MS - 1)).toBe(false)
+    expect(hasReachedMaxDuration(MAX_RECORDING_MS)).toBe(true)
+    expect(hasReachedMaxDuration(MAX_RECORDING_MS + 1_000)).toBe(true)
   })
 })

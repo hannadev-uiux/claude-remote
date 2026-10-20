@@ -31,6 +31,7 @@ import { RecordingOverlay } from '../voice/components/RecordingOverlay'
 import { VoiceButton } from '../voice/components/VoiceButton'
 import { insertTranscriptAtCursor } from '../voice/insert-at-cursor'
 import { useVoiceRecording } from '../voice/use-voice-recording'
+import { useVoiceInteractionStore } from '../voice/voice-interaction-store'
 import { moveHighlight, type PickableRow, pickableRows } from './keyboard'
 import { sentCommand } from './recents'
 import { recordCommandUse } from './recents-store'
@@ -93,9 +94,10 @@ export function SmartComposer({ sessionId, prompt, disabled, autoFocus }: Props)
     input.current?.focus()
   }
 
-  const voice = useVoiceRecording((transcript) =>
+  const voice = useVoiceRecording(sessionId, (transcript) =>
     insert(insertTranscriptAtCursor(prompt.text, cursor, transcript)),
   )
+  const pushToTalk = useVoiceInteractionStore((s) => s.pushToTalk)
 
   const picker = useImagePicker()
   const pickFrom = async (source: ImageSource) => {
@@ -250,14 +252,20 @@ export function SmartComposer({ sessionId, prompt, disabled, autoFocus }: Props)
             state={voice.state}
             level={voice.level}
             elapsedMs={voice.elapsedMs}
+            interimText={voice.interimText}
+            review={voice.review}
             onCancel={voice.cancel}
             onDone={voice.stop}
+            onPause={voice.pause}
+            onResume={() => void voice.resume()}
             onRetryOnline={() => void voice.retryOnline()}
+            onUseOriginal={voice.useOriginal}
+            onUsePolished={voice.usePolished}
           />
         ) : null
       }
       hasAttachments={prompt.attachments.length > 0}
-      voiceActive={voice.state === 'recording' || voice.state === 'transcribing'}
+      voiceActive={voice.state !== 'idle'}
       attachments={
         <AttachmentChips
           images={prompt.attachments}
@@ -277,6 +285,7 @@ export function SmartComposer({ sessionId, prompt, disabled, autoFocus }: Props)
         <VoiceButton
           state={voice.state}
           disabled={disabled}
+          pushToTalk={pushToTalk}
           onStart={() => void voice.start()}
           onStop={voice.stop}
         />

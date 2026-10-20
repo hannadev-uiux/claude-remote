@@ -11,6 +11,10 @@ describe('classifyRecognitionError', () => {
     expect(classifyRecognitionError('language-not-supported')).toBe('offline-unavailable')
   })
 
+  test('an audio session interruption pauses instead of discarding', () => {
+    expect(classifyRecognitionError('interrupted')).toBe('interrupted')
+  })
+
   test('everything else is just retryable', () => {
     expect(classifyRecognitionError('no-speech')).toBe('retry')
     expect(classifyRecognitionError('audio-capture')).toBe('retry')

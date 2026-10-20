@@ -5,6 +5,11 @@ import { readTranscriptMeta } from '../sessions/transcript-meta.ts'
 import { claudeTranscript } from '../transcript/parser.ts'
 import type { AgentAdapter, TranscriptLocation } from './types.ts'
 
+const POLISH_SYSTEM_PROMPT =
+  'Rewrite the given dictated text into a clean prompt: remove filler words, hesitations and ' +
+  'repetitions, fix punctuation and grammar, and keep technical terms, file names and code exactly ' +
+  'as said. Respond with only the rewritten text, nothing else.'
+
 /** Main-session transcripts are `projects/<dir>/<id>.jsonl` (subagents live one level deeper). */
 async function findClaudeTranscripts(configDir: string, cutoffMs: number): Promise<TranscriptLocation[]> {
   const projectsDir = join(configDir, 'projects')
@@ -60,4 +65,18 @@ export const claudeCode: AgentAdapter = {
   providers: true,
   modes: true,
   permissionRules: true,
+  polish: {
+    args: (text) => [
+      '-p',
+      text,
+      '--model',
+      'haiku',
+      '--output-format',
+      'json',
+      '--allowedTools',
+      '',
+      '--append-system-prompt',
+      POLISH_SYSTEM_PROMPT,
+    ],
+  },
 }
