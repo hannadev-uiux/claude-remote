@@ -6,7 +6,7 @@ import { StyleSheet, TextInput, View } from 'react-native'
 import { addListener, constants } from 'react-native-key-command'
 import { useShallow } from 'zustand/react/shallow'
 import { useConnectionStore } from '@/core/connection'
-import { inspectorMode, type LayoutClass, sidebarMode, useLayout } from '@/core/layout'
+import { edgeSwipeEnabled, inspectorMode, type LayoutClass, sidebarMode, useLayout } from '@/core/layout'
 import { space, useTheme } from '@/core/theme'
 import { InspectorPane } from '@/features/inspector/InspectorPane'
 import { setInspectorOpen, useInspectorStore } from '@/features/inspector/store'
@@ -83,6 +83,8 @@ export default function MainLayout() {
       <SessionsScreen pendingBySession={pending} selectedSessionId={selectedSessionId} interactive />
     </>
   )
+  // Where ☰ replaces the back button, the swipe from the left edge opens the list instead of going back.
+  const overlayEdge = sidebar === 'overlay'
   const menuButton =
     sidebar === 'overlay'
       ? () => <IconButton icon={Menu} label={t('tablet.sidebar')} onPress={() => setSidebarOpen(true)} />
@@ -93,6 +95,8 @@ export default function MainLayout() {
       sidebar={sidebar === 'none' ? null : sidebarContent}
       sidebarMode={sidebar}
       sidebarOpen={sidebarOpen}
+      sidebarEdgeSwipe={edgeSwipeEnabled(sidebar, sidebarOpen, pathname)}
+      onOpenSidebar={() => setSidebarOpen(true)}
       onCloseSidebar={() => setSidebarOpen(false)}
       inspector={
         inspector !== 'none' && selectedSessionId ? (
@@ -107,11 +111,14 @@ export default function MainLayout() {
       <Stack
         screenOptions={{ ...stackScreenOptions(theme), ...(menuButton ? { headerLeft: menuButton } : {}) }}
       >
-        <Stack.Screen name="index" options={{ headerTitle: () => <ListTitle /> }} />
+        <Stack.Screen
+          name="index"
+          options={{ headerTitle: () => <ListTitle />, gestureEnabled: !overlayEdge }}
+        />
         <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
         <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
         <Stack.Screen name="report" options={{ title: t('errorReports.problem.title') }} />
-        <Stack.Screen name="session/[id]/index" options={{ title: '' }} />
+        <Stack.Screen name="session/[id]/index" options={{ title: '', gestureEnabled: !overlayEdge }} />
         <Stack.Screen name="session/[id]/terminal" options={{ title: t('nav.terminal') }} />
         <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: t('nav.subagent') }} />
       </Stack>
