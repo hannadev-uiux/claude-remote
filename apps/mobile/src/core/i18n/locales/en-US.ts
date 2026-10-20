@@ -435,6 +435,65 @@ const enUS = {
       cancel: 'Cancel',
     },
   },
+  systemPermissions: {
+    title: 'Permissions',
+    onThisPhone: 'On this phone',
+    onThisComputer: 'On this computer',
+    computerUnsupported: "This computer's daemon is too old to report these.",
+    allow: 'Allow',
+    openSettings: 'Open Settings',
+    openOnComputer: 'Open on the computer',
+    status: {
+      allowed: 'Allowed',
+      denied: 'Denied',
+      not_asked: 'Not asked',
+      limited: 'Limited',
+      not_available: 'Not available',
+    },
+    phone: {
+      notifications: {
+        label: 'Notifications',
+        reason: 'For pushes about finished turns, permissions and waiting sessions.',
+      },
+      camera: {
+        label: 'Camera',
+        reason: 'For scanning the pairing QR code and taking photos to attach.',
+      },
+      photos: { label: 'Photos', reason: 'For attaching images to prompts.' },
+      microphone: {
+        label: 'Microphone + Speech recognition',
+        reason: 'For voice input.',
+      },
+      localNetwork: {
+        label: 'Local network',
+        reason: 'For reaching the computer on your network.',
+        hint: 'Inferred from your current connection, not a direct check.',
+      },
+    },
+    computer: {
+      folderAccess: {
+        label: 'Folder access',
+        reason: 'For reading transcripts, git info, worktrees and attachments.',
+      },
+      fullDiskAccess: {
+        label: 'Full Disk Access',
+        reason: 'Avoids one permission prompt per folder.',
+      },
+      accessibility: {
+        label: 'Accessibility / Automation',
+        reason: 'For focusing terminal windows.',
+      },
+      desktopNotifications: {
+        label: 'Desktop notifications',
+        reason: 'For update notices and the tray.',
+        unknownHint: "The computer can't report this status on its own; check System Settings directly.",
+      },
+      keychain: {
+        label: 'Keychain access',
+        reason: 'For storing the pairing token securely.',
+      },
+    },
+  },
   autocomplete: {
     empty: 'no suggestions',
     noCommands: 'no commands match',
@@ -773,6 +832,8 @@ const enUS = {
     mutedSessions_one: '{{count}} session',
     mutedSessions_other: '{{count}} sessions',
     mutedSessionsTitle: 'Sessions',
+    permissions: 'Permissions',
+    permissionsHint: 'What this phone and the computer are allowed to access',
     documentation: 'Documentation',
     reportProblem: 'Report a problem',
   },

@@ -8,9 +8,10 @@ import { AppearanceCard } from './AppearanceCard'
 import { MachineCard } from './MachineCard'
 import { NewSessionCard } from './NewSessionCard'
 import { NotificationsCard } from './NotificationsCard'
+import { PermissionsCard } from './PermissionsCard'
 import { ProfilesCard } from './ProfilesCard'
 
-/** Machine → Appearance → Profiles → New session → Notifications → Computer → the route's cards (Voice, App). */
+/** Machine → Appearance → Profiles → New session → Notifications → Permissions → Computer → the route's cards (Voice, App). */
 export function SettingsScreen({ children }: { children?: ReactNode }) {
   return (
     <Screen>
@@ -20,6 +21,7 @@ export function SettingsScreen({ children }: { children?: ReactNode }) {
         <ProfilesCard />
         <NewSessionCard />
         <NotificationsCard />
+        <PermissionsCard />
         <DaemonUpdateCard />
         {children}
         <Text size="xs" color="textDim" style={styles.center}>

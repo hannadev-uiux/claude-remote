@@ -434,6 +434,66 @@ const esES = {
       cancel: 'Cancelar',
     },
   },
+  systemPermissions: {
+    title: 'Permisos',
+    onThisPhone: 'En este teléfono',
+    onThisComputer: 'En este ordenador',
+    computerUnsupported: 'El daemon de este ordenador es demasiado antiguo para reportar esto.',
+    allow: 'Permitir',
+    openSettings: 'Abrir Ajustes',
+    openOnComputer: 'Abrir en el ordenador',
+    status: {
+      allowed: 'Permitido',
+      denied: 'Denegado',
+      not_asked: 'No solicitado',
+      limited: 'Limitado',
+      not_available: 'No disponible',
+    },
+    phone: {
+      notifications: {
+        label: 'Notificaciones',
+        reason: 'Para avisos de turnos terminados, permisos y sesiones en espera.',
+      },
+      camera: {
+        label: 'Cámara',
+        reason: 'Para escanear el código QR de emparejamiento y tomar fotos para adjuntar.',
+      },
+      photos: { label: 'Fotos', reason: 'Para adjuntar imágenes a los mensajes.' },
+      microphone: {
+        label: 'Micrófono + Reconocimiento de voz',
+        reason: 'Para la entrada por voz.',
+      },
+      localNetwork: {
+        label: 'Red local',
+        reason: 'Para alcanzar el ordenador en tu red.',
+        hint: 'Inferido de tu conexión actual, no es una comprobación directa.',
+      },
+    },
+    computer: {
+      folderAccess: {
+        label: 'Acceso a carpetas',
+        reason: 'Para leer transcripciones, información de git, worktrees y adjuntos.',
+      },
+      fullDiskAccess: {
+        label: 'Acceso total al disco',
+        reason: 'Evita una solicitud de permiso por carpeta.',
+      },
+      accessibility: {
+        label: 'Accesibilidad / Automatización',
+        reason: 'Para enfocar ventanas de terminal.',
+      },
+      desktopNotifications: {
+        label: 'Notificaciones del ordenador',
+        reason: 'Para avisos de actualización y la bandeja.',
+        unknownHint:
+          'El ordenador no puede reportar esto por sí mismo; revisa los Ajustes del Sistema directamente.',
+      },
+      keychain: {
+        label: 'Acceso al llavero',
+        reason: 'Para guardar el token de emparejamiento de forma segura.',
+      },
+    },
+  },
   autocomplete: {
     empty: 'sin sugerencias',
     noCommands: 'ningún comando coincide',
@@ -772,6 +832,8 @@ const esES = {
     mutedSessions_one: '{{count}} sesión',
     mutedSessions_other: '{{count}} sesiones',
     mutedSessionsTitle: 'Sesiones',
+    permissions: 'Permisos',
+    permissionsHint: 'Lo que este teléfono y el ordenador pueden acceder',
     documentation: 'Documentación',
     reportProblem: 'Informar de un problema',
   },

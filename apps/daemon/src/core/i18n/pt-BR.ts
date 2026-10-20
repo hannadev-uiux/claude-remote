@@ -95,8 +95,14 @@ export const ptBR = {
       launcherScript: 'pedidos de acesso a pastas mostram "node" (sem launcher compilado)',
       launcherHint:
         'instale as Command Line Tools (`xcode-select --install`) e rode `remote-harness service install`',
-      fullDiskAccess:
-        'dica: para não ter um pedido por pasta, adicione "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco',
+      fullDiskAccess: 'Acesso Total ao Disco',
+      fullDiskAccessHint:
+        'para não ter um pedido por pasta, adicione "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco',
+      accessibility: 'Acessibilidade / Automação',
+      accessibilityHint:
+        'permita "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Automação',
+      keychain: 'Acesso ao Keychain',
+      keychainHint: 'o armazenamento de token não conseguiu ler de volta o token que acabou de gravar',
       linger: 'lingering (o serviço continua rodando após o logout)',
       lingerHint: 'rode `loginctl enable-linger $USER`',
       keepAwake: (mode: string, state: string) => `manter acordado: ${mode} (${state})`,

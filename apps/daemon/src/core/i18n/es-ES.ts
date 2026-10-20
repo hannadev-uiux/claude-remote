@@ -95,8 +95,14 @@ export const esES = {
       launcherScript: 'las solicitudes de acceso a carpetas muestran "node" (sin launcher compilado)',
       launcherHint:
         'instala las Command Line Tools (`xcode-select --install`) y ejecuta `remote-harness service install`',
-      fullDiskAccess:
-        'consejo: para no recibir una solicitud por carpeta, añade "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Acceso total al disco',
+      fullDiskAccess: 'Acceso total al disco',
+      fullDiskAccessHint:
+        'para no recibir una solicitud por carpeta, añade "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Acceso total al disco',
+      accessibility: 'Accesibilidad / Automatización',
+      accessibilityHint:
+        'permite "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Automatización',
+      keychain: 'Acceso al llavero',
+      keychainHint: 'el almacén de tokens no pudo volver a leer el token que acaba de escribir',
       linger: 'lingering (el servicio sigue en marcha tras cerrar sesión)',
       lingerHint: 'ejecuta `loginctl enable-linger $USER`',
       keepAwake: (mode: string, state: string) => `mantener despierto: ${mode} (${state})`,

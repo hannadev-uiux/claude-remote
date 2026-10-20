@@ -9,6 +9,7 @@ import {
   DirectoryItemSchema,
   ErrorCodeSchema,
   FileItemSchema,
+  MachinePermissionSchema,
   ModelInfoSchema,
   MuteStateSchema,
   PermissionModeSchema,
@@ -164,6 +165,12 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('push.testResult'), replyTo, result: PushTestResultSchema }),
   /** Usage limits of a profile's account; sent when they change and to every client that connects. */
   z.object({ type: z.literal('limits.updated'), limits: AccountLimitsSchema }),
+  /** Reply to `machine.permissions`: never folder contents, only per-row/per-folder status. */
+  z.object({
+    type: z.literal('machine.permissions.results'),
+    replyTo,
+    permissions: z.array(MachinePermissionSchema),
+  }),
 ])
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>

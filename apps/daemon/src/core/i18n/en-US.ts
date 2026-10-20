@@ -97,8 +97,13 @@ export const enUS = {
       launcherScript: 'folder access prompts name "node" (no compiled launcher)',
       launcherHint:
         'install the Command Line Tools (`xcode-select --install`), then run `remote-harness service install`',
-      fullDiskAccess:
-        'tip: to avoid one prompt per folder, add "Remote Harness" under System Settings → Privacy & Security → Full Disk Access',
+      fullDiskAccess: 'Full Disk Access',
+      fullDiskAccessHint:
+        'to avoid one prompt per folder, add "Remote Harness" under System Settings → Privacy & Security → Full Disk Access',
+      accessibility: 'Accessibility / Automation',
+      accessibilityHint: 'allow "Remote Harness" under System Settings → Privacy & Security → Automation',
+      keychain: 'Keychain access',
+      keychainHint: 'the token store could not read back the pairing token it just wrote',
       linger: 'lingering (the service keeps running after logout)',
       lingerHint: 'run `loginctl enable-linger $USER`',
       keepAwake: (mode: string, state: string) => `keep awake: ${mode} (${state})`,

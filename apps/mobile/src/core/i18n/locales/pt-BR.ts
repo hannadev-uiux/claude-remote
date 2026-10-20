@@ -434,6 +434,66 @@ const ptBR = {
       cancel: 'Cancelar',
     },
   },
+  systemPermissions: {
+    title: 'Permissões',
+    onThisPhone: 'Neste celular',
+    onThisComputer: 'Neste computador',
+    computerUnsupported: 'O daemon deste computador é antigo demais para reportar isso.',
+    allow: 'Permitir',
+    openSettings: 'Abrir Configurações',
+    openOnComputer: 'Abrir no computador',
+    status: {
+      allowed: 'Permitido',
+      denied: 'Negado',
+      not_asked: 'Não perguntado',
+      limited: 'Limitado',
+      not_available: 'Não disponível',
+    },
+    phone: {
+      notifications: {
+        label: 'Notificações',
+        reason: 'Para avisos de turnos concluídos, permissões e sessões esperando.',
+      },
+      camera: {
+        label: 'Câmera',
+        reason: 'Para escanear o QR code de pareamento e tirar fotos para anexar.',
+      },
+      photos: { label: 'Fotos', reason: 'Para anexar imagens aos prompts.' },
+      microphone: {
+        label: 'Microfone + Reconhecimento de voz',
+        reason: 'Para entrada por voz.',
+      },
+      localNetwork: {
+        label: 'Rede local',
+        reason: 'Para alcançar o computador na sua rede.',
+        hint: 'Inferido pela sua conexão atual, não é uma verificação direta.',
+      },
+    },
+    computer: {
+      folderAccess: {
+        label: 'Acesso a pastas',
+        reason: 'Para ler transcrições, informações do git, worktrees e anexos.',
+      },
+      fullDiskAccess: {
+        label: 'Acesso Total ao Disco',
+        reason: 'Evita um pedido de permissão por pasta.',
+      },
+      accessibility: {
+        label: 'Acessibilidade / Automação',
+        reason: 'Para focar janelas de terminal.',
+      },
+      desktopNotifications: {
+        label: 'Notificações do computador',
+        reason: 'Para avisos de atualização e a bandeja.',
+        unknownHint:
+          'O computador não consegue reportar isso por conta própria; confira direto nas Configurações do Sistema.',
+      },
+      keychain: {
+        label: 'Acesso ao Keychain',
+        reason: 'Para guardar o token de pareamento com segurança.',
+      },
+    },
+  },
   autocomplete: {
     empty: 'nenhuma sugestão',
     noCommands: 'nenhum comando encontrado',
@@ -771,6 +831,8 @@ const ptBR = {
     mutedSessions_one: '{{count}} sessão',
     mutedSessions_other: '{{count}} sessões',
     mutedSessionsTitle: 'Sessões',
+    permissions: 'Permissões',
+    permissionsHint: 'O que este celular e o computador têm permissão para acessar',
     documentation: 'Documentação',
     reportProblem: 'Relatar um problema',
   },

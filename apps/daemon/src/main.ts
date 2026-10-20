@@ -36,6 +36,7 @@ import { registerSessionsFeature } from './features/sessions/index.ts'
 import { justEnded } from './features/sessions/state.ts'
 import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
+import { registerSystemPermissionsFeature } from './features/system-permissions/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
 import {
   type DesktopOptions,
@@ -271,6 +272,7 @@ async function registerFeatures(
     lock: sessionLock,
     denyPending: (id) => void permissions.broker.denyAll(id),
   })
+  registerSystemPermissionsFeature(ctx, (profileId) => lifecycle.service.projects(profileId))
   const mute = await registerMuteFeature(ctx)
   const isMuted = (profileId: string | null, sessionId: string) => mute.store.isMuted(profileId, sessionId)
   const isEnded = (sessionId: string) => sessions.store.get(sessionId)?.state === 'ended'
