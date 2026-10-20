@@ -635,6 +635,10 @@ const esES = {
     detached: 'HEAD separado',
     worktree: 'Copia aislada (git worktree)',
     worktreeHint: 'El agente trabaja en su propia rama en .claude/worktrees, sin tocar este checkout.',
+    carryOver: 'Se lleva: {{items}}',
+    carryLocalSettings: 'Permisos locales (.claude/settings.local.json)',
+    carryHint:
+      'Para copiar archivos ignorados por git, como .env, lístalos en .worktreeinclude en la raíz del repositorio.',
     busy_one: 'Otra sesión está trabajando en este checkout:',
     busy_other: '{{count}} sesiones están trabajando en este checkout:',
     busyHint: 'El worktree mantiene las sesiones separadas.',

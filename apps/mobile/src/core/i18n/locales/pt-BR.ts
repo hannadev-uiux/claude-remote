@@ -635,6 +635,10 @@ const ptBR = {
     detached: 'HEAD destacado',
     worktree: 'Cópia isolada (git worktree)',
     worktreeHint: 'O agente trabalha numa branch própria em .claude/worktrees, sem mexer neste checkout.',
+    carryOver: 'Vai junto: {{items}}',
+    carryLocalSettings: 'Permissões locais (.claude/settings.local.json)',
+    carryHint:
+      'Para copiar arquivos ignorados pelo git, como .env, liste-os em .worktreeinclude na raiz do repositório.',
     busy_one: 'Outra sessão está trabalhando neste checkout:',
     busy_other: '{{count}} sessões estão trabalhando neste checkout:',
     busyHint: 'O worktree mantém as sessões separadas.',

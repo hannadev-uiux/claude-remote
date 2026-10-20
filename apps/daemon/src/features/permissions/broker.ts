@@ -10,6 +10,7 @@ import type {
 import { DaemonError } from '../../core/errors.ts'
 import type { Broadcaster } from '../../transport/connection.ts'
 import { adapterOf } from '../agents/index.ts'
+import { localSettingsRoot } from '../checkout/worktree-copy.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import { type HookEnd, handoverDelay, handoverOutcome, reminderDelay, timeoutFor } from './handover.ts'
 import { answerDecision, parseInteraction } from './interaction.ts'
@@ -262,7 +263,9 @@ export class PermissionBroker {
   }
 
   private ruleFile(info: PermissionRequestInfo, cwd: string, scope: RuleScope): string | null {
-    if (scope === 'project') return cwd ? join(cwd, '.claude', 'settings.local.json') : null
+    // A worktree Claude Code created keeps its project rules in the main checkout's file.
+    if (scope === 'project')
+      return cwd ? join(localSettingsRoot(cwd), '.claude', 'settings.local.json') : null
     const profile = this.options.profiles.find((p) => p.id === info.profileId)
     return profile ? join(profile.configDir, 'settings.json') : null
   }

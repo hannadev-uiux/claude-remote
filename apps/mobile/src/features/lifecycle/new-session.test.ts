@@ -1,9 +1,29 @@
 import { describe, expect, test } from 'vitest'
 import { createI18n } from '@/core/i18n/create'
-import { cleanSessionName, nameSuggestions, profileAgent, profileDetail, recentDetail } from './new-session'
+import {
+  cleanSessionName,
+  nameSuggestions,
+  profileAgent,
+  profileDetail,
+  recentDetail,
+  worktreeCarryOver,
+} from './new-session'
 
 const en = createI18n('en-US').t
 const pt = createI18n('pt-BR').t
+
+describe('worktree carry-over', () => {
+  test('lists local permissions and the include entries, or hints at .worktreeinclude', () => {
+    expect(worktreeCarryOver({ localSettings: true, include: ['.env'] }, en)).toEqual({
+      items: ['Local permissions (.claude/settings.local.json)', '.env'],
+      hint: null,
+    })
+    const bare = worktreeCarryOver({ localSettings: false, include: [] }, en)
+    expect(bare.items).toEqual([])
+    expect(bare.hint).toMatch(/\.worktreeinclude/)
+    expect(worktreeCarryOver(undefined, en)).toEqual({ items: [], hint: null })
+  })
+})
 
 describe('session name', () => {
   test('cleaned before it is sent; empty means no name', () => {
