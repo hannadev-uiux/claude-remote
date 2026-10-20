@@ -3,8 +3,17 @@ import { describe, expect, test } from 'vitest'
 import { formatElapsed } from '../../core/utils/time'
 import { pendingForStrip, stripSessionId } from './strip'
 
-const session = (id: string, state: Session['state'], updatedAt: string) =>
-  ({ id, state, updatedAt, profileId: 'p', title: id, cwd: '/w', subagents: [] }) as unknown as Session
+const session = (id: string, state: Session['state'], updatedAt: string, controllable = true) =>
+  ({
+    id,
+    state,
+    updatedAt,
+    controllable,
+    profileId: 'p',
+    title: id,
+    cwd: '/w',
+    subagents: [],
+  }) as unknown as Session
 
 const request = (requestId: string, sessionId: string, createdAt: string, interaction?: 'question') =>
   ({
@@ -21,6 +30,14 @@ const request = (requestId: string, sessionId: string, createdAt: string, intera
   }) as unknown as PermissionRequestInfo
 
 describe('pendingForStrip', () => {
+  test('leaves out read-only waiting sessions and requests of ended sessions (#220)', () => {
+    const readOnly = session('a', 'waiting', '2026-10-18T12:00:00Z', false)
+    const ended = session('b', 'ended', '2026-10-18T12:00:00Z', false)
+    expect(pendingForStrip([readOnly, ended], [request('r1', 'b', '2026-10-18T12:01:00Z')])).toBeNull()
+    // A request of a session the app does not know yet still shows.
+    expect(pendingForStrip([], [request('r2', 'x', '2026-10-18T12:01:00Z')])?.sessions).toBe(1)
+  })
+
   test('nothing waiting', () => {
     expect(pendingForStrip([session('a', 'running', '2026-10-18T12:00:00Z')], [])).toBeNull()
   })

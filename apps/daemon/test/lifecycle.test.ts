@@ -175,9 +175,12 @@ describe('LifecycleService', () => {
     expect(await service.resume('claudin', 'old')).toEqual({ paneId: '%9' })
     expect(await service.resume('claudin', 'old')).toEqual({ paneId: '%9' })
     expect(exec.calls).toHaveLength(1)
+    // It was waiting when its window closed: the dead pane ends it, so the new window starts idle.
+    store.upsert('old', { state: 'waiting' })
     alive.clear()
     await service.resume('claudin', 'old')
     expect(exec.calls).toHaveLength(2)
+    expect(store.get('old')?.state).toBe('idle')
   })
 
   test('concurrent resumes launch a single window', async () => {

@@ -101,7 +101,8 @@ export class LifecycleService {
         throw new DaemonError('bad_request', 'the session is already open in tmux')
       }
       if (await this.hasPane(launched)) return { paneId: launched }
-      this.store.upsert(sessionId, { paneId: null, controllable: false })
+      // Its pane closed: the session ended (never left read-only but still "waiting").
+      this.store.upsert(sessionId, { paneId: null, controllable: false, state: 'ended' })
     }
     // A repeated tap while Claude is still booting (or while the launcher is still running)
     // must not open another window; the promise is stored before any await.

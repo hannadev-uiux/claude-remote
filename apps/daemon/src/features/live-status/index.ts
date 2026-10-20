@@ -3,6 +3,7 @@ import { messagesFor } from '../../core/i18n/index.ts'
 import { hostName, shortenHome } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { PushSender } from '../push/sender.ts'
+import { justEnded } from '../sessions/state.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import type { EntryListener } from '../transcript/service.ts'
 import { LiveStatusService } from './service.ts'
@@ -58,6 +59,11 @@ export function registerLiveStatusFeature(
   })
   // Background tasks and subagents change outside the hooks: the count follows the session store.
   const offStore = options.store.onChange((session, previous) => {
+    // Pane gone or closed without a SessionEnd hook: the live status ends with the session too.
+    if (justEnded(session, previous)) {
+      if (service.has(session.id)) service.handle(session.id, { type: 'end' })
+      return
+    }
     const count = parallelTasks(session)
     if (service.has(session.id) && (!previous || parallelTasks(previous) !== count)) {
       service.handle(session.id, { type: 'tasks', count })
@@ -71,6 +77,9 @@ export function registerLiveStatusFeature(
 
   ctx.bus.on('hook', (hook) => {
     const sessionId = hook.payload.session_id
+    // Late hooks of an ended session (the registry already applied any revival) update nothing.
+    const ended = options.store.get(sessionId)?.state === 'ended'
+    if (ended && hook.event !== 'SessionEnd') return
     switch (hook.event) {
       case 'UserPromptSubmit':
         return service.handle(sessionId, { type: 'prompt' })

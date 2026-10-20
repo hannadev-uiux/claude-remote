@@ -122,6 +122,8 @@ export function findImage(raw: string, index: number): ImageData | null {
 const COMMAND_NAME = /<command-name>([\s\S]*?)<\/command-name>/
 const COMMAND_ARGS = /<command-args>([\s\S]*?)<\/command-args>/
 const COMMAND_STDOUT = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/
+/** What Claude Code writes for an empty command output or an empty assistant reply. */
+const NO_CONTENT = '(no content)'
 const TASK_NOTIFICATION = /<task-notification>([\s\S]*?)<\/task-notification>/g
 const BASH_INPUT = /<bash-input>([\s\S]*?)<\/bash-input>/
 const BASH_STDOUT = /<bash-stdout>([\s\S]*?)<\/bash-stdout>/
@@ -184,7 +186,11 @@ function classifyUserString(text: string): Classified[] {
     return [{ kind: 'system', subtype: 'command', text: `${name[1]?.trim()}${args ? ` ${args}` : ''}` }]
   }
   const stdout = COMMAND_STDOUT.exec(text)
-  if (stdout) return [{ kind: 'system', subtype: 'command_output', text: stdout[1]?.trim() ?? '' }]
+  if (stdout) {
+    const output = stdout[1]?.trim() ?? ''
+    // `/exit` and other commands without output: Claude Code's placeholder, not something to show.
+    return [{ kind: 'system', subtype: 'command_output', text: output === NO_CONTENT ? '' : output }]
+  }
   if (text.startsWith('<command-message>') || text.startsWith('<system-reminder>')) return []
   const tasks = [...text.matchAll(TASK_NOTIFICATION)].map((m) => taskNotification(m[1] ?? ''))
   if (tasks.length > 0) return tasks
@@ -255,10 +261,16 @@ function parseUser(line: Json, cursor: number): Draft[] {
   return drafts
 }
 
+/** An assistant text worth showing: not blank and not the empty-reply placeholder. */
+function hasText(text: string): boolean {
+  const trimmed = text.trim()
+  return trimmed !== '' && trimmed !== NO_CONTENT
+}
+
 function parseAssistant(line: Json): Draft[] {
   const message = isObject(line.message) ? line.message : {}
   const content = message.content
-  if (typeof content === 'string') return content.trim() ? [{ kind: 'assistant_text', text: content }] : []
+  if (typeof content === 'string') return hasText(content) ? [{ kind: 'assistant_text', text: content }] : []
   if (!Array.isArray(content)) return []
   const drafts: Draft[] = []
   for (const part of content) {
@@ -266,7 +278,7 @@ function parseAssistant(line: Json): Draft[] {
     switch (part.type) {
       case 'text': {
         const text = str(part.text) ?? ''
-        if (text.trim()) drafts.push({ kind: 'assistant_text', text })
+        if (hasText(text)) drafts.push({ kind: 'assistant_text', text })
         break
       }
       case 'thinking': {

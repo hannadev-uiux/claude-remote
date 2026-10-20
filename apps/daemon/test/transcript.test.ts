@@ -83,6 +83,23 @@ describe('parser', () => {
     for (const i of [0, 1, 2, 4, 5, 12, 14, 17, 18]) expect(parseTranscriptLine(lines[i]!, i)).toEqual([])
   })
 
+  test('drops the "(no content)" placeholder of /exit and of empty replies (#220)', () => {
+    const user = (text: string) =>
+      JSON.stringify({ type: 'user', uuid: 'u', message: { role: 'user', content: text } })
+    const assistant = (text: string) =>
+      JSON.stringify({ type: 'assistant', uuid: 'a', message: { content: [{ type: 'text', text }] } })
+    expect(
+      parseTranscriptLine(user('<command-name>/exit</command-name><command-args></command-args>'), 0),
+    ).toMatchObject([{ kind: 'system', subtype: 'command', text: '/exit' }])
+    expect(parseTranscriptLine(user('<local-command-stdout>(no content)</local-command-stdout>'), 1)).toEqual(
+      [],
+    )
+    expect(parseTranscriptLine(assistant('(no content)'), 2)).toEqual([])
+    expect(parseTranscriptLine(user('<local-command-stdout>Bye!</local-command-stdout>'), 3)).toMatchObject([
+      { kind: 'system', subtype: 'command_output', text: 'Bye!' },
+    ])
+  })
+
   test('truncates huge tool results', () => {
     const line = JSON.stringify({
       type: 'user',

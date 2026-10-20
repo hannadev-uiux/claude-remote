@@ -33,6 +33,7 @@ import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
 import { registerQueueFeature } from './features/queue/index.ts'
 import { registerSessionsFeature } from './features/sessions/index.ts'
+import { justEnded } from './features/sessions/state.ts'
 import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
@@ -269,7 +270,12 @@ async function registerFeatures(
   })
   const mute = await registerMuteFeature(ctx)
   const isMuted = (profileId: string | null, sessionId: string) => mute.store.isMuted(profileId, sessionId)
-  const push = await registerPushFeature(ctx, { isMuted, sender: ctx.pushSender })
+  const isEnded = (sessionId: string) => sessions.store.get(sessionId)?.state === 'ended'
+  // Whatever path ends a session (SessionEnd, pane gone, close), its pending requests go with it.
+  sessions.store.onChange((session, previous) => {
+    if (justEnded(session, previous)) permissions.broker.cancelAll(session.id)
+  })
+  const push = await registerPushFeature(ctx, { isMuted, isEnded, sender: ctx.pushSender })
   registerLiveStatusFeature(ctx, {
     store: sessions.store,
     sender: push.sender,
