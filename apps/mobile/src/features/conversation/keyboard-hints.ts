@@ -15,6 +15,7 @@ export function keyboardHints(state: { pendingPermission: boolean }, t: TFunctio
     { keys: '⌘T', label: t('keys.terminal') },
     { keys: '⌘.', label: t('keys.esc') },
     { keys: '⌘⇧M', label: t('keys.mode') },
+    { keys: '⌘/', label: t('keys.shortcuts') },
   ]
   if (state.pendingPermission) hints.push({ keys: '⌘A / ⌘D', label: t('keys.answer') })
   return hints
