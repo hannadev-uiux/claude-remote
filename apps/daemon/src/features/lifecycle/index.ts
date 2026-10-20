@@ -36,9 +36,16 @@ export function registerLifecycleFeature(
   const closer = new CloseService({
     store,
     tmux: ctx.tmux,
-    git: new GitClient(ctx.exec),
+    git: new GitClient(ctx.exec, {
+      onPurgeError: (path, error) =>
+        ctx.logger.warn(
+          { path, reason: error instanceof Error ? error.message : String(error) },
+          'worktree purge failed',
+        ),
+    }),
     lock: closing.lock,
     denyPending: closing.denyPending,
+    log: ctx.logger,
   })
 
   ctx.router.register('session.start', async (msg) => {

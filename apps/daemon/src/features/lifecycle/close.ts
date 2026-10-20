@@ -1,6 +1,7 @@
 import type { CloseResult, WorktreeAction, WorktreeInfo } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
 import type { KeyedMutex } from '../../core/keyed-mutex.ts'
+import type { Logger } from '../../core/logger.ts'
 import type { GitClient } from '../../infra/git.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
 import type { SessionStore } from '../sessions/store.ts'
@@ -20,6 +21,8 @@ export type CloseDeps = {
   lock: Pick<KeyedMutex, 'run'>
   /** Denies the session's pending permission requests, so the agent is not left stuck in the hook. */
   denyPending: (sessionId: string) => void
+  /** Where failed cleanups are logged, with the worktree path. */
+  log?: Pick<Logger, 'warn'>
   sleep?: (ms: number) => Promise<void>
   timeoutMs?: number
   pollMs?: number
@@ -97,10 +100,24 @@ export class CloseService {
     try {
       if (plan.commit) await this.deps.git.commitAll(info.path, WIP_COMMIT_MESSAGE)
       if (plan.push) await this.deps.git.push(info.path)
+      // git's own "is it clean?" check does not run on removal: look again right before it (the
+      // agent may have written while exiting, and a push-delete must have left nothing behind).
+      if (!plan.force) {
+        const now = await this.deps.git.worktreeInfo(info.path)
+        if (now && (now.dirty > 0 || now.unpushed > 0)) {
+          throw new DaemonError(
+            'bad_request',
+            `the worktree changed: ${now.dirty} modified or untracked files, ${now.unpushed} unpushed commits`,
+          )
+        }
+      }
       await this.deps.git.removeWorktree(info, { force: plan.force })
     } catch (error) {
-      // A failed push (or remove) keeps the worktree: nothing is lost, the app shows git's message.
-      throw new DaemonError('internal', error instanceof Error ? error.message : String(error))
+      // A failed push, move or lock check keeps the worktree: nothing is lost, the app shows why.
+      const message = error instanceof Error ? error.message : String(error)
+      this.deps.log?.warn({ path: info.path, action, reason: message }, 'worktree cleanup failed')
+      if (error instanceof DaemonError) throw error
+      throw new DaemonError('internal', message)
     }
   }
 

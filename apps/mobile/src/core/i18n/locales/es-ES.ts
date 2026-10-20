@@ -222,6 +222,9 @@ const esES = {
     discardTitle: '¿Descartar los cambios?',
     discardBody: 'Los archivos modificados y los commits sin push se pierden definitivamente.',
     discardConfirm: 'Descartar y eliminar',
+    cleanupFailed: 'El worktree no se eliminó. No se perdió nada.',
+    retry: 'Reintentar',
+    keepAfterFailure: 'Mantener el worktree',
   },
   providers: {
     via: 'vía {{provider}}',
