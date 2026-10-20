@@ -339,6 +339,15 @@ program
           if (!isDefaultConfigDir(configDir)) env.CLAUDE_CONFIG_DIR = configDir
           return runInteractive('claude', [], { cwd: homedir(), env })
         },
+        providerKeyStore: async (profileId) => {
+          const { kind } = await selectStore()
+          return {
+            store: providerKeyStore(kind, execaExecutor, profileId),
+            label: tokenStoreLabel(kind, paths.providerKey(profileId)),
+          }
+        },
+        // A gateway that does not answer must not hang the setup.
+        fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }),
       })
     } catch (error) {
       // Ctrl+C inside a prompt

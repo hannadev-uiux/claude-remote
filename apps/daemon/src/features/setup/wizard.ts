@@ -1,13 +1,24 @@
 import { copyFile, mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { checkbox, confirm, input, select } from '@inquirer/prompts'
-import { LOCALE_NAMES, LOCALES, type Locale, LocaleSchema, type Profile } from '@remote-harness/protocol'
+import { checkbox, confirm, input, password, select } from '@inquirer/prompts'
+import {
+  LOCALE_NAMES,
+  LOCALES,
+  type Locale,
+  LocaleSchema,
+  PROVIDER_NAMES,
+  type Profile,
+  type ProviderKind,
+} from '@remote-harness/protocol'
 import { ConfigSchema } from '../../core/config.ts'
 import { type Messages, messagesFor, systemLocale } from '../../core/i18n/index.ts'
 import { expandHome, paths } from '../../core/paths.ts'
+import type { SecretStore } from '../../core/secrets.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory, readJsonFile, writeJsonAtomic } from '../../infra/fs.ts'
 import { BACKUP_SUFFIX } from '../hooks/installer.ts'
+import { checkProviderKey } from '../providers/key-check.ts'
+import type { ProviderFetch } from '../providers/service.ts'
 import type { ServiceManager } from '../service/service-manager.ts'
 import type { WslHost } from '../wsl/host.ts'
 import { box, type Paint, renderLogo, renderWelcome } from './banner.ts'
@@ -17,8 +28,10 @@ import {
   mergeConfig,
   profilesToRemove,
   readLogin,
+  sameDir,
   suggestNewConfigDir,
   suggestProfile,
+  suggestProviderProfile,
   tildify,
   validateAlias,
   validateNewConfigDir,
@@ -39,6 +52,10 @@ export type WizardOptions = InstallOptions & {
   pair: (host: string) => Promise<void>
   /** Opens Claude Code on this terminal with CLAUDE_CONFIG_DIR=configDir (for the login). */
   runClaude: (configDir: string) => Promise<number>
+  /** The secret store of a profile's provider key and where it is (for the output; never the key). */
+  providerKeyStore: (profileId: string) => Promise<{ store: SecretStore; label: string }>
+  /** Checks provider keys with the gateway; injected so the wizard can be driven offline. */
+  fetch: ProviderFetch
   /** Present inside WSL2: systemd in /etc/wsl.conf, mirrored networking and the Windows logon task. */
   wsl?: WslHost
   /** `--lang`: skips the language question. */
@@ -127,13 +144,24 @@ async function chooseLocale(o: WizardOptions, raw: unknown): Promise<Locale> {
   })
 }
 
-/** Asks which config dirs to manage and the alias/name of each; returns the new profile list. */
-async function askProfiles(o: Ctx, existing: readonly Profile[], dirs: string[]): Promise<Profile[]> {
+/** The new profile list and the provider keys typed during the wizard (stored only after saving). */
+type ProfileAnswers = { profiles: Profile[]; keys: Map<string, string> }
+
+/**
+ * Asks which config dirs to manage and the alias/name of each, what to do with the provider
+ * profiles already configured, and adds new provider profiles.
+ */
+async function askProfiles(o: Ctx, existing: readonly Profile[], allDirs: string[]): Promise<ProfileAnswers> {
   const theme = themeFor(o.paint, o.m)
   const t = o.m.setup.accounts
   const mp = o.m.profiles
   console.log(o.paint('muted', t.explain))
-  const configured = new Set(existing.map((p) => tildify(expandHome(p.configDir), o.home)))
+  // Provider profiles are managed one by one below, never through the accounts checkbox.
+  const providerProfiles = existing.filter((p) => p.provider)
+  const dirs = allDirs.filter((dir) => !providerProfiles.some((p) => sameDir(p.configDir, dir)))
+  const configured = new Set(
+    existing.filter((p) => !p.provider).map((p) => tildify(expandHome(p.configDir), o.home)),
+  )
   let selected: string[] = []
   if (dirs.length > 0) {
     selected = await checkbox({
@@ -153,11 +181,15 @@ async function askProfiles(o: Ctx, existing: readonly Profile[], dirs: string[])
     console.log(o.paint('muted', t.noneFound(o.m.machine[o.platform])))
   }
 
+  const { providers, keys } = await manageProviderProfiles(o, providerProfiles)
+  const tp = o.m.setup.provider
+  const openRouter = PROVIDER_NAMES.openrouter
   for (;;) {
+    const any = selected.length + providers.length > 0
     const next = await select({
-      message: selected.length > 0 ? t.more : t.howToAdd,
+      message: any ? t.more : t.howToAdd,
       choices: [
-        ...(selected.length > 0 ? [{ name: t.noContinue, value: 'done' }] : []),
+        ...(any ? [{ name: t.noContinue, value: 'done' }] : []),
         {
           name: t.create,
           value: 'create',
@@ -168,13 +200,24 @@ async function askProfiles(o: Ctx, existing: readonly Profile[], dirs: string[])
           value: 'existing',
           description: t.existingDescription,
         },
+        { name: tp.add(openRouter), value: 'provider', description: tp.addDescription(openRouter) },
       ],
       theme,
     })
     if (next === 'done') break
+    if (next === 'provider') {
+      const added = await createProviderProfile(o, 'openrouter', {
+        ids: providers.map((p) => p.id),
+        dirs: [...dirs, ...selected, ...providers.map((p) => p.configDir)],
+        index: selected.length + providers.length,
+      })
+      providers.push(added.profile)
+      if (added.key) keys.set(added.profile.id, added.key)
+      continue
+    }
     const dir =
       next === 'create'
-        ? await createAccount(o, [...dirs, ...selected])
+        ? await createAccount(o, [...dirs, ...selected, ...providers.map((p) => p.configDir)])
         : await input({
             message: t.folderPath,
             theme,
@@ -192,37 +235,194 @@ async function askProfiles(o: Ctx, existing: readonly Profile[], dirs: string[])
   for (const [i, dir] of selected.entries()) {
     const suggestion = suggestProfile(dir, existing, i, mp)
     console.log(`\n  ${o.paint('accent', '▸')} ${o.paint('bold', dir)}`)
-    const taken = profiles.map((p) => p.id)
-    let id = ''
-    for (;;) {
-      id = (
-        await input({
-          message: t.alias,
-          default: taken.includes(suggestion.id) ? undefined : suggestion.id,
-          theme,
-          validate: (value) => validateAlias(value.trim(), taken, mp),
-        })
-      ).trim()
-      const clash = await commandOnPath(o.exec, id)
-      if (!clash) break
-      const keep = await confirm({
-        message: t.aliasClash(id, clash),
-        default: false,
-        theme: yesNoTheme(o.paint, o.m),
-      })
-      if (keep) break
-    }
-    const name = (
-      await input({
-        message: t.name,
-        default: suggestion.name,
-        theme,
-        validate: (value) => (value.trim() ? true : t.nameRequired),
-      })
-    ).trim()
+    const id = await askAlias(
+      o,
+      suggestion.id,
+      [...profiles, ...providers].map((p) => p.id),
+    )
+    const name = await askName(o, suggestion.name)
     profiles.push({ ...suggestion, id, name })
   }
-  return profiles
+  return { profiles: [...profiles, ...providers], keys }
+}
+
+/** A valid, unique alias; a command already on PATH with that name needs the user's consent. */
+async function askAlias(o: Ctx, suggested: string, taken: readonly string[]): Promise<string> {
+  const t = o.m.setup.accounts
+  for (;;) {
+    const id = (
+      await input({
+        message: t.alias,
+        default: taken.includes(suggested) ? undefined : suggested,
+        theme: themeFor(o.paint, o.m),
+        validate: (value) => validateAlias(value.trim(), taken, o.m.profiles),
+      })
+    ).trim()
+    const clash = await commandOnPath(o.exec, id)
+    if (!clash) return id
+    const keep = await confirm({
+      message: t.aliasClash(id, clash),
+      default: false,
+      theme: yesNoTheme(o.paint, o.m),
+    })
+    if (keep) return id
+  }
+}
+
+async function askName(o: Ctx, suggested: string): Promise<string> {
+  const t = o.m.setup.accounts
+  return (
+    await input({
+      message: t.name,
+      default: suggested,
+      theme: themeFor(o.paint, o.m),
+      validate: (value) => (value.trim() ? true : t.nameRequired),
+    })
+  ).trim()
+}
+
+/** Setup again: keep, re-key or remove each configured provider profile. */
+async function manageProviderProfiles(
+  o: Ctx,
+  configured: readonly Profile[],
+): Promise<{ providers: Profile[]; keys: Map<string, string> }> {
+  const providers: Profile[] = []
+  const keys = new Map<string, string>()
+  const tp = o.m.setup.provider
+  const kinds = [...new Set(configured.flatMap((p) => (p.provider ? [PROVIDER_NAMES[p.provider.kind]] : [])))]
+  if (kinds.length > 0) console.log(o.paint('muted', tp.title(kinds.join(', '))))
+  for (const profile of configured) {
+    if (!profile.provider) continue
+    const { store } = await o.providerKeyStore(profile.id)
+    const hasKey = (await store.get().catch(() => null)) !== null
+    const name = PROVIDER_NAMES[profile.provider.kind]
+    const next = await select({
+      message: tp.manage(profile.id, name, hasKey ? tp.keyStored : tp.keyMissing),
+      choices: [
+        { name: tp.keep, value: 'keep' },
+        { name: tp.replaceKey, value: 'key' },
+        { name: tp.remove, value: 'remove', description: tp.removeDescription },
+      ],
+      default: hasKey ? 'keep' : 'key',
+      theme: themeFor(o.paint, o.m),
+    })
+    if (next === 'remove') continue
+    providers.push(profile)
+    if (next !== 'key') continue
+    const key = await askProviderKey(o, profile)
+    if (key) keys.set(profile.id, key)
+  }
+  return { providers, keys }
+}
+
+/** Name, alias, folder (created, no login), default model and key of a new provider profile. */
+async function createProviderProfile(
+  o: Ctx,
+  kind: ProviderKind,
+  taken: { ids: readonly string[]; dirs: readonly string[]; index: number },
+): Promise<{ profile: Profile; key: string | null }> {
+  const theme = themeFor(o.paint, o.m)
+  const tp = o.m.setup.provider
+  const suggestion = suggestProviderProfile(kind, taken.ids, taken.dirs, taken.index)
+  console.log(`\n  ${o.paint('accent', '▸')} ${o.paint('bold', PROVIDER_NAMES[kind])}`)
+  const name = await askName(o, suggestion.name)
+  const id = await askAlias(o, suggestion.id, taken.ids)
+  const dir = (
+    await input({
+      message: tp.folder,
+      default: suggestion.configDir,
+      theme,
+      validate: (value) => validateNewConfigDir(value, taken.dirs, o.m.profiles),
+    })
+  ).trim()
+  await mkdir(expandHome(dir), { recursive: true })
+  const model = (await input({ message: tp.model, theme })).trim()
+  const profile: Profile = {
+    ...suggestion,
+    id,
+    name,
+    configDir: tildify(expandHome(dir), o.home),
+    provider: { kind, ...(model ? { model } : {}) },
+  }
+  return { profile, key: await askProviderKey(o, profile) }
+}
+
+/**
+ * The key from a hidden prompt, checked with the gateway. `null` = no key for now (empty answer
+ * or skipped after a rejection). Nothing is stored here: see `saveProviderKeys`.
+ */
+async function askProviderKey(o: Ctx, profile: Profile): Promise<string | null> {
+  if (!profile.provider) return null
+  const { paint } = o
+  const tp = o.m.setup.provider
+  const theme = themeFor(paint, o.m)
+  const name = PROVIDER_NAMES[profile.provider.kind]
+  for (;;) {
+    const key = (await password({ message: tp.key(name), mask: '•', theme })).trim()
+    if (!key) {
+      console.log(paint('muted', `  ${tp.later(profile.id)}`))
+      return null
+    }
+    console.log(paint('muted', `  ${tp.checking(name)}`))
+    const check = await checkProviderKey(o.fetch, profile.provider, key)
+    if (check.status === 'valid') {
+      const left = check.credits ? `$${(check.credits.total - check.credits.used).toFixed(2)}` : null
+      console.log(`  ${paint('success', '✓')} ${left ? tp.acceptedCredits(left) : tp.accepted}`)
+      return key
+    }
+    if (check.status === 'unknown') {
+      console.log(paint('muted', `  ${tp.unchecked(name, check.reason)}`))
+      return key
+    }
+    console.log(paint('danger', `  ${tp.rejected(name)}`))
+    const next = await select({
+      message: tp.whatNow,
+      choices: [
+        { name: tp.retry, value: 'retry' },
+        { name: tp.keepAnyway, value: 'keep' },
+        { name: tp.skip, value: 'skip' },
+      ],
+      theme,
+    })
+    if (next === 'keep') return key
+    if (next === 'skip') {
+      console.log(paint('muted', `  ${tp.later(profile.id)}`))
+      return null
+    }
+  }
+}
+
+/** After the config is written: deletes the keys of removed provider profiles, stores the new ones. */
+async function saveProviderKeys(
+  o: Ctx,
+  previous: readonly Profile[],
+  next: readonly Profile[],
+  keys: ReadonlyMap<string, string>,
+): Promise<void> {
+  const tp = o.m.setup.provider
+  const removed = previous.filter(
+    (p) => p.provider && !keys.has(p.id) && !next.some((n) => n.id === p.id && n.provider),
+  )
+  const lines: InstallLine[] = []
+  for (const profile of removed) {
+    const { store } = await o.providerKeyStore(profile.id)
+    try {
+      await store.delete()
+      lines.push({ status: 'done', text: tp.keyRemoved(profile.id) })
+    } catch (error) {
+      console.log(o.paint('danger', `  ${(error as Error).message}`))
+    }
+  }
+  for (const [id, key] of keys) {
+    const { store, label } = await o.providerKeyStore(id)
+    try {
+      await store.set(key)
+      lines.push({ status: 'done', text: tp.keySaved(id, label) })
+    } catch (error) {
+      console.log(o.paint('danger', `  ${tp.keyFailed(id, (error as Error).message)}`))
+    }
+  }
+  printLines(o.paint, lines, o.home)
 }
 
 /**
@@ -431,16 +631,16 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   if (dirs.length === 0 && !o.interactive) {
     throw new SetupAborted(s.noAccounts)
   }
-  const profiles = o.interactive
+  const { profiles, keys } = o.interactive
     ? await askProfiles(o, existing, dirs)
-    : defaultProfiles(existing, dirs, m.profiles)
+    : { profiles: defaultProfiles(existing, dirs, m.profiles), keys: new Map<string, string>() }
 
   console.log(
     `\n${box(
-      profiles.map(
-        (p) =>
-          `${paint('accent', p.id.padEnd(16))} ${paint('text', p.name.padEnd(14))} ${paint('muted', p.configDir)}`,
-      ),
+      profiles.map((p) => {
+        const via = p.provider ? ` ${paint('dim', s.provider.via(PROVIDER_NAMES[p.provider.kind]))}` : ''
+        return `${paint('accent', p.id.padEnd(16))} ${paint('text', p.name.padEnd(14))} ${paint('muted', p.configDir)}${via}`
+      }),
       paint,
     )}`,
   )
@@ -452,6 +652,7 @@ export async function runSetupWizard(options: WizardOptions): Promise<void> {
   await writeConfig(raw, profiles, locale)
   printLines(paint, [{ status: 'done', text: `config ${paths.config()}` }], o.home)
   printLines(paint, await removeProfiles(profilesToRemove(existing, profiles), m.install), o.home)
+  await saveProviderKeys(o, existing, profiles, keys)
   const resolved = profiles.map((p) => ({ ...p, configDir: expandHome(p.configDir) }))
   const config = ConfigSchema.parse(mergeConfig(raw, profiles, locale))
   printLines(paint, await installAll(config, resolved, o, m.install), o.home)

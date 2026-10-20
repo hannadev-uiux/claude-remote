@@ -2,7 +2,7 @@ import { existsSync, statSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
-import type { Locale, Profile } from '@remote-harness/protocol'
+import { type Locale, PROVIDER_NAMES, type Profile, type ProviderKind } from '@remote-harness/protocol'
 import type { Messages } from '../../core/i18n/index.ts'
 import { expandHome } from '../../core/paths.ts'
 import { isDirectory } from '../../infra/fs.ts'
@@ -57,7 +57,7 @@ export function isCodexDir(configDir: string): boolean {
   return /(^|\/)\.codex(-[\w.-]+)?\/?$/.test(configDir)
 }
 
-function sameDir(a: string, b: string): boolean {
+export function sameDir(a: string, b: string): boolean {
   return expandHome(a).replace(/\/+$/, '') === expandHome(b).replace(/\/+$/, '')
 }
 
@@ -84,6 +84,36 @@ export function suggestProfile(
   const id = suffix ? `claude-${suffix.toLowerCase().replace(/[^a-z0-9_-]/g, '-')}` : 'claudin'
   const name = suffix ? capitalize(suffix.replace(/[-_.]+/g, ' ')) : m.defaultName
   return { id, name, configDir, color: PROFILE_COLORS[index % PROFILE_COLORS.length] ?? '#D97757' }
+}
+
+/** `base`, then `base-2`, `base-3`… : the first one `isTaken` refuses. */
+function firstFree(base: string, isTaken: (candidate: string) => boolean): string {
+  let candidate = base
+  for (let n = 2; isTaken(candidate); n++) candidate = `${base}-${n}`
+  return candidate
+}
+
+/**
+ * A new profile routed through a provider: alias and folder named after it (`openrouter`,
+ * `~/.claude-openrouter`, then `-2`…), free among the aliases and folders already in the list.
+ */
+export function suggestProviderProfile(
+  kind: ProviderKind,
+  takenIds: readonly string[],
+  takenDirs: readonly string[],
+  index: number,
+): Profile {
+  const id = firstFree(kind, (candidate) => takenIds.includes(candidate))
+  const configDir = firstFree(`~/.claude-${kind}`, (candidate) =>
+    takenDirs.some((t) => sameDir(t, candidate)),
+  )
+  return {
+    id,
+    name: PROVIDER_NAMES[kind],
+    configDir,
+    color: PROFILE_COLORS[index % PROFILE_COLORS.length] ?? '#D97757',
+    provider: { kind },
+  }
 }
 
 /** `true` when valid, otherwise the message to show (inquirer's `validate` contract). */

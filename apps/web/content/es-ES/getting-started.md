@@ -25,6 +25,7 @@ El instalador comprueba el sistema y Node, instala las herramientas que faltan (
 
 - encuentra tus cuentas de Claude Code (`~/.claude`, `~/.claude-*`) y te deja elegir cuáles controlar, o crea una nueva y abre Claude Code en ella para que inicies sesión;
 - pregunta el alias de cada una: el comando que abre esa cuenta dentro de tmux (por ejemplo `personal`, `trabajo`);
+- puede añadir un [perfil de OpenRouter](/es/docs/daemon/#perfiles-y-openrouter): Claude Code pagado con tu clave de OpenRouter, que comprueba y guarda en el almacén de secretos del sistema;
 - instala los lanzadores, la entrada en el `PATH` y los hooks (con copias de seguridad), y el servicio en segundo plano;
 - ayuda con Tailscale y muestra el código QR de emparejamiento.
 
