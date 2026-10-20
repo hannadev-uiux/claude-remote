@@ -365,6 +365,13 @@ const serverSamples: ServerMessage[] = [
   },
   { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
+  {
+    type: 'checkout.info',
+    replyTo: '1',
+    checkout: { root: '/tmp', branch: 'main' },
+    peers: [],
+    worktreeCopy: { localSettings: true, include: ['.env'] },
+  },
   { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
   { type: 'transcript.image', replyTo: '1', imageId: '12.0', mediaType: 'image/png', data: 'iVBORw0KGgo=' },
   {

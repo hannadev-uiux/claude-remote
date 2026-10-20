@@ -281,6 +281,23 @@ describe('PermissionBroker', () => {
     ])
   })
 
+  test('a project rule approved in a worktree session is recorded in the main checkout', async () => {
+    const { broker, requestId, rules } = setup()
+    const hook = hookEvent('PermissionRequest', {
+      session_id: 's',
+      cwd: '/w/.claude/worktrees/login',
+      tool_name: 'Bash',
+      tool_input: { command: 'pnpm test' },
+    })
+    const pending = broker.handle(hook, new AbortController().signal)
+    broker.respond(requestId(), {
+      behavior: 'allow',
+      always: { rule: 'Bash(pnpm test:*)', scope: 'project' },
+    })
+    await pending
+    expect(rules).toMatchObject([{ file: '/w/.claude/settings.local.json' }])
+  })
+
   const QUESTION = {
     name: 'AskUserQuestion',
     input: {

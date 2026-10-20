@@ -1,4 +1,10 @@
-import { type Profile, type ProjectItem, SESSION_NAME_MAX, type Session } from '@remote-harness/protocol'
+import {
+  type Profile,
+  type ProjectItem,
+  SESSION_NAME_MAX,
+  type Session,
+  type WorktreeCopy,
+} from '@remote-harness/protocol'
 import type { TFunction } from '@/core/i18n/create'
 import { AGENT_NAMES, type AgentId } from '@/core/theme/agents'
 import { shortPath } from '@/core/utils/time'
@@ -52,6 +58,19 @@ export function nameSuggestions(
     0,
     MAX_NAME_SUGGESTIONS,
   )
+}
+
+/**
+ * What the isolated copy inherits, listed under the worktree toggle: local permissions and the
+ * `.worktreeinclude` entries, or a hint to add that file. Empty for a daemon that does not say.
+ */
+export function worktreeCarryOver(
+  copy: WorktreeCopy | undefined,
+  t: TFunction,
+): { items: string[]; hint: string | null } {
+  if (!copy) return { items: [], hint: null }
+  const items = [...(copy.localSettings ? [t('newSession.carryLocalSettings')] : []), ...copy.include]
+  return { items, hint: copy.include.length === 0 ? t('newSession.carryHint') : null }
 }
 
 /** `⎇ main · 2 sessions this week` for a recent directory; `null` when nothing is known. */

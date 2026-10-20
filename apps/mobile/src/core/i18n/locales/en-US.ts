@@ -636,6 +636,10 @@ const enUS = {
     detached: 'detached HEAD',
     worktree: 'Isolated copy (git worktree)',
     worktreeHint: 'The agent works on its own branch in .claude/worktrees, without touching this checkout.',
+    carryOver: 'Carried over: {{items}}',
+    carryLocalSettings: 'Local permissions (.claude/settings.local.json)',
+    carryHint:
+      'To copy git-ignored files such as .env, list them in .worktreeinclude at the repository root.',
     busy_one: 'Another session is working in this checkout:',
     busy_other: '{{count}} sessions are working in this checkout:',
     busyHint: 'The worktree keeps them apart.',

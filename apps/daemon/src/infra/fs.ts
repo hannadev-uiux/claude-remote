@@ -26,6 +26,19 @@ export async function writeJsonAtomic(path: string, data: unknown, mode?: number
   await writeFileAtomic(path, `${JSON.stringify(data, null, 2)}\n`, mode)
 }
 
+export async function isFile(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isFile()
+  } catch {
+    return false
+  }
+}
+
+/** The file's text, or null when it is missing or unreadable. */
+export async function readTextFile(path: string): Promise<string | null> {
+  return readFile(path, 'utf8').catch(() => null)
+}
+
 export async function isDirectory(path: string): Promise<boolean> {
   try {
     return (await stat(path)).isDirectory()

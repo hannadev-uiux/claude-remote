@@ -2,11 +2,13 @@ import { homedir } from 'node:os'
 import { isDeepStrictEqual } from 'node:util'
 import { checkoutPeers } from '@remote-harness/protocol'
 import { DaemonError } from '../../core/errors.ts'
+import { isFile, readTextFile } from '../../infra/fs.ts'
 import { GitClient } from '../../infra/git.ts'
 import type { DaemonContext } from '../../main.ts'
 import { validateCwd } from '../lifecycle/service.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { CheckoutResolver, needsCheckout } from './resolver.ts'
+import { inspectWorktreeCopy } from './worktree-copy.ts'
 
 /** Keeps `session.checkout` up to date and answers `checkout.inspect`. */
 export function registerCheckoutFeature(ctx: DaemonContext, store: SessionStore, home = homedir()) {
@@ -30,7 +32,10 @@ export function registerCheckoutFeature(ctx: DaemonContext, store: SessionStore,
     const cwd = await validateCwd(msg.cwd, home)
     const checkout = await resolver.resolve(cwd, { fresh: true })
     const peers = checkoutPeers({ id: '', checkout }, store.all()).map((s) => ({ id: s.id, title: s.title }))
-    return { type: 'checkout.info', checkout, peers }
+    const worktreeCopy = checkout
+      ? await inspectWorktreeCopy(checkout.root, { exists: isFile, read: readTextFile })
+      : undefined
+    return { type: 'checkout.info', checkout, peers, ...(worktreeCopy ? { worktreeCopy } : {}) }
   })
 
   return { resolver }

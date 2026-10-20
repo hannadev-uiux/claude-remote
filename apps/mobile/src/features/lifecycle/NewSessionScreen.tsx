@@ -29,6 +29,7 @@ import {
   profileAgent,
   profileDetail,
   recentDetail,
+  worktreeCarryOver,
 } from './new-session'
 import { useOpenAfterCreateSettings } from './open-after-create-store'
 import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
@@ -107,6 +108,7 @@ export function NewSessionScreen() {
   const checkout = current?.checkout ?? null
   const worktreeAllowed = selectedProfile ? canStartInWorktree(profileAgent(selectedProfile)) : false
   const peers = current?.peers ?? []
+  const carryOver = worktreeCarryOver(current?.worktreeCopy, t)
   const nameChips = cwd.trim()
     ? nameSuggestions(checkout?.branch ?? null, Object.values(sessions), cwd.trim())
     : []
@@ -394,6 +396,16 @@ export function NewSessionScreen() {
               <Text size="xs" color="textDim">
                 {t('newSession.worktreeHint')}
               </Text>
+              {carryOver.items.length > 0 ? (
+                <Text size="xs" color="textMuted">
+                  {t('newSession.carryOver', { items: carryOver.items.join(' · ') })}
+                </Text>
+              ) : null}
+              {carryOver.hint ? (
+                <Text size="xs" color="textDim">
+                  {carryOver.hint}
+                </Text>
+              ) : null}
             </View>
             <Switch
               value={worktree}

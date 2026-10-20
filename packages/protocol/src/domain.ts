@@ -160,6 +160,13 @@ export function checkoutPeers<T extends Pick<Session, 'id' | 'controllable' | 's
 export const CheckoutPeerSchema = z.object({ id: z.string(), title: z.string() })
 export type CheckoutPeer = z.infer<typeof CheckoutPeerSchema>
 
+/**
+ * What a worktree started in a checkout inherits (Claude Code does it): the checkout's local
+ * settings, when it has `.claude/settings.local.json`, and the entries of its `.worktreeinclude`.
+ */
+export const WorktreeCopySchema = z.object({ localSettings: z.boolean(), include: z.array(z.string()) })
+export type WorktreeCopy = z.infer<typeof WorktreeCopySchema>
+
 /** A linked git worktree a session works in (never the repository's main checkout). */
 export const WorktreeInfoSchema = z.object({
   path: z.string(),

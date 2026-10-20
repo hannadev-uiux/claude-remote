@@ -224,6 +224,7 @@ describe('checkout feature', () => {
       replyTo: '1',
       checkout: api,
       peers: [{ id: 'live', title: 'Fix login' }],
+      worktreeCopy: { localSettings: false, include: [] },
     })
     await router.dispatch({ type: 'checkout.inspect', id: '2', profileId: 'claudin', cwd: '/etc' }, conn)
     expect(conn.sent[1]).toMatchObject({ type: 'error', code: 'invalid_cwd' })
