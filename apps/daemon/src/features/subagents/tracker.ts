@@ -8,10 +8,22 @@ import type { Broadcaster } from '../../transport/connection.ts'
 import type { HookEvent } from '../hooks/payloads.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import type { SessionRecord } from '../sessions/types.ts'
-import { parseTranscriptLine } from '../transcript/parser.ts'
+import { parseTranscriptLine, subagentOutcome, subagentPromptLine } from '../transcript/parser.ts'
 
 /** Subagents with no transcript activity for this long, in an idle session, are considered done. */
 export const INACTIVITY_MS = 2 * 60_000
+/**
+ * After `SubagentStop`, when to look at the parent's transcript for how the subagent ended: the
+ * tool result (or a background task's notification) is written after the subagent stops.
+ */
+export const OUTCOME_CHECKS_MS = [3_000, 15_000, 60_000] as const
+/** How much of the end of the parent's transcript an outcome check reads. */
+const OUTCOME_TAIL_BYTES = 512 * 1024
+
+/** A name from the meta file or a hook: trimmed, and `null` when empty. */
+export function cleanName(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
 
 const AGENT_FILE = /^agent-(.+)\.jsonl$/
 const NEWLINE = 0x0a
@@ -45,6 +57,8 @@ type Cursor = {
   rest: Buffer
   tools: number
   startedAt: string | null
+  /** First line of the subagent's prompt (its first user message), the name of last resort. */
+  prompt: string | null
   pending: Promise<void>
 }
 
@@ -53,6 +67,8 @@ type Tracked = {
   dir: string
   lastActivity: Map<string, number>
   cursors: Map<string, Cursor>
+  /** The parent's tool call that spawned each subagent (from its meta file). */
+  toolUseIds: Map<string, string>
 }
 
 /** Watches each live session's `subagents/` folder and keeps `session.subagents` up to date. */
@@ -61,14 +77,17 @@ export class SubagentTracker {
   private readonly sweeper: NodeJS.Timeout
   private readonly dirPoller: NodeJS.Timeout
   private readonly now: () => number
+  private readonly outcomeChecksMs: readonly number[]
+  private readonly outcomeTimers = new Set<NodeJS.Timeout>()
 
   constructor(
     private readonly store: SessionStore,
     private readonly broadcaster: Broadcaster,
     private readonly logger: Logger,
-    options: { now?: () => number; dirPollMs?: number } = {},
+    options: { now?: () => number; dirPollMs?: number; outcomeChecksMs?: readonly number[] } = {},
   ) {
     this.now = options.now ?? Date.now
+    this.outcomeChecksMs = options.outcomeChecksMs ?? OUTCOME_CHECKS_MS
     this.sweeper = setInterval(() => this.sweep(), 30_000)
     this.sweeper.unref()
     // The subagents folder only appears when the first subagent starts; watch it once it exists.
@@ -97,6 +116,7 @@ export class SubagentTracker {
       dir: subagentsDir(transcriptPath),
       lastActivity: new Map(),
       cursors: new Map(),
+      toolUseIds: new Map(),
     }
     this.tracked.set(sessionId, tracked)
     this.attach(sessionId, tracked)
@@ -138,29 +158,52 @@ export class SubagentTracker {
     this.tracked.delete(sessionId)
   }
 
+  /** The meta file's names (blank ones as `null`); it may not exist yet when the transcript does. */
   private async readMeta(
-    dir: string,
+    tracked: Tracked,
     agentId: string,
   ): Promise<{ agentType: string | null; description: string | null }> {
     try {
-      const meta = JSON.parse(await readFile(join(dir, `agent-${agentId}.meta.json`), 'utf8')) as Record<
-        string,
-        unknown
-      >
-      return {
-        agentType: typeof meta.agentType === 'string' ? meta.agentType : null,
-        description: typeof meta.description === 'string' ? meta.description : null,
-      }
+      const meta = JSON.parse(
+        await readFile(join(tracked.dir, `agent-${agentId}.meta.json`), 'utf8'),
+      ) as Record<string, unknown>
+      const toolUseId = cleanName(meta.toolUseId)
+      if (toolUseId) tracked.toolUseIds.set(agentId, toolUseId)
+      return { agentType: cleanName(meta.agentType), description: cleanName(meta.description) }
     } catch {
       return { agentType: null, description: null }
     }
+  }
+
+  /** Fills missing names: the meta file again, then the prompt's first line as the description. */
+  private async names(
+    tracked: Tracked | undefined,
+    agentId: string,
+    current: Pick<SubagentInfo, 'agentType' | 'description'> | undefined,
+    cursor: Cursor | null,
+  ): Promise<{ agentType: string | null; description: string | null }> {
+    let agentType = current?.agentType ?? null
+    let description = current?.description ?? null
+    if (tracked && (agentType === null || description === null)) {
+      const meta = await this.readMeta(tracked, agentId)
+      agentType ??= meta.agentType
+      description ??= meta.description
+    }
+    return { agentType, description: description ?? cursor?.prompt ?? null }
   }
 
   /** Consumes what the transcript gained since the last read; reads of one file never overlap. */
   private advance(tracked: Tracked, agentId: string): Promise<Cursor> {
     let cursor = tracked.cursors.get(agentId)
     if (!cursor) {
-      cursor = { offset: 0, rest: Buffer.alloc(0), tools: 0, startedAt: null, pending: Promise.resolve() }
+      cursor = {
+        offset: 0,
+        rest: Buffer.alloc(0),
+        tools: 0,
+        startedAt: null,
+        prompt: null,
+        pending: Promise.resolve(),
+      }
       tracked.cursors.set(agentId, cursor)
     }
     const current = cursor
@@ -199,7 +242,14 @@ export class SubagentTracker {
         cursor.rest = data
         return
       }
-      cursor.tools += countToolUses(data.subarray(0, lastNewline).toString('utf8').split('\n'))
+      const lines = data.subarray(0, lastNewline).toString('utf8').split('\n')
+      if (cursor.prompt === null) {
+        for (const line of lines) {
+          cursor.prompt = subagentPromptLine(line)
+          if (cursor.prompt) break
+        }
+      }
+      cursor.tools += countToolUses(lines)
       cursor.rest = Buffer.from(data.subarray(lastNewline + 1))
     } finally {
       await handle.close()
@@ -222,18 +272,19 @@ export class SubagentTracker {
         this.update(sessionId, { ...current, toolCount: cursor.tools })
       return
     }
+    const names = await this.names(tracked, agentId, current, cursor)
     if (current) {
       return this.update(sessionId, {
         ...current,
+        ...names,
         updatedAt: now,
         startedAt: current.startedAt ?? cursor?.startedAt ?? null,
         toolCount: cursor?.tools ?? current.toolCount,
       })
     }
-    const meta = tracked ? await this.readMeta(tracked.dir, agentId) : { agentType: null, description: null }
     this.update(sessionId, {
       agentId,
-      ...meta,
+      ...names,
       state: 'running',
       updatedAt: now,
       startedAt: cursor?.startedAt ?? now,
@@ -247,8 +298,7 @@ export class SubagentTracker {
       const agentId = hook.payload.agent_id
       const session = this.store.get(sessionId)
       const existing = session?.subagents.find((s) => s.agentId === agentId)
-      const agentType =
-        typeof hook.payload.agent_type === 'string' ? hook.payload.agent_type : (existing?.agentType ?? null)
+      const agentType = cleanName(hook.payload.agent_type) ?? existing?.agentType ?? null
       this.update(sessionId, {
         agentId,
         agentType,
@@ -258,9 +308,17 @@ export class SubagentTracker {
         startedAt: existing?.startedAt ?? null,
         toolCount: existing?.toolCount ?? 0,
       })
-      // The hook can arrive before the last change event: settle the count once more.
+      // The hook can arrive before the last change event: settle the count (and names) once more.
       const tracked = this.tracked.get(sessionId)
       if (tracked) void this.settle(sessionId, agentId, tracked)
+      for (const delay of this.outcomeChecksMs) {
+        const timer = setTimeout(() => {
+          this.outcomeTimers.delete(timer)
+          void this.checkOutcome(sessionId, agentId)
+        }, delay)
+        timer.unref()
+        this.outcomeTimers.add(timer)
+      }
     }
     if (hook.event === 'Stop') {
       const tasks = hook.payload.background_tasks
@@ -271,8 +329,27 @@ export class SubagentTracker {
   private async settle(sessionId: string, agentId: string, tracked: Tracked): Promise<void> {
     const cursor = await this.advance(tracked, agentId)
     const current = this.store.get(sessionId)?.subagents.find((s) => s.agentId === agentId)
-    if (current && current.toolCount !== cursor.tools)
-      this.update(sessionId, { ...current, toolCount: cursor.tools })
+    if (!current) return
+    const names = await this.names(tracked, agentId, current, cursor)
+    if (
+      current.toolCount !== cursor.tools ||
+      current.description !== names.description ||
+      current.agentType !== names.agentType
+    )
+      this.update(sessionId, { ...current, ...names, toolCount: cursor.tools })
+  }
+
+  /** Reads how a finished subagent ended from the end of its parent's transcript. */
+  async checkOutcome(sessionId: string, agentId: string): Promise<void> {
+    const session = this.store.get(sessionId)
+    const current = session?.subagents.find((s) => s.agentId === agentId)
+    if (!session?.transcriptPath || current?.state !== 'done' || current.outcome) return
+    const lines = await readTail(session.transcriptPath, OUTCOME_TAIL_BYTES)
+    const toolUseId = this.tracked.get(sessionId)?.toolUseIds.get(agentId) ?? null
+    const outcome = subagentOutcome(lines, { agentId, toolUseId })
+    if (outcome !== 'failed' && outcome !== 'stopped') return
+    const latest = this.store.get(sessionId)?.subagents.find((s) => s.agentId === agentId)
+    if (latest?.state === 'done') this.update(sessionId, { ...latest, outcome })
   }
 
   private update(sessionId: string, info: SubagentInfo): void {
@@ -298,9 +375,31 @@ export class SubagentTracker {
   }
 
   async dispose(): Promise<void> {
+    for (const timer of this.outcomeTimers) clearTimeout(timer)
+    this.outcomeTimers.clear()
     clearInterval(this.sweeper)
     clearInterval(this.dirPoller)
     await Promise.all([...this.tracked.values()].map((t) => t.watcher?.close()))
     this.tracked.clear()
+  }
+}
+
+/** Complete lines of the last `bytes` of a file (the first, possibly cut, line dropped); [] on error. */
+async function readTail(path: string, bytes: number): Promise<string[]> {
+  let handle: Awaited<ReturnType<typeof open>>
+  try {
+    handle = await open(path, 'r')
+  } catch {
+    return []
+  }
+  try {
+    const { size } = await handle.stat()
+    const start = Math.max(0, size - bytes)
+    const chunk = Buffer.alloc(size - start)
+    const { bytesRead } = await handle.read(chunk, 0, chunk.length, start)
+    const lines = chunk.subarray(0, bytesRead).toString('utf8').split('\n')
+    return start > 0 ? lines.slice(1) : lines
+  } finally {
+    await handle.close()
   }
 }

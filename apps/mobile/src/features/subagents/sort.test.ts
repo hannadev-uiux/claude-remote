@@ -1,6 +1,16 @@
 import type { SubagentInfo } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
-import { sortSubagents, subagentCounts, subagentElapsed, subagentLabel } from './sort'
+import { createI18n } from '@/core/i18n/create'
+import {
+  sortSubagents,
+  subagentCounts,
+  subagentElapsed,
+  subagentKind,
+  subagentLabel,
+  subagentStatus,
+} from './sort'
+
+const en = createI18n('en-US').t
 
 const sub = (agentId: string, state: SubagentInfo['state'], updatedAt: string): SubagentInfo => ({
   agentId,
@@ -18,10 +28,23 @@ describe('subagents', () => {
     expect(sortSubagents(list).map((s) => s.agentId)).toEqual(['c', 'b', 'a'])
   })
 
-  test('label prefers description, then type, then id', () => {
-    expect(subagentLabel({ ...sub('abcdefghij', 'done', ''), description: 'Buscar' })).toBe('Buscar')
-    expect(subagentLabel({ ...sub('abcdefghij', 'done', ''), agentType: 'Explore' })).toBe('Explore')
-    expect(subagentLabel(sub('abcdefghij', 'done', ''))).toBe('abcdefgh')
+  test('label: description, then type, then "Subagent #N" by start, never blank', () => {
+    const first = { ...sub('a1', 'done', '5'), startedAt: '1' }
+    const second = { ...sub('b2', 'done', '4'), startedAt: '2', description: '  ' }
+    const all = [second, first]
+    expect(subagentLabel({ ...first, description: 'Buscar' }, all, en)).toBe('Buscar')
+    expect(subagentLabel({ ...first, description: '', agentType: ' Explore ' }, all, en)).toBe('Explore')
+    expect(subagentLabel(second, all, en)).toBe('Subagent #2')
+    expect(subagentLabel(sub('abcdefghij', 'done', ''), [], en)).toBe('abcdefgh')
+    expect(subagentKind({ description: 'Buscar', agentType: 'Explore' })).toBe('Explore')
+    expect(subagentKind({ description: null, agentType: 'Explore' })).toBeNull()
+  })
+
+  test('status: running, or how it ended', () => {
+    expect(subagentStatus({ state: 'running' })).toBe('running')
+    expect(subagentStatus({ state: 'done' })).toBe('done')
+    expect(subagentStatus({ state: 'done', outcome: 'failed' })).toBe('failed')
+    expect(subagentStatus({ state: 'done', outcome: 'stopped' })).toBe('stopped')
   })
 
   test('counts total and running', () => {
