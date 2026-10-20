@@ -1,4 +1,4 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router'
+import { router, Stack, useIsFocused, useLocalSearchParams } from 'expo-router'
 import { ChevronDown, EllipsisVertical, PanelRight, Terminal } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -28,6 +28,7 @@ import { CloseSessionSheet } from '@/features/sessions/components/CloseSessionSh
 import { SessionDetailsSheet } from '@/features/sessions/components/SessionDetailsSheet'
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
+import { useShortcutRequest } from '@/features/shortcuts/use-shortcut-request'
 import { SubagentsSheet } from '@/features/subagents/SubagentsSheet'
 import { subagentCounts } from '@/features/subagents/sort'
 import { ActionMenu, AgentBadge, headerActions, IconButton, ProfileTag, Text } from '@/ui'
@@ -50,6 +51,9 @@ export default function SessionRoute() {
   const [closeOpen, setCloseOpen] = useState(false)
   const [subagentsOpen, setSubagentsOpen] = useState(false)
   const [modelOpen, setModelOpen] = useState(false)
+  // ⌘⇧O opens More options of the session on screen (others stay mounted under it on phones).
+  const [menuRequests, setMenuRequests] = useState(0)
+  useShortcutRequest('sessionMenu', () => setMenuRequests((n) => n + 1), useIsFocused())
   const subagentStats = subagentCounts(session?.subagents ?? [])
   const agent = session ? sessionAgent(session) : null
   // Two-column tablets reach the inspector (terminal, subagents, details) from the header.
@@ -113,6 +117,7 @@ export default function SessionRoute() {
                   items={menu.items.map((item) => ({ ...item, onPress: actions[item.key] }))}
                   disabledReason={menu.disabledReason}
                   attention={subagentStats.running > 0}
+                  openRequests={menuRequests}
                 />
               </View>
             ) : null,

@@ -3,12 +3,12 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import * as Clipboard from 'expo-clipboard'
 import { router } from 'expo-router'
 import { Bell, BellOff, Ellipsis, EyeOff, type LucideIcon, Pin, PinOff, Power } from 'lucide-react-native'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, RefreshControl, ScrollView, TextInput, View } from 'react-native'
-import { addListener, constants } from 'react-native-key-command'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
+import { keys, useKeyCommand } from '@/core/keyboard/key-commands'
 import { makeStyles, space, useTheme } from '@/core/theme'
 import { Button, Chip, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
 import { setMuted, useMuteStore } from '../mute/store'
@@ -32,7 +32,7 @@ import { refreshSessions, useSessionsStore } from './store'
 type Props = {
   pendingBySession?: Record<string, number>
   selectedSessionId?: string | null
-  /** Arrow keys + Enter navigate the list — only makes sense when shown as the master pane. */
+  /** Arrow keys + Enter navigate the list: only while it is on screen (master pane, or the phone's visible list). */
   interactive?: boolean
   /** Compact width only: floating action button over the list instead of the header's icon. */
   fab?: boolean
@@ -97,29 +97,25 @@ export function SessionsScreen({
   const keyboardCursorRef = useRef(keyboardCursor)
   keyboardCursorRef.current = keyboardCursor
 
-  useEffect(() => {
-    if (!interactive) return
-    const unsubscribers = [
-      addListener({ input: constants.keyInputDownArrow }, () => {
-        if (TextInput.State.currentlyFocusedInput()) return
-        setKeyboardCursor(moveCursor(sessionIdsRef.current, keyboardCursorRef.current, 1))
-      }),
-      addListener({ input: constants.keyInputUpArrow }, () => {
-        if (TextInput.State.currentlyFocusedInput()) return
-        setKeyboardCursor(moveCursor(sessionIdsRef.current, keyboardCursorRef.current, -1))
-      }),
-      addListener({ input: constants.keyInputEnter }, () => {
-        if (TextInput.State.currentlyFocusedInput()) return
-        const id = keyboardCursorRef.current
-        if (id) router.push({ pathname: '/session/[id]', params: { id } })
-      }),
-    ]
-    return () => {
-      unsubscribers.forEach((unsubscribe) => {
-        unsubscribe()
-      })
-    }
-  }, [interactive])
+  const moveKeyboardCursor = (delta: 1 | -1) => {
+    if (TextInput.State.currentlyFocusedInput()) return false
+    const next = moveCursor(sessionIdsRef.current, keyboardCursorRef.current, delta)
+    setKeyboardCursor(next)
+    // Keep the ring in view; the row may be far from the visible part of a long list.
+    const index = next ? sessionIdsRef.current.indexOf(next) : -1
+    if (index !== -1) listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: true })
+  }
+  useKeyCommand({ input: keys.keyInputDownArrow }, () => moveKeyboardCursor(1), interactive)
+  useKeyCommand({ input: keys.keyInputUpArrow }, () => moveKeyboardCursor(-1), interactive)
+  useKeyCommand(
+    { input: keys.keyInputEnter },
+    () => {
+      if (TextInput.State.currentlyFocusedInput()) return false
+      const id = keyboardCursorRef.current
+      if (id) router.push({ pathname: '/session/[id]', params: { id } })
+    },
+    interactive,
+  )
 
   const onRefresh = () => {
     if (client) void refreshSessions(client).catch(() => undefined)

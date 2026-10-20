@@ -1,11 +1,11 @@
 import { MAX_ATTACHMENTS } from '@remote-harness/protocol'
-import { router } from 'expo-router'
+import { router, useIsFocused } from 'expo-router'
 import { ImagePlus } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, type TextInput } from 'react-native'
-import { addListener, constants } from 'react-native-key-command'
 import { useShallow } from 'zustand/react/shallow'
+import { keys, useKeyCommand } from '@/core/keyboard/key-commands'
 import { useLayout } from '@/core/layout'
 import { useBackHandler } from '@/core/platform/use-back-handler'
 import { IconButton } from '@/ui'
@@ -20,6 +20,7 @@ import { willQueue } from '../queue/logic'
 import { selectQueueFor, useQueueStore } from '../queue/store'
 import { sessionAgent } from '../sessions/agent'
 import { useSessionsStore } from '../sessions/store'
+import { useShortcutRequest } from '../shortcuts/use-shortcut-request'
 import { RecordingOverlay } from '../voice/components/RecordingOverlay'
 import { VoiceButton } from '../voice/components/VoiceButton'
 import { insertTranscriptAtCursor } from '../voice/insert-at-cursor'
@@ -123,16 +124,27 @@ export function SmartComposer({ sessionId, prompt, disabled, autoFocus }: Props)
   const sendRef = useRef(send)
   sendRef.current = send
 
-  // Hardware keyboard: Cmd+Enter sends; plain Enter already inserts a newline by default on TextInput.
-  useEffect(() => {
-    return addListener(
-      { input: constants.keyInputEnter, modifierFlags: constants.keyModifierCommand },
-      () => {
-        // ⌘⏎ pastes mid-turn, like Claude Code's Ctrl+Enter; the Send button queues while busy.
-        if (canSendRef.current) void sendRef.current('now')
-      },
-    )
-  }, [])
+  // Phones keep other sessions mounted under this one: only the session on screen takes the keys.
+  const onScreen = useIsFocused()
+  // Hardware keyboard: ⌘⏎ pastes mid-turn, like Claude Code's Ctrl+Enter; the Send button queues while busy.
+  useKeyCommand(
+    { input: keys.keyInputEnter, modifierFlags: keys.keyModifierCommand },
+    () => {
+      if (canSendRef.current) void sendRef.current('now')
+    },
+    onScreen,
+  )
+  // Esc closes the open suggestions before the shell's Esc blurs the field.
+  useKeyCommand(
+    { input: keys.keyInputEscape },
+    () => {
+      if (!input.current?.isFocused()) return false
+      setDismissed(triggerKey(trigger))
+    },
+    onScreen && trigger !== null,
+  )
+  // ⌘L: write in the session on screen.
+  useShortcutRequest('composerFocus', () => input.current?.focus(), onScreen && !disabled)
 
   return (
     <PromptComposer

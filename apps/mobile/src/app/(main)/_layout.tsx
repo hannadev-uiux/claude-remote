@@ -3,10 +3,10 @@ import { Menu } from 'lucide-react-native'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StyleSheet, TextInput, View } from 'react-native'
-import { addListener, constants } from 'react-native-key-command'
 import { useShallow } from 'zustand/react/shallow'
 import { useConnectionStore } from '@/core/connection'
-import { edgeSwipeEnabled, inspectorMode, type LayoutClass, sidebarMode, useLayout } from '@/core/layout'
+import { keys, onKeyCommand } from '@/core/keyboard/key-commands'
+import { edgeSwipeEnabled, inspectorMode, sidebarMode, useLayout } from '@/core/layout'
 import { space, useTheme } from '@/core/theme'
 import { InspectorPane } from '@/features/inspector/InspectorPane'
 import { setInspectorOpen, useInspectorStore } from '@/features/inspector/store'
@@ -17,31 +17,42 @@ import { extractSessionIdFromPathname } from '@/features/sessions/active-session
 import { ListTitle } from '@/features/sessions/components/ListTitle'
 import { SessionListActions } from '@/features/sessions/components/SessionListActions'
 import { SessionsScreen } from '@/features/sessions/SessionsScreen'
+import { KeyboardShortcutsSheet } from '@/features/shortcuts/KeyboardShortcutsSheet'
+import { backAction } from '@/features/shortcuts/logic'
+import { setShortcutsSheetOpen, useShortcutsStore } from '@/features/shortcuts/store'
 import { useSessionShortcuts } from '@/features/shortcuts/use-session-shortcuts'
 import { useDaemonSync } from '@/features/sync/use-daemon-sync'
 import { IconButton, MasterDetailLayout, stackScreenOptions } from '@/ui'
 
-/** Cmd+N, Cmd+, and Esc outside a text field (closes the detail pane on tablets). */
-function useShellKeyCommands(layout: LayoutClass) {
-  const layoutRef = useRef(layout)
-  layoutRef.current = layout
+/**
+ * ⌘N, ⌘, and ⌘/ (the shortcuts sheet); Esc leaves a focused field, then goes back (a session to the
+ * list, other screens one step); ⌘[ goes back even from a field and from the terminal, which keeps
+ * Esc for tmux. Registered first, so sheets and menus mounted later take Esc before it.
+ */
+function useShellKeyCommands(pathname: string) {
+  const pathnameRef = useRef(pathname)
+  pathnameRef.current = pathname
 
   useEffect(() => {
+    const cmd = keys.keyModifierCommand
+    const back = (key: 'escape' | 'bracket') => () => {
+      const focused = TextInput.State.currentlyFocusedInput()
+      const action = backAction(pathnameRef.current, key, focused != null)
+      if (action === 'blur' && focused) TextInput.State.blurTextInput(focused)
+      if (action === 'list') router.dismissTo('/')
+      if (action === 'back' && router.canGoBack()) router.back()
+    }
     const unsubscribers = [
-      addListener({ input: 'n', modifierFlags: constants.keyModifierCommand }, () => router.push('/new')),
-      addListener({ input: ',', modifierFlags: constants.keyModifierCommand }, () =>
-        router.push('/settings'),
+      onKeyCommand({ input: 'n', modifierFlags: cmd }, () => router.push('/new')),
+      onKeyCommand({ input: ',', modifierFlags: cmd }, () => router.push('/settings')),
+      onKeyCommand({ input: '/', modifierFlags: cmd }, () =>
+        setShortcutsSheetOpen(!useShortcutsStore.getState().sheetOpen),
       ),
-      addListener({ input: constants.keyInputEscape }, () => {
-        if (layoutRef.current !== 'compact' && !TextInput.State.currentlyFocusedInput()) {
-          router.navigate('/')
-        }
-      }),
+      onKeyCommand({ input: keys.keyInputEscape }, back('escape')),
+      onKeyCommand({ input: '[', modifierFlags: cmd }, back('bracket')),
     ]
     return () => {
-      unsubscribers.forEach((unsubscribe) => {
-        unsubscribe()
-      })
+      for (const unsubscribe of unsubscribers) unsubscribe()
     }
   }, [])
 }
@@ -63,7 +74,7 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const inspectorOpen = useInspectorStore((s) => s.open)
   const inspectorWidth = useInspectorStore((s) => s.width)
-  useShellKeyCommands(layout)
+  useShellKeyCommands(pathname)
   useSessionShortcuts(selectedSessionId, layout)
 
   // Portrait tablets: the list slides over the conversation; it opens on its own while no session
@@ -123,6 +134,7 @@ export default function MainLayout() {
         <Stack.Screen name="session/[id]/terminal" options={{ title: t('nav.terminal') }} />
         <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: t('nav.subagent') }} />
       </Stack>
+      <KeyboardShortcutsSheet />
     </MasterDetailLayout>
   )
 }

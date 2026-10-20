@@ -7,7 +7,7 @@ const en = createI18n('en-US').t
 
 test('hints list the real shortcuts, the permission pair only while one waits', () => {
   const quiet = keyboardHints({ pendingPermission: false }, en)
-  expect(quiet.map((h) => h.keys)).toEqual(['⏎', '⌘⏎', '⌘1–9', '⌘K', '⌘T', '⌘.', '⌘⇧M'])
+  expect(quiet.map((h) => h.keys)).toEqual(['⏎', '⌘⏎', '⌘1–9', '⌘K', '⌘T', '⌘.', '⌘⇧M', '⌘/'])
   expect(quiet[0]).toEqual({ keys: '⏎', label: 'queue' })
   const waiting = keyboardHints({ pendingPermission: true }, en)
   expect(waiting.at(-1)).toEqual({ keys: '⌘A / ⌘D', label: 'answer' })

@@ -28,6 +28,10 @@ declare module 'react-native-key-command' {
     keyCommand: KeyCommandInput,
     callback: (event: KeyCommandEvent) => void,
   ): () => void
+  /** Emits every registered shortcut as `onKeyCommand`; `addListener` filters it per shortcut. */
+  export const eventEmitter: {
+    addListener(event: 'onKeyCommand', listener: (event: KeyCommandEvent) => void): { remove(): void }
+  }
   export function registerKeyCommands(keyCommands: KeyCommandInput[]): Promise<void>
   export function unregisterKeyCommands(keyCommands: KeyCommandInput[]): Promise<void>
 }
