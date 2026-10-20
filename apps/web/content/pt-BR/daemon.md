@@ -64,7 +64,9 @@ Mudanças no arquivo valem quando o daemon reinicia (`remote-harness service ins
 
 ## Perfis e OpenRouter
 
-Um perfil pode rotear o Claude Code pelo OpenRouter em vez da conta Anthropic: acrescente um `provider` com `kind: "openrouter"` e, opcionalmente, `baseUrl` (outro gateway compatível com a Anthropic), um `model` padrão e um `smallFastModel`.
+Um perfil pode rotear o Claude Code pelo OpenRouter em vez da conta Anthropic. O jeito mais fácil é `remote-harness setup` → "Adicionar um perfil OpenRouter": ele pergunta o nome, o alias, a pasta (`~/.claude-openrouter`), um modelo padrão opcional e a chave (oculta), confere a chave com o OpenRouter e mostra os créditos restantes quando a chave consegue lê-los. Rodar o setup de novo lista esses perfis e deixa manter, trocar a chave ou remover o perfil (o atalho, os hooks e a chave; a pasta fica).
+
+À mão: acrescente um `provider` com `kind: "openrouter"` e, opcionalmente, `baseUrl` (outro gateway compatível com a Anthropic), um `model` padrão e um `smallFastModel`.
 
 ```json
 {

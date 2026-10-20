@@ -1,6 +1,6 @@
 # Remote Harness
 
-App pessoal iOS/Android (React Native + Expo) que acompanha e controla, pelo celular, sessões do Claude Code rodando no tmux do computador (macOS, Linux ou WSL), por meio de um daemon local. PRD em `.docs/claude-remote-app.md`.
+App pessoal iOS/Android (React Native + Expo) que acompanha e controla, pelo celular, sessões do Claude Code rodando no tmux do computador (macOS, Linux ou WSL), por meio de um daemon local. PRD em `.docs/prd.md`.
 
 ## Estrutura
 

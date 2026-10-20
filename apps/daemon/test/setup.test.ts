@@ -10,6 +10,7 @@ import {
   readLogin,
   suggestNewConfigDir,
   suggestProfile,
+  suggestProviderProfile,
   tildify,
   validateAlias,
   validateNewConfigDir,
@@ -50,6 +51,19 @@ describe('setup profiles', () => {
     const existing = [{ ...profile('pessoal', '~/.claude/'), name: 'Eu' }]
     expect(suggestProfile('~/.claude', existing, 0, pt)).toMatchObject({ id: 'pessoal', name: 'Eu' })
     expect(suggestProfile('~/.claude', [], 0, en)).toMatchObject({ id: 'claudin', name: 'Personal' })
+  })
+
+  test('suggests a provider profile with a free alias and folder', () => {
+    expect(suggestProviderProfile('openrouter', ['claudin'], ['~/.claude'], 1)).toEqual({
+      id: 'openrouter',
+      name: 'OpenRouter',
+      configDir: '~/.claude-openrouter',
+      color: '#61AFEF',
+      provider: { kind: 'openrouter' },
+    })
+    expect(
+      suggestProviderProfile('openrouter', ['openrouter', 'openrouter-2'], ['~/.claude-openrouter/'], 0),
+    ).toMatchObject({ id: 'openrouter-3', configDir: '~/.claude-openrouter-2' })
   })
 
   test('validates aliases', () => {

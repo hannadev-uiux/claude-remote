@@ -114,6 +114,11 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     relay: PushRelaySchema.optional(),
     /** App theme colors for the live status, echoed by the daemon in every update. */
     palette: LivePaletteSchema.optional(),
+    /**
+     * Android: the app draws the live status itself from FCM data messages (with Allow / Deny);
+     * absent = the system draws it from the push's notification block.
+     */
+    androidDataMessages: z.boolean().optional(),
   }),
   z.object({ type: z.literal('live.unregister'), id, sessionId }),
   z.object({

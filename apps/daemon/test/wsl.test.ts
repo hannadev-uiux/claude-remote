@@ -7,6 +7,7 @@ import { BACKUP_SUFFIX } from '../src/features/hooks/installer.ts'
 import { WslHost } from '../src/features/wsl/host.ts'
 import { readIniValue, setIniValue } from '../src/features/wsl/ini.ts'
 import {
+  LEGACY_LOGON_TASK_NAME,
   LOGON_TASK_NAME,
   LogonTask,
   logonTaskAction,
@@ -170,37 +171,56 @@ describe('logon task', () => {
       '/SC',
       'ONLOGON',
       '/TN',
-      'Claude Remote',
+      'Remote Harness',
       '/TR',
       'wsl.exe -d Ubuntu-24.04 --exec /bin/true',
     ])
     expect(logonTaskCreateCommand('Ubuntu')).toBe(
-      'schtasks.exe /Create /F /SC ONLOGON /TN "Claude Remote" /TR "wsl.exe -d Ubuntu --exec /bin/true"',
+      'schtasks.exe /Create /F /SC ONLOGON /TN "Remote Harness" /TR "wsl.exe -d Ubuntu --exec /bin/true"',
     )
   })
 
-  test('creates, queries and deletes it with schtasks.exe', async () => {
-    let exists = false
+  /** schtasks.exe over a set of task names. */
+  function scheduler(initial: string[]) {
+    const tasks = new Set(initial)
     const exec = fakeExecutor((c) => {
-      if (c.args[0] === '/Query') return { exitCode: exists ? 0 : 1 }
-      if (c.args[0] === '/Create') exists = true
-      if (c.args[0] === '/Delete') exists = false
+      const name = c.args[c.args.indexOf('/TN') + 1] ?? ''
+      if (c.args[0] === '/Query') return { exitCode: tasks.has(name) ? 0 : 1 }
+      if (c.args[0] === '/Create') tasks.add(name)
+      if (c.args[0] === '/Delete') tasks.delete(name)
       return undefined
     })
+    return { tasks, exec }
+  }
+
+  test('creates, queries and deletes it with schtasks.exe', async () => {
+    const { tasks, exec } = scheduler([])
     const task = new LogonTask(exec, 'Ubuntu')
     expect(await task.exists()).toBe(false)
     expect(await task.remove()).toBe(false)
     expect(await task.create()).toEqual({ ok: true })
+    expect([...tasks]).toEqual([LOGON_TASK_NAME])
     expect(await task.exists()).toBe(true)
     expect(await task.remove()).toBe(true)
-    expect(exec.calls.map((c) => [c.file, ...c.args].join(' '))).toEqual([
-      `schtasks.exe /Query /TN ${LOGON_TASK_NAME}`,
-      `schtasks.exe /Query /TN ${LOGON_TASK_NAME}`,
+    expect(tasks.size).toBe(0)
+    expect(
+      exec.calls.filter((c) => c.args[0] !== '/Query').map((c) => [c.file, ...c.args].join(' ')),
+    ).toEqual([
       `schtasks.exe ${logonTaskCreateArgs('Ubuntu').join(' ')}`,
-      `schtasks.exe /Query /TN ${LOGON_TASK_NAME}`,
-      `schtasks.exe /Query /TN ${LOGON_TASK_NAME}`,
       `schtasks.exe /Delete /F /TN ${LOGON_TASK_NAME}`,
     ])
+  })
+
+  test('the task from before the rename counts, is replaced and is removed', async () => {
+    const replaced = scheduler([LEGACY_LOGON_TASK_NAME])
+    const task = new LogonTask(replaced.exec, 'Ubuntu')
+    expect(await task.exists()).toBe(true)
+    expect(await task.create()).toEqual({ ok: true })
+    expect([...replaced.tasks]).toEqual([LOGON_TASK_NAME])
+
+    const removed = scheduler([LEGACY_LOGON_TASK_NAME])
+    expect(await new LogonTask(removed.exec, null).remove()).toBe(true)
+    expect(removed.tasks.size).toBe(0)
   })
 
   test('reports why it could not be created', async () => {

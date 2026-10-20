@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import type { Executor } from '../infra/exec.ts'
 import { writeFileAtomic } from '../infra/fs.ts'
@@ -11,13 +11,19 @@ export interface TokenStore {
   set(token: string): Promise<void>
 }
 
+/** A secret store that can also forget its secret (provider keys of removed profiles). */
+export interface SecretStore extends TokenStore {
+  /** Removes the secret; a secret that is not stored is not an error. */
+  delete(): Promise<void>
+}
+
 /** Keychain service / Secret Service attribute shared by every secret of ours (the launchers read it too). */
 export const SECRET_SERVICE = 'claude-remote'
 const SERVICE = SECRET_SERVICE
 const ACCOUNT = 'pairing-token'
 
 /** Stores a secret (the pairing token by default) in the macOS login Keychain via the `security` CLI. */
-export class KeychainTokenStore implements TokenStore {
+export class KeychainTokenStore implements SecretStore {
   constructor(
     private readonly exec: Executor,
     private readonly account = ACCOUNT,
@@ -48,17 +54,24 @@ export class KeychainTokenStore implements TokenStore {
     if (result.exitCode !== 0 || (await this.get()) !== token)
       throw new Error(`keychain write failed: ${result.stderr.trim()}`)
   }
+
+  /** Exit 44 is "the specified item could not be found". */
+  async delete(): Promise<void> {
+    const result = await this.exec('security', ['delete-generic-password', '-s', SERVICE, '-a', this.account])
+    if (result.exitCode !== 0 && result.exitCode !== 44)
+      throw new Error(`keychain delete failed: ${result.stderr.trim()}`)
+  }
 }
 
 /**
  * Linux: Secret Service (GNOME Keyring, KWallet…) through `secret-tool` (libsecret). The token goes
  * on stdin, never in the arguments, so it does not show up in `ps`.
  */
-export class SecretToolTokenStore implements TokenStore {
+export class SecretToolTokenStore implements SecretStore {
   constructor(
     private readonly exec: Executor,
     private readonly account = ACCOUNT,
-    private readonly label = 'Claude Remote pairing token',
+    private readonly label = 'Remote Harness pairing token',
   ) {}
 
   async get(): Promise<string | null> {
@@ -78,10 +91,16 @@ export class SecretToolTokenStore implements TokenStore {
     )
     if (result.exitCode !== 0) throw new Error(`secret-tool store failed: ${result.stderr.trim()}`)
   }
+
+  async delete(): Promise<void> {
+    const result = await this.exec('secret-tool', ['clear', 'service', SERVICE, 'account', this.account])
+    if (result.exitCode !== 0 && result.stderr.trim())
+      throw new Error(`secret-tool clear failed: ${result.stderr.trim()}`)
+  }
 }
 
 /** File-based store (0600): headless Linux without a Secret Service, tests and development. */
-export class FileTokenStore implements TokenStore {
+export class FileTokenStore implements SecretStore {
   constructor(private readonly path = paths.tokenFile()) {}
 
   async get(): Promise<string | null> {
@@ -97,6 +116,10 @@ export class FileTokenStore implements TokenStore {
     // Secrets of ours share a 0700 folder (`secrets/`); the data dir itself keeps its mode.
     await mkdir(dirname(this.path), { recursive: true, mode: 0o700 })
     await writeFileAtomic(this.path, token, 0o600)
+  }
+
+  async delete(): Promise<void> {
+    await rm(this.path, { force: true })
   }
 }
 
@@ -166,14 +189,14 @@ export function createSecretStore(
   account: string,
   file: string,
   label?: string,
-): TokenStore {
+): SecretStore {
   if (kind === 'keychain') return new KeychainTokenStore(exec, account)
   if (kind === 'secret-tool') return new SecretToolTokenStore(exec, account, label)
   return new FileTokenStore(file)
 }
 
-/** The provider key of a profile: read by the daemon for credits, written by `remote-harness provider key`. */
-export function providerKeyStore(kind: TokenStoreKind, exec: Executor, profileId: string): TokenStore {
+/** The provider key of a profile: read by the daemon for credits, written by `remote-harness provider key` and the setup. */
+export function providerKeyStore(kind: TokenStoreKind, exec: Executor, profileId: string): SecretStore {
   return createSecretStore(
     kind,
     exec,

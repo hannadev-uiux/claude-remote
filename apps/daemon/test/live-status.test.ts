@@ -1,4 +1,4 @@
-import type { TranscriptEntry } from '@remote-harness/protocol'
+import { LiveDataMessageSchema, type TranscriptEntry } from '@remote-harness/protocol'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { messagesFor } from '../src/core/i18n/index.ts'
 import { silentLogger } from '../src/core/logger.ts'
@@ -267,6 +267,12 @@ describe('buildLiveMessage', () => {
     expect(ended.apns?.payload.aps).toMatchObject({ event: 'end', 'dismissal-date': 2900 })
   })
 
+  /** The system-drawn notification of an Android message (absent for data messages). */
+  const notification = (m: LiveMessage) => {
+    const built = buildLiveMessage(m)
+    return built.android && 'notification' in built.android ? built.android.notification : undefined
+  }
+
   test('Android: one tagged, silent notification per session', () => {
     const android = buildLiveMessage({ ...message, platform: 'android', activityToken: undefined })
     expect(android).toMatchObject({
@@ -282,16 +288,94 @@ describe('buildLiveMessage', () => {
         },
       },
     })
-    expect(
-      buildLiveMessage({ ...message, platform: 'android', event: 'end' }).android?.notification.sticky,
-    ).toBe(false)
+    expect(notification({ ...message, platform: 'android', event: 'end' })?.sticky).toBe(false)
     const named = { ...message, platform: 'android' as const, props: { ...props, session: 'Fix login' } }
-    expect(buildLiveMessage(named).android?.notification.title).toBe('Fix login · Working')
+    expect(notification(named)?.title).toBe('Fix login · Working')
     // The finished turn can be swiped away while it waits; the body names the tasks in parallel.
     const done = { ...message, platform: 'android' as const, props: { ...props, state: 'done' as const } }
-    expect(buildLiveMessage(done).android?.notification.sticky).toBe(false)
+    expect(notification(done)?.sticky).toBe(false)
     const tasks = { ...message, platform: 'android' as const, props: { ...props, tasks: '2 tasks running' } }
-    expect(buildLiveMessage(tasks).android?.notification.body).toBe('2 tasks running')
+    expect(notification(tasks)?.body).toBe('2 tasks running')
+  })
+
+  test('Android with androidDataMessages: a data message the app draws, collapsed per session', () => {
+    const android: LiveMessage = {
+      ...message,
+      platform: 'android',
+      activityToken: undefined,
+      androidDataMessages: true,
+    }
+    const built = buildLiveMessage(android)
+    expect(built).toEqual({
+      token: 'fcm',
+      data: { sessionId: 's1', event: 'live', live: JSON.stringify({ event: 'update', props }) },
+      android: { priority: 'normal', collapseKey: 'live-s1' },
+    })
+    expect(built).not.toHaveProperty('notification')
+    const live = (m: { data: Record<string, string> }) => JSON.parse(m.data.live ?? '')
+    expect(LiveDataMessageSchema.parse(live(built))).toEqual({ event: 'update', props })
+    // What the user may act on goes at once.
+    const pending = liveProps(
+      reduceLiveStatus(
+        initialLiveStatus(1_000_000),
+        {
+          type: 'waiting',
+          permission: true,
+          pending: { requestId: 'r1', tool: 'mcp__github__create_issue' },
+        },
+        1_500_000,
+      ),
+      { title: 'Work', host: 'mac', session: 'Fix login', path: '~/app' },
+      pt,
+    )
+    const waiting = buildLiveMessage({ ...android, props: pending })
+    expect(waiting.android).toMatchObject({ priority: 'high' })
+    expect(live(waiting).props.pending).toEqual({
+      requestId: 'r1',
+      tool: 'create_issue',
+      allow: pt.allow,
+      deny: pt.deny,
+    })
+    expect(buildLiveMessage({ ...android, event: 'end' }).android).toMatchObject({ priority: 'high' })
+  })
+
+  test('Android data messages stay well under the FCM data limit', () => {
+    const busy = liveProps(
+      {
+        ...initialLiveStatus(1_000_000),
+        recent: [
+          { step: 'command', tool: 'Bash', count: 12 },
+          { step: 'editing', tool: 'MultiEdit', count: 3 },
+          { step: 'searching', tool: 'Grep', count: 1 },
+        ],
+        glyphs: ['command', 'editing', 'searching', 'reading', 'web'],
+        toolCount: 99,
+        tasks: 3,
+        pending: { requestId: 'a'.repeat(36), tool: 'mcp__some_server__some_long_tool_name' },
+      },
+      {
+        title: 'A long profile name',
+        host: 'a-long-host-name.local',
+        session: 'x'.repeat(120),
+        path: `~/${'p'.repeat(120)}`,
+      },
+      pt,
+    )
+    const palette = {
+      background: '#0D0D0D',
+      text: '#E8E6E3',
+      textMuted: '#8A8784',
+      accent: '#E8A33D',
+      success: '#7FB069',
+      warning: '#F3DC7A',
+    }
+    const built = buildLiveMessage({
+      ...message,
+      platform: 'android',
+      androidDataMessages: true,
+      props: { ...busy, palette },
+    })
+    expect(JSON.stringify(built.data).length).toBeLessThan(3_000)
   })
 })
 
@@ -356,6 +440,16 @@ describe('LiveStatusService', () => {
     // Older apps register without one: the widget then falls back to its dark colors.
     await service.register({ ...register, sessionId: 's2' })
     expect(sent.at(-1)?.props.palette).toBeUndefined()
+  })
+
+  test('passes androidDataMessages of the registration to every update', async () => {
+    const { service, sent } = setup()
+    const android = { sessionId: 's1', platform: 'android' as const, fcmToken: 'fcm' }
+    await service.register({ ...android, androidDataMessages: true })
+    service.handle('s1', { type: 'waiting', permission: true })
+    expect(sent.map((m) => m.androidDataMessages)).toEqual([true, true])
+    await service.register({ ...android, sessionId: 's2' })
+    expect(sent.at(-1)).not.toHaveProperty('androidDataMessages')
   })
 
   test('sends the state on register, throttles steps and ends 15 minutes after Stop', async () => {

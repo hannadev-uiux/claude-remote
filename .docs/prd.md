@@ -1,11 +1,13 @@
-# PRD — Claude Remote App
+# PRD — Remote Harness
+
+> Documento original do produto, escrito quando o projeto ainda se chamava **Claude Remote** (o nome mudou para Remote Harness na v0.7.0). Fica como registro histórico: o estado atual está no [README](../README.md) e nas specs em `openspec/specs/`.
 
 | | |
 |---|---|
-| **Status** | Rascunho |
+| **Status** | Rascunho (histórico) |
 | **Data** | 2026-10-13 |
 | **Autor** | Marco Filho |
-| **Nome de trabalho** | Claude Remote |
+| **Nome de trabalho** | Claude Remote (hoje Remote Harness) |
 
 ## 1. Resumo
 
