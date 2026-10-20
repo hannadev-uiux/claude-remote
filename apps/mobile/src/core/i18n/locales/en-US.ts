@@ -882,6 +882,13 @@ const enUS = {
       light: 'Light',
     },
     themeDone: 'Done',
+    appIcon: {
+      title: 'App icon',
+      row: 'App icon · {{icon}}',
+      matchTheme: 'Match theme',
+      original: 'Original',
+      done: 'Done',
+    },
     profiles: 'Profiles',
     noProfiles: 'No profiles found on the computer.',
     forgetButton: 'Forget this machine',

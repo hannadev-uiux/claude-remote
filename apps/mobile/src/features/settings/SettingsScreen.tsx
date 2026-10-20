@@ -5,6 +5,7 @@ import { space } from '@/core/theme'
 import { DaemonUpdateCard } from '@/features/daemon-update/DaemonUpdateCard'
 import { Screen, Text } from '@/ui'
 import { AppearanceCard } from './AppearanceCard'
+import { AppIconCard } from './AppIconCard'
 import { KeyboardCard } from './KeyboardCard'
 import { MachineCard } from './MachineCard'
 import { NewSessionCard } from './NewSessionCard'
@@ -12,13 +13,14 @@ import { NotificationsCard } from './NotificationsCard'
 import { PermissionsCard } from './PermissionsCard'
 import { ProfilesCard } from './ProfilesCard'
 
-/** Machine → Appearance → Profiles → New session → Notifications → Permissions → Computer → the route's cards (Voice, App). */
+/** Machine → Appearance → App icon → Profiles → New session → Notifications → Permissions → Computer → the route's cards (Voice, App). */
 export function SettingsScreen({ children }: { children?: ReactNode }) {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
         <MachineCard />
         <AppearanceCard />
+        <AppIconCard />
         <ProfilesCard />
         <NewSessionCard />
         <KeyboardCard />
