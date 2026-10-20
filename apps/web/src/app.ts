@@ -1,4 +1,3 @@
-import { env } from 'cloudflare:workers'
 import ogImage from '../../../docs/brand/og.png?inline'
 import installPs1 from '../../../install.ps1?raw'
 import installSh from '../../../install.sh?raw'
@@ -17,20 +16,39 @@ import { renderInstallPage } from './install-page.ts'
 import { renderLanding, renderNotFound } from './landing.ts'
 import { route } from './routes.ts'
 import { faviconSvg, robotsTxt, sitemapXml } from './site.ts'
+import type { PublishTokens } from './updates/auth.ts'
 import { handleUpdates } from './updates/handler.ts'
-import { R2UpdatesStore } from './updates/store.ts'
+import type { UpdatesStore } from './updates/store.ts'
 
-/** A build file of an install link, from R2, with the content type of its name. */
-async function appFile(request: Request, key: string, name: string): Promise<Response> {
+/** A stored install-link file; the body is opened only when it is sent. */
+export type StoredFile = {
+  size: number
+  etag: string
+  stream(): ReadableStream<Uint8Array>
+  text(): Promise<string>
+}
+
+/** Where install-link folders live (`<token>/<file>`, validated by the router). */
+export interface BuildsStore {
+  get(key: string): Promise<StoredFile | null>
+}
+
+/** What the site needs from its host: the two stores and the publish tokens. */
+export type AppDeps = { updates: UpdatesStore; builds: BuildsStore; tokens: PublishTokens }
+
+/** A build file of an install link, with the content type of its name. */
+async function appFile(request: Request, builds: BuildsStore, key: string, name: string): Promise<Response> {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405 })
-  const object = await env.IOS_BUILDS.get(key)
-  if (!object) return new Response('Not found', { status: 404 })
-  const headers = new Headers({ 'cache-control': 'no-cache', 'x-robots-tag': 'noindex' })
-  object.writeHttpMetadata(headers)
-  headers.set('content-type', APP_FILES[name] ?? 'application/octet-stream')
-  headers.set('etag', object.httpEtag)
-  headers.set('content-length', String(object.size))
-  return new Response(request.method === 'HEAD' ? null : object.body, { headers })
+  const stored = await builds.get(key)
+  if (!stored) return new Response('Not found', { status: 404 })
+  const headers = new Headers({
+    'cache-control': 'no-cache',
+    'x-robots-tag': 'noindex',
+    'content-type': APP_FILES[name] ?? 'application/octet-stream',
+    etag: stored.etag,
+    'content-length': String(stored.size),
+  })
+  return new Response(request.method === 'HEAD' ? null : stored.stream(), { headers })
 }
 
 /**
@@ -38,7 +56,7 @@ async function appFile(request: Request, key: string, name: string): Promise<Res
  * `index.html` an older publisher uploaded. Private (the token is the only protection): never
  * cached, indexed or sent on as a referrer.
  */
-async function appPage(request: Request, url: URL, token: string): Promise<Response> {
+async function appPage(request: Request, builds: BuildsStore, url: URL, token: string): Promise<Response> {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response(null, { status: 405 })
   const headers = new Headers({
     'content-type': 'text/html; charset=utf-8',
@@ -47,7 +65,7 @@ async function appPage(request: Request, url: URL, token: string): Promise<Respo
     'referrer-policy': 'no-referrer',
     'x-content-type-options': 'nosniff',
   })
-  const stored = await env.IOS_BUILDS.get(`${token}/${BUILDS}`)
+  const stored = await builds.get(`${token}/${BUILDS}`)
   let body: string
   if (stored) {
     let json: unknown = null
@@ -66,7 +84,7 @@ async function appPage(request: Request, url: URL, token: string): Promise<Respo
     headers.set('content-language', locale)
     headers.set('vary', 'Accept-Language, User-Agent')
   } else {
-    const legacy = await env.IOS_BUILDS.get(`${token}/${LEGACY_PAGE}`)
+    const legacy = await builds.get(`${token}/${LEGACY_PAGE}`)
     if (!legacy) return new Response('Not found', { status: 404 })
     body = await legacy.text()
   }
@@ -111,18 +129,14 @@ function file(body: string | Uint8Array, type: string): Response {
   return new Response(body, { headers: { 'content-type': type, 'cache-control': 'public, max-age=86400' } })
 }
 
-export default {
-  async fetch(request) {
+/** The whole site as one request handler; the host (server.ts, tests) supplies storage and tokens. */
+export function createApp({ updates, builds, tokens }: AppDeps): (request: Request) => Promise<Response> {
+  return async (request) => {
     const url = new URL(request.url)
     const target = route(url.pathname, url.search)
-    if (target.kind === 'updates') {
-      return handleUpdates(request, target.path, new R2UpdatesStore(env.UPDATES), {
-        token: env.UPDATES_TOKEN,
-        devToken: env.UPDATES_DEV_TOKEN,
-      })
-    }
-    if (target.kind === 'app-file') return appFile(request, target.key, target.name)
-    if (target.kind === 'app-page') return appPage(request, url, target.token)
+    if (target.kind === 'updates') return handleUpdates(request, target.path, updates, tokens)
+    if (target.kind === 'app-file') return appFile(request, builds, target.key, target.name)
+    if (target.kind === 'app-page') return appPage(request, builds, url, target.token)
     if (target.kind === 'bad-ref') {
       // Plain text: piped into bash it is a harmless "command not found", never a script.
       return new Response('invalid ref\n', {
@@ -163,5 +177,5 @@ export default {
       return html ? page(html, 200, locale, target.locale === null) : notFound()
     }
     return notFound()
-  },
-} satisfies ExportedHandler
+  }
+}

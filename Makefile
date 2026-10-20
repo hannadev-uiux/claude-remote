@@ -5,11 +5,13 @@
 #   PLATFORM=ios|android publish-ota for a single platform (default: both)
 #   CHANNEL=<name>       publish-ota channel (default: production; CI publishes development)
 #   OTA_KEY=<path>       private key that signs OTA updates
-#   IOS_LINK=web         install-ios-link publishes on https://remoteharness.app/app/<token>/ (R2) instead of the tailnet
+#   IOS_LINK=web         install-ios-link publishes on https://remoteharness.app/app/<token>/ (the site server, over SSH) instead of the tailnet
 #   IOS_LINK_DIR=<path>  folder of the install link: builds, the web token shared with install-android-link
 #                        (default ~/.remote-harness-builds/ios)
 #   PROJECT=<id>         Firebase project for deploy-push-relay
 #   REMOTE_HARNESS_UPDATES_TOKEN (or the older CLAUDE_REMOTE_UPDATES_TOKEN) must be in the environment for publish-ota (never stored here).
+#   REMOTE_HARNESS_WEB_SSH=<user@host> server of remoteharness.app for deploy-web and the web install links
+#   REMOTE_HARNESS_WEB_DIR=<path>      its folder on that server (default /srv/remote-harness-web)
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
@@ -125,6 +127,11 @@ publish-ota: ## Publish the app JavaScript over the air (CHANNEL=production, PLA
 publish-ota-dry: ## Export and sign without uploading (checks the key and the config)
 	@test -f "$(OTA_KEY)" || { echo "✗ signing key not found: $(OTA_KEY) (OTA_KEY=...)"; exit 1; }
 	REMOTE_HARNESS_UPDATES_KEY="$(OTA_KEY)" pnpm --filter $(APP) ota:publish --channel $(CHANNEL) $(platform_flag) --dry-run
+
+## Website
+
+deploy-web: ## Build remoteharness.app and run it on its server behind Traefik (REMOTE_HARNESS_WEB_SSH=user@host)
+	pnpm --filter @remote-harness/web run deploy
 
 ## Push relay
 

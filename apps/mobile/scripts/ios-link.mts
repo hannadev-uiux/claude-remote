@@ -1,9 +1,9 @@
 /**
  * Installs a release build on the iPhone from a Safari link over Tailscale, from any network and
  * without a cable (Make: `install-ios-link`). With `--web` (Make: `IOS_LINK=web`) the files go to
- * R2 behind https://remoteharness.app/app/<token>/ instead, so the phone needs no Tailscale; the
+ * the site server (over SSH) behind https://remoteharness.app/app/<token>/ instead, so the phone needs no Tailscale; the
  * random token is kept in `<dir>/.web-token` and reused by later builds (and by the Android link,
- * `make install-android-link`). The Worker renders that page from `builds.json`, uploaded last.
+ * `make install-android-link`). The site renders that page from `builds.json`, uploaded last.
  * - `tsx scripts/ios-link.mts --check` prints the install page URL, or why Tailscale cannot serve it.
  * - `tsx scripts/ios-link.mts <archive> <dir>` exports the archive to an IPA in <dir>, writes the
  *   manifest and the install page next to it and publishes them on the tailnet only.
@@ -30,7 +30,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WEB_BASE } from './app-link-files.ts'
-import { checkCloudflare, publishBuilds, r2Put, webToken } from './app-link-web.mts'
+import { checkWebHost, publishBuilds, webPut, webToken } from './app-link-web.mts'
 import { type AppInfo, buildManifest, buildPage, HINTS, servedFile, tailnetHost } from './ios-link-files.ts'
 
 /** Path under the Mac's tailnet name, so other `tailscale serve` routes are left alone. */
@@ -192,11 +192,12 @@ async function ensureServer(dir: string): Promise<void> {
 
 /**
  * Uploads the build, then its manifest, then `builds.json` (the page is rendered from it), so the
- * page never links to a missing build. `index.html` still goes up for links read by older Workers.
+ * page never links to a missing build. `index.html` still goes up for folders read without `builds.json`.
  */
 function uploadWeb(dir: string, token: string, app: AppInfo, builtAt: Date): void {
-  for (const name of [IPA, 'manifest.plist', 'index.html']) r2Put(dir, token, name)
-  publishBuilds(dir, token, {
+  const target = checkWebHost()
+  for (const name of [IPA, 'manifest.plist', 'index.html']) webPut(target, dir, token, name)
+  publishBuilds(target, dir, token, {
     ios: {
       version: app.version,
       build: app.build,
@@ -210,7 +211,7 @@ function uploadWeb(dir: string, token: string, app: AppInfo, builtAt: Date): voi
 const args = process.argv.slice(2).filter((a) => a !== '--web')
 const web = process.argv.includes('--web')
 if (args.includes('--check')) {
-  if (web) checkCloudflare()
+  if (web) checkWebHost()
   console.log(web ? `✓ ${WEB_BASE}/<token>/` : `✓ ${baseUrl()}/`)
   process.exit(0)
 }

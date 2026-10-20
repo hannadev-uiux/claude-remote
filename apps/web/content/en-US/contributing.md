@@ -7,7 +7,7 @@ Bug reports, ideas, docs and code are all welcome. The repository's [CONTRIBUTIN
 
 ## How it is built
 
-A pnpm monorepo in strict TypeScript: the daemon (`apps/daemon`, Node), the app (`apps/mobile`, Expo and React Native), the push relay (`apps/push-relay`, a Cloud Function), this site (`apps/web`, a Cloudflare Worker) and the WebSocket protocol they share (`packages/protocol`, Zod schemas). Every feature starts as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change with a proposal, spec deltas and tasks; the archived changes are the project's history. Architecture and conventions live in [CLAUDE.md](https://github.com/maarkN/remote-harness/blob/main/CLAUDE.md).
+A pnpm monorepo in strict TypeScript: the daemon (`apps/daemon`, Node), the app (`apps/mobile`, Expo and React Native), the push relay (`apps/push-relay`, a Cloud Function), this site (`apps/web`, a Node server in Docker) and the WebSocket protocol they share (`packages/protocol`, Zod schemas). Every feature starts as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change with a proposal, spec deltas and tasks; the archived changes are the project's history. Architecture and conventions live in [CLAUDE.md](https://github.com/maarkN/remote-harness/blob/main/CLAUDE.md).
 
 ## Setup
 

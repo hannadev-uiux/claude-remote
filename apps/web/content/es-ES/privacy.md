@@ -25,7 +25,7 @@ Borrar la app y ejecutar `remote-harness uninstall` lo elimina todo.
 - **Notificaciones push (opcional)**: un título, el nombre del perfil, el id de la sesión y el tipo de evento pasan por Firebase Cloud Messaging (Google) hasta tu móvil; el estado en vivo añade el título de la sesión, la carpeta, el estado y la categoría del paso. El relay de push es un pequeño servicio que mantenemos, que reenvía esos mismos mensajes y no guarda nada; con tu propio proyecto de Firebase, nada pasa por nosotros. El tratamiento de Firebase Cloud Messaging por parte de Google se rige por la política de privacidad de Google.
 - **Actualizaciones**: el daemon consulta el remoto de git del código instalado en busca de versiones nuevas; la app consulta el servidor de actualizaciones configurado en su build en busca de JavaScript nuevo (la petición lleva la versión de la app y la plataforma, ningún dato personal).
 - **Perfiles de OpenRouter (opcional)**: las peticiones del catálogo de modelos y de créditos van de tu ordenador a OpenRouter con tu clave; ningún tráfico de modelos pasa por nosotros.
-- **Este sitio web**: servido por Cloudflare, que registra peticiones como cualquier alojamiento; las fuentes vienen de Google Fonts. Sin cookies, sin analítica.
+- **Este sitio web**: servido desde el servidor del propio proyecto a través de Cloudflare, y ambos registran peticiones como cualquier alojamiento; las fuentes vienen de Google Fonts. Sin cookies, sin analítica.
 
 ## Permisos que pide la app
 

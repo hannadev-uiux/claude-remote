@@ -7,7 +7,7 @@ Relatos de bugs, ideias, documentação e código são todos bem-vindos. O [CONT
 
 ## Como é construído
 
-Um monorepo pnpm em TypeScript estrito: o daemon (`apps/daemon`, Node), o app (`apps/mobile`, Expo e React Native), o relay de push (`apps/push-relay`, uma Cloud Function), este site (`apps/web`, um Worker do Cloudflare) e o protocolo WebSocket que eles compartilham (`packages/protocol`, schemas Zod). Toda funcionalidade começa como um change do [OpenSpec](https://github.com/Fission-AI/OpenSpec) com proposta, deltas de spec e tarefas; os changes arquivados são a história do projeto. Arquitetura e convenções estão em [CLAUDE.md](https://github.com/maarkN/remote-harness/blob/main/CLAUDE.md).
+Um monorepo pnpm em TypeScript estrito: o daemon (`apps/daemon`, Node), o app (`apps/mobile`, Expo e React Native), o relay de push (`apps/push-relay`, uma Cloud Function), este site (`apps/web`, um servidor Node em Docker) e o protocolo WebSocket que eles compartilham (`packages/protocol`, schemas Zod). Toda funcionalidade começa como um change do [OpenSpec](https://github.com/Fission-AI/OpenSpec) com proposta, deltas de spec e tarefas; os changes arquivados são a história do projeto. Arquitetura e convenções estão em [CLAUDE.md](https://github.com/maarkN/remote-harness/blob/main/CLAUDE.md).
 
 ## Preparação
 
