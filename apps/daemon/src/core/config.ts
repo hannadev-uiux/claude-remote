@@ -8,7 +8,8 @@ import {
   RuleScopeSchema,
 } from '@remote-harness/protocol'
 import { z } from 'zod'
-import { hasAgentAdapter, profileAgentId } from '../features/agents/index.ts'
+import { agentFor, hasAgentAdapter, profileAgentId } from '../features/agents/index.ts'
+import type { Executor } from '../infra/exec.ts'
 import { isDirectory, readJsonFile, writeJsonAtomic } from '../infra/fs.ts'
 import { messagesFor, systemLocale } from './i18n/index.ts'
 import type { Logger } from './logger.ts'
@@ -142,6 +143,33 @@ export async function resolveProfiles(config: Config, logger: Logger): Promise<P
       result.push({ ...profile, configDir })
     } else {
       logger.warn({ profile: profile.id, configDir }, 'profile config dir not found, ignoring profile')
+    }
+  }
+  return result
+}
+
+/**
+ * Of `profiles`, only those whose agent CLI is resolvable on PATH right now. Meant for what the
+ * app is offered (`auth.ok`), not for `resolveProfiles`'s broader result: `install`/`uninstall`
+ * still manage a profile's launcher before its CLI is on PATH, since installing the launcher is
+ * often the step that makes it reachable from tmux in the first place.
+ */
+export async function profilesWithResolvableAgent(
+  profiles: readonly Profile[],
+  exec: Executor,
+  logger: Logger,
+): Promise<Profile[]> {
+  const result: Profile[] = []
+  for (const profile of profiles) {
+    const adapter = agentFor(profile)
+    const which = await exec('which', [adapter.command])
+    if (which.exitCode === 0) {
+      result.push(profile)
+    } else {
+      logger.warn(
+        { profile: profile.id, agent: adapter.id, command: adapter.command },
+        'agent binary not on PATH, not offering this profile to the app',
+      )
     }
   }
   return result

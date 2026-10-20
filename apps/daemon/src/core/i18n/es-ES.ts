@@ -86,6 +86,8 @@ export const esES = {
       providerKey: (id: string, provider: string) => `clave de ${provider} del perfil ${id}`,
       runProviderKey: (id: string) => `ejecuta \`remote-harness provider key ${id}\``,
       codexHooks: (id: string, path: string) => `hooks de Codex del perfil ${id} (${path})`,
+      codexAccountWithoutProfile: (dir: string) =>
+        `Cuenta de Codex encontrada en ${dir} sin un perfil. Ejecuta \`remote-harness setup\` para añadirla.`,
       runInstall: 'ejecuta `remote-harness install`',
       service: (name: string, detail: string) => `servicio en segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',

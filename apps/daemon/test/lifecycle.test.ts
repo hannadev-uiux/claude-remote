@@ -95,6 +95,25 @@ describe('LifecycleService', () => {
     expect(await service.start('claudin', project)).toEqual({ paneId: '%9' })
   })
 
+  test('names the actual agent when a Codex profile exits before the settle check', async () => {
+    const { exec, store, project } = await setup()
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'cdx', name: 'P', configDir: '/c', color: '', agent: 'codex' }],
+      '/bin-dir',
+      home.dir(),
+      async () => false,
+      undefined,
+      undefined,
+      1,
+    )
+    await expect(service.start('cdx', project)).rejects.toMatchObject({
+      code: 'internal',
+      message: expect.stringContaining('Codex exited right after starting'),
+    })
+  })
+
   test('reports a failing launcher in English when it prints nothing', async () => {
     const { store, project } = await setup()
     const exec = fakeExecutor(() => ({ stdout: '', exitCode: 1 }))

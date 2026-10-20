@@ -40,6 +40,15 @@ export class MessageRouter {
     for (const listener of this.rejectionListeners) listener(type, code)
   }
 
+  /**
+   * Logs and records a rejection exactly like `dispatch` does for its own handlers, for a message
+   * that never reaches one at all (e.g. one that failed schema validation before dispatch).
+   */
+  reportRejected(type: string, code: ErrorCode): void {
+    this.logger.warn({ type, code }, 'request rejected')
+    this.rejected(type, code)
+  }
+
   async dispatch(message: ClientMessage, connection: Connection): Promise<void> {
     const handler = this.handlers.get(message.type) as MessageHandler<typeof message.type> | undefined
     if (!handler) {

@@ -88,6 +88,8 @@ export const enUS = {
       providerKey: (id: string, provider: string) => `${provider} key for profile ${id}`,
       runProviderKey: (id: string) => `run \`remote-harness provider key ${id}\``,
       codexHooks: (id: string, path: string) => `Codex hooks for profile ${id} (${path})`,
+      codexAccountWithoutProfile: (dir: string) =>
+        `Codex account found at ${dir} without a profile. Run \`remote-harness setup\` to add it.`,
       runInstall: 'run `remote-harness install`',
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
       serviceHint: 'optional: `remote-harness service install`',
