@@ -234,7 +234,7 @@ export const ptBR: WebMessages = {
     items: [
       {
         q: 'Funciona fora de casa?',
-        a: 'Sim. O Tailscale conecta seu celular e sua máquina onde estiverem, sem abrir portas. A máquina precisa estar acordada; o README cobre as opções de suspensão e bloqueio.',
+        a: 'Sim. O Tailscale conecta seu celular e sua máquina onde estiverem, sem abrir portas. A máquina precisa estar acordada; a página Solução de problemas das docs cobre as opções de suspensão e bloqueio.',
       },
       {
         q: 'Quais agentes são suportados?',

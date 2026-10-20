@@ -55,7 +55,7 @@ node apps/daemon/dist/cli.js setup
 
 ## Install the app
 
-- **iPhone and iPad**: a development build for now (TestFlight is coming). With Xcode on a Mac, `cd apps/mobile && pnpm ios` runs it on the simulator or a connected device; `make install-ios` makes a release build for a connected iPhone or iPad. The repository README has the signing details.
+- **iPhone and iPad**: a development build for now (TestFlight is coming). With Xcode on a Mac, `cd apps/mobile && pnpm ios` runs it on the simulator or a connected device; `make install-ios` makes a release build for a connected iPhone or iPad. [CONTRIBUTING.md](https://github.com/maarkN/remote-harness/blob/main/CONTRIBUTING.md#building-and-releasing) has the signing details.
 - **Android**: the APK from [GitHub Releases](https://github.com/maarkN/remote-harness/releases) (allow installs from your browser when asked), or `pnpm android` and `pnpm build:android` from the repository.
 
 Install Tailscale on the phone as well and sign in to the same tailnet as the computer.

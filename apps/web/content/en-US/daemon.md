@@ -20,6 +20,7 @@ The daemon runs on the computer: it tails the session transcripts, drives tmux, 
 | `remote-harness update` | Fetches the new version, rebuilds, refreshes the hooks and restarts the service. `--ref <branch|tag>` picks a version. |
 | `remote-harness updates status` / `check` / `channel [main|development]` / `auto on|off` | The background update check. |
 | `remote-harness push status` / `test` | Push mode in use and the registered phones; sends a test notification. |
+| `remote-harness push off` / `on` | Stops (or resumes) every push and live status update from this computer, without restarting the daemon. |
 | `remote-harness provider key <profile>` | Stores a profile's provider key (OpenRouter) in the OS secret store. `--stdin` reads it from a pipe. |
 | `remote-harness rules list` / `undo <id>` | The "always allow" rules created from the phone. |
 
