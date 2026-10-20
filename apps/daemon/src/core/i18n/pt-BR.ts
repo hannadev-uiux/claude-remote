@@ -508,7 +508,7 @@ export const ptBR = {
       allow: 'Permitir',
       always: 'Sempre permitir',
       deny: 'Negar',
-      focus: 'Focar no tmux',
+      focus: 'Abrir no terminal (tmux)',
       close: 'Encerrar sessão',
       sessions: (total: number, running: number) =>
         running > 0 ? `Sessões · ${total} · ${running} rodando` : `Sessões · ${total}`,
