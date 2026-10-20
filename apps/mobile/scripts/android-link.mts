@@ -1,9 +1,9 @@
 /**
  * Publishes the Android release APK on the web install link (Make: `install-android-link`), next to
- * the iOS build of `make install-ios-link IOS_LINK=web`: the same R2 folder, the same random token
+ * the iOS build of `make install-ios-link IOS_LINK=web`: the same server folder, the same random token
  * (`<dir>/.web-token`) and the same page, https://remoteharness.app/app/<token>/, which shows the
  * APK to Android phones.
- * - `tsx scripts/android-link.mts --check` checks the Cloudflare login and the Android SDK.
+ * - `tsx scripts/android-link.mts --check` checks the site server over SSH and the Android SDK.
  * - `tsx scripts/android-link.mts <app-release.apk> <dir>` uploads the APK, then its `builds.json`
  *   entry (version from `expo config`, size, date), and prints the link.
  * The APK keeps the prebuild's release signing, the same for every build made on this machine, so a
@@ -14,7 +14,7 @@ import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { androidVersion, WEB_BASE } from './app-link-files.ts'
-import { checkCloudflare, publishBuilds, r2Put, webToken } from './app-link-web.mts'
+import { checkWebHost, publishBuilds, webPut, webToken } from './app-link-web.mts'
 
 const APK = 'RemoteHarness.apk'
 
@@ -30,7 +30,7 @@ function checkSdk(): void {
 
 const args = process.argv.slice(2)
 if (args.includes('--check')) {
-  checkCloudflare()
+  checkWebHost()
   checkSdk()
   console.log(`✓ ${WEB_BASE}/<token>/`)
   process.exit(0)
@@ -57,8 +57,9 @@ const config: unknown = JSON.parse(
 const { version, versionCode } = androidVersion(config)
 
 copyFileSync(apk, join(dir, APK))
-r2Put(dir, token, APK)
-publishBuilds(dir, token, {
+const target = checkWebHost()
+webPut(target, dir, token, APK)
+publishBuilds(target, dir, token, {
   android: { version, versionCode, builtAt: new Date().toISOString(), size: statSync(apk).size },
 })
 console.log(`✓ Remote Harness ${version} (${versionCode}) for Android ready`)

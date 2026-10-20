@@ -359,7 +359,7 @@ The conversation SHALL let the user copy content with one tap, without blocking 
 - **THEN** the full raw result is in the clipboard, even when the tab shows it cut with "Show more"
 
 ### Requirement: Notifications and tagged entries
-The conversation SHALL render a `task_notification` system entry as a compact card with an icon and color by status (completed, failed, stopped or killed, other), the translated status and the summary; when the entry has a note, a tap MUST expand it. A `bash_input` entry SHALL render as `! <command>`, and its `bash_output` as a system line. A `tagged` entry SHALL render as a dimmed, collapsed line naming the tag that expands to the raw text on tap. None of them is shown as a user prompt or offered in the prompt history. Labels SHALL be translated (pt-BR, en-US, es-ES).
+The conversation SHALL render a `task_notification` system entry as a compact card with an icon and color by status (completed, failed, stopped or killed, other), the translated status and the summary; when the entry has a note, a tap MUST expand it. A `bash_input` entry SHALL render as `! <command>`, and its `bash_output` as a system line. A `tagged` entry SHALL render as a dimmed, collapsed line naming the tag that expands to the raw text on tap. A `compact_summary` entry SHALL render as a collapsed card labeled as a compaction summary, right after the "Conversation compacted" line; tapping it MUST expand the full text rendered as markdown, scrollable, with the existing copy action, and collapse it again on a second tap. The "Conversation compacted" line (the `compact_boundary` entry) SHALL include the compaction trigger as a qualifier (e.g. "automatically", "manually") when the entry carries one, and SHALL fall back to the plain "Conversation compacted" text when it does not. None of these entries is shown as a user prompt or offered in the prompt history. Labels SHALL be translated (pt-BR, en-US, es-ES).
 
 #### Scenario: Stopped background agent
 - **WHEN** a `task_notification` entry arrives with status `stopped`, summary "Background agent didn't finish" and a note
@@ -368,6 +368,18 @@ The conversation SHALL render a `task_notification` system entry as a compact ca
 #### Scenario: Unknown tag
 - **WHEN** a `tagged` entry with tag `new-thing` arrives
 - **THEN** a dimmed "new-thing" line appears that shows the raw text when tapped
+
+#### Scenario: Compaction summary card
+- **WHEN** a `compact_summary` entry arrives right after a `compact_boundary` entry
+- **THEN** a collapsed "Conversation compacted" line appears followed by a collapsed summary card, and tapping the card renders its text as markdown with a copy action
+
+#### Scenario: Compaction trigger known
+- **WHEN** a `compact_boundary` entry arrives with `trigger: "auto"`
+- **THEN** the "Conversation compacted" line names it as automatic
+
+#### Scenario: Compaction trigger unknown
+- **WHEN** a `compact_boundary` entry arrives without a `trigger` field
+- **THEN** the line reads the plain "Conversation compacted" text, with no qualifier
 
 ### Requirement: Prompt drafts
 The composer's text and attached photos SHALL be kept as a draft per session: leaving the session screen, opening another session, backgrounding the app or the OS killing it MUST NOT lose them, and opening the session again SHALL restore them. Drafts MUST be persisted on the device only (secure storage, excluded from backups and device migration), never sent to the daemon nor included in push payloads. A successful send SHALL clear what was sent from the draft; a failed send MUST keep it. Emptying the field and removing the photos SHALL discard the draft. Photos SHALL be persisted as references to their local copies; when a copy cannot be read after a relaunch, the text MUST still be restored and the composer SHALL say the photos could not be restored. Drafts SHALL expire after 7 days, SHALL be removed when their session is absent from the session list and the draft was last edited more than an hour ago, and MUST all be cleared when the machine is forgotten.

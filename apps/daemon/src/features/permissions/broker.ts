@@ -118,6 +118,13 @@ export class PermissionBroker {
     return mine.length
   }
 
+  /** Drops every pending request of a session that ended: they resolve as `cancelled`. */
+  cancelAll(sessionId: string): number {
+    const mine = [...this.pending.values()].filter((p) => p.info.sessionId === sessionId)
+    for (const pending of mine) pending.settle({ kind: 'cancelled' })
+    return mine.length
+  }
+
   async handle(hook: HookEvent, signal: AbortSignal): Promise<Record<string, unknown>> {
     const payload = hook.payload
     const tool = typeof payload.tool_name === 'string' ? payload.tool_name : 'tool'

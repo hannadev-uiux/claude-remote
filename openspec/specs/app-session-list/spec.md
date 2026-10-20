@@ -57,11 +57,19 @@ The list SHALL show every session that matches the current filter in one flat li
 - **THEN** the list reorders waiting first and the chip reads "By state ▾", also after relaunching the app
 
 ### Requirement: Header and machine line
-The list screen header SHALL show the product mark (22 pt, accent) followed by "Sessions", with the new-session and settings actions on the right, both in the compact stack header and in the sidebar header on wide screens. Under it a machine line SHALL show a connection dot (success when connected, danger when the token was rejected, warning otherwise), the machine name, the number of sessions in the list and, when at least one is known, the number of distinct agents.
+The list screen header SHALL show the product mark (22 pt, accent) followed by "Sessions". On regular width (the sidebar header on wide screens) it SHALL keep both the new-session and settings actions on the right. On compact width (the stack header on phones) it SHALL show only the settings action; the new-session action instead appears as a floating action button over the list (see "New session floating action button"). Under the header a machine line SHALL show a connection dot (success when connected, danger when the token was rejected, warning otherwise), the machine name, the number of sessions in the list and, when at least one is known, the number of distinct agents.
 
 #### Scenario: Connected
 - **WHEN** the app is connected to "MacBook Pro" and the list shows 7 sessions, all Claude Code
 - **THEN** the machine line reads "● MacBook Pro · 7 sessions" with "1 agent" on the right
+
+#### Scenario: Compact header has no new-session icon
+- **WHEN** the session list shows in compact width (phone)
+- **THEN** its header shows only the settings action, and a floating action button opens a new session instead
+
+#### Scenario: Regular width keeps the header action
+- **WHEN** the session list shows as the sidebar on regular width (iPad, wide Split View)
+- **THEN** its header keeps both the new-session and settings actions, and no floating action button is shown
 
 ### Requirement: Row anatomy
 Each row SHALL show: the agent badge (20 pt rounded square in the agent's fixed color with its two-letter code), the title and the relative time on the first line; the folder, the branch (`⎇`), a `worktree` hint when the folder is under `.claude/worktrees`, and the shared-checkout warning on the second line; the state pill (running = accent, waiting = warning, idle = success, ended = muted), the pending-permission badge, a plain `read-only` pill, the profile tag (name in the profile color), a muted glyph when the session or its profile is muted, a plain `+N subagents` pill and the background-tasks pill on the third line, with a chevron at the end. A waiting row SHALL keep the warning border and a selected row the accent border. The agent color MUST NOT change with the state.
@@ -82,7 +90,7 @@ Every session row and the recent-directories list SHALL show a compact relative 
 - **THEN** its row shows "yesterday" (pt-BR "ontem", es-ES "ayer")
 
 ### Requirement: Waiting strip
-When at least one session is waiting for the user (a pending permission request or a session in the `waiting` state), the list screen SHALL pin a strip above the list with the header "WAITING FOR YOU · N" (N = sessions waiting) and the elapsed time since the oldest item, updated every second; the oldest item with its agent badge, session title, profile tag and `Tool · argument`; and the answer buttons (Deny, Always, Allow) for a tool permission, or a status line ("has a question", "plan ready for review", "waiting for you") with an Open button for questions, plans and sessions without a request. With more than one item it SHALL show "+N more", which opens the session of the next item. The strip MUST NOT change the order of the list, and the waiting row keeps its warning border.
+When at least one session is waiting for the user (a pending permission request of a session that has not ended, or a controllable session in the `waiting` state), the list screen SHALL pin a strip above the list with the header "WAITING FOR YOU · N" (N = sessions waiting) and the elapsed time since the oldest item, updated every second; the oldest item with its agent badge, session title, profile tag and `Tool · argument`; and the answer buttons (Deny, Always, Allow) for a tool permission, or a status line ("has a question", "plan ready for review", "waiting for you") with an Open button for questions, plans and sessions without a request. With more than one item it SHALL show "+N more", which opens the session of the next item. The strip MUST NOT change the order of the list, and the waiting row keeps its warning border. Read-only sessions without a request and requests of ended sessions MUST NOT appear in it.
 
 #### Scenario: One Bash permission pending
 - **WHEN** one session waits for `Bash · gh pr create --fill`
@@ -95,6 +103,10 @@ When at least one session is waiting for the user (a pending permission request 
 #### Scenario: Nothing waiting
 - **WHEN** the last pending request is resolved
 - **THEN** the strip disappears and the list keeps its order
+
+#### Scenario: Read-only session marked waiting
+- **WHEN** an older daemon reports a read-only session as `waiting` with no pending request
+- **THEN** the strip does not show it
 
 ### Requirement: Swipe actions and action sheet
 Each session row SHALL support swipe actions: swipe left reveals **Close** (danger) and **More**; swipe right reveals **Mute** / **Unmute** (accent) and **Pin** / **Unpin**. A full swipe SHALL trigger the first action of that side with a haptic; only one row MAY be open at a time, and tapping elsewhere or scrolling closes it. Long press on a row and **More** SHALL open the same action sheet: Close session (controllable) or Resume (read-only), Mute / Unmute, Pin to top / Unpin, Clean up worktree (when the session's folder is a worktree, with its path and change count), Copy folder path, Hide from list (read-only). Close SHALL open a confirmation sheet that explains the graceful sequence, warns more strongly when the session is running or waiting, and offers the worktree cleanup with its outcomes; "Discard" requires a second confirmation. The session screen's More options menu SHALL also offer Close session.
@@ -136,3 +148,25 @@ A session row SHALL show a `Draft:` line with the start of the session's draft (
 #### Scenario: Draft sent
 - **WHEN** the draft is sent
 - **THEN** the row no longer shows the line
+
+### Requirement: Worktree cleanup failure
+When the worktree step of closing a session (or of cleaning up an ended session's worktree) fails, the close sheet SHALL stay open and show the daemon's message with two actions: **Retry** and **Keep the worktree**. Retry SHALL repeat only the worktree cleanup with the same action when the session already ended, and the whole close otherwise. Keep the worktree SHALL close the sheet without further requests. Texts MUST be translated.
+
+#### Scenario: Close went through, removal failed
+- **WHEN** the user closes a session with "Close and delete the worktree" and the session ends but the removal fails with "the worktree is locked by a running process (pid 4242)"
+- **THEN** the sheet shows that message with Retry and Keep the worktree, and Retry sends `worktree.cleanup` with `delete`
+
+#### Scenario: Keep
+- **WHEN** the user taps Keep the worktree after a failure
+- **THEN** the sheet closes and the worktree stays
+
+### Requirement: New session floating action button
+On compact width, a floating action button SHALL float over the bottom-right of the session list, inside the safe area, with an accessible label for "New session"; tapping it SHALL open the new-session screen and give the same selection haptic as the app's other primary actions. The list's bottom padding SHALL be large enough that the button never covers its last row. The Cmd+N keyboard shortcut SHALL keep opening the new-session screen independently of the button.
+
+#### Scenario: Tapping the floating action button
+- **WHEN** the user taps the floating action button on the compact session list
+- **THEN** the new-session screen opens, the same as tapping the old header icon did
+
+#### Scenario: Last row stays reachable
+- **WHEN** the session list is scrolled to its end
+- **THEN** the last row is fully visible above the floating action button, not covered by it

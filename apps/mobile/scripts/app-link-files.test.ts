@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { androidVersion, BUILDS_FILE, mergeBuilds, WEB_BASE, WEB_TOKEN, WEB_TYPES } from './app-link-files'
+import { androidVersion, mergeBuilds, WEB_BASE, WEB_DIR, WEB_TOKEN, webHost, webPath } from './app-link-files'
 
 const ios = {
   version: '0.14.0',
@@ -14,8 +14,28 @@ describe('web install link', () => {
   test('one link for both phones, under /app/', () => {
     expect(WEB_BASE).toBe('https://remoteharness.app/app')
     expect(WEB_TOKEN.test('aB3_x-9aB3_x-9aB3_x-9aB3_x')).toBe(true)
-    expect(WEB_TYPES['RemoteHarness.apk']).toBe('application/vnd.android.package-archive')
-    expect(WEB_TYPES[BUILDS_FILE]).toBe('application/json')
+  })
+
+  test('the site server comes from the environment', () => {
+    expect(webHost({ REMOTE_HARNESS_WEB_SSH: 'root@203.0.113.7' })).toEqual({
+      host: 'root@203.0.113.7',
+      dir: WEB_DIR,
+    })
+    expect(webHost({ REMOTE_HARNESS_WEB_SSH: 'site', REMOTE_HARNESS_WEB_DIR: '/srv/rh/' })).toEqual({
+      host: 'site',
+      dir: '/srv/rh',
+    })
+    expect(webHost({})).toEqual({ error: 'REMOTE_HARNESS_WEB_SSH' })
+    expect(webHost({ REMOTE_HARNESS_WEB_SSH: 'a b' })).toEqual({ error: 'REMOTE_HARNESS_WEB_SSH' })
+    expect(webHost({ REMOTE_HARNESS_WEB_SSH: 'h', REMOTE_HARNESS_WEB_DIR: "/srv/x'; rm -rf /" })).toEqual({
+      error: 'REMOTE_HARNESS_WEB_DIR',
+    })
+    expect(webHost({ REMOTE_HARNESS_WEB_SSH: 'h', REMOTE_HARNESS_WEB_DIR: '/srv/../etc' })).toEqual({
+      error: 'REMOTE_HARNESS_WEB_DIR',
+    })
+    expect(webPath({ host: 'h', dir: '/srv/rh' }, 'tok', 'builds.json')).toBe(
+      '/srv/rh/data/app/tok/builds.json',
+    )
   })
 
   test('each platform replaces its own entry and keeps the other', () => {

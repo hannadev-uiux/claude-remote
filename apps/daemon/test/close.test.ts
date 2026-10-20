@@ -47,7 +47,14 @@ const worktree: WorktreeInfo = {
   unpushed: 0,
 }
 
-function setup(options: { paneAlive?: () => boolean; worktree?: WorktreeInfo | null } = {}) {
+function setup(
+  options: {
+    paneAlive?: () => boolean
+    worktree?: WorktreeInfo | null
+    /** What a later inspection sees (after a commit/push, or after the agent exited). */
+    later?: WorktreeInfo | null
+  } = {},
+) {
   const store = new SessionStore({ broadcast: () => {} }, join(home.dir(), 's.json'), silentLogger, 60_000)
   stores.push(store)
   store.upsert('s', {}, () => record('s'))
@@ -57,25 +64,32 @@ function setup(options: { paneAlive?: () => boolean; worktree?: WorktreeInfo | n
     hasPane: vi.fn(async () => options.paneAlive?.() ?? true),
     killPane: vi.fn(async () => {}),
   }
+  let inspections = 0
   const git = {
-    worktreeInfo: vi.fn(async () => (options.worktree === undefined ? null : options.worktree)),
+    worktreeInfo: vi.fn(async (): Promise<WorktreeInfo | null> => {
+      inspections++
+      if (inspections > 1 && options.later !== undefined) return options.later
+      return options.worktree === undefined ? null : options.worktree
+    }),
     commitAll: vi.fn(async () => {}),
     push: vi.fn(async () => {}),
-    removeWorktree: vi.fn(async () => {}),
+    removeWorktree: vi.fn(async () => ({ purged: Promise.resolve() })),
   }
   const denyPending = vi.fn()
   const lock = { run: <T>(_key: string, task: () => Promise<T>) => task() }
+  const log = { warn: vi.fn() }
   const deps: CloseDeps = {
     store,
     tmux,
     git,
     lock,
     denyPending,
+    log,
     sleep: async () => {},
     timeoutMs: 2_000,
     pollMs: 500,
   }
-  return { store, tmux, git, denyPending, service: new CloseService(deps) }
+  return { store, tmux, git, denyPending, log, service: new CloseService(deps) }
 }
 
 describe('CloseService.close', () => {
@@ -132,6 +146,7 @@ describe('CloseService.close', () => {
     const { service, git } = setup({
       paneAlive: () => false,
       worktree: { ...worktree, dirty: 2, unpushed: 3 },
+      later: worktree,
     })
     expect(await service.close('s', 'push-delete')).toEqual({ closed: 'exited', worktree: 'deleted' })
     expect(git.commitAll).toHaveBeenCalledWith(worktree.path, WIP_COMMIT_MESSAGE)
@@ -155,6 +170,36 @@ describe('CloseService.close', () => {
     const { service, tmux } = setup({ worktree: { ...worktree, dirty: 1 } })
     await expect(service.close('s', 'delete')).rejects.toMatchObject({ code: 'bad_request' })
     expect(tmux.sendLiteral).not.toHaveBeenCalled()
+  })
+
+  test('changes that appear while the agent exits stop a plain delete and keep the worktree', async () => {
+    const { service, git, log } = setup({
+      paneAlive: () => false,
+      worktree,
+      later: { ...worktree, dirty: 1 },
+    })
+    await expect(service.close('s', 'delete')).rejects.toMatchObject({
+      code: 'bad_request',
+      message: expect.stringContaining('1 modified or untracked files'),
+    })
+    expect(git.removeWorktree).not.toHaveBeenCalled()
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ path: worktree.path, action: 'delete' }),
+      'worktree cleanup failed',
+    )
+  })
+
+  test('a failed removal is logged with the path and reaches the app with its reason', async () => {
+    const { service, git, log } = setup({ paneAlive: () => false, worktree })
+    git.removeWorktree.mockRejectedValueOnce(new Error('could not move the worktree folder: EPERM'))
+    await expect(service.close('s', 'delete')).rejects.toMatchObject({
+      code: 'internal',
+      message: 'could not move the worktree folder: EPERM',
+    })
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ path: worktree.path, reason: 'could not move the worktree folder: EPERM' }),
+      'worktree cleanup failed',
+    )
   })
 
   test('a session outside a linked worktree cannot ask for cleanup', async () => {

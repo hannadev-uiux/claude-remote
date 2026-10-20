@@ -17,6 +17,7 @@ export type TimelineItem =
       status?: string
       note?: string
       tag?: string
+      trigger?: string
     }
   | { type: 'unknown'; key: string; raw: string }
 
@@ -57,6 +58,7 @@ export function buildTimeline(entries: readonly TranscriptEntry[]): TimelineItem
           status: entry.status,
           note: entry.note,
           tag: entry.tag,
+          trigger: entry.trigger,
         })
         break
       case 'unknown':
@@ -84,14 +86,27 @@ function formatDuration(ms: number): string {
   return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`
 }
 
+const COMPACT_TRIGGERS = ['manual', 'auto'] as const
+type CompactTrigger = (typeof COMPACT_TRIGGERS)[number]
+
+function isCompactTrigger(trigger: string): trigger is CompactTrigger {
+  return (COMPACT_TRIGGERS as readonly string[]).includes(trigger)
+}
+
 /** System lines the daemon describes in English are written again in the app's language. */
 export function systemText(
-  item: { subtype: string; text: string; durationMs?: number },
+  item: { subtype: string; text: string; durationMs?: number; trigger?: string },
   t: TFunction,
 ): string {
   if (item.subtype === 'turn_duration' && item.durationMs !== undefined)
     return t('conversation.turnDuration', { duration: formatDuration(item.durationMs) })
-  if (item.subtype === 'compact_boundary') return t('conversation.compacted')
+  if (item.subtype === 'compact_boundary') {
+    if (item.trigger && isCompactTrigger(item.trigger))
+      return t('conversation.compactedWithTrigger', {
+        trigger: t(`conversation.compactTrigger.${item.trigger}`),
+      })
+    return t('conversation.compacted')
+  }
   if (item.subtype === 'turn_aborted' && item.text === 'Interrupted') return t('conversation.interrupted')
   return item.text
 }

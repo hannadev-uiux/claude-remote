@@ -18,6 +18,7 @@ import { type SessionAction, sessionActions, swipeSides } from './actions'
 import { sharedCheckoutCounts } from './checkout'
 import { CloseSessionSheet } from './components/CloseSessionSheet'
 import { MachineLine } from './components/MachineLine'
+import { NEW_SESSION_FAB_SPACE, NewSessionFab } from './components/NewSessionFab'
 import { SessionActionsSheet } from './components/SessionActionsSheet'
 import { SessionRow } from './components/SessionRow'
 import { SessionSearch } from './components/SessionSearch'
@@ -33,6 +34,8 @@ type Props = {
   selectedSessionId?: string | null
   /** Arrow keys + Enter navigate the list — only makes sense when shown as the master pane. */
   interactive?: boolean
+  /** Compact width only: floating action button over the list instead of the header's icon. */
+  fab?: boolean
 }
 
 type SwipeKey = SessionAction | 'more'
@@ -55,6 +58,7 @@ export function SessionsScreen({
   pendingBySession = {},
   selectedSessionId = null,
   interactive = false,
+  fab = false,
 }: Props) {
   const { t } = useTranslation()
   const { colors } = useTheme()
@@ -283,7 +287,7 @@ export function SessionsScreen({
             </EmptyState>
           ) : null
         }
-        contentContainerStyle={styles.list}
+        contentContainerStyle={fab ? styles.listWithFab : styles.list}
       />
       <SessionActionsSheet
         session={actionsFor}
@@ -301,6 +305,7 @@ export function SessionsScreen({
       {closing ? (
         <CloseSessionSheet session={closing.session} mode={closing.mode} onDone={() => setClosing(null)} />
       ) : null}
+      {fab ? <NewSessionFab /> : null}
     </Screen>
   )
 }
@@ -317,5 +322,6 @@ const useStyles = makeStyles((theme) => ({
   },
   strip: { paddingTop: space.sm },
   list: { paddingTop: space.sm, paddingBottom: space.xxl },
+  listWithFab: { paddingTop: space.sm, paddingBottom: space.xxl + NEW_SESSION_FAB_SPACE },
   code: { backgroundColor: theme.colors.surface, padding: space.md, borderRadius: 8, gap: space.xs },
 }))

@@ -2,6 +2,7 @@ import { paths } from '../../core/paths.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
 import type { DaemonContext } from '../../main.ts'
 import { SessionService } from './service.ts'
+import { stateAfterPermission } from './state.ts'
 import { SessionStore } from './store.ts'
 import { toWire } from './types.ts'
 
@@ -20,7 +21,10 @@ export function registerSessionsFeature(ctx: DaemonContext, tmux: TmuxClient) {
   })
 
   ctx.bus.on('permission.resolved', ({ info, outcome }) => {
-    if (outcome === 'allowed' || outcome === 'denied') store.upsert(info.sessionId, { state: 'running' })
+    if (outcome !== 'allowed' && outcome !== 'denied') return
+    // A request denied while closing (or answered late) must not bring an ended session back.
+    const state = stateAfterPermission(store.get(info.sessionId))
+    if (state) store.upsert(info.sessionId, { state })
   })
 
   ctx.router.register('sessions.list', async () => {

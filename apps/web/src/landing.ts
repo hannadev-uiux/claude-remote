@@ -1,7 +1,8 @@
+import { agentMark } from './agent-marks.ts'
 import { esc, inline } from './html.ts'
 import { LOCALE_PATHS, type Locale, messagesFor, WEB_LOCALES, type WebMessages } from './i18n/index.ts'
 import { INSTALL_COMMANDS } from './install.ts'
-import { MARK_REGULAR, OG_IMAGE_URL, REPO_URL, SITE_URL } from './site.ts'
+import { AUTHOR, CONTRIBUTORS, MARK_REGULAR, OG_IMAGE_URL, REPO_URL, SITE_URL } from './site.ts'
 import { STYLES } from './styles.ts'
 
 const OG_LOCALES: Record<Locale, string> = { 'en-US': 'en_US', 'pt-BR': 'pt_BR', 'es-ES': 'es_ES' }
@@ -105,9 +106,17 @@ export function siteHeader(
 export function siteFooter(locale: Locale, m: WebMessages): string {
   const f = m.footer
   const languages = WEB_LOCALES.map((l) => LANG_NAMES[l]).join(' · ')
+  const contributors = CONTRIBUTORS.map(
+    (login) =>
+      `<a href="https://github.com/${login}"><i aria-hidden="true">${login.charAt(0).toUpperCase()}</i>${login.toLowerCase()}</a>`,
+  ).join('')
   return `<footer>
   <div class="row"><span class="brand">${mark(20)}Remote Harness</span><a href="${docsPath(locale)}">${esc(f.docs)}</a><a href="${REPO_URL}">${esc(f.github)}</a><a href="${LINKS.releases}">${esc(f.releases)}</a><a href="${LINKS.security}">${esc(f.security)}</a><a href="${docsPath(locale)}privacy/">${esc(f.privacy)}</a><a href="${LINKS.license}">${esc(f.license)}</a><span class="langs">${languages}</span></div>
-  <small>${esc(f.legal)}</small>
+  <div class="fine">
+    <small>${esc(f.legal)}</small>
+    <div class="contrib"><span>${esc(f.contributors)}</span>${contributors}</div>
+  </div>
+  <div class="by">${esc(f.madeBy)} <a href="${AUTHOR.url}">${AUTHOR.name}</a></div>
 </footer>`
 }
 
@@ -131,7 +140,7 @@ function phoneMock(m: WebMessages): string {
   const rows = mock.sessions
     .map((s) => {
       const branch = s.branch ? `<span>⎇ ${esc(s.branch)}</span>` : ''
-      return `<div class="srow${s.state === 'waiting' ? ' waiting' : ''}"><div class="t"><span class="agent claude">cl</span><span class="title">${esc(s.title)}</span><span class="ago">${esc(s.ago)}</span></div><div class="p"><span>${esc(s.folder)}</span>${branch}</div><div class="m"><span class="pill ${esc(s.state)}">${esc(states[s.state] ?? s.state)}</span><span class="ptag ${esc(s.profile)}">${esc(profiles[s.profile] ?? s.profile)}</span></div></div>`
+      return `<div class="srow${s.state === 'waiting' ? ' waiting' : ''}"><div class="t">${agentMark('claude', 14)}<span class="title">${esc(s.title)}</span><span class="ago">${esc(s.ago)}</span></div><div class="p"><span>${esc(s.folder)}</span>${branch}</div><div class="m"><span class="pill ${esc(s.state)}">${esc(states[s.state] ?? s.state)}</span><span class="ptag ${esc(s.profile)}">${esc(profiles[s.profile] ?? s.profile)}</span></div></div>`
     })
     .join('')
   return `<div class="phone" role="img" aria-label="${esc(m.hero.mockLabel)}">
@@ -141,7 +150,7 @@ function phoneMock(m: WebMessages): string {
     <div class="mline"><span class="dot"></span><span class="host">${esc(mock.host)}</span><span>${esc(mock.count)}</span></div>
     <div class="chips">${chips}</div>
     <div class="scroll">
-      <div class="attn"><div class="h">⚠ ${esc(mock.waiting)} <span>${esc(mock.timer)}</span></div><div class="who"><span class="agent claude">cl</span><span>${esc(mock.permission.title)}</span></div><div class="tool">${esc(mock.permission.tool)} · <b>${esc(mock.permission.command)}</b></div><div class="ans"><span class="no">${esc(mock.deny)}</span><span>${esc(mock.always)}</span><span class="ok">${esc(mock.allow)}</span></div></div>
+      <div class="attn"><div class="h">⚠ ${esc(mock.waiting)} <span>${esc(mock.timer)}</span></div><div class="who">${agentMark('claude', 14)}<span>${esc(mock.permission.title)}</span></div><div class="tool">${esc(mock.permission.tool)} · <b>${esc(mock.permission.command)}</b></div><div class="ans"><span class="no">${esc(mock.deny)}</span><span>${esc(mock.always)}</span><span class="ok">${esc(mock.allow)}</span></div></div>
       ${rows}
     </div>
   </div>
@@ -166,18 +175,18 @@ function agents(m: WebMessages): string {
   const a = m.agents
   return `<div class="agents" aria-label="${esc(a.label)}">
   <span class="lbl">${esc(a.label)}</span>
-  <span class="agchip"><span class="agent claude" aria-hidden="true">cl</span>${esc(a.claude)}</span>
-  <span class="agchip plain">${esc(a.openrouter)} <small>${esc(a.openrouterNote)}</small></span>
-  <span class="agchip soon"><span class="agent codex" aria-hidden="true">cx</span>${esc(a.codex)} <small>${esc(a.soon)}</small></span>
-  <span class="agchip soon"><span class="agent kimi" aria-hidden="true">ki</span>${esc(a.kimi)} <small>${esc(a.soon)}</small></span>
-  <span class="agchip soon"><span class="agent qwen" aria-hidden="true">qw</span>${esc(a.qwen)} <small>${esc(a.soon)}</small></span>
+  <span class="agchip">${agentMark('claude')}${esc(a.claude)}</span>
+  <span class="agchip">${agentMark('openrouter')}${esc(a.openrouter)} <small>${esc(a.openrouterNote)}</small></span>
+  <span class="agchip soon">${agentMark('codex')}${esc(a.codex)} <small>${esc(a.soon)}</small></span>
+  <span class="agchip soon">${agentMark('kimi')}${esc(a.kimi)} <small>${esc(a.soon)}</small></span>
+  <span class="agchip soon">${agentMark('qwen')}${esc(a.qwen)} <small>${esc(a.soon)}</small></span>
 </div>`
 }
 
 function how(m: WebMessages): string {
   const h = m.how
   const aliases = h.agents.aliases
-    .map((alias) => `<span><span class="agent claude" aria-hidden="true">cl</span>${esc(alias)}</span>`)
+    .map((alias) => `<span>${agentMark('claude', 14)}${esc(alias)}</span>`)
     .join('')
   const steps = h.steps
     .map((s) => `<li class="step"><div><b>${esc(s.title)}</b><p>${inline(s.body)}</p></div></li>`)

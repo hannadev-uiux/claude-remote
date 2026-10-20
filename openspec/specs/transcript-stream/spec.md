@@ -6,7 +6,7 @@ Delivers session content to the app in real time, with paginated history and los
 ## Requirements
 
 ### Requirement: Tolerant normalization
-The daemon SHALL convert each transcript line into zero or more normalized entries (`user`, `assistant_text`, `thinking`, `tool_use`, `tool_result`, `system`, `unknown`). Invalid lines or lines of an unknown type MUST NOT interrupt reading. User entries that Claude Code writes as XML-like tags MUST NOT become `user` entries: each `<task-notification>` SHALL become a `system` entry with subtype `task_notification`, the summary as text, its `status` and its optional `note`, without the task id, tool use id, output file, usage or result; `<bash-input>` SHALL become a `bash_input` system entry with the command, and `<bash-stdout>`/`<bash-stderr>` a `bash_output` system entry with both outputs (none when both are empty); any other entry made only of tag blocks SHALL become a `tagged` system entry with the first tag name in `tag` and the raw text.
+The daemon SHALL convert each transcript line into zero or more normalized entries (`user`, `assistant_text`, `thinking`, `tool_use`, `tool_result`, `system`, `unknown`). Invalid lines or lines of an unknown type MUST NOT interrupt reading. User entries that Claude Code writes as XML-like tags MUST NOT become `user` entries: each `<task-notification>` SHALL become a `system` entry with subtype `task_notification`, the summary as text, its `status` and its optional `note`, without the task id, tool use id, output file, usage or result; `<bash-input>` SHALL become a `bash_input` system entry with the command, and `<bash-stdout>`/`<bash-stderr>` a `bash_output` system entry with both outputs (none when both are empty); any other entry made only of tag blocks SHALL become a `tagged` system entry with the first tag name in `tag` and the raw text. The `(no content)` placeholder Claude Code writes for an empty command output or an empty assistant reply MUST NOT become an entry.
 
 #### Scenario: Corrupted line
 - **WHEN** a `.jsonl` line is not valid JSON
@@ -31,6 +31,10 @@ The daemon SHALL convert each transcript line into zero or more normalized entri
 #### Scenario: Unknown tag
 - **WHEN** a user entry is only `<new-thing>…</new-thing>`
 - **THEN** a `tagged` system entry with tag `new-thing` is sent, not a `user` entry
+
+#### Scenario: Empty command output
+- **WHEN** the user runs `/exit` and Claude Code records the command output as `(no content)`
+- **THEN** only the `/exit` command entry is sent, without a `(no content)` line
 
 ### Requirement: Real-time streaming
 After `session.subscribe`, the daemon SHALL send each new entry as `transcript.entry` with an increasing `cursor` less than 1 s after it is written to the file.
@@ -71,3 +75,22 @@ The parser SHALL turn base64 image blocks of user messages and of tool result co
 #### Scenario: Unknown image
 - **WHEN** the app sends `transcript.image` with an id whose line has no such image
 - **THEN** the daemon answers `not_found`
+
+### Requirement: Compaction entries
+A `user` transcript line flagged `isCompactSummary` SHALL become a `system` entry with subtype `compact_summary` instead of a `user` entry, never shown as a user prompt and never offered in prompt history. The boilerplate written for the model at the end of that text (the "read the full transcript at `<path>`" sentence and the instruction to continue without acknowledging the summary) MUST NOT appear in the entry's text; when that boilerplate is not found, the full text SHALL be kept rather than discarded. A `compact_boundary` system entry SHALL carry the compaction trigger (`compactMetadata.trigger`, e.g. `manual` or `auto`) in an optional `trigger` field when Claude Code reports one.
+
+#### Scenario: Manual or automatic compaction summary
+- **WHEN** a `user` line has `isCompactSummary: true` and its content is "This session is being continued from a previous conversation...\n\nSummary:\n1. ...\n\nIf you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /some/path.jsonl\nContinue the conversation from where it left off..."
+- **THEN** a `compact_summary` system entry is sent with the "Summary: 1. ..." portion as its text, and neither the transcript path nor the "Continue the conversation..." instruction appears in it
+
+#### Scenario: Boilerplate not found
+- **WHEN** a `user` line has `isCompactSummary: true` and its content does not contain the "read the full transcript at" marker
+- **THEN** a `compact_summary` system entry is sent with the full content as its text
+
+#### Scenario: Known compaction trigger
+- **WHEN** a `compact_boundary` system line has `compactMetadata: { trigger: "auto" }`
+- **THEN** the `compact_boundary` entry is sent with `trigger: "auto"`
+
+#### Scenario: Unknown or missing trigger
+- **WHEN** a `compact_boundary` system line has no `compactMetadata.trigger`
+- **THEN** the `compact_boundary` entry is sent without a `trigger` field

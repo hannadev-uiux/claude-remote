@@ -4,6 +4,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config'
 import {
   type ConfigPlugin,
   type ExportedConfig,
+  withAndroidManifest,
+  withAppBuildGradle,
   withAppDelegate,
   withDangerousMod,
   withInfoPlist,
@@ -259,6 +261,50 @@ const withLiveActivityIcon: ConfigPlugin = (config) => {
 }
 
 /**
+ * `locales` (the iOS system prompts above) also lands in the Android string resources, per language
+ * and without a default, which the release lint (`lintVitalRelease`) rejects as extra translations.
+ * Android never reads those strings, so that one check is turned off.
+ */
+const withIosOnlyLocaleStrings: ConfigPlugin = (config) =>
+  withAppBuildGradle(config, (mod) => {
+    const marker = '// remote-harness: iOS-only locale strings'
+    if (!mod.modResults.contents.includes(marker)) {
+      mod.modResults.contents = mod.modResults.contents.replace(
+        /\nandroid \{\n/,
+        `\nandroid {\n    ${marker}\n    lint {\n        disable 'ExtraTranslation'\n    }\n`,
+      )
+    }
+    return mod
+  })
+
+/** Attributes of FCM's notification defaults that both expo-notifications and RNFirebase messaging set. */
+const FCM_DEFAULTS: Record<string, 'android:value' | 'android:resource'> = {
+  'com.google.firebase.messaging.default_notification_channel_id': 'android:value',
+  'com.google.firebase.messaging.default_notification_color': 'android:resource',
+  'com.google.firebase.messaging.default_notification_icon': 'android:resource',
+}
+
+/**
+ * expo-notifications writes FCM's default channel, color and icon into the app manifest, and
+ * `@react-native-firebase/messaging` ships the same `<meta-data>` with its own values, so the
+ * release manifest merge fails. The app's values win (`tools:replace`).
+ */
+const withFcmManifestDefaults: ConfigPlugin = (config) =>
+  withAndroidManifest(config, (mod) => {
+    const manifest = mod.modResults.manifest
+    manifest.$ = { ...manifest.$, 'xmlns:tools': 'http://schemas.android.com/tools' }
+    for (const application of manifest.application ?? []) {
+      for (const item of application['meta-data'] ?? []) {
+        const attribute = FCM_DEFAULTS[item.$['android:name']]
+        if (attribute && item.$[attribute] !== undefined) {
+          item.$ = { ...item.$, 'tools:replace': attribute } as typeof item.$
+        }
+      }
+    }
+    return mod
+  })
+
+/**
  * RNFirebase's plugins fail on a platform without its Google services file, so apply them and then
  * drop the native mods of the platforms that have no file. Crashlytics collection stays off until
  * the user opts in (`firebase.json`, `src/features/error-reports`).
@@ -275,13 +321,16 @@ const withFirebase: ConfigPlugin = (config) => {
     '@react-native-firebase/crashlytics',
   ])
   for (const [platform, mods] of saved) next.mods = { ...next.mods, [platform]: mods }
-  return firebase.ios ? withFirebaseCocoaPods(next) : next
+  const android = firebase.android ? withFcmManifestDefaults(next) : next
+  return firebase.ios ? withFirebaseCocoaPods(android) : android
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const expo = withLiveActivityIcon(
-    withKeyCommandAppDelegate(
-      withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+  const expo = withIosOnlyLocaleStrings(
+    withLiveActivityIcon(
+      withKeyCommandAppDelegate(
+        withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+      ),
     ),
   )
   return firebase.ios || firebase.android ? withFirebase(expo) : expo
@@ -291,7 +340,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Remote Harness',
   slug: 'claude-remote',
-  version: '0.14.0',
+  version: '0.15.0',
   // `remoteharness://` first; `claude-remote://` stays for the pairing QR codes already printed (and
   // printed by daemons until app builds without the new scheme are gone).
   scheme: ['remoteharness', 'claude-remote'],

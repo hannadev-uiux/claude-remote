@@ -171,6 +171,16 @@ describe('PermissionBroker', () => {
     expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'cancelled' })
   })
 
+  test('cancelAll drops the requests of a session that ended', async () => {
+    const { broker, hook, sent } = setup()
+    const pending = broker.handle(hook, new AbortController().signal)
+    expect(broker.cancelAll('other')).toBe(0)
+    expect(broker.cancelAll('s')).toBe(1)
+    expect(await pending).toEqual({})
+    expect(broker.hasPending('s')).toBe(false)
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'cancelled' })
+  })
+
   test('always records the project settings file', async () => {
     const { broker, hook, requestId, rules } = setup()
     const pending = broker.handle(hook, new AbortController().signal)

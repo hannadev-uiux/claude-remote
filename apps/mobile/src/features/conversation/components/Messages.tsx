@@ -87,13 +87,15 @@ export const SystemLine = memo(function SystemLine({
   text: raw,
   subtype,
   durationMs,
+  trigger,
 }: {
   text: string
   subtype: string
   durationMs?: number
+  trigger?: string
 }) {
   const { t } = useTranslation()
-  const text = systemText({ subtype, text: raw, durationMs }, t)
+  const text = systemText({ subtype, text: raw, durationMs, trigger }, t)
   const marker = COMMAND_MARKERS[subtype]
   return (
     <View style={styles.system}>
@@ -170,6 +172,31 @@ export const TaggedEntry = memo(function TaggedEntry({ tag, text }: { tag: strin
       <Text size="xs" color="textDim">
         {open ? text : t('conversation.tagged', { tag })}
       </Text>
+    </Pressable>
+  )
+})
+
+/** Compaction summary Claude Code writes as a user line: collapsed, markdown on expand, copyable. */
+export const CompactSummary = memo(function CompactSummary({ text }: { text: string }) {
+  const { t } = useTranslation()
+  const { colors } = useTheme()
+  const themed = useStyles()
+  const [open, setOpen] = useState(false)
+  const Chevron = open ? ChevronDown : ChevronRight
+  return (
+    <Pressable onPress={() => setOpen(!open)} style={themed.task} accessibilityState={{ expanded: open }}>
+      <View style={styles.taskRow}>
+        <Text size="xs" color="textDim" style={styles.flex}>
+          {t('conversation.compactSummary')}
+        </Text>
+        {open ? <CopyButton value={text} label={t('conversation.copy.message')} /> : null}
+        <Chevron size={14} color={colors.textDim} />
+      </View>
+      {open ? (
+        <View style={styles.taskNote}>
+          <Markdown text={text} />
+        </View>
+      ) : null}
     </Pressable>
   )
 })

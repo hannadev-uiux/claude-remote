@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cf dev",
-    "build": "cf build",
-    "deploy": "cf deploy",
-    "typecheck": "cf workers types && tsc -p tsconfig.json",
+    "dev": "vite build && node --env-file-if-exists=.env.local dist/server.js",
+    "build": "vite build",
+    "start": "node dist/server.js",
+    "deploy": "sh scripts/deploy.sh",
+    "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "beta",
-    "cf": "^1.0.0-beta.18",
+    "@types/node": "^24",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.4"
