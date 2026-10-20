@@ -4,11 +4,11 @@
 
 # Remote Harness
 
-**Acompanhe e conduza pelo celular (iPhone ou Android) os seus agentes de código — Claude Code hoje, outros em breve — que rodam no seu Mac, Linux ou Windows (WSL).**
+**Acompanhe e conduza pelo celular (iPhone ou Android) os seus agentes de código — Claude Code e Codex CLI — que rodam no seu Mac, Linux ou Windows (WSL).**
 
-Auto-hospedado: um daemon pequeno no computador, um app nativo no celular e um link privado do Tailscale entre os dois.<br/>Sem relay na nuvem, sem notificação para a conta inteira, todos os perfis do Claude Code numa lista só.
+Auto-hospedado: um daemon pequeno no computador, um app nativo no celular e um link privado do Tailscale entre os dois.<br/>Sem relay na nuvem, sem notificação para a conta inteira, todos os perfis numa lista só.
 
-[English](README.md) · [Contribuindo](CONTRIBUTING.md) · [Segurança](SECURITY.md)
+[Documentação](https://remoteharness.app/pt-br/docs/) · [English](README.md) · [Contribuindo](CONTRIBUTING.md) · [Segurança](SECURITY.md)
 
 </div>
 
@@ -33,19 +33,32 @@ O controle remoto nativo (`/rc`) ajuda, mas não atendia um uso real:
 
 O Remote Harness resolve isso com ferramentas em que você já confia: as sessões rodam no **tmux**, o Claude Code avisa o que acontece pelos **hooks HTTP** nativos e um **daemon** local liga tudo ao celular pelo **Tailscale**.
 
+## Status
+
+**Alpha.** A versão mais recente é a [v0.15.0-ALPHA](https://github.com/maarkN/remote-harness/releases); toda release leva o sufixo `-ALPHA` enquanto o projeto está em testes. Ele é usado todo dia pelos autores, mas espere arestas e mudanças incompatíveis entre versões.
+
+- **Computador:** macOS, Linux e Windows (WSL2), instalado com um comando e atualizado com `remote-harness update` (ou sozinho, pela barra de menus).
+- **Celular:** iOS/iPadOS e Android 10+. Ainda fora das lojas: compile o app (veja abaixo); TestFlight e Google Play estão em andamento ([#161](https://github.com/maarkN/remote-harness/issues/161)). Os builds instalados recebem atualizações de JavaScript pelo ar.
+- **Agentes:** Claude Code (quantas contas quiser, também via OpenRouter) e Codex CLI. Kimi e Qwen Code estão nos planos.
+- **Idiomas:** o app, o CLI, as notificações e o [site](https://remoteharness.app/pt-br/) em inglês, português do Brasil e espanhol.
+
 ## O que ele faz
 
-- **Uma lista, todos os perfis** — sessões de todos os perfis, agrupadas por projeto, com estado ao vivo.
+- **Uma lista, todos os perfis** — sessões de todos os perfis, ordenadas pelo que mexeu por último, com estado ao vivo e uma faixa "esperando você" no topo.
+- **Claude Code e Codex** — perfis do Claude Code (nas suas contas da Anthropic ou com modelos do OpenRouter) e do Codex CLI lado a lado, cada um com o seu launcher.
 - **Conversa em tempo real** — markdown, raciocínio, tool calls, diffs e resultados, paginados.
-- **Enviar prompts** — para o mesmo processo aberto no computador, com `Esc` e `Ctrl+C`.
-- **Aprovar permissões** — permitir, negar ou **permitir sempre** (a regra é gravada pelo próprio Claude Code e pode ser desfeita com `remote-harness rules undo`).
+- **Enviar prompts** — para o mesmo processo aberto no computador, com `Esc` e `Ctrl+C`; enfileire mensagens enquanto o agente trabalha (ou envie na hora), mantenha um rascunho por sessão, dite no próprio aparelho e anexe fotos.
+- **Aprovar permissões** — permitir, negar ou **permitir sempre** (a regra é gravada pelo próprio Claude Code e pode ser desfeita com `remote-harness rules undo`); responda às perguntas do agente e aprove planos.
 - **Trocar o modo de permissão** — padrão, aceitar edições, plano, auto. O `bypassPermissions` nunca é oferecido.
-- **Autocomplete** — `@arquivos` e `/comandos` (projeto, perfil, plugins e nativos).
+- **Autocomplete** — `@arquivos` e todos os `/comandos` (nativos, projeto, perfil e plugins), com os recentes primeiro.
 - **Terminal bruto** — xterm.js com o painel do tmux para menus da TUI.
 - **Subagentes** — acompanhe subagentes e tarefas em segundo plano.
-- **Iniciar e retomar** — nova sessão em qualquer projeto ou retomar uma somente leitura.
+- **Iniciar, retomar, encerrar** — nova sessão em qualquer pasta (com seletor e recentes), retomar uma somente leitura e encerrar com limpeza da worktree que nunca descarta trabalho sem avisar.
 - **Push privado** — só no *seu* aparelho, sem conteúdo da sessão; silencie por perfil ou sessão.
-- **Status ao vivo** — enquanto uma sessão trabalha, o estado, o tipo de etapa e o tempo aparecem na tela bloqueada e na Dynamic Island (Live Activity no iOS) ou numa notificação silenciosa (Android).
+- **Status ao vivo** — enquanto uma sessão trabalha, o estado, o tipo de etapa, as tarefas em paralelo e o tempo aparecem na tela bloqueada e na Dynamic Island (Live Activity no iOS) ou numa notificação silenciosa (Android).
+- **Celular e iPad** — cinco temas (escuro, claro, Dracula, Mocha, Latte), layout de iPad com lista lateral e inspetor, e atalhos de teclado físico.
+- **Barra de menus e atualizações** — um ícone na barra de menus do computador com o estado do daemon e as atualizações; o celular também atualiza o computador.
+- **Relatórios de erro** — opcionais, sem nada das suas sessões, e uma tela "Relatar um problema".
 
 ## Como funciona
 
@@ -54,7 +67,9 @@ O Remote Harness resolve isso com ferramentas em que você já confia: as sessõ
 3. O daemon acompanha o transcript, lê o painel do tmux e entrega tudo ao app por um WebSocket autenticado, escutando **só** na interface do Tailscale.
 4. Prompts e teclas voltam pelo tmux; respostas de permissão voltam pela requisição do hook pendente.
 
-Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [README em inglês](README.md). O PRD original (em português) está em [`.docs/claude-remote-app.md`](.docs/claude-remote-app.md).
+O **Codex CLI** funciona do mesmo jeito, pelos hooks de comando dele (`<CODEX_HOME>/hooks.json`) e pelos rollouts das sessões: iniciar, retomar, prompts, Permitir/Negar nos pedidos de permissão e a conversa, sem worktrees nem regras de "permitir sempre".
+
+Detalhes de arquitetura, segurança, instalação e desenvolvimento estão no [README em inglês](README.md). O PRD original (em português, de quando o projeto se chamava Claude Remote) está em [`.docs/prd.md`](.docs/prd.md).
 
 ## Início rápido
 
@@ -68,7 +83,7 @@ O instalador verifica os pré-requisitos, baixa e compila o daemon em `~/.remote
 
 No celular, instale o app e o Tailscale (App Store ou Google Play, mesma conta do computador). Instalou o app primeiro? A tela de pareamento tem um passo a passo para configurar o computador.
 
-Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo); o instalador cuida do Node 24+, baixando um Node privado em `~/.remote-harness/node` se faltar, e de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê. Também: Claude Code; Tailscale no computador e no celular.
+Requisitos: macOS, Linux (de preferência com systemd) ou Windows 10 2004+/11 via WSL2 (veja abaixo); o instalador cuida do Node 24+, baixando um Node privado em `~/.remote-harness/node` se faltar, e de `tmux`, `rg`, `zsh` e `git` via Homebrew no macOS ou apt, dnf, pacman ou zypper no Linux, usando `sudo` só depois de explicar por quê. Também: Claude Code e/ou Codex CLI; Tailscale no computador e no celular.
 
 ### Android
 
@@ -114,4 +129,4 @@ O script verifica o Windows 10 2004+ ou Windows 11, instala o WSL2 com Ubuntu se
 
 [MIT](LICENSE) © Marco Filho
 
-<sub>O Remote Harness é um projeto independente, sem afiliação, endosso ou patrocínio da Anthropic. "Claude" e "Claude Code" são marcas da Anthropic, PBC.</sub>
+<sub>O Remote Harness é um projeto independente, sem afiliação, endosso ou patrocínio da Anthropic ou da OpenAI. "Claude" e "Claude Code" são marcas da Anthropic, PBC; "Codex" é marca da OpenAI.</sub>
