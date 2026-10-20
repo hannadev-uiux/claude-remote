@@ -105,7 +105,8 @@ export function CloseSessionSheet({
       }
       onDone()
     } catch (e) {
-      setError(errorMessage(e, t))
+      // The agent still holds the worktree (a lock it has not released): retry or keep it.
+      setError(errorMessage(e, t, { session_busy: t('closeSession.worktreeInUse') }))
       setFailed(action)
     } finally {
       setBusy(false)

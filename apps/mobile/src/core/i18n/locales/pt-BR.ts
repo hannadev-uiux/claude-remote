@@ -234,6 +234,8 @@ const ptBR = {
     cleanupFailed: 'O worktree não foi excluído. Nada foi perdido.',
     retry: 'Tentar de novo',
     keepAfterFailure: 'Manter o worktree',
+    worktreeInUse:
+      'O agente ainda está usando o worktree, então ele não foi apagado. Tente de novo em instantes ou mantenha-o.',
   },
   providers: {
     via: 'via {{provider}}',
