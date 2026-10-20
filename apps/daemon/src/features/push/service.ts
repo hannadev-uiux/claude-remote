@@ -74,6 +74,18 @@ export class PushService {
     }
   }
 
+  /** A question or plan still open after a while: a content-free reminder, opened as the session. */
+  messageForReminder(info: PermissionRequestInfo): PushMessage | null {
+    const kind = info.interaction?.kind
+    if (!kind) return null
+    const { messages } = this.options
+    return {
+      title: kind === 'question' ? messages.questionReminder : messages.planReminder,
+      body: this.profileName(info.profileId),
+      data: { sessionId: info.sessionId, profileId: info.profileId, event: 'PermissionReminder' },
+    }
+  }
+
   testMessage(): PushMessage {
     return {
       title: this.options.messages.testTitle,

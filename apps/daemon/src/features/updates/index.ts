@@ -134,7 +134,8 @@ export async function registerUpdatesFeature(
     }))
     const oldest = shell
       .pendingPermissions()
-      .filter((p) => !p.interaction)
+      // Questions are answered in the app; handed-over requests in the terminal right here.
+      .filter((p) => !p.interaction && !p.terminal)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0]
     const pending: TrayPending | null = oldest
       ? {
@@ -364,6 +365,7 @@ export async function registerUpdatesFeature(
     deps.store.onChange(scheduleRefresh)
     ctx.bus.on('permission.requested', scheduleRefresh)
     ctx.bus.on('permission.resolved', scheduleRefresh)
+    ctx.bus.on('permission.handover', scheduleRefresh)
   }
 
   void tray?.launch().then(refreshMenu)

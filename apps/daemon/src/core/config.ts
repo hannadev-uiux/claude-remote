@@ -26,7 +26,9 @@ export const ConfigSchema = z.object({
   defaultRuleScope: RuleScopeSchema.default('project'),
   /** How long the daemon waits for the phone before letting the TUI show the dialog. */
   permissionTimeoutSec: z.number().int().positive().default(280),
-  /** Timeout written into the PermissionRequest hook; must exceed permissionTimeoutSec. */
+  /** Same, for questions and plan approvals (`AskUserQuestion`, `ExitPlanMode`). */
+  questionTimeoutSec: z.number().int().positive().default(3300),
+  /** Lower bound of the PermissionRequest hook timeout (see `hookTimeoutSec`). */
   hookPermissionTimeoutSec: z.number().int().positive().default(300),
   inputStrategy: z.enum(['paste', 'type']).default('paste'),
   pasteEnterDelayMs: z.number().int().nonnegative().default(80),
@@ -60,6 +62,20 @@ export function defaultProfiles(locale: Locale = systemLocale()): Profile[] {
       color: '#D97757',
     },
   ]
+}
+
+/**
+ * Timeout written into the PermissionRequest hook: longer than both daemon waits, so the daemon
+ * always answers (or hands the request over to the terminal) before the agent closes the hook.
+ */
+export function hookTimeoutSec(
+  config: Pick<Config, 'hookPermissionTimeoutSec' | 'permissionTimeoutSec' | 'questionTimeoutSec'>,
+): number {
+  return Math.max(
+    config.hookPermissionTimeoutSec,
+    config.permissionTimeoutSec + 20,
+    config.questionTimeoutSec + 20,
+  )
 }
 
 /** Language of the CLI, setup and push: the configured one, else the system one. */

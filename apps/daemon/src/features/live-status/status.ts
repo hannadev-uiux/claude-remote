@@ -33,7 +33,8 @@ export type LiveStatus = {
 export type LiveEvent =
   | { type: 'prompt' }
   | { type: 'step'; step: LiveStep; tool: string | null }
-  | { type: 'waiting'; permission: boolean; pending?: LivePendingRequest }
+  /** `pending: null` drops the lock-screen answer (the request moved to the terminal). */
+  | { type: 'waiting'; permission: boolean; pending?: LivePendingRequest | null }
   | { type: 'resumed' }
   | { type: 'stop' }
   | { type: 'end' }
@@ -166,7 +167,7 @@ export function reduceLiveStatus(status: LiveStatus, event: LiveEvent, now: numb
       return {
         ...waiting,
         step: 'permission',
-        pending: event.pending ?? status.pending,
+        pending: event.pending === undefined ? status.pending : event.pending,
         // The permission shows once in the row, however many times the daemon hears about it.
         glyphs: status.glyphs[0] === 'permission' ? status.glyphs : pushGlyph(status.glyphs, 'permission'),
       }

@@ -405,6 +405,7 @@ const enUS = {
       plan: 'plan ready for review',
       waiting: 'waiting for you',
       open: 'Open',
+      terminal: 'answer in the terminal',
     },
     detail: {
       command: 'command',
@@ -422,6 +423,13 @@ const enUS = {
       profile: 'Profile {{name}}',
       profileDetail: "the profile's settings.json — all of its sessions",
       confirm: 'Save and allow',
+    },
+    handover: {
+      label: 'Answer in the terminal',
+      body: 'The agent is still waiting, but the app can no longer answer this. Answer it in the terminal.',
+      onComputer:
+        'The agent is still waiting, but the app can no longer answer this. Answer it on the computer.',
+      openTerminal: 'Open terminal',
     },
     question: {
       title: '{{agent}} has a question',

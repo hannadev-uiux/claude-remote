@@ -20,6 +20,27 @@ export function describePermission(
   return { title, detail: JSON.stringify(input, null, 2), detailLabel: t('permissions.detail.input') }
 }
 
+/**
+ * What a request handed over to the terminal still shows: its title and a plain summary (the
+ * questions, the plan or the tool call's detail). `questionTitle` is the default question title.
+ */
+export function handoverSummary(
+  info: Pick<PermissionRequestInfo, 'tool' | 'input' | 'interaction'>,
+  t: TFunction,
+  questionTitle: string,
+): { title: string; detail: string } {
+  const interaction = info.interaction
+  if (interaction?.kind === 'question')
+    return {
+      title: interaction.title ?? questionTitle,
+      detail: interaction.questions.map((q) => q.question).join('\n'),
+    }
+  if (interaction?.kind === 'plan')
+    return { title: t('permissions.plan.title'), detail: interaction.plan ?? t('permissions.plan.empty') }
+  const { title, detail } = describePermission(info, t)
+  return { title, detail }
+}
+
 export type RespondPayload = {
   type: 'permission.respond'
   requestId: string

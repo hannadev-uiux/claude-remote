@@ -443,6 +443,11 @@ export const PermissionRequestInfoSchema = z.object({
   createdAt: z.string(),
   expiresAt: z.string(),
   interaction: PermissionInteractionSchema.optional(),
+  /**
+   * The hook stopped waiting (timeout, or closed by the agent) while the agent's own dialog may
+   * still be open: answer it in the terminal. Resolved when the session moves on.
+   */
+  terminal: z.boolean().optional(),
 })
 export type PermissionRequestInfo = z.infer<typeof PermissionRequestInfoSchema>
 

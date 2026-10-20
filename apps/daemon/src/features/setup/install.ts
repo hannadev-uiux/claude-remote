@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Profile } from '@remote-harness/protocol'
-import type { Config } from '../../core/config.ts'
+import { type Config, hookTimeoutSec } from '../../core/config.ts'
 import type { Messages } from '../../core/i18n/index.ts'
 import { expandHome, paths } from '../../core/paths.ts'
 import { ensureHookSecret } from '../../core/secrets.ts'
@@ -90,7 +90,7 @@ export async function installAll(
     const changed = await installHooks(profile, {
       port: config.hookPort,
       secret,
-      permissionTimeoutSec: config.hookPermissionTimeoutSec,
+      permissionTimeoutSec: hookTimeoutSec(config),
     })
     lines.push({ status: changed ? 'done' : 'skip', text: m.hooksIn(settingsPath(profile)) })
     if (!agentFor(profile).statusLine) continue

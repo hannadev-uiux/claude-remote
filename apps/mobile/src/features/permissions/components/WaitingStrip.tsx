@@ -48,9 +48,10 @@ export function WaitingStrip() {
   const profile = profiles.find((p) => p.id === profileId)
   const agent = session ? sessionAgent(session) : null
   const request = oldest.kind === 'request' ? oldest.request : null
-  const answerable = request !== null && !request.interaction
-  const status =
-    request?.interaction?.kind === 'question'
+  const answerable = request !== null && !request.interaction && !request.terminal
+  const status = request?.terminal
+    ? t('permissions.strip.terminal')
+    : request?.interaction?.kind === 'question'
       ? t('permissions.strip.question')
       : request?.interaction?.kind === 'plan'
         ? t('permissions.strip.plan')

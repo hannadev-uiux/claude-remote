@@ -404,6 +404,7 @@ const esES = {
       plan: 'plan listo para revisar',
       waiting: 'esperando por ti',
       open: 'Abrir',
+      terminal: 'responde en la terminal',
     },
     detail: {
       command: 'comando',
@@ -421,6 +422,12 @@ const esES = {
       profile: 'Perfil {{name}}',
       profileDetail: 'settings.json del perfil — todas sus sesiones',
       confirm: 'Guardar y permitir',
+    },
+    handover: {
+      label: 'Responde en la terminal',
+      body: 'El agente sigue esperando, pero la app ya no puede responder. Responde en la terminal.',
+      onComputer: 'El agente sigue esperando, pero la app ya no puede responder. Responde en el ordenador.',
+      openTerminal: 'Abrir terminal',
     },
     question: {
       title: '{{agent}} tiene una pregunta',
