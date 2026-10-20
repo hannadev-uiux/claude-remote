@@ -58,7 +58,7 @@ export class SecretToolTokenStore implements TokenStore {
   constructor(
     private readonly exec: Executor,
     private readonly account = ACCOUNT,
-    private readonly label = 'Claude Remote pairing token',
+    private readonly label = 'Remote Harness pairing token',
   ) {}
 
   async get(): Promise<string | null> {
