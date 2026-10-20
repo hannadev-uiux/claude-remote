@@ -11,6 +11,16 @@ const REMOVE_TIMEOUT_MS = 10 * 60_000
 /** Inside the repository's git dir: never shown by `git status`, and on the worktree's file system in the usual layout. */
 export const TRASH_DIR = 'remote-harness-trash'
 
+/** The worktree's lock is held by a process that is still running (the agent has not left yet). */
+export class WorktreeLockedError extends Error {
+  constructor(
+    readonly pid: number,
+    reason: string,
+  ) {
+    super(`the worktree is locked by a running process (pid ${pid}): ${reason}`)
+  }
+}
+
 export class GitError extends Error {
   override name = 'GitError'
 }
@@ -187,6 +197,13 @@ export class GitClient {
     options: { force?: boolean } = {},
   ): Promise<{ purged: Promise<void> }> {
     const { mainRoot, path } = info
+    // The agent may already have removed it (Claude Code removes a clean worktree when it exits):
+    // only git's records and the branch are left.
+    if ((await this.fs.realpath(path).catch(() => null)) === null) {
+      await this.must(mainRoot, ['worktree', 'prune'])
+      if (info.branch) await this.run(mainRoot, ['branch', options.force ? '-D' : '-d', info.branch])
+      return { purged: Promise.resolve() }
+    }
     await this.releaseLock(mainRoot, path)
     const common = (
       await this.must(mainRoot, ['rev-parse', '--path-format=absolute', '--git-common-dir'])
@@ -210,8 +227,14 @@ export class GitClient {
     return { purged: moved ? this.purge(trash) : Promise.resolve() }
   }
 
-  /** Removes a lock left by a process that is gone; a lock held by a running process stops the removal. */
-  private async releaseLock(mainRoot: string, path: string): Promise<void> {
+  /**
+   * The worktree's lock: its reason, the process it names and whether that process still runs;
+   * null when it is not locked (or git does not list it).
+   */
+  async worktreeLock(
+    mainRoot: string,
+    path: string,
+  ): Promise<{ reason: string; pid: number | null; alive: boolean } | null> {
     const list = parseWorktreeList(await this.must(mainRoot, ['worktree', 'list', '--porcelain']))
     const real = await this.fs.realpath(path).catch(() => path)
     let entry: WorktreeEntry | undefined
@@ -221,11 +244,16 @@ export class GitClient {
         break
       }
     }
-    if (!entry || entry.locked === null) return
+    if (!entry || entry.locked === null) return null
     const pid = lockPid(entry.locked)
-    if (pid !== null && this.isAlive(pid)) {
-      throw new GitError(`the worktree is locked by a running process (pid ${pid}): ${entry.locked}`)
-    }
+    return { reason: entry.locked, pid, alive: pid !== null && this.isAlive(pid) }
+  }
+
+  /** Removes a lock left by a process that is gone; a lock held by a running process stops the removal. */
+  private async releaseLock(mainRoot: string, path: string): Promise<void> {
+    const lock = await this.worktreeLock(mainRoot, path)
+    if (!lock) return
+    if (lock.alive && lock.pid !== null) throw new WorktreeLockedError(lock.pid, lock.reason)
     await this.must(mainRoot, ['worktree', 'unlock', path])
   }
 

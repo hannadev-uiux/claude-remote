@@ -2,12 +2,17 @@ import type { CloseResult, WorktreeAction, WorktreeInfo } from '@remote-harness/
 import { DaemonError } from '../../core/errors.ts'
 import type { KeyedMutex } from '../../core/keyed-mutex.ts'
 import type { Logger } from '../../core/logger.ts'
-import type { GitClient } from '../../infra/git.ts'
+import { type GitClient, WorktreeLockedError } from '../../infra/git.ts'
 import type { TmuxClient } from '../../infra/tmux.ts'
 import type { SessionStore } from '../sessions/store.ts'
 
 /** How long the daemon waits for the agent to leave after `/exit` before killing the pane. */
 export const CLOSE_TIMEOUT_MS = 10_000
+/**
+ * How long the daemon waits for the process holding a worktree's lock (the agent) to exit before a
+ * cleanup, once with the pane alive and once after killing it.
+ */
+export const LOCK_WAIT_MS = 6_000
 export const CLOSE_POLL_MS = 500
 export const WIP_COMMIT_MESSAGE = 'WIP from Remote Harness'
 
@@ -16,7 +21,7 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 export type CloseDeps = {
   store: SessionStore
   tmux: Pick<TmuxClient, 'sendKeys' | 'sendLiteral' | 'hasPane' | 'killPane'>
-  git: Pick<GitClient, 'worktreeInfo' | 'commitAll' | 'push' | 'removeWorktree'>
+  git: Pick<GitClient, 'worktreeInfo' | 'worktreeLock' | 'commitAll' | 'push' | 'removeWorktree'>
   /** Serializes pane interactions per session (shared with the input feature). */
   lock: Pick<KeyedMutex, 'run'>
   /** Denies the session's pending permission requests, so the agent is not left stuck in the hook. */
@@ -26,6 +31,7 @@ export type CloseDeps = {
   sleep?: (ms: number) => Promise<void>
   timeoutMs?: number
   pollMs?: number
+  lockWaitMs?: number
 }
 
 /** What a cleanup action does given the worktree's git state (pure). Throws when it would lose work. */
@@ -74,6 +80,7 @@ export class CloseService {
     if (info && worktree) cleanupPlan(info, worktree)
     const closed = await this.deps.lock.run(sessionId, () => this.end(sessionId, paneId))
     if (!worktree || !info) return { closed }
+    await this.releaseAgent(info, sessionId, paneId)
     await this.cleanupWorktree(info, worktree)
     return { closed, worktree: 'deleted' }
   }
@@ -86,7 +93,37 @@ export class CloseService {
     }
     const info = session.cwd ? await this.deps.git.worktreeInfo(session.cwd) : null
     if (!info) throw new DaemonError('bad_request', 'the session does not run in a linked git worktree')
+    await this.waitForLock(info)
     await this.cleanupWorktree(info, action)
+  }
+
+  /**
+   * Whether the worktree's lock holder (the agent) has exited, waiting up to `lockWaitMs`. Claude Code
+   * keeps the lock while it shows its own "keep or remove the worktree?" dialog after `/exit`, and
+   * while it removes a clean worktree by itself.
+   */
+  private async waitForLock(info: WorktreeInfo): Promise<boolean> {
+    const sleep = this.deps.sleep ?? defaultSleep
+    const pollMs = this.deps.pollMs ?? CLOSE_POLL_MS
+    const attempts = Math.max(1, Math.ceil((this.deps.lockWaitMs ?? LOCK_WAIT_MS) / pollMs))
+    for (let i = 0; i < attempts; i++) {
+      const lock = await this.deps.git.worktreeLock(info.mainRoot, info.path).catch(() => null)
+      if (!lock?.alive) return true
+      await sleep(pollMs)
+    }
+    return false
+  }
+
+  /**
+   * Before deleting the worktree of a session just closed: let the agent finish leaving, and end its
+   * pane when it stays (its exit dialog would hold the lock forever). The user chose the deletion.
+   */
+  private async releaseAgent(info: WorktreeInfo, sessionId: string, paneId: string): Promise<void> {
+    if (await this.waitForLock(info)) return
+    const { tmux, store } = this.deps
+    const ours = !store.findByPane(paneId).some((s) => s.id !== sessionId)
+    if (ours && (await tmux.hasPane(paneId))) await tmux.killPane(paneId)
+    await this.waitForLock(info)
   }
 
   private require(sessionId: string) {
@@ -117,6 +154,8 @@ export class CloseService {
       const message = error instanceof Error ? error.message : String(error)
       this.deps.log?.warn({ path: info.path, action, reason: message }, 'worktree cleanup failed')
       if (error instanceof DaemonError) throw error
+      // Still in use by a running process: the app explains it and offers to retry or keep it.
+      if (error instanceof WorktreeLockedError) throw new DaemonError('session_busy', message)
       throw new DaemonError('internal', message)
     }
   }

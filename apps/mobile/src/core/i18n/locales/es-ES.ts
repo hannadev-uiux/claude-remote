@@ -234,6 +234,8 @@ const esES = {
     cleanupFailed: 'El worktree no se eliminó. No se perdió nada.',
     retry: 'Reintentar',
     keepAfterFailure: 'Mantener el worktree',
+    worktreeInUse:
+      'El agente todavía está usando el worktree, así que no se borró. Inténtalo de nuevo en un momento o consérvalo.',
   },
   providers: {
     via: 'vía {{provider}}',

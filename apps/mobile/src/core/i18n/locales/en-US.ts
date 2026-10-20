@@ -238,6 +238,8 @@ const enUS = {
     cleanupFailed: 'The worktree was not deleted. Nothing was lost.',
     retry: 'Retry',
     keepAfterFailure: 'Keep the worktree',
+    worktreeInUse:
+      'The agent is still using the worktree, so it was not deleted. Try again in a moment, or keep it.',
   },
   providers: {
     /** Dashed chip on profile rows and in Settings; the provider is a product name. */
