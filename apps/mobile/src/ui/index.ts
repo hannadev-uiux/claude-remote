@@ -1,5 +1,6 @@
 export * from './ActionMenu'
 export * from './AgentBadge'
+export * from './agent-icons'
 export * from './Badge'
 export * from './Button'
 export * from './Card'
