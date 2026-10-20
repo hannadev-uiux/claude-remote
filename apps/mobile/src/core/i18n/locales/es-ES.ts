@@ -871,6 +871,13 @@ const esES = {
       light: 'Claro',
     },
     themeDone: 'Listo',
+    appIcon: {
+      title: 'Icono de la app',
+      row: 'Icono de la app · {{icon}}',
+      matchTheme: 'Seguir el tema',
+      original: 'Original',
+      done: 'Listo',
+    },
     profiles: 'Perfiles',
     noProfiles: 'No se ha encontrado ningún perfil en el ordenador.',
     forgetButton: 'Olvidar esta máquina',

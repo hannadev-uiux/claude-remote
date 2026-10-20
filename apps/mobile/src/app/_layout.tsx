@@ -34,6 +34,7 @@ import { usePerformanceMonitoring } from '@/features/performance/use-performance
 import { restorePushSettings } from '@/features/push/push-settings-store'
 import { restoreSessionPrefs } from '@/features/sessions/prefs-store'
 import { restoreSessionSort } from '@/features/sessions/sort-store'
+import { restoreAppIconPreference, useApplyAppIcon } from '@/features/settings/app-icon-store'
 import { restoreMachineAlias, useMachineNameSync } from '@/features/settings/machine-store'
 import { stackScreenOptions } from '@/ui'
 
@@ -65,6 +66,7 @@ export default function RootLayout() {
   useEffect(() => {
     void restorePerformanceSetting()
     void restoreThemePreference()
+    void restoreAppIconPreference()
     void restoreMachineAlias()
     void restoreSessionSort()
     void restoreSessionPrefs()
@@ -100,6 +102,7 @@ function Shell({ ready }: { ready: boolean }) {
   const theme = useTheme()
   const segments = useSegments()
   useMachineNameSync()
+  useApplyAppIcon()
   useEffect(() => setRoute(segments), [segments])
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
