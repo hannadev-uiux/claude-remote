@@ -24,8 +24,8 @@ export default function SessionsRoute() {
   }
   return (
     <>
-      <Stack.Screen options={headerActions(<SessionListActions />)} />
-      <SessionsScreen pendingBySession={pending} />
+      <Stack.Screen options={headerActions(<SessionListActions newSession={false} />)} />
+      <SessionsScreen pendingBySession={pending} fab />
     </>
   )
 }
