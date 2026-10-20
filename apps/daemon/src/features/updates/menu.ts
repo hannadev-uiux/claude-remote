@@ -1,4 +1,5 @@
 import type { PermissionRequestInfo, SessionState } from '@remote-harness/protocol'
+import { KEEP_AWAKE_MODES, type KeepAwakeMode } from '../../core/config.ts'
 import type { Messages } from '../../core/i18n/index.ts'
 import type { UpdateChannel } from './channel.ts'
 
@@ -7,6 +8,8 @@ export type TrayItem =
   | { id: string; label: string; enabled?: boolean; checked?: boolean }
   | { type: 'separator' }
   | { type: 'submenu'; label: string; items: TrayItem[] }
+  /** A QR code of `text`, drawn by helpers that can (macOS). */
+  | { type: 'qr'; text: string }
 
 /** Glyph state in the menu bar: color encodes only the state (the amber dot is the one color). */
 export type TrayIcon = 'idle' | 'working' | 'waiting' | 'offline'
@@ -56,6 +59,14 @@ export type TrayMenuState = {
   phones?: { count: number; push: boolean }
   /** At least one profile exists: "New session…" can launch it. */
   canStart?: boolean
+  /** Pairing link and address once the daemon listens for the app; else "Pair a phone…" stays one item. */
+  pairing?: { url: string; address: string } | null
+  /** The helper draws `qr` items (macOS). */
+  qr?: boolean
+  /** The Preferences submenu; absent keeps "Preferences…" opening the config file. */
+  prefs?: { permissions: boolean; keepAwake: KeepAwakeMode; push: boolean }
+  /** Under a service manager: Quit also offers to stop the service. */
+  canStopService?: boolean
 }
 
 /** Ids the daemon handles when the helper reports a click. */
@@ -71,8 +82,14 @@ export const TRAY_ACTIONS = {
   pair: 'pair',
   docs: 'docs',
   prefs: 'prefs',
+  rotateToken: 'rotate-token',
+  quitService: 'quit-service',
+  prefPermissions: 'pref:permissions',
+  prefPush: 'pref:push',
 } as const
 export const CHANNEL_ACTION_PREFIX = 'channel:'
+/** `awake:<mode>` sets the keep-awake mode. */
+export const KEEP_AWAKE_ACTION_PREFIX = 'awake:'
 /** Prefixed ids: `allow:<requestId>`, `always:<requestId>`, `deny:<requestId>`, `focus:<sessionId>`, `close:<sessionId>`. */
 export const TRAY_PREFIXES = {
   allow: 'allow:',
@@ -121,11 +138,17 @@ export function buildTrayMenu(s: TrayMenuState, t: Messages['updates']['tray']):
 
   if (s.pending) {
     const p = s.pending
+    // "Show permission requests here" off: the request is still shown, answered elsewhere.
+    const answerable = s.prefs?.permissions ?? true
     const answers: TrayItem[] = [
-      { id: `${TRAY_PREFIXES.allow}${p.requestId}`, label: t.allow },
-      ...(p.canAlways ? [{ id: `${TRAY_PREFIXES.always}${p.requestId}`, label: t.always }] : []),
-      { id: `${TRAY_PREFIXES.deny}${p.requestId}`, label: t.deny },
-      separator,
+      ...(answerable
+        ? [
+            { id: `${TRAY_PREFIXES.allow}${p.requestId}`, label: t.allow },
+            ...(p.canAlways ? [{ id: `${TRAY_PREFIXES.always}${p.requestId}`, label: t.always }] : []),
+            { id: `${TRAY_PREFIXES.deny}${p.requestId}`, label: t.deny },
+            separator,
+          ]
+        : []),
       { id: `${TRAY_PREFIXES.focus}${p.sessionId}`, label: t.focus },
     ]
     items.push(
@@ -173,9 +196,9 @@ export function buildTrayMenu(s: TrayMenuState, t: Messages['updates']['tray']):
 
   items.push(
     { id: TRAY_ACTIONS.newSession, label: t.newSession, enabled: s.canStart ?? true },
-    { id: TRAY_ACTIONS.pair, label: t.pair },
+    pairItem(s, t),
     { id: TRAY_ACTIONS.docs, label: t.docs },
-    { id: TRAY_ACTIONS.prefs, label: t.prefs },
+    prefsItem(s, t),
     separator,
   )
 
@@ -209,9 +232,65 @@ export function buildTrayMenu(s: TrayMenuState, t: Messages['updates']['tray']):
   }
   items.push({ id: TRAY_ACTIONS.logs, label: t.logs })
   if (s.canRestart) items.push({ id: TRAY_ACTIONS.restart, label: t.restart })
-  items.push({ id: TRAY_ACTIONS.doctor, label: t.doctor }, separator, {
-    id: TRAY_ACTIONS.quit,
-    label: t.quit,
-  })
+  items.push(
+    { id: TRAY_ACTIONS.doctor, label: t.doctor },
+    separator,
+    s.canStopService
+      ? {
+          type: 'submenu',
+          label: t.quitMenu,
+          items: [
+            { id: TRAY_ACTIONS.quit, label: t.hideIcon },
+            { id: TRAY_ACTIONS.quitService, label: t.stopService },
+          ],
+        }
+      : { id: TRAY_ACTIONS.quit, label: t.quit },
+  )
   return { type: 'menu', tooltip: t.tooltip(s.version), icon: trayIcon(s), items }
+}
+
+/** Pair a phone: the QR (macOS), the address, the terminal fallback and the token rotation. */
+function pairItem(s: TrayMenuState, t: Messages['updates']['tray']): TrayItem {
+  if (!s.pairing) return { id: TRAY_ACTIONS.pair, label: t.pair }
+  return {
+    type: 'submenu',
+    label: t.pairMenu,
+    items: [
+      ...(s.qr ? [{ type: 'qr' as const, text: s.pairing.url }] : []),
+      { id: 'pair-address', label: s.pairing.address, enabled: false },
+      { type: 'separator' },
+      { id: TRAY_ACTIONS.pair, label: t.pairInTerminal },
+      // A menu cannot ask for confirmation: the rotation is one level deeper.
+      {
+        type: 'submenu',
+        label: t.rotateToken,
+        items: [{ id: TRAY_ACTIONS.rotateToken, label: t.rotateConfirm }],
+      },
+    ],
+  }
+}
+
+/** Preferences: what the tray answers, keep awake, push, and the config file for the rest. */
+function prefsItem(s: TrayMenuState, t: Messages['updates']['tray']): TrayItem {
+  if (!s.prefs) return { id: TRAY_ACTIONS.prefs, label: t.prefs }
+  const prefs = s.prefs
+  return {
+    type: 'submenu',
+    label: t.prefsMenu,
+    items: [
+      { id: TRAY_ACTIONS.prefPermissions, label: t.prefPermissions, checked: prefs.permissions },
+      {
+        type: 'submenu',
+        label: t.keepAwake,
+        items: KEEP_AWAKE_MODES.map((mode) => ({
+          id: `${KEEP_AWAKE_ACTION_PREFIX}${mode}`,
+          label: t.keepAwakeModes[mode],
+          checked: prefs.keepAwake === mode,
+        })),
+      },
+      { id: TRAY_ACTIONS.prefPush, label: t.prefPush, checked: prefs.push },
+      { type: 'separator' },
+      { id: TRAY_ACTIONS.prefs, label: t.openConfig },
+    ],
+  }
 }

@@ -61,6 +61,7 @@ O comando antigo `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam fun
 - `push`: `auto` (a sua conta de serviço do Firebase quando existe, senão o relay) ou `off`.
 - `update`: o canal que `update` e a verificação seguem, e se as atualizações se aplicam sozinhas.
 - `tray`: o ícone na barra de menus / bandeja.
+- `trayPermissions`: se a bandeja oferece Permitir / Sempre permitir / Negar para uma permissão pendente (ligado por padrão; também nas Preferências da bandeja).
 
 Mudanças no arquivo valem quando o daemon reinicia (`remote-harness service install` de novo, ou reiniciar pela bandeja).
 
@@ -110,7 +111,7 @@ O serviço confere o canal dele no remoto git a cada 6 horas e mostra uma notifi
 
 ## Ícone na bandeja
 
-O daemon do serviço mostra um ícone na barra de menus do macOS (um pequeno auxiliar em Swift compilado no primeiro início com as Command Line Tools) e um ícone na bandeja do Linux (`python3` com GTK 3 e AyatanaAppIndicator3 ou AppIndicator3). O menu mostra as sessões em andamento e as permissões pendentes (responda por ali), abre uma sessão nova, mostra o código de pareamento, confere ou aplica atualizações, escolhe o canal, abre os logs, a configuração e a documentação, e reinicia o daemon. `"tray": false` desliga; sem o auxiliar, e no WSL, o daemon roda sem interface.
+O daemon do serviço mostra um ícone na barra de menus do macOS (um pequeno auxiliar em Swift compilado no primeiro início com as Command Line Tools) e um ícone na bandeja do Linux (`python3` com GTK 3 e AyatanaAppIndicator3 ou AppIndicator3). O menu mostra as sessões em andamento e as permissões pendentes (responda por ali), abre uma sessão nova, mostra o código de pareamento, confere ou aplica atualizações, escolhe o canal, abre os logs, a configuração e a documentação, e reinicia o daemon. **Parear um celular** mostra o QR de pareamento no próprio menu no macOS, o endereço, o pareamento no terminal e **Trocar o token…** (os celulares pareados precisam parear de novo). **Preferências** liga e desliga as respostas de permissão no menu, o modo de manter acordado e as notificações push, aplicados na hora, e abre o arquivo de configuração para o resto. Com o serviço, **Sair** esconde o ícone ou para o serviço até o próximo login. `"tray": false` desliga; sem o auxiliar, e no WSL, o daemon roda sem interface.
 
 ## Dados e logs
 

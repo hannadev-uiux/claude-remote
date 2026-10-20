@@ -65,14 +65,16 @@ export async function registerPushFeature(
     const { result } = await service.sendTest(msg.fcmToken)
     return { type: 'push.testResult', result }
   })
-  // `remote-harness push on|off` rewrites the config, then asks the running daemon to apply it.
-  ctx.hooks.post('/admin/push-mode', async () => {
+  /** Applies the config file's `push` setting to the running daemon. */
+  const reloadMode = async () => {
     const config = await loadConfig(ctx.logger)
     const mode = modeFor(config.push)
     sender.set(await senderFor(mode), mode)
     ctx.logger.info({ mode: sender.mode }, 'push mode changed')
     return { mode: sender.mode }
-  })
+  }
+  // `remote-harness push on|off` rewrites the config, then asks the running daemon to apply it.
+  ctx.hooks.post('/admin/push-mode', reloadMode)
   ctx.hooks.post('/admin/push-test', async () => {
     const { result, sent } = await service.sendTest()
     return { mode: sender.mode, result, sent }
@@ -83,5 +85,5 @@ export async function registerPushFeature(
   })
   ctx.bus.on('permission.requested', (info) => void service.notify(service.messageForPermission(info)))
   ctx.bus.on('permission.reminder', (info) => void service.notify(service.messageForReminder(info)))
-  return { service, devices, sender, mode: () => sender.mode }
+  return { service, devices, sender, mode: () => sender.mode, reloadMode }
 }

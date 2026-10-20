@@ -18,6 +18,8 @@ import { expandHome, paths } from './paths.ts'
 export const KEEP_AWAKE_MODES = ['off', 'sessions', 'always'] as const
 export const KeepAwakeModeSchema = z.enum(KEEP_AWAKE_MODES)
 export type KeepAwakeMode = z.infer<typeof KeepAwakeModeSchema>
+export const isKeepAwakeMode = (value: string): value is KeepAwakeMode =>
+  (KEEP_AWAKE_MODES as readonly string[]).includes(value)
 
 export const ConfigSchema = z.object({
   profiles: z.array(ProfileSchema).min(1),
@@ -47,6 +49,8 @@ export const ConfigSchema = z.object({
     .default({ channel: 'main', auto: false }),
   /** Menu bar / tray icon of the service daemon (where a helper is available). */
   tray: z.boolean().default(true),
+  /** The tray offers Allow / Always allow / Deny for the waiting permission. */
+  trayPermissions: z.boolean().default(true),
   /** When the service daemon prevents idle sleep: never, while sessions are active, or always. */
   keepAwake: KeepAwakeModeSchema.default('sessions'),
 })
