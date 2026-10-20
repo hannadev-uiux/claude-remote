@@ -37,7 +37,17 @@ function relay() {
 }
 
 export const pushRelay = onRequest(
-  { region: 'southamerica-east1', secrets: [GRANT_KEY], maxInstances: 3, concurrency: 40, memory: '256MiB' },
+  {
+    region: 'southamerica-east1',
+    // Dedicated identity with only FCM send (roles/firebasecloudmessaging.admin) and the secret.
+    serviceAccount: 'push-relay@',
+    // Callers are the app and daemons, without Google sign-in: grants and App Check authorize them.
+    invoker: 'public',
+    secrets: [GRANT_KEY],
+    maxInstances: 3,
+    concurrency: 40,
+    memory: '256MiB',
+  },
   async (req, res) => {
     const result = await relay()({
       method: req.method,
