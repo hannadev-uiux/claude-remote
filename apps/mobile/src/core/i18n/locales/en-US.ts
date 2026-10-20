@@ -857,6 +857,8 @@ const enUS = {
     version: 'version',
     protocol: 'protocol',
     appearance: 'Appearance',
+    theme: 'Theme · {{theme}}',
+    themeTitle: 'Theme',
     themes: {
       system: 'System',
       dark: 'Dark',
@@ -865,6 +867,11 @@ const enUS = {
       mocha: 'Catppuccin Mocha',
       latte: 'Catppuccin Latte',
     },
+    themeTag: {
+      dark: 'Dark',
+      light: 'Light',
+    },
+    themeDone: 'Done',
     profiles: 'Profiles',
     noProfiles: 'No profiles found on the computer.',
     forgetButton: 'Forget this machine',

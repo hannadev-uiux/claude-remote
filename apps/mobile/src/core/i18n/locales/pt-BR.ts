@@ -856,6 +856,8 @@ const ptBR = {
     version: 'versão',
     protocol: 'protocolo',
     appearance: 'Aparência',
+    theme: 'Tema · {{theme}}',
+    themeTitle: 'Tema',
     themes: {
       system: 'Sistema',
       dark: 'Escuro',
@@ -864,6 +866,11 @@ const ptBR = {
       mocha: 'Catppuccin Mocha',
       latte: 'Catppuccin Latte',
     },
+    themeTag: {
+      dark: 'Escuro',
+      light: 'Claro',
+    },
+    themeDone: 'Concluído',
     profiles: 'Perfis',
     noProfiles: 'Nenhum perfil encontrado no computador.',
     forgetButton: 'Esquecer esta máquina',
