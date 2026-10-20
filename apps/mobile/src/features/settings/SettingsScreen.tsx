@@ -6,10 +6,11 @@ import { DaemonUpdateCard } from '@/features/daemon-update/DaemonUpdateCard'
 import { Screen, Text } from '@/ui'
 import { AppearanceCard } from './AppearanceCard'
 import { MachineCard } from './MachineCard'
+import { NewSessionCard } from './NewSessionCard'
 import { NotificationsCard } from './NotificationsCard'
 import { ProfilesCard } from './ProfilesCard'
 
-/** Machine → Appearance → Profiles → Notifications → Computer → the route's cards (Voice, App). */
+/** Machine → Appearance → Profiles → New session → Notifications → Computer → the route's cards (Voice, App). */
 export function SettingsScreen({ children }: { children?: ReactNode }) {
   return (
     <Screen>
@@ -17,6 +18,7 @@ export function SettingsScreen({ children }: { children?: ReactNode }) {
         <MachineCard />
         <AppearanceCard />
         <ProfilesCard />
+        <NewSessionCard />
         <NotificationsCard />
         <DaemonUpdateCard />
         {children}

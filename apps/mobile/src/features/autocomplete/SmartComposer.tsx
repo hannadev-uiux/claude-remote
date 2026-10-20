@@ -30,12 +30,23 @@ import { SuggestionList } from './SuggestionList'
 import { applySuggestion, findTrigger, insertTrigger, isInteractiveCommand, triggerKey } from './trigger'
 import { useCommands, useSuggestions } from './use-suggestions'
 
-type Props = { sessionId: string; prompt: ReturnType<typeof usePrompt>; disabled: boolean }
+type Props = {
+  sessionId: string
+  prompt: ReturnType<typeof usePrompt>
+  disabled: boolean
+  /** Focuses the input once on mount, e.g. right after creating this session. */
+  autoFocus?: boolean
+}
 
 /** Prompt composer with `@` file and `/` command suggestions. */
-export function SmartComposer({ sessionId, prompt, disabled }: Props) {
+export function SmartComposer({ sessionId, prompt, disabled, autoFocus }: Props) {
   const { t } = useTranslation()
   const input = useRef<TextInput>(null)
+  // Only on mount: a session opened once with `autoFocus` shouldn't re-focus on later re-renders.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally mount-only.
+  useEffect(() => {
+    if (autoFocus) input.current?.focus()
+  }, [])
   const [cursor, setCursor] = useState(0)
   const [selection, setSelection] = useState<{ start: number; end: number } | undefined>()
   // Token whose suggestions were closed with the back button.

@@ -155,6 +155,8 @@ const serverSamples: ServerMessage[] = [
   { type: 'sessions.snapshot', replyTo: 'abc', sessions: [session] },
   { type: 'session.updated', session },
   { type: 'session.removed', sessionId: 's' },
+  { type: 'session.started', replyTo: '1', paneId: '%1', sessionId: 's' },
+  { type: 'session.started', replyTo: '1', paneId: '%1', sessionId: null },
   { type: 'session.state', sessionId: 's', state: 'running', permissionMode: 'plan' },
   {
     type: 'transcript.entry',

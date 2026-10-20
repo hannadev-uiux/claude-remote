@@ -25,6 +25,7 @@ import { bindDrafts } from '@/features/drafts/persistence'
 import { installErrorCapture, setRoute } from '@/features/error-reports/capture'
 import { CrashPromptSheet } from '@/features/error-reports/components/CrashPromptSheet'
 import { ErrorFallback } from '@/features/error-reports/components/ErrorFallback'
+import { restoreOpenAfterCreateSettings } from '@/features/lifecycle/open-after-create-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
 import { restorePushSettings } from '@/features/push/push-settings-store'
 import { restoreSessionPrefs } from '@/features/sessions/prefs-store'
@@ -62,6 +63,7 @@ export default function RootLayout() {
     void restoreSessionSort()
     void restoreSessionPrefs()
     void restorePushSettings()
+    void restoreOpenAfterCreateSettings()
     void restoreKeyBar()
     void restoreKeyboardToolbar()
     void restoreFollow()
