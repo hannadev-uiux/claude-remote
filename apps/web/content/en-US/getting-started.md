@@ -25,6 +25,7 @@ The installer checks the system and Node, installs the missing tools (Homebrew o
 
 - finds your Claude Code accounts (`~/.claude`, `~/.claude-*`) and lets you pick the ones to control, or creates a new one and opens Claude Code there so you can log in;
 - asks the alias of each one: the command that opens that account inside tmux (for example `personal`, `work`);
+- can add an [OpenRouter profile](/en/docs/daemon/#profiles-and-openrouter): Claude Code paid with your OpenRouter key, which it checks and keeps in the OS secret store;
 - installs the launchers, the `PATH` entry and the hooks (with backups), and the background service;
 - helps with Tailscale and shows the pairing QR code.
 

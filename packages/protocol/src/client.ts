@@ -5,12 +5,14 @@ import {
   DevicePlatformSchema,
   DIRECTORY_LIST_LIMIT,
   InputModeSchema,
+  LiveFollowDeviceSchema,
   LivePaletteSchema,
   MAX_ATTACHMENTS,
   MAX_DIRECTORY_LIST_LIMIT,
   PermissionAnswerSchema,
   PushRelaySchema,
   RuleScopeSchema,
+  SettingsPaneSchema,
   WorktreeActionSchema,
 } from './domain.ts'
 
@@ -114,8 +116,26 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     relay: PushRelaySchema.optional(),
     /** App theme colors for the live status, echoed by the daemon in every update. */
     palette: LivePaletteSchema.optional(),
+    /**
+     * Android: the app draws the live status itself from FCM data messages (with Allow / Deny);
+     * absent = the system draws it from the push's notification block.
+     */
+    androidDataMessages: z.boolean().optional(),
   }),
   z.object({ type: z.literal('live.unregister'), id, sessionId }),
+  /** This phone follows the session: later turns start its live status in the background. */
+  z.object({ type: z.literal('live.follow'), id, sessionId, device: LiveFollowDeviceSchema }),
+  z.object({ type: z.literal('live.unfollow'), id, sessionId, fcmToken: z.string().min(1) }),
+  /** Follow every new session of the profile on this phone (or stop). */
+  z.object({
+    type: z.literal('live.autoFollow'),
+    id,
+    profileId: z.string().min(1),
+    enabled: z.boolean(),
+    device: LiveFollowDeviceSchema,
+  }),
+  /** Refreshes this phone's delivery data and asks for what it follows. */
+  z.object({ type: z.literal('live.follows'), id, device: LiveFollowDeviceSchema }),
   z.object({
     type: z.literal('files.search'),
     id,
@@ -156,7 +176,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('worktree.inspect'), id, sessionId }),
   z.object({ type: z.literal('worktree.cleanup'), id, sessionId, action: WorktreeActionSchema }),
   z.object({ type: z.literal('pane.subscribe'), id, sessionId }),
-  /** Selects the session's tmux window and pane on the computer (tray "Focus in tmux"). */
+  /** Shows the session's pane in a terminal on the computer (tray "Open in terminal (tmux)"). */
   z.object({ type: z.literal('pane.focus'), id, sessionId }),
   z.object({ type: z.literal('pane.unsubscribe'), id, sessionId }),
   /** Update info of the daemon; a `channel` is saved to its config first, `force` skips the rate limit. */
@@ -170,6 +190,10 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('daemon.update.start'), id, channel: DaemonUpdateChannelSchema }),
   /** The daemon's recent rejected requests (type and code only), for "Report a problem". */
   z.object({ type: z.literal('diagnostics.errors'), id }),
+  /** Status of the computer-side permissions shown on the Permissions screen. */
+  z.object({ type: z.literal('machine.permissions'), id }),
+  /** Opens a System Settings pane for a denied computer permission (macOS; a no-op elsewhere). */
+  z.object({ type: z.literal('machine.openSettingsPane'), id, pane: SettingsPaneSchema }),
   z.object({
     type: z.literal('settings.mute'),
     id,

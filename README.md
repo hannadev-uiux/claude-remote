@@ -4,10 +4,11 @@
 
 # Remote Harness
 
-**Follow and drive your coding agents — Claude Code today, more to come — running on your Mac, Linux or Windows (WSL) machine, from your iPhone or Android phone.**
+**Follow and drive your coding agents — Claude Code and Codex CLI — running on your Mac, Linux or Windows (WSL) machine, from your iPhone or Android phone.**
 
-Self-hosted: a small daemon on your computer, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every Claude Code profile in one list.
+Self-hosted: a small daemon on your computer, a native app on your phone, a private Tailscale link in between.<br/>No cloud relay, no account-wide notifications, every profile in one list.
 
+[![Release](https://img.shields.io/github/v/release/maarkN/remote-harness?include_prereleases&label=release&color=E8A33D)](https://github.com/maarkN/remote-harness/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-D97757.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20WSL%20%2B%20iOS%20%7C%20Android-161616.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)
@@ -39,22 +40,35 @@ The built-in remote control (`/rc`) helps, but it did not fit a real setup:
 
 Remote Harness solves this with tools you already trust: sessions run inside **tmux**, Claude Code reports what happens through its native **HTTP hooks**, and a local **daemon** bridges both to the phone over **Tailscale**.
 
+## Status
+
+**Alpha.** The latest release is [v0.15.0-ALPHA](https://github.com/maarkN/remote-harness/releases); every release is tagged `-ALPHA` while the project is being tested. It is used every day by its authors, but expect rough edges and breaking changes between versions.
+
+- **Computer:** macOS, Linux and Windows (WSL2), installed with one command and updated with `remote-harness update` (or automatically, from the menu bar).
+- **Phone:** iOS/iPadOS and Android 10+. Not in the stores yet: build it yourself (below); TestFlight and Google Play are in progress ([#161](https://github.com/maarkN/remote-harness/issues/161)). Installed builds get JavaScript updates over the air.
+- **Agents:** Claude Code (any number of accounts, also through OpenRouter) and Codex CLI. Kimi and Qwen Code are planned.
+- **Languages:** the app, the CLI, notifications and the [site](https://remoteharness.app) in English, Brazilian Portuguese and Spanish.
+
 ## What it does
 
 | | |
 |---|---|
-| 📋 **One list, every profile** | Sessions from all your Claude Code profiles (`~/.claude`, `~/.claude-work`, …), grouped by project, with live state (running, waiting, idle). |
+| 📋 **One list, every profile** | Sessions from all your profiles (`~/.claude`, `~/.claude-work`, `~/.codex`, …), sorted by what moved last, with live state (running, waiting, idle) and a "waiting for you" strip on top. |
+| 🤖 **Claude Code and Codex** | Claude Code profiles — on your Anthropic accounts or [OpenRouter](https://openrouter.ai) models — and Codex CLI profiles side by side, each with its own launcher. |
 | 💬 **Live conversation** | The same history you see on the computer: markdown, thinking, tool calls, diffs, results — streamed in real time and paginated. |
-| ⌨️ **Send prompts** | Type into the very same process that is open on the computer. `Esc` and `Ctrl+C` included. |
-| ✅ **Approve permissions** | Allow, deny or **always allow** (written as a rule by Claude Code itself, undoable with `remote-harness rules undo`). |
+| ⌨️ **Send prompts** | Type into the very same process that is open on the computer, `Esc` and `Ctrl+C` included. Queue follow-ups while the agent works (or send now), keep a draft per session, dictate on-device and attach photos. |
+| ✅ **Approve permissions** | Allow, deny or **always allow** (written as a rule by Claude Code itself, undoable with `remote-harness rules undo`). Answer the agent's questions and approve its plans. |
 | 🔀 **Switch permission mode** | Default, accept edits, plan, auto. `bypassPermissions` is intentionally never offered. |
-| 🔎 **Autocomplete** | `@files` (git/ripgrep + fuzzy search) and `/commands` (project, profile, plugins and built-ins). |
+| 🔎 **Autocomplete** | `@files` (git/ripgrep + fuzzy search) and every `/command` (built-ins, project, profile and plugins), with your recent ones first. |
 | 🖥️ **Raw terminal** | An xterm.js view of the tmux pane for TUI menus and anything the structured view does not cover. |
-| 🤖 **Subagents** | Follow subagents and background tasks of a session. |
-| 🚀 **Start & resume** | Start a new session in any project, or resume a read-only one. |
+| 🧩 **Subagents** | Follow subagents and background tasks of a session. |
+| 🚀 **Start, resume, close** | Start a new session in any folder (with a folder picker and recents), resume a read-only one, and close it with a worktree clean-up that never discards work silently. |
 | 🌿 **Shared checkout warning** | Each session shows its git branch; sessions working in the same checkout are flagged, and a new one can start in its own git worktree. |
 | 🔔 **Private push** | Notifications only to *your* registered phone, carrying no session content. Mute globally, per profile or per session. |
-| ⏱️ **Live status** | While a session works, its state, step type and elapsed time show on the lock screen and in the Dynamic Island (iOS Live Activity) or in a silent notification (Android). |
+| ⏱️ **Live status** | While a session works, its state, step type, running tasks and elapsed time show on the lock screen and in the Dynamic Island (iOS Live Activity) or in a silent notification (Android). |
+| 📱 **Phone and iPad** | Five themes (dark, light, Dracula, Mocha, Latte), an iPad layout with a session sidebar and inspector, and hardware keyboard shortcuts. |
+| 🔄 **Menu bar and updates** | A menu bar / tray icon on the computer with the daemon's status and updates; the phone can update the computer too. |
+| 🧯 **Error reports** | Opt-in crash and error reports, scrubbed of anything from your sessions, and a "Report a problem" screen. |
 
 ## How it works
 
@@ -81,6 +95,8 @@ Remote Harness solves this with tools you already trust: sessions run inside **t
 
 Sessions started with plain `claude` (outside tmux) still show up — read-only — and can be resumed from the phone.
 
+**Codex CLI** works the same way through its own command hooks (`<CODEX_HOME>/hooks.json`) and session rollouts: start, resume, prompts, Allow/Deny on permission requests and the conversation, without worktrees or "always allow" rules.
+
 ## Security model
 
 The daemon is effectively a remote shell, so it is locked down by default:
@@ -96,7 +112,7 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## Requirements
 
-- macOS, Linux (systemd recommended) or Windows 10 2004+/11 through WSL2, with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` on the `PATH` (the installer adds the missing tools)
+- macOS, Linux (systemd recommended) or Windows 10 2004+/11 through WSL2, with `tmux`, `git`, `rg` (ripgrep), `zsh` and `claude` (and/or `codex`) on the `PATH` (the installer adds the missing tools)
 - Node 24+ (the one-line installer downloads a private Node into `~/.remote-harness/node` when it is missing; pnpm 12+ only for development)
 - [Tailscale](https://tailscale.com) on the computer and the phone, signed in to the same tailnet (macOS: `brew install --cask tailscale`; Linux: `curl -fsSL https://tailscale.com/install.sh | sh` and `sudo tailscale up`)
 - For the app (Expo Go is not enough: it uses native modules): Xcode on a Mac for the iOS development build, or Android Studio / the Android SDK (JDK 17) for Android 10+
@@ -247,7 +263,7 @@ openssl rand -hex 32 | npx -y firebase-tools@15 functions:secrets:set GRANT_KEY 
 make deploy-push-relay PROJECT=<project-id>
 ```
 
-The function runs with the project's default credentials, so no service account key is created. Use the URL printed by the deploy (`…/pushRelay`) as `REMOTE_HARNESS_PUSH_RELAY_URL` when building the app. Rotating `GRANT_KEY` invalidates every grant; apps fetch new ones on their next connection.
+The function runs with the project's default credentials, so no service account key is created. Use the URL printed by the deploy (`…/pushRelay`) as `REMOTE_HARNESS_PUSH_RELAY_URL` when building the app. The project's own builds use `https://push.remoteharness.app` instead, a Cloudflare Worker (`apps/push-edge`) in front of the function, so the relay can move without new builds. Rotating `GRANT_KEY` invalidates every grant; apps fetch new ones on their next connection.
 
 **App Check** is verified on `/grant` but only logged at first (`APP_CHECK=monitor`), so the relay works before App Check is set up. After registering the apps in Firebase App Check (DeviceCheck key on iOS; Play Integrity on Android, which needs the app in the Play Console), create `apps/push-relay/.env.<project-id>` with `APP_CHECK=enforce` and deploy again: grants then require a valid App Check token. Development builds use the debug provider; register the debug token printed in the native logs.
 
@@ -304,6 +320,7 @@ remote-harness uninstall   # removes launchers, the PATH block in ~/.zshrc / ~/.
 | Protocol | Zod schemas shared by daemon and app — single source of truth |
 | Daemon | Node 24, `ws`, Fastify, Pino, Commander, execa, chokidar, fuzzysort, firebase-admin, tsup |
 | App | Expo SDK 57, React Native, Expo Router, Zustand, TanStack Query, FlashList, react-native-marked, xterm.js (WebView), expo-secure-store, expo-camera, React Native Firebase |
+| Site and services | Node and Vite (remoteharness.app in Docker behind Traefik), Firebase Cloud Functions (push relay), a Cloudflare Worker (relay address) |
 | Planning | [OpenSpec](https://github.com/Fission-AI/OpenSpec) — every feature started as a numbered change with specs and tasks |
 
 ## Project structure
@@ -315,8 +332,8 @@ apps/web           remoteharness.app: landing, docs, installers, updates server,
 apps/push-relay    Cloud Function that sends push for daemons without a service account
 apps/push-edge     Cloudflare Worker on push.remoteharness.app in front of the push relay
 packages/protocol  Zod schemas + types of the WebSocket protocol
-openspec/          Specs and the 20 archived changes that built the project
-.docs/             Original product requirements document (Portuguese)
+openspec/          Specs and every archived change that built the project
+.docs/             The original product requirements document (Portuguese, from when it was called Claude Remote)
 ```
 
 Architecture and conventions are documented in [CLAUDE.md](CLAUDE.md).
@@ -348,7 +365,8 @@ The server keeps `.env` (the publish tokens `UPDATES_TOKEN` and `UPDATES_DEV_TOK
 - Sessions must run inside tmux to be controllable; others are read-only until resumed.
 - The computer must be awake. The service keeps it from idle-sleeping while sessions run (`remote-harness keep-awake`), but the app cannot wake a computer that already sleeps: Wake-on-LAN does not cross Tailscale, so it needs another always-on device on the same network ([design notes](docs/design/remote-wake.md)).
 - Permission-mode switching reads the Claude Code status line, so a TUI change may need a label update (they live in one tested table).
-- The UI is in Brazilian Portuguese for now — translations are welcome.
+- Codex sessions cannot start in their own worktree, and permission requests offer Allow and Deny only.
+- Translations beyond English, Brazilian Portuguese and Spanish are welcome.
 
 ## Contributing
 
@@ -358,4 +376,4 @@ Issues and pull requests are welcome! Read [CONTRIBUTING.md](CONTRIBUTING.md) fo
 
 [MIT](LICENSE) © Marco Filho
 
-<sub>Remote Harness is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic. "Claude" and "Claude Code" are trademarks of Anthropic, PBC.</sub>
+<sub>Remote Harness is an independent project and is not affiliated with, endorsed by or sponsored by Anthropic or OpenAI. "Claude" and "Claude Code" are trademarks of Anthropic, PBC; "Codex" is a trademark of OpenAI.</sub>

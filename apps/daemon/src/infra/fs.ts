@@ -34,6 +34,16 @@ export async function isDirectory(path: string): Promise<boolean> {
   }
 }
 
+/** `null` when `dir` can be listed; the filesystem error otherwise (used by the Permissions screen). */
+export async function probeFolderAccess(dir: string): Promise<NodeJS.ErrnoException | null> {
+  try {
+    await readdir(dir)
+    return null
+  } catch (error) {
+    return error as NodeJS.ErrnoException
+  }
+}
+
 /** Names of the subdirectories of `dir`, symlinks to directories included. Throws when `dir` is unreadable. */
 export async function readSubdirectories(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })

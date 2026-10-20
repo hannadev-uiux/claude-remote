@@ -6,7 +6,7 @@ import {
 } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
-import { type Config, loadConfig, resolveProfiles } from './core/config.ts'
+import { type Config, loadConfig, profilesWithResolvableAgent, resolveProfiles } from './core/config.ts'
 import { EventBus } from './core/event-bus.ts'
 import type { DaemonEvents } from './core/events.ts'
 import { KeyedMutex } from './core/keyed-mutex.ts'
@@ -36,6 +36,7 @@ import { registerSessionsFeature } from './features/sessions/index.ts'
 import { justEnded } from './features/sessions/state.ts'
 import { registerStatusLineFeature } from './features/status-line/index.ts'
 import { registerSubagentsFeature } from './features/subagents/index.ts'
+import { registerSystemPermissionsFeature } from './features/system-permissions/index.ts'
 import { registerTranscriptFeature } from './features/transcript/index.ts'
 import {
   type DesktopOptions,
@@ -144,6 +145,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   resolvePlatform()
   const config = await loadConfig(logger, options.configPath)
   const profiles = await resolveProfiles(config, logger)
+  // Narrower than `profiles`: only what the app may offer for starting a new session (not used
+  // for `install`/`uninstall`, which manage a profile's launcher regardless of its CLI's PATH).
+  const appProfiles = await profilesWithResolvableAgent(profiles, options.exec, logger)
   let token = await ensureToken(options.tokenStore)
   const hookSecret = await ensureHookSecret()
 
@@ -211,11 +215,12 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       protocolVersion: PROTOCOL_VERSION,
       daemonVersion: DAEMON_VERSION,
       host: hostName(),
-      profiles,
+      profiles: appProfiles,
       defaultRuleScope: config.defaultRuleScope,
       muted: features.mute.get(),
       push: { mode: features.pushMode() },
       update: { channel: features.updateChannel() },
+      live: { follow: true },
     }),
   })
   const wsAddress = wss.address()
@@ -268,6 +273,7 @@ async function registerFeatures(
     lock: sessionLock,
     denyPending: (id) => void permissions.broker.denyAll(id),
   })
+  registerSystemPermissionsFeature(ctx, (profileId) => lifecycle.service.projects(profileId))
   const mute = await registerMuteFeature(ctx)
   const isMuted = (profileId: string | null, sessionId: string) => mute.store.isMuted(profileId, sessionId)
   const isEnded = (sessionId: string) => sessions.store.get(sessionId)?.state === 'ended'
@@ -276,7 +282,7 @@ async function registerFeatures(
     if (justEnded(session, previous)) permissions.broker.cancelAll(session.id)
   })
   const push = await registerPushFeature(ctx, { isMuted, isEnded, sender: ctx.pushSender })
-  registerLiveStatusFeature(ctx, {
+  await registerLiveStatusFeature(ctx, {
     store: sessions.store,
     sender: push.sender,
     isMuted,

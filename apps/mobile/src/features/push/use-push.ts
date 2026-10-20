@@ -7,6 +7,7 @@ import { AppState, Platform } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
 import type { TFunction } from '@/core/i18n/create'
 import { devicePlatform } from '@/core/platform/platform'
+import { answerAction, showLiveMessage } from './background'
 import { loadMessaging } from './firebase'
 import {
   ACTION_ALLOW,
@@ -21,7 +22,6 @@ import { relayFor } from './push-relay'
 import { usePushSettings } from './push-settings-store'
 import { usePushState } from './push-state'
 import { pushRelayUrl } from './relay'
-import { respondInBackground } from './respond-in-background'
 
 Notifications.setNotificationHandler({
   // In the foreground the app shows the event itself (and the daemon skips push anyway), except for
@@ -93,10 +93,9 @@ function openSession(data: PushData) {
 async function handleResponse(response: Notifications.NotificationResponse) {
   const data = extractPushData(response.notification.request)
   if (!data) return
-  const action = response.actionIdentifier
-  if ((action === ACTION_ALLOW || action === ACTION_DENY) && data.requestId) {
-    const ok = await respondInBackground(data.requestId, action === ACTION_ALLOW ? 'allow' : 'deny')
-    if (!ok) openSession(data)
+  const answer = answerAction(response)
+  if (answer) {
+    if (!(await answer)) openSession(data)
     return
   }
   openSession(data)
@@ -113,6 +112,15 @@ function listenToFcmTaps(): () => void {
   }
   void messaging.getInitialNotification(m).then(open)
   return messaging.onNotificationOpenedApp(m, open)
+}
+
+/** Android: live status data messages that arrive with the app in front are drawn here. */
+function listenToLiveMessages(): () => void {
+  const messaging = isAndroid ? loadMessaging() : null
+  if (!messaging) return () => {}
+  return messaging.onMessage(messaging.getMessaging(), (message) => {
+    void showLiveMessage(message.data).catch(() => undefined)
+  })
 }
 
 /** Registers the FCM token with the daemon, reports foreground state and routes notification taps. */
@@ -132,9 +140,11 @@ export function usePush() {
       if (r) void handleResponse(r)
     })
     const offFcm = listenToFcmTaps()
+    const offLive = listenToLiveMessages()
     return () => {
       sub.remove()
       offFcm()
+      offLive()
     }
   }, [])
 

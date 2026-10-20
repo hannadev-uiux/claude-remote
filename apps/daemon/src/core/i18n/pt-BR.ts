@@ -86,6 +86,8 @@ export const ptBR = {
       providerKey: (id: string, provider: string) => `chave do ${provider} do perfil ${id}`,
       runProviderKey: (id: string) => `rode \`remote-harness provider key ${id}\``,
       codexHooks: (id: string, path: string) => `hooks do Codex do perfil ${id} (${path})`,
+      codexAccountWithoutProfile: (dir: string) =>
+        `Conta do Codex encontrada em ${dir} sem um perfil. Rode \`remote-harness setup\` para adicioná-la.`,
       runInstall: 'rode `remote-harness install`',
       service: (name: string, detail: string) => `serviço em segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
@@ -93,8 +95,14 @@ export const ptBR = {
       launcherScript: 'pedidos de acesso a pastas mostram "node" (sem launcher compilado)',
       launcherHint:
         'instale as Command Line Tools (`xcode-select --install`) e rode `remote-harness service install`',
-      fullDiskAccess:
-        'dica: para não ter um pedido por pasta, adicione "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco',
+      fullDiskAccess: 'Acesso Total ao Disco',
+      fullDiskAccessHint:
+        'para não ter um pedido por pasta, adicione "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Acesso Total ao Disco',
+      accessibility: 'Acessibilidade / Automação',
+      accessibilityHint:
+        'permita "Remote Harness" em Ajustes do Sistema → Privacidade e Segurança → Automação',
+      keychain: 'Acesso ao Keychain',
+      keychainHint: 'o armazenamento de token não conseguiu ler de volta o token que acabou de gravar',
       linger: 'lingering (o serviço continua rodando após o logout)',
       lingerHint: 'rode `loginctl enable-linger $USER`',
       keepAwake: (mode: string, state: string) => `manter acordado: ${mode} (${state})`,
@@ -338,6 +346,37 @@ export const ptBR = {
       addAnyway: 'Adicionar mesmo assim (faço login depois pelo alias)',
       giveUp: 'Desistir desta conta',
     },
+    provider: {
+      add: (provider: string) => `Adicionar um perfil ${provider}`,
+      addDescription: (provider: string) =>
+        `Claude Code pelo ${provider}, pago com a sua chave do ${provider} (sem login da Anthropic)`,
+      title: (provider: string) => `\n  Perfis pelo ${provider}:`,
+      manage: (id: string, provider: string, key: string) => `${id} · via ${provider} · ${key}`,
+      keyStored: 'chave guardada',
+      keyMissing: 'sem chave guardada',
+      keep: 'Manter',
+      replaceKey: 'Trocar a chave',
+      remove: 'Remover o perfil',
+      removeDescription: 'Remove o launcher, os hooks e a chave guardada; a pasta fica',
+      folder: 'Pasta do perfil (o CLAUDE_CONFIG_DIR dele):',
+      model: 'Modelo padrão (opcional, ex.: anthropic/claude-sonnet-5.5; vazio = o padrão do gateway):',
+      key: (provider: string) => `Chave de API do ${provider} (oculta; vazio = guardar depois):`,
+      checking: (provider: string) => `Conferindo a chave com o ${provider}…`,
+      accepted: 'Chave aceita',
+      acceptedCredits: (left: string) => `Chave aceita · ${left} em créditos restantes`,
+      rejected: (provider: string) => `O ${provider} recusou essa chave.`,
+      unchecked: (provider: string, reason: string) =>
+        `Não consegui conferir a chave com o ${provider} (${reason}); ela será guardada mesmo assim.`,
+      whatNow: 'E agora?',
+      retry: 'Digitar de novo',
+      keepAnyway: 'Guardar mesmo assim',
+      skip: 'Pular (guardo depois)',
+      later: (id: string) => `Sem chave por enquanto. Depois: remote-harness provider key ${id}`,
+      keySaved: (id: string, store: string) => `chave de ${id} guardada ${store}`,
+      keyRemoved: (id: string) => `chave de ${id} removida do cofre de segredos`,
+      keyFailed: (id: string, error: string) => `não consegui guardar a chave de ${id}: ${error}`,
+      via: (provider: string) => `via ${provider}`,
+    },
   },
   wsl: {
     windowsHint:
@@ -477,7 +516,7 @@ export const ptBR = {
       allow: 'Permitir',
       always: 'Sempre permitir',
       deny: 'Negar',
-      focus: 'Focar no tmux',
+      focus: 'Abrir no terminal (tmux)',
       close: 'Encerrar sessão',
       sessions: (total: number, running: number) =>
         running > 0 ? `Sessões · ${total} · ${running} rodando` : `Sessões · ${total}`,
@@ -494,6 +533,7 @@ export const ptBR = {
   },
   push: {
     sessionDone: 'Sessão concluída',
+    sessionWorking: 'Sessão trabalhando',
     sessionWaiting: 'Sessão aguardando você',
     permissionPending: 'Permissão pendente',
     questionPending: 'O agente está esperando sua resposta',

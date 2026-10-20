@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   type ClientMessage,
   checkoutPeers,
+  LiveDataMessageSchema,
   LiveStatusPropsSchema,
+  liveNotificationText,
   parseClientMessage,
   parseServerMessage,
   type ServerMessage,
@@ -48,7 +50,37 @@ const clientSamples: ClientMessage[] = [
   { type: 'push.test', id: '1', fcmToken: 'tok' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'android', fcmToken: 'tok' },
+  {
+    type: 'live.register',
+    id: '1',
+    sessionId: 's',
+    platform: 'android',
+    fcmToken: 'tok',
+    androidDataMessages: true,
+  },
   { type: 'live.unregister', id: '1', sessionId: 's' },
+  { type: 'live.follow', id: '1', sessionId: 's', device: { platform: 'android', fcmToken: 'tok' } },
+  {
+    type: 'live.follow',
+    id: '1',
+    sessionId: 's',
+    device: {
+      platform: 'ios',
+      fcmToken: 'tok',
+      relay: { url: 'https://relay.example/r', grant: 'g' },
+      startToken: 'ab12',
+      startRelay: { url: 'https://relay.example/r', grant: 'g2' },
+    },
+  },
+  { type: 'live.unfollow', id: '1', sessionId: 's', fcmToken: 'tok' },
+  {
+    type: 'live.autoFollow',
+    id: '1',
+    profileId: 'work',
+    enabled: true,
+    device: { platform: 'ios', fcmToken: 'tok' },
+  },
+  { type: 'live.follows', id: '1', device: { platform: 'ios', fcmToken: 'tok' } },
   { type: 'session.close', id: '1', sessionId: 's' },
   { type: 'session.close', id: '1', sessionId: 's', worktree: 'push-delete' },
   { type: 'worktree.inspect', id: '1', sessionId: 's' },
@@ -100,6 +132,9 @@ const clientSamples: ClientMessage[] = [
   { type: 'directories.list', id: '1', path: '~', limit: 200 },
   { type: 'directories.list', id: '1', path: '~/work', prefix: 'ap', hidden: true, limit: 20 },
   { type: 'diagnostics.errors', id: '1' },
+  { type: 'machine.permissions', id: '1' },
+  { type: 'machine.openSettingsPane', id: '1', pane: 'fullDiskAccess' },
+  { type: 'machine.openSettingsPane', id: '1', pane: 'accessibility' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'session.start', id: '1', profileId: 'work', cwd: '/tmp', model: 'anthropic/claude-opus-5.5' },
@@ -139,12 +174,15 @@ const serverSamples: ServerMessage[] = [
     push: { mode: 'relay' },
   },
   { type: 'push.testResult', replyTo: '1', result: 'unregistered' },
+  { type: 'live.followed', replyTo: '1', sessionIds: ['s'], autoFollowProfiles: ['work'] },
   { type: 'pong', replyTo: '1' },
   { type: 'ack', replyTo: '1' },
   { type: 'error', replyTo: '1', code: 'not_found', message: 'x' },
   { type: 'sessions.snapshot', replyTo: 'abc', sessions: [session] },
   { type: 'session.updated', session },
   { type: 'session.removed', sessionId: 's' },
+  { type: 'session.started', replyTo: '1', paneId: '%1', sessionId: 's' },
+  { type: 'session.started', replyTo: '1', paneId: '%1', sessionId: null },
   { type: 'session.state', sessionId: 's', state: 'running', permissionMode: 'plan' },
   {
     type: 'transcript.entry',
@@ -327,6 +365,23 @@ const serverSamples: ServerMessage[] = [
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
   { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
   { type: 'transcript.image', replyTo: '1', imageId: '12.0', mediaType: 'image/png', data: 'iVBORw0KGgo=' },
+  {
+    type: 'machine.permissions.results',
+    replyTo: '1',
+    permissions: [
+      {
+        id: 'folderAccess',
+        status: 'denied',
+        entries: [
+          { path: '/Users/u/Desktop', status: 'allowed' },
+          { path: '/Users/u/work/api', status: 'denied' },
+        ],
+      },
+      { id: 'fullDiskAccess', status: 'not_available' },
+      { id: 'keychain', status: 'allowed' },
+    ],
+  },
+  { type: 'machine.permissions.results', replyTo: '1', permissions: [] },
 ]
 
 describe('client messages', () => {
@@ -341,18 +396,23 @@ describe('client messages', () => {
     if (!result.ok) {
       expect(result.error.code).toBe('bad_request')
       expect(result.error.id).toBe('1')
+      expect(result.error.type).toBe('session.input')
     }
   })
 
-  test('rejects invalid JSON', () => {
-    expect(parseClientMessage('{oops')).toMatchObject({ ok: false, error: { code: 'bad_request' } })
+  test('rejects invalid JSON, with no type to report', () => {
+    const result = parseClientMessage('{oops')
+    expect(result).toMatchObject({ ok: false, error: { code: 'bad_request' } })
+    expect(result.ok ? undefined : result.error.type).toBeUndefined()
   })
 
-  test('rejects unknown type', () => {
+  test('rejects unknown type, reporting it for logging even though it is invalid', () => {
     expect(parseClientMessage({ type: 'nope', id: '1' })).toMatchObject({
       ok: false,
-      error: { code: 'unknown_type' },
+      error: { code: 'unknown_type', type: 'nope' },
     })
+    const result = parseClientMessage({ type: 42, id: '1' })
+    expect(result.ok ? undefined : result.error.type).toBeUndefined()
   })
 
   test('strips unknown fields', () => {
@@ -445,6 +505,35 @@ describe('client messages', () => {
       hint: '',
       tasks: '',
     })
+  })
+
+  test('Android data messages carry the event and validated props', () => {
+    const props = { title: 'Work', state: 'waiting', status: 'Waiting', step: '', tools: '', startedAt: 1 }
+    const parsed = LiveDataMessageSchema.parse({ event: 'update', props: { ...props, prompt: 'secret' } })
+    expect(parsed.props).not.toHaveProperty('prompt')
+    expect(LiveDataMessageSchema.safeParse({ event: 'start', props }).success).toBe(false)
+  })
+
+  test('Android notification text: session and state, then the state line with the glyphs', () => {
+    const props = LiveStatusPropsSchema.parse({
+      title: 'Work',
+      state: 'working',
+      status: 'Working',
+      step: 'running a command',
+      tools: '3 tools',
+      startedAt: 1,
+      glyphs: ['⌘', '✎'],
+    })
+    expect(liveNotificationText(props)).toEqual({
+      title: 'Work · Working',
+      body: 'running a command · 3 tools · ✎ ⌘',
+    })
+    expect(liveNotificationText({ ...props, session: 'Fix login', step: '', tools: '', glyphs: [] })).toEqual(
+      {
+        title: 'Fix login · Working',
+        body: 'Working',
+      },
+    )
   })
 
   test('relay URLs must be HTTPS', () => {

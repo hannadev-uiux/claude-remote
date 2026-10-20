@@ -76,7 +76,7 @@ async function upload(file: { hash: string; data: Uint8Array; contentType: strin
   return true
 }
 
-const out = mkdtempSync(join(tmpdir(), 'claude-remote-update-'))
+const out = mkdtempSync(join(tmpdir(), 'remote-harness-update-'))
 try {
   console.log('▸ expo export')
   run(['expo', 'export', ...platforms.flatMap((p) => ['--platform', p]), '--output-dir', out])

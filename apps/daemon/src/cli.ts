@@ -66,15 +66,23 @@ import {
   installServiceFromCli,
   userRcFiles,
 } from './features/setup/install.ts'
-import { tildify } from './features/setup/profiles.ts'
+import { detectConfigDirs, isCodexDir, sameDir, tildify } from './features/setup/profiles.ts'
 import { runSetupWizard, SetupAborted } from './features/setup/wizard.ts'
 import { STATUS_LINE_SCRIPT } from './features/status-line/wrapper.ts'
+import {
+  classifyAccessibility,
+  classifyFolderAccess,
+  classifyFullDiskAccess,
+  classifyKeychain,
+} from './features/system-permissions/classify.ts'
 import { installerSourceDir, SourceUpdater, updateSource } from './features/update/update.ts'
 import { isDowngrade, isUpdateChannel, UPDATE_CHANNELS, updateLabel } from './features/updates/channel.ts'
 import { readUpdateState, UpdateChecker, type UpdateState } from './features/updates/checker.ts'
 import { advanceRun, RunRecorder, readRun, writeRun } from './features/updates/run.ts'
 import { WslHost } from './features/wsl/host.ts'
+import { probeAutomation } from './infra/accessibility.ts'
 import { execaExecutor, runInteractive } from './infra/exec.ts'
+import { probeFolderAccess } from './infra/fs.ts'
 import { findTailscaleAddress } from './infra/network.ts'
 import {
   currentWsl,
@@ -339,6 +347,15 @@ program
           if (!isDefaultConfigDir(configDir)) env.CLAUDE_CONFIG_DIR = configDir
           return runInteractive('claude', [], { cwd: homedir(), env })
         },
+        providerKeyStore: async (profileId) => {
+          const { kind } = await selectStore()
+          return {
+            store: providerKeyStore(kind, execaExecutor, profileId),
+            label: tokenStoreLabel(kind, paths.providerKey(profileId)),
+          }
+        },
+        // A gateway that does not answer must not hang the setup.
+        fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }),
       })
     } catch (error) {
       // Ctrl+C inside a prompt
@@ -404,13 +421,20 @@ program
       }
       // Codex profiles: the CLI on the PATH and the daemon's hooks in their hooks.json.
       const codexProfiles = (await resolveProfiles(config, logger)).filter((p) => agentFor(p).id === 'codex')
-      if (codexProfiles.length > 0) {
+      const codexDirs = (await detectConfigDirs()).filter(isCodexDir)
+      // Checked even without a configured profile when a Codex account was found (issue #244).
+      if (codexProfiles.length > 0 || codexDirs.length > 0) {
         const which = await execaExecutor('which', ['codex'])
         check(which.exitCode === 0, 'codex', d.notOnPath)
-        for (const profile of codexProfiles) {
-          check(await hasOurHooks(profile), d.codexHooks(profile.id, settingsPath(profile)), d.runInstall)
+      }
+      for (const profile of codexProfiles) {
+        check(await hasOurHooks(profile), d.codexHooks(profile.id, settingsPath(profile)), d.runInstall)
+      }
+      if (codexProfiles.length > 0) console.log(`· ${m.install.codexTrust}`)
+      for (const dir of codexDirs) {
+        if (!config.profiles.some((p) => sameDir(p.configDir, dir))) {
+          console.log(`· ${d.codexAccountWithoutProfile(dir)}`)
         }
-        console.log(`· ${m.install.codexTrust}`)
       }
       const { kind: storeKind } = await selectStore()
       for (const profile of config.profiles) {
@@ -464,8 +488,22 @@ program
     if (status?.loaded && manager.kind === 'launchd') {
       const native = (await bundleLauncherKind(paths.app())) === 'native'
       check(native, native ? d.launcherNative : d.launcherScript, d.launcherHint)
-      console.log(`· ${d.fullDiskAccess}`)
     }
+    if (platform === 'darwin') {
+      const wellKnown = ['Desktop', 'Documents', 'Downloads'].map((name) => join(homedir(), name))
+      const wellKnownStatuses = await Promise.all(
+        wellKnown.map(async (dir) => classifyFolderAccess(await probeFolderAccess(dir))),
+      )
+      const fullDiskAccess = classifyFullDiskAccess(platform, wellKnownStatuses)
+      if (fullDiskAccess) check(fullDiskAccess === 'allowed', d.fullDiskAccess, d.fullDiskAccessHint)
+      const automation = await probeAutomation(execaExecutor)
+      const accessibility = classifyAccessibility(platform, automation.exitCode)
+      if (accessibility) check(accessibility === 'allowed', d.accessibility, d.accessibilityHint)
+    }
+    const { kind: storedKind } = await selectStore()
+    const storedToken = await (await tokenStore()).get().catch(() => null)
+    const keychain = classifyKeychain(storedKind, storedToken !== null)
+    if (keychain !== 'not_available') check(keychain === 'allowed', d.keychain, d.keychainHint)
     const devices = new DeviceRegistry(paths.devices())
     await devices.load()
     const platforms = describeDevices(devices.devices())

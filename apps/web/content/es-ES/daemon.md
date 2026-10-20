@@ -64,7 +64,9 @@ Los cambios en el archivo se aplican cuando el daemon se reinicia (`remote-harne
 
 ## Perfiles y OpenRouter
 
-Un perfil puede enrutar Claude Code por OpenRouter en vez de la cuenta de Anthropic: añade un `provider` con `kind: "openrouter"` y, opcionalmente, `baseUrl` (otra pasarela compatible con Anthropic), un `model` predeterminado y un `smallFastModel`.
+Un perfil puede enrutar Claude Code por OpenRouter en vez de la cuenta de Anthropic. Lo más fácil es `remote-harness setup` → "Añadir un perfil de OpenRouter": pregunta el nombre, el alias, la carpeta (`~/.claude-openrouter`), un modelo por defecto opcional y la clave (oculta), comprueba la clave con OpenRouter y muestra los créditos que quedan cuando la clave puede leerlos. Al ejecutar el setup de nuevo se listan estos perfiles y puedes mantenerlos, cambiar la clave o eliminar el perfil (su lanzador, sus hooks y su clave; la carpeta se queda).
+
+A mano: añade un `provider` con `kind: "openrouter"` y, opcionalmente, `baseUrl` (otra pasarela compatible con Anthropic), un `model` predeterminado y un `smallFastModel`.
 
 ```json
 {

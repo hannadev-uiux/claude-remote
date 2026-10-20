@@ -11,6 +11,8 @@ import type { SessionStore } from '../sessions/store.ts'
 export const MAX_PROJECTS = 30
 /** How long `start` waits before checking that Claude Code is still running in the new pane. */
 export const START_SETTLE_MS = 1_500
+/** How long `start` waits, after the settle check, for the new pane's `SessionStart` hook to register. */
+export const WAIT_FOR_SESSION_MS = 4_000
 
 /** Accepts only existing directories inside the user's home. */
 export async function validateCwd(raw: string, home = homedir()): Promise<string> {
@@ -37,6 +39,11 @@ export class LifecycleService {
     private readonly now: () => Date = () => new Date(),
     /** 0 skips the check that the new pane survived its first moments. */
     private readonly settleMs = 0,
+    /** Resolves the id of the session that registers against `paneId`, or `null` on timeout. */
+    private readonly waitForSession: (
+      paneId: string,
+      timeoutMs: number,
+    ) => Promise<string | null> = async () => null,
   ) {}
 
   private profile(id: string): Profile {
@@ -67,7 +74,7 @@ export class LifecycleService {
     profileId: string,
     rawCwd: string,
     options: { worktree?: boolean; model?: string } = {},
-  ): Promise<{ paneId: string }> {
+  ): Promise<{ paneId: string; sessionId: string | null }> {
     const profile = this.profile(profileId)
     const cwd = await validateCwd(rawCwd, this.home)
     const args: string[] = []
@@ -83,10 +90,13 @@ export class LifecycleService {
     if (this.settleMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.settleMs))
       if (!(await this.hasPane(paneId))) {
-        throw new DaemonError('internal', `Claude Code exited right after starting (pane ${paneId} closed)`)
+        const name = agentFor(profile).name
+        throw new DaemonError('internal', `${name} exited right after starting (pane ${paneId} closed)`)
       }
     }
-    return { paneId }
+    // The pane is alive; its SessionStart hook may already have registered it, or may still be pending.
+    const sessionId = await this.waitForSession(paneId, WAIT_FOR_SESSION_MS)
+    return { paneId, sessionId }
   }
 
   async resume(profileId: string, sessionId: string): Promise<{ paneId: string }> {

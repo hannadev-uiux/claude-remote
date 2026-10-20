@@ -86,6 +86,8 @@ export const esES = {
       providerKey: (id: string, provider: string) => `clave de ${provider} del perfil ${id}`,
       runProviderKey: (id: string) => `ejecuta \`remote-harness provider key ${id}\``,
       codexHooks: (id: string, path: string) => `hooks de Codex del perfil ${id} (${path})`,
+      codexAccountWithoutProfile: (dir: string) =>
+        `Cuenta de Codex encontrada en ${dir} sin un perfil. Ejecuta \`remote-harness setup\` para añadirla.`,
       runInstall: 'ejecuta `remote-harness install`',
       service: (name: string, detail: string) => `servicio en segundo plano ${name} (${detail})`,
       serviceHint: 'opcional: `remote-harness service install`',
@@ -93,8 +95,14 @@ export const esES = {
       launcherScript: 'las solicitudes de acceso a carpetas muestran "node" (sin launcher compilado)',
       launcherHint:
         'instala las Command Line Tools (`xcode-select --install`) y ejecuta `remote-harness service install`',
-      fullDiskAccess:
-        'consejo: para no recibir una solicitud por carpeta, añade "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Acceso total al disco',
+      fullDiskAccess: 'Acceso total al disco',
+      fullDiskAccessHint:
+        'para no recibir una solicitud por carpeta, añade "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Acceso total al disco',
+      accessibility: 'Accesibilidad / Automatización',
+      accessibilityHint:
+        'permite "Remote Harness" en Ajustes del Sistema → Privacidad y seguridad → Automatización',
+      keychain: 'Acceso al llavero',
+      keychainHint: 'el almacén de tokens no pudo volver a leer el token que acaba de escribir',
       linger: 'lingering (el servicio sigue en marcha tras cerrar sesión)',
       lingerHint: 'ejecuta `loginctl enable-linger $USER`',
       keepAwake: (mode: string, state: string) => `mantener despierto: ${mode} (${state})`,
@@ -339,6 +347,37 @@ export const esES = {
       addAnyway: 'Añadirla de todos modos (inicio sesión después con el alias)',
       giveUp: 'Renunciar a esta cuenta',
     },
+    provider: {
+      add: (provider: string) => `Añadir un perfil de ${provider}`,
+      addDescription: (provider: string) =>
+        `Claude Code a través de ${provider}, pagado con tu clave de ${provider} (sin iniciar sesión en Anthropic)`,
+      title: (provider: string) => `\n  Perfiles a través de ${provider}:`,
+      manage: (id: string, provider: string, key: string) => `${id} · vía ${provider} · ${key}`,
+      keyStored: 'clave guardada',
+      keyMissing: 'sin clave guardada',
+      keep: 'Mantenerlo',
+      replaceKey: 'Cambiar la clave',
+      remove: 'Eliminar el perfil',
+      removeDescription: 'Elimina su launcher, sus hooks y la clave guardada; la carpeta se queda',
+      folder: 'Carpeta del perfil (su propio CLAUDE_CONFIG_DIR):',
+      model: 'Modelo por defecto (opcional, p. ej. anthropic/claude-sonnet-5.5; vacío = el del gateway):',
+      key: (provider: string) => `Clave de API de ${provider} (oculta; vacío = guardarla después):`,
+      checking: (provider: string) => `Comprobando la clave con ${provider}…`,
+      accepted: 'Clave aceptada',
+      acceptedCredits: (left: string) => `Clave aceptada · quedan ${left} en créditos`,
+      rejected: (provider: string) => `${provider} ha rechazado esta clave.`,
+      unchecked: (provider: string, reason: string) =>
+        `No he podido comprobar la clave con ${provider} (${reason}); se guardará de todos modos.`,
+      whatNow: '¿Y ahora?',
+      retry: 'Escribirla de nuevo',
+      keepAnyway: 'Guardarla de todos modos',
+      skip: 'Saltar (la guardo después)',
+      later: (id: string) => `Sin clave por ahora. Después: remote-harness provider key ${id}`,
+      keySaved: (id: string, store: string) => `clave de ${id} guardada ${store}`,
+      keyRemoved: (id: string) => `clave de ${id} eliminada del almacén de secretos`,
+      keyFailed: (id: string, error: string) => `no he podido guardar la clave de ${id}: ${error}`,
+      via: (provider: string) => `vía ${provider}`,
+    },
   },
   wsl: {
     windowsHint:
@@ -476,7 +515,7 @@ export const esES = {
       allow: 'Permitir',
       always: 'Permitir siempre',
       deny: 'Denegar',
-      focus: 'Enfocar en tmux',
+      focus: 'Abrir en la terminal (tmux)',
       close: 'Cerrar sesión',
       sessions: (total: number, running: number) =>
         running > 0 ? `Sesiones · ${total} · ${running} en marcha` : `Sesiones · ${total}`,
@@ -493,6 +532,7 @@ export const esES = {
   },
   push: {
     sessionDone: 'Sesión terminada',
+    sessionWorking: 'Sesión trabajando',
     sessionWaiting: 'Sesión esperándote',
     permissionPending: 'Permiso pendiente',
     questionPending: 'El agente está esperando tu respuesta',

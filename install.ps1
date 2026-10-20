@@ -15,7 +15,7 @@
 # Parameters: -Ref <branch|tag> (env REMOTE_HARNESS_REF), -Yes (no questions), -NoService (no background
 # service), -Distro <name> (default: Ubuntu, or the WSL default distribution). Without -Ref and the env,
 # $DefaultRef (empty: the installer's default, main).
-# Everything lives in Install-ClaudeRemote so a partially downloaded script never runs, and nothing calls
+# Everything lives in Install-RemoteHarness so a partially downloaded script never runs, and nothing calls
 # `exit` (under `iex` that would close the user's PowerShell). Messages follow (Get-Culture).Name
 # (pt*, es*, else English); the language is passed on to the Linux installer as REMOTE_HARNESS_LANG.
 # The file is UTF-8 without BOM (a BOM would end up inside the `irm | iex` string): accents are right
@@ -29,7 +29,7 @@ param(
   [string]$Distro = ''
 )
 
-function Install-ClaudeRemote {
+function Install-RemoteHarness {
   # Interactive installer: colored console output is the point (Write-Host). The parameters are used by
   # the nested functions, which the analyzer does not follow.
   [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
@@ -345,4 +345,4 @@ function Install-ClaudeRemote {
   Invoke-Main
 }
 
-Install-ClaudeRemote -Ref $Ref -Yes:$Yes -NoService:$NoService -Distro $Distro
+Install-RemoteHarness -Ref $Ref -Yes:$Yes -NoService:$NoService -Distro $Distro

@@ -9,6 +9,7 @@ import {
   withAppDelegate,
   withDangerousMod,
   withInfoPlist,
+  withMainActivity,
   withPlugins,
   withPodfile,
   withXcodeProject,
@@ -210,6 +211,32 @@ const withKeyCommandAppDelegate: ConfigPlugin = (config) =>
     return delegate
   })
 
+/**
+ * Android: react-native-key-command only sees hardware keys the activity forwards from `onKeyDown`
+ * (keys a focused text field consumes never get there).
+ */
+const withKeyCommandMainActivity: ConfigPlugin = (config) =>
+  withMainActivity(config, (activity) => {
+    let source = activity.modResults.contents
+    const marker = 'KeyCommandModule.getInstance()'
+    if (activity.modResults.language === 'kt' && !source.includes(marker)) {
+      source = source.replace(
+        /^(package .+)$/m,
+        '$1\n\nimport android.view.KeyEvent\nimport com.expensify.reactnativekeycommand.KeyCommandModule',
+      )
+      source = source.replace(
+        /class MainActivity : ReactActivity\(\) \{\n/,
+        (head) =>
+          `${head}  override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {\n` +
+          `    ${marker}?.onKeyDownEvent(keyCode, event)\n` +
+          '    return super.onKeyDown(keyCode, event)\n' +
+          '  }\n\n',
+      )
+    }
+    activity.modResults.contents = source
+    return activity
+  })
+
 /** Target `expo-widgets` creates (and recreates on every prebuild) for the Live Activity. */
 const WIDGET_TARGET = 'ExpoWidgetsTarget'
 /** Asset the Live Activity layout loads with `Image assetName` (see `SessionActivity.tsx`). */
@@ -328,8 +355,10 @@ const withFirebase: ConfigPlugin = (config) => {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const expo = withIosOnlyLocaleStrings(
     withLiveActivityIcon(
-      withKeyCommandAppDelegate(
-        withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+      withKeyCommandMainActivity(
+        withKeyCommandAppDelegate(
+          withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+        ),
       ),
     ),
   )
@@ -340,7 +369,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Remote Harness',
   slug: 'claude-remote',
-  version: '0.15.0',
+  version: '0.16.0',
   // `remoteharness://` first; `claude-remote://` stays for the pairing QR codes already printed (and
   // printed by daemons until app builds without the new scheme are gone).
   scheme: ['remoteharness', 'claude-remote'],

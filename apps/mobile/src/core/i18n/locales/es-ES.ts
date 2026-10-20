@@ -162,6 +162,8 @@ const esES = {
     history: 'Historial de la conversación',
     follow: 'Seguir la salida',
     stopFollowing: 'Dejar de seguir la salida',
+    followLive: 'Seguir estado en vivo',
+    unfollowLive: 'Dejar de seguir estado en vivo',
     readOnly: 'Sesión de solo lectura (sin panel tmux): el terminal y los atajos no están disponibles.',
     close: 'Cerrar sesión',
     /** `n` es un número simple entre paréntesis, sin plural. */
@@ -181,6 +183,8 @@ const esES = {
     cleanupDetail_other: '{{path}} · {{count}} cambios',
     copyPath: 'Copiar ruta de la carpeta',
     hide: 'Ocultar de la lista',
+    followLive: 'Seguir estado en vivo',
+    unfollowLive: 'Dejar de seguir estado en vivo',
     failed: 'No se pudo completar la acción',
     /** Etiquetas de los botones de swipe: una palabra corta cada una. */
     short: {
@@ -191,6 +195,8 @@ const esES = {
       pin: 'Fijar',
       unpin: 'Desfijar',
       hide: 'Ocultar',
+      followLive: 'Seguir',
+      unfollowLive: 'Dejar',
       resume: 'Reanudar',
       cleanup: 'Limpiar',
       copyPath: 'Copiar',
@@ -434,6 +440,66 @@ const esES = {
       cancel: 'Cancelar',
     },
   },
+  systemPermissions: {
+    title: 'Permisos',
+    onThisPhone: 'En este teléfono',
+    onThisComputer: 'En este ordenador',
+    computerUnsupported: 'El daemon de este ordenador es demasiado antiguo para reportar esto.',
+    allow: 'Permitir',
+    openSettings: 'Abrir Ajustes',
+    openOnComputer: 'Abrir en el ordenador',
+    status: {
+      allowed: 'Permitido',
+      denied: 'Denegado',
+      not_asked: 'No solicitado',
+      limited: 'Limitado',
+      not_available: 'No disponible',
+    },
+    phone: {
+      notifications: {
+        label: 'Notificaciones',
+        reason: 'Para avisos de turnos terminados, permisos y sesiones en espera.',
+      },
+      camera: {
+        label: 'Cámara',
+        reason: 'Para escanear el código QR de emparejamiento y tomar fotos para adjuntar.',
+      },
+      photos: { label: 'Fotos', reason: 'Para adjuntar imágenes a los mensajes.' },
+      microphone: {
+        label: 'Micrófono + Reconocimiento de voz',
+        reason: 'Para la entrada por voz.',
+      },
+      localNetwork: {
+        label: 'Red local',
+        reason: 'Para alcanzar el ordenador en tu red.',
+        hint: 'Inferido de tu conexión actual, no es una comprobación directa.',
+      },
+    },
+    computer: {
+      folderAccess: {
+        label: 'Acceso a carpetas',
+        reason: 'Para leer transcripciones, información de git, worktrees y adjuntos.',
+      },
+      fullDiskAccess: {
+        label: 'Acceso total al disco',
+        reason: 'Evita una solicitud de permiso por carpeta.',
+      },
+      accessibility: {
+        label: 'Accesibilidad / Automatización',
+        reason: 'Para enfocar ventanas de terminal.',
+      },
+      desktopNotifications: {
+        label: 'Notificaciones del ordenador',
+        reason: 'Para avisos de actualización y la bandeja.',
+        unknownHint:
+          'El ordenador no puede reportar esto por sí mismo; revisa los Ajustes del Sistema directamente.',
+      },
+      keychain: {
+        label: 'Acceso al llavero',
+        reason: 'Para guardar el token de emparejamiento de forma segura.',
+      },
+    },
+  },
   autocomplete: {
     empty: 'sin sugerencias',
     noCommands: 'ningún comando coincide',
@@ -552,6 +618,7 @@ const esES = {
     directory: 'Directorio',
     placeholder: '~/workspaces/proyecto',
     start: 'Crear sesión',
+    starting: 'Iniciando {{agent}} en {{path}}…',
     recent: 'Recientes',
     sessionsThisWeek_one: '{{count}} sesión esta semana',
     sessionsThisWeek_other: '{{count}} sesiones esta semana',
@@ -695,6 +762,12 @@ const esES = {
     noSubagents: 'No hay subagentes en esta sesión.',
     resize: 'Cambiar el tamaño del inspector',
   },
+  /** Seguir el estado en vivo de una sesión desde este teléfono. */
+  liveFollow: {
+    following: 'Siguiendo el estado en vivo',
+    autoFollow: 'Seguir sesiones nuevas',
+    autoFollowHint: 'Estado en vivo de cada sesión nueva de este perfil en este teléfono.',
+  },
   /** Etiquetas de la fila de atajos del teclado físico (cortas, en minúsculas). */
   keys: {
     queue: 'cola',
@@ -705,6 +778,33 @@ const esES = {
     esc: 'esc',
     mode: 'modo',
     answer: 'responder',
+    shortcuts: 'atajos',
+    newline: 'nueva línea',
+  },
+  shortcuts: {
+    title: 'Atajos de teclado',
+    hint: 'Con teclado físico. En Android, Ctrl hace de ⌘.',
+    navigation: 'Navegación',
+    session: 'Sesión',
+    composer: 'Mensaje',
+    nthSession: 'Abrir la enésima sesión de la lista',
+    listArrows: 'Moverse en la lista y abrir la sesión',
+    adjacentSession: 'Sesión anterior / siguiente',
+    back: 'Volver a la lista',
+    search: 'Buscar sesiones',
+    newSession: 'Nueva sesión',
+    settings: 'Ajustes',
+    help: 'Mostrar esta lista',
+    focusInput: 'Escribir un mensaje',
+    moreOptions: 'Más opciones',
+    terminal: 'Terminal',
+    sendEsc: 'Enviar Esc a la sesión',
+    mode: 'Siguiente modo de permisos',
+    answer: 'Permitir / denegar el permiso',
+    send: 'Enviar (a la cola si está ocupada)',
+    sendNow: 'Enviar ahora',
+    blur: 'Salir del campo de mensaje',
+    newline: 'Nueva línea',
   },
   subagents: {
     title: 'Subagentes',
@@ -756,6 +856,13 @@ const esES = {
     creditsUnknown: 'Desconocidos',
     keyMissing: 'Sin clave: ejecuta `remote-harness provider key {{profile}}`',
     profileNotifications: 'Notificaciones',
+    newSessionCard: 'Nueva sesión',
+    openAfterCreate: 'Abrir la sesión después de crearla',
+    openAfterCreateHint: 'Abre la nueva sesión con el teclado abierto en lugar de volver a la lista.',
+    keyboardCard: 'Teclado',
+    returnSends: 'Intro envía',
+    returnSendsHint:
+      'El teclado en pantalla envía el mensaje; las líneas nuevas, solo con teclado físico (⇧⏎).',
     notifications: 'Notificaciones',
     push: 'Notificaciones push',
     pushHint: 'Solo este teléfono · nunca la conversación',
@@ -768,6 +875,8 @@ const esES = {
     mutedSessions_one: '{{count}} sesión',
     mutedSessions_other: '{{count}} sesiones',
     mutedSessionsTitle: 'Sesiones',
+    permissions: 'Permisos',
+    permissionsHint: 'Lo que este teléfono y el ordenador pueden acceder',
     documentation: 'Documentación',
     reportProblem: 'Informar de un problema',
   },

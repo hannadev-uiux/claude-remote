@@ -1,10 +1,12 @@
 import type { LucideIcon } from 'lucide-react-native'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionSheetIOS, findNodeHandle, Modal, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { keys, useKeyCommand } from '@/core/keyboard/key-commands'
 import { makeStyles, radius, space, useTheme } from '@/core/theme'
 import { IconButton } from './IconButton'
+import { nextEnabled } from './menu-nav'
 import { Text } from './Text'
 
 export type ActionMenuItem = { key: string; label: string; disabled?: boolean; onPress: () => void }
@@ -12,7 +14,9 @@ export type ActionMenuItem = { key: string; label: string; disabled?: boolean; o
 /**
  * Header button that opens a menu: the native action sheet on iOS (anchored to the button on iPad)
  * and an overflow menu under the header's right edge on Android. `disabledReason` explains the
- * disabled items (sheet message on iOS, footer line on Android).
+ * disabled items (sheet message on iOS, footer line on Android). Each change of `openRequests` opens
+ * it (⌘⇧O); the Android menu then moves with ↑ / ↓, chooses with Enter and closes with Esc, while
+ * the iOS sheet keeps its system keyboard handling.
  */
 export function ActionMenu({
   icon,
@@ -20,6 +24,7 @@ export function ActionMenu({
   items,
   disabledReason,
   attention = false,
+  openRequests = 0,
 }: {
   icon: LucideIcon
   label: string
@@ -27,6 +32,8 @@ export function ActionMenu({
   disabledReason?: string
   /** Accent dot over the button: something behind the menu deserves a look (running subagents). */
   attention?: boolean
+  /** Opens the menu whenever it changes (a keyboard shortcut); 0 never opens it. */
+  openRequests?: number
 }) {
   const { t } = useTranslation()
   const theme = useTheme()
@@ -34,9 +41,14 @@ export function ActionMenu({
   const insets = useSafeAreaInsets()
   const anchor = useRef<View>(null)
   const [open, setOpen] = useState(false)
+  // Keyboard highlight in the Android menu; -1 until an arrow is pressed.
+  const [highlight, setHighlight] = useState(-1)
 
   const show = () => {
-    if (Platform.OS !== 'ios') return setOpen(true)
+    if (Platform.OS !== 'ios') {
+      setHighlight(-1)
+      return setOpen(true)
+    }
     const disabled = items.flatMap((item, index) => (item.disabled ? [index] : []))
     const handle = anchor.current ? findNodeHandle(anchor.current) : null
     ActionSheetIOS.showActionSheetWithOptions(
@@ -58,6 +70,25 @@ export function ActionMenu({
     item.onPress()
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a new request opens the menu.
+  useEffect(() => {
+    if (openRequests > 0) show()
+  }, [openRequests])
+
+  const keyboard = open && Platform.OS !== 'ios'
+  const move = (delta: 1 | -1) => setHighlight((current) => nextEnabled(items, current, delta))
+  useKeyCommand({ input: keys.keyInputDownArrow }, () => move(1), keyboard)
+  useKeyCommand({ input: keys.keyInputUpArrow }, () => move(-1), keyboard)
+  useKeyCommand(
+    { input: keys.keyInputEnter },
+    () => {
+      const item = items[highlight]
+      if (item && !item.disabled) choose(item)
+    },
+    keyboard,
+  )
+  useKeyCommand({ input: keys.keyInputEscape }, () => setOpen(false), keyboard)
+
   return (
     <>
       <View ref={anchor} collapsable={false}>
@@ -68,14 +99,14 @@ export function ActionMenu({
         <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
           <Pressable style={layout.backdrop} onPress={() => setOpen(false)}>
             <View style={[styles.menu, { top: insets.top + space.xs }]}>
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <Pressable
                   key={item.key}
                   accessibilityRole="menuitem"
                   accessibilityState={{ disabled: !!item.disabled }}
                   disabled={item.disabled}
                   onPress={() => choose(item)}
-                  style={({ pressed }) => [layout.item, pressed && styles.pressed]}
+                  style={({ pressed }) => [layout.item, (pressed || index === highlight) && styles.pressed]}
                 >
                   <Text color={item.disabled ? 'textDim' : 'text'}>{item.label}</Text>
                 </Pressable>

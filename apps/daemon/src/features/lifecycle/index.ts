@@ -10,6 +10,28 @@ import { CloseService } from './close.ts'
 import { listDirectories } from './directories.ts'
 import { LifecycleService, START_SETTLE_MS } from './service.ts'
 
+/** The session already linked to `paneId`, or the first one that links to it before `timeoutMs`. */
+export function waitForPaneSession(
+  store: SessionStore,
+  paneId: string,
+  timeoutMs: number,
+): Promise<string | null> {
+  const existing = store.findByPane(paneId)[0]
+  if (existing) return Promise.resolve(existing.id)
+  return new Promise((resolve) => {
+    const unsubscribe = store.onChange((session) => {
+      if (session.paneId !== paneId) return
+      clearTimeout(timer)
+      unsubscribe()
+      resolve(session.id)
+    })
+    const timer = setTimeout(() => {
+      unsubscribe()
+      resolve(null)
+    }, timeoutMs)
+  })
+}
+
 export function registerLifecycleFeature(
   ctx: DaemonContext,
   store: SessionStore,
@@ -32,6 +54,7 @@ export function registerLifecycleFeature(
     (dir) => checkouts.resolve(dir, { fresh: true }),
     undefined,
     START_SETTLE_MS,
+    (paneId, timeoutMs) => waitForPaneSession(store, paneId, timeoutMs),
   )
   const closer = new CloseService({
     store,
@@ -56,10 +79,16 @@ export function registerLifecycleFeature(
         ...(msg.model ? { model: msg.model } : {}),
       })
       ctx.logger.info(
-        { profileId: msg.profileId, paneId: data.paneId, worktree, model: msg.model ?? null },
+        {
+          profileId: msg.profileId,
+          paneId: data.paneId,
+          sessionId: data.sessionId,
+          worktree,
+          model: msg.model ?? null,
+        },
         'session started',
       )
-      return { type: 'ack', data }
+      return { type: 'session.started', paneId: data.paneId, sessionId: data.sessionId }
     } catch (error) {
       const code = error instanceof DaemonError ? error.code : 'internal'
       const reason = error instanceof Error ? error.message : String(error)

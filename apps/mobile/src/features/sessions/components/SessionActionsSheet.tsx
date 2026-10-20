@@ -10,6 +10,8 @@ import {
   PinOff,
   Play,
   Power,
+  Radio,
+  RadioOff,
 } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 import { Modal, Pressable, View } from 'react-native'
@@ -29,6 +31,8 @@ const ICONS: Record<SessionAction, LucideIcon> = {
   cleanup: FolderGit2,
   copyPath: Copy,
   hide: EyeOff,
+  followLive: Radio,
+  unfollowLive: RadioOff,
 }
 
 /** Bottom sheet with a session's actions (long press or "More" on the list). */

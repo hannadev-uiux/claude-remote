@@ -9,6 +9,7 @@ import {
   DirectoryItemSchema,
   ErrorCodeSchema,
   FileItemSchema,
+  MachinePermissionSchema,
   ModelInfoSchema,
   MuteStateSchema,
   PermissionModeSchema,
@@ -46,6 +47,15 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     push: z.object({ mode: PushModeSchema }).optional(),
     /** Present when the daemon accepts `daemon.update.*` (absent in older daemons). */
     update: z.object({ channel: DaemonUpdateChannelSchema }).optional(),
+    /** Present when the daemon accepts `live.follow` and the other follow messages. */
+    live: z.object({ follow: z.boolean() }).optional(),
+  }),
+  /** Reply to the follow messages: what this phone follows. */
+  z.object({
+    type: z.literal('live.followed'),
+    replyTo,
+    sessionIds: z.array(z.string()),
+    autoFollowProfiles: z.array(z.string()),
   }),
   z.object({ type: z.literal('pong'), replyTo }),
   z.object({ type: z.literal('ack'), replyTo, data: z.record(z.string(), z.unknown()).optional() }),
@@ -53,6 +63,13 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sessions.snapshot'), replyTo, sessions: z.array(SessionSchema) }),
   z.object({ type: z.literal('session.updated'), session: SessionSchema }),
   z.object({ type: z.literal('session.removed'), sessionId: z.string() }),
+  /** Reply to `session.start`; `sessionId` is `null` until the pane's `SessionStart` hook registers it. */
+  z.object({
+    type: z.literal('session.started'),
+    replyTo,
+    paneId: z.string(),
+    sessionId: z.string().nullable(),
+  }),
   z.object({
     type: z.literal('session.state'),
     sessionId: z.string(),
@@ -157,6 +174,12 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('push.testResult'), replyTo, result: PushTestResultSchema }),
   /** Usage limits of a profile's account; sent when they change and to every client that connects. */
   z.object({ type: z.literal('limits.updated'), limits: AccountLimitsSchema }),
+  /** Reply to `machine.permissions`: never folder contents, only per-row/per-folder status. */
+  z.object({
+    type: z.literal('machine.permissions.results'),
+    replyTo,
+    permissions: z.array(MachinePermissionSchema),
+  }),
 ])
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>

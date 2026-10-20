@@ -2,15 +2,29 @@ import type { Session } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import * as Clipboard from 'expo-clipboard'
 import { router } from 'expo-router'
-import { Bell, BellOff, Ellipsis, EyeOff, type LucideIcon, Pin, PinOff, Power } from 'lucide-react-native'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Bell,
+  BellOff,
+  Ellipsis,
+  EyeOff,
+  type LucideIcon,
+  Pin,
+  PinOff,
+  Power,
+  Radio,
+  RadioOff,
+} from 'lucide-react-native'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, RefreshControl, ScrollView, TextInput, View } from 'react-native'
-import { addListener, constants } from 'react-native-key-command'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
+import { keys, useKeyCommand } from '@/core/keyboard/key-commands'
 import { makeStyles, space, useTheme } from '@/core/theme'
 import { Button, Chip, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
+import { useLiveFollowStore } from '../live-status/follow-store'
+import { useLiveStatusSettings } from '../live-status/settings-store'
+import { followSession, unfollowSession } from '../live-status/use-live-follow'
 import { setMuted, useMuteStore } from '../mute/store'
 import { WaitingStrip } from '../permissions/components/WaitingStrip'
 import { NestedSubagents } from '../subagents/SubagentList'
@@ -32,7 +46,7 @@ import { refreshSessions, useSessionsStore } from './store'
 type Props = {
   pendingBySession?: Record<string, number>
   selectedSessionId?: string | null
-  /** Arrow keys + Enter navigate the list — only makes sense when shown as the master pane. */
+  /** Arrow keys + Enter navigate the list: only while it is on screen (master pane, or the phone's visible list). */
   interactive?: boolean
   /** Compact width only: floating action button over the list instead of the header's icon. */
   fab?: boolean
@@ -52,6 +66,8 @@ const SWIPE_LOOK: Record<SwipeKey, { icon: LucideIcon; tone: SwipeTone }> = {
   resume: { icon: Power, tone: 'muted' },
   cleanup: { icon: Power, tone: 'muted' },
   copyPath: { icon: Power, tone: 'muted' },
+  followLive: { icon: Radio, tone: 'accent' },
+  unfollowLive: { icon: RadioOff, tone: 'accent' },
 }
 
 export function SessionsScreen({
@@ -97,29 +113,25 @@ export function SessionsScreen({
   const keyboardCursorRef = useRef(keyboardCursor)
   keyboardCursorRef.current = keyboardCursor
 
-  useEffect(() => {
-    if (!interactive) return
-    const unsubscribers = [
-      addListener({ input: constants.keyInputDownArrow }, () => {
-        if (TextInput.State.currentlyFocusedInput()) return
-        setKeyboardCursor(moveCursor(sessionIdsRef.current, keyboardCursorRef.current, 1))
-      }),
-      addListener({ input: constants.keyInputUpArrow }, () => {
-        if (TextInput.State.currentlyFocusedInput()) return
-        setKeyboardCursor(moveCursor(sessionIdsRef.current, keyboardCursorRef.current, -1))
-      }),
-      addListener({ input: constants.keyInputEnter }, () => {
-        if (TextInput.State.currentlyFocusedInput()) return
-        const id = keyboardCursorRef.current
-        if (id) router.push({ pathname: '/session/[id]', params: { id } })
-      }),
-    ]
-    return () => {
-      unsubscribers.forEach((unsubscribe) => {
-        unsubscribe()
-      })
-    }
-  }, [interactive])
+  const moveKeyboardCursor = (delta: 1 | -1) => {
+    if (TextInput.State.currentlyFocusedInput()) return false
+    const next = moveCursor(sessionIdsRef.current, keyboardCursorRef.current, delta)
+    setKeyboardCursor(next)
+    // Keep the ring in view; the row may be far from the visible part of a long list.
+    const index = next ? sessionIdsRef.current.indexOf(next) : -1
+    if (index !== -1) listRef.current?.scrollToIndex({ index, viewPosition: 0.5, animated: true })
+  }
+  useKeyCommand({ input: keys.keyInputDownArrow }, () => moveKeyboardCursor(1), interactive)
+  useKeyCommand({ input: keys.keyInputUpArrow }, () => moveKeyboardCursor(-1), interactive)
+  useKeyCommand(
+    { input: keys.keyInputEnter },
+    () => {
+      if (TextInput.State.currentlyFocusedInput()) return false
+      const id = keyboardCursorRef.current
+      if (id) router.push({ pathname: '/session/[id]', params: { id } })
+    },
+    interactive,
+  )
 
   const onRefresh = () => {
     if (client) void refreshSessions(client).catch(() => undefined)
@@ -128,6 +140,12 @@ export function SessionsScreen({
   const isMuted = (session: Session) =>
     muted.sessions.includes(session.id) || muted.profiles.includes(session.profileId)
   const isPinned = (session: Session) => prefs.pinned.includes(session.id)
+  // Follow needs a daemon that can follow, the live status on and a session that has not ended.
+  const followSupported = useLiveFollowStore((s) => s.supported)
+  const followed = useLiveFollowStore((s) => s.sessionIds)
+  const liveEnabled = useLiveStatusSettings((s) => s.enabled)
+  const liveFollow = (session: Session) =>
+    followSupported && liveEnabled && session.state !== 'ended' ? followed.includes(session.id) : null
   const fail = (error: unknown) => Alert.alert(t('sessionActions.failed'), errorMessage(error, t))
 
   const act = (session: Session, action: SwipeKey) => {
@@ -158,6 +176,12 @@ export function SessionsScreen({
         break
       case 'copyPath':
         void Clipboard.setStringAsync(session.cwd)
+        break
+      case 'followLive':
+        followSession(session.id).catch(fail)
+        break
+      case 'unfollowLive':
+        unfollowSession(session.id).catch(fail)
         break
       case 'more':
         break
@@ -228,7 +252,7 @@ export function SessionsScreen({
       <FlashList<Session>
         ref={listRef}
         data={items}
-        extraData={[muted, prefs]}
+        extraData={[muted, prefs, followed]}
         // On by default in FlashList 2: when a filter brings other sessions back, it kept the list
         // anchored to the last rows, with the rest above the viewport.
         maintainVisibleContentPosition={{ disabled: true }}
@@ -247,6 +271,7 @@ export function SessionsScreen({
                   profile={profilesById.get(session.profileId)}
                   muted={isMuted(session)}
                   pinned={isPinned(session)}
+                  following={liveFollow(session) === true}
                   pendingPermissions={pendingBySession[session.id] ?? 0}
                   sharedCheckout={sharedCheckout[session.id] ?? 0}
                   selected={session.id === selectedSessionId}
@@ -294,7 +319,15 @@ export function SessionsScreen({
         profile={actionsFor ? profilesById.get(actionsFor.profileId) : undefined}
         items={
           actionsFor
-            ? sessionActions(actionsFor, { muted: isMuted(actionsFor), pinned: isPinned(actionsFor) }, t)
+            ? sessionActions(
+                actionsFor,
+                {
+                  muted: isMuted(actionsFor),
+                  pinned: isPinned(actionsFor),
+                  liveFollow: liveFollow(actionsFor),
+                },
+                t,
+              )
             : []
         }
         onSelect={(action) => {

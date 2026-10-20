@@ -364,6 +364,44 @@ export const LiveStatusPropsSchema = z.object({
 })
 export type LiveStatusProps = z.infer<typeof LiveStatusPropsSchema>
 
+/**
+ * How the daemon reaches one phone with the live status of the sessions it follows: the FCM token
+ * (and its relay grant), and on iOS 17.2+ the push-to-start token with the relay grant that seals it.
+ */
+export const LiveFollowDeviceSchema = z.object({
+  platform: DevicePlatformSchema,
+  fcmToken: z.string().min(1),
+  relay: PushRelaySchema.optional(),
+  /** iOS push-to-start token (hex): lets the daemon start a Live Activity while the app is closed. */
+  startToken: z.string().min(1).optional(),
+  /** Relay grant sealing `startToken`, for daemons without a service account. */
+  startRelay: PushRelaySchema.optional(),
+  palette: LivePaletteSchema.optional(),
+  /** Android: the app draws the live status itself from data messages. */
+  androidDataMessages: z.boolean().optional(),
+})
+export type LiveFollowDevice = z.infer<typeof LiveFollowDeviceSchema>
+
+/**
+ * Android live status sent as an FCM data message (`data.live`, JSON) to apps that draw the
+ * notification themselves: `end` leaves a notification that can be swiped away.
+ */
+export const LiveDataMessageSchema = z.object({
+  event: z.enum(['update', 'end']),
+  props: LiveStatusPropsSchema,
+})
+export type LiveDataMessage = z.infer<typeof LiveDataMessageSchema>
+
+/**
+ * Title and body of the Android live status notification: "<session> · <state>" and the state line
+ * with the glyph row (oldest → newest). The same text whether the system or the app draws it.
+ */
+export function liveNotificationText(props: LiveStatusProps): { title: string; body: string } {
+  const glyphs = [...props.glyphs].reverse().join(' ')
+  const details = [props.step, props.tools, props.tasks, glyphs].filter(Boolean).join(' · ')
+  return { title: `${props.session || props.title} · ${props.status}`, body: details || props.status }
+}
+
 export const QuestionKindSchema = z.enum(['choice', 'text', 'number'])
 export type QuestionKind = z.infer<typeof QuestionKindSchema>
 
@@ -575,3 +613,32 @@ export const DaemonUpdateInfoSchema = z.object({
   run: DaemonUpdateRunSchema.nullable(),
 })
 export type DaemonUpdateInfo = z.infer<typeof DaemonUpdateInfoSchema>
+
+/** A system permission's status, shared by the phone side and the computer side of the Permissions screen. */
+export const PermissionStatusSchema = z.enum(['allowed', 'denied', 'not_asked', 'limited', 'not_available'])
+export type PermissionStatus = z.infer<typeof PermissionStatusSchema>
+
+/** Computer-side rows reported by `machine.permissions`. */
+export const MachinePermissionIdSchema = z.enum([
+  'folderAccess',
+  'fullDiskAccess',
+  'accessibility',
+  'desktopNotifications',
+  'keychain',
+])
+export type MachinePermissionId = z.infer<typeof MachinePermissionIdSchema>
+
+export const MachinePermissionEntrySchema = z.object({ path: z.string(), status: PermissionStatusSchema })
+export type MachinePermissionEntry = z.infer<typeof MachinePermissionEntrySchema>
+
+/** `entries` is only present on `folderAccess`: one per folder the daemon checked. */
+export const MachinePermissionSchema = z.object({
+  id: MachinePermissionIdSchema,
+  status: PermissionStatusSchema,
+  entries: z.array(MachinePermissionEntrySchema).optional(),
+})
+export type MachinePermission = z.infer<typeof MachinePermissionSchema>
+
+/** `x-apple.systempreferences:` panes `machine.openSettingsPane` can open on the computer. */
+export const SettingsPaneSchema = z.enum(['fullDiskAccess', 'accessibility'])
+export type SettingsPane = z.infer<typeof SettingsPaneSchema>

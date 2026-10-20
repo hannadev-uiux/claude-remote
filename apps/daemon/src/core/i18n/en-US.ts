@@ -88,6 +88,8 @@ export const enUS = {
       providerKey: (id: string, provider: string) => `${provider} key for profile ${id}`,
       runProviderKey: (id: string) => `run \`remote-harness provider key ${id}\``,
       codexHooks: (id: string, path: string) => `Codex hooks for profile ${id} (${path})`,
+      codexAccountWithoutProfile: (dir: string) =>
+        `Codex account found at ${dir} without a profile. Run \`remote-harness setup\` to add it.`,
       runInstall: 'run `remote-harness install`',
       service: (name: string, detail: string) => `background service ${name} (${detail})`,
       serviceHint: 'optional: `remote-harness service install`',
@@ -95,8 +97,13 @@ export const enUS = {
       launcherScript: 'folder access prompts name "node" (no compiled launcher)',
       launcherHint:
         'install the Command Line Tools (`xcode-select --install`), then run `remote-harness service install`',
-      fullDiskAccess:
-        'tip: to avoid one prompt per folder, add "Remote Harness" under System Settings → Privacy & Security → Full Disk Access',
+      fullDiskAccess: 'Full Disk Access',
+      fullDiskAccessHint:
+        'to avoid one prompt per folder, add "Remote Harness" under System Settings → Privacy & Security → Full Disk Access',
+      accessibility: 'Accessibility / Automation',
+      accessibilityHint: 'allow "Remote Harness" under System Settings → Privacy & Security → Automation',
+      keychain: 'Keychain access',
+      keychainHint: 'the token store could not read back the pairing token it just wrote',
       linger: 'lingering (the service keeps running after logout)',
       lingerHint: 'run `loginctl enable-linger $USER`',
       keepAwake: (mode: string, state: string) => `keep awake: ${mode} (${state})`,
@@ -335,6 +342,37 @@ export const enUS = {
       addAnyway: "Add it anyway (I'll log in later through the alias)",
       giveUp: 'Give up on this account',
     },
+    provider: {
+      add: (provider: string) => `Add an ${provider} profile`,
+      addDescription: (provider: string) =>
+        `Claude Code routed through ${provider}, paid with your ${provider} key (no Anthropic login)`,
+      title: (provider: string) => `\n  Profiles routed through ${provider}:`,
+      manage: (id: string, provider: string, key: string) => `${id} · via ${provider} · ${key}`,
+      keyStored: 'key stored',
+      keyMissing: 'no key stored',
+      keep: 'Keep it',
+      replaceKey: 'Replace the key',
+      remove: 'Remove the profile',
+      removeDescription: 'Removes its launcher, hooks and stored key; the folder stays',
+      folder: 'Folder of the profile (its own CLAUDE_CONFIG_DIR):',
+      model: "Default model (optional, e.g. anthropic/claude-sonnet-5.5; empty = the gateway's default):",
+      key: (provider: string) => `${provider} API key (hidden; empty = store it later):`,
+      checking: (provider: string) => `Checking the key with ${provider}…`,
+      accepted: 'Key accepted',
+      acceptedCredits: (left: string) => `Key accepted · ${left} in credits left`,
+      rejected: (provider: string) => `${provider} rejected this key.`,
+      unchecked: (provider: string, reason: string) =>
+        `Could not check the key with ${provider} (${reason}); it will be stored anyway.`,
+      whatNow: 'What now?',
+      retry: 'Type it again',
+      keepAnyway: 'Store it anyway',
+      skip: 'Skip it (store it later)',
+      later: (id: string) => `No key for now. Later: remote-harness provider key ${id}`,
+      keySaved: (id: string, store: string) => `key of ${id} stored ${store}`,
+      keyRemoved: (id: string) => `key of ${id} removed from the secret store`,
+      keyFailed: (id: string, error: string) => `could not store the key of ${id}: ${error}`,
+      via: (provider: string) => `via ${provider}`,
+    },
   },
   /** Windows (WSL2) texts: CLI, doctor and setup. */
   wsl: {
@@ -477,7 +515,7 @@ export const enUS = {
       allow: 'Allow',
       always: 'Always allow',
       deny: 'Deny',
-      focus: 'Focus in tmux',
+      focus: 'Open in terminal (tmux)',
       close: 'Close session',
       sessions: (total: number, running: number) =>
         running > 0 ? `Sessions · ${total} · ${running} running` : `Sessions · ${total}`,
@@ -494,6 +532,7 @@ export const enUS = {
   },
   push: {
     sessionDone: 'Session finished',
+    sessionWorking: 'Session working',
     sessionWaiting: 'Session waiting for you',
     permissionPending: 'Permission pending',
     questionPending: 'The agent is waiting for your answer',

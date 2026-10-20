@@ -4,6 +4,9 @@ import { dirname } from 'node:path'
 import type { Executor } from './exec.ts'
 import type { Platform } from './platform.ts'
 
+/** One process to run; built by pure planning code, only executed here. */
+export type ExecStep = { file: string; args: string[] }
+
 /** Native notifications and the few desktop actions of the tray. No-ops where unsupported. */
 export interface Desktop {
   notify(title: string, body: string): Promise<void>
@@ -11,6 +14,13 @@ export interface Desktop {
   open(path: string): Promise<void>
   /** Runs a shell command in a new terminal window. */
   runInTerminal(command: string): Promise<void>
+  /**
+   * Names of running GUI apps (macOS `System Events` process list), used to pick which
+   * terminal app to drive; `[]` on platforms without that concept.
+   */
+  listRunningApps(): Promise<string[]>
+  /** Runs each step in order; a failing step throws (unlike the other methods here, which don't). */
+  runSteps(steps: readonly ExecStep[]): Promise<void>
 }
 
 function appleScriptString(value: string): string {
@@ -21,6 +31,15 @@ export function createDesktop(exec: Executor, platform: Platform, o: { wsl: bool
   const ignore = async (file: string, args: string[]) => {
     await exec(file, args).catch(() => undefined)
   }
+  const runSteps = async (steps: readonly ExecStep[]) => {
+    for (const step of steps) {
+      const result = await exec(step.file, step.args)
+      if (result.exitCode !== 0) {
+        throw new Error(result.stderr.trim() || `${step.file} ${step.args.join(' ')} failed`)
+      }
+    }
+  }
+  const noRunningApps = async () => []
   if (platform === 'darwin') {
     return {
       notify: (title, body) =>
@@ -36,17 +55,37 @@ export function createDesktop(exec: Executor, platform: Platform, o: { wsl: bool
           '-e',
           'tell application "Terminal" to activate',
         ]),
+      listRunningApps: async () => {
+        const result = await exec('osascript', [
+          '-e',
+          'tell application "System Events" to get name of every process whose background only is false',
+        ])
+        if (result.exitCode !== 0) return []
+        return result.stdout
+          .split(',')
+          .map((name) => name.trim())
+          .filter(Boolean)
+      },
+      runSteps,
     }
   }
   if (o.wsl) {
     // No Linux desktop inside WSL: the daemon stays headless and only logs.
-    return { notify: async () => {}, open: async () => {}, runInTerminal: async () => {} }
+    return {
+      notify: async () => {},
+      open: async () => {},
+      runInTerminal: async () => {},
+      listRunningApps: noRunningApps,
+      runSteps,
+    }
   }
   return {
     notify: (title, body) => ignore('notify-send', ['-a', 'Remote Harness', title, body]),
     open: (path) => ignore('xdg-open', [path]),
     runInTerminal: (command) =>
       ignore('x-terminal-emulator', ['-e', 'sh', '-c', `${command}; exec "$SHELL"`]),
+    listRunningApps: noRunningApps,
+    runSteps,
   }
 }
 

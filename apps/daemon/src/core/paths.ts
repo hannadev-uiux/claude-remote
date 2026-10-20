@@ -51,6 +51,7 @@ export const paths = {
   rulesLog: () => join(dataHome(), 'rules-log.jsonl'),
   devices: () => join(dataHome(), 'devices.json'),
   mute: () => join(dataHome(), 'mute.json'),
+  liveFollows: () => join(dataHome(), 'live-follows.json'),
   queue: () => join(dataHome(), 'queue.json'),
   /** A profile's provider key when the secret store is the file one (0600, in a 0700 folder). */
   providerKey: (profileId: string) => join(dataHome(), 'secrets', `provider-${profileId}`),

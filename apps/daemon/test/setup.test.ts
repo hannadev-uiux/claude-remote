@@ -5,11 +5,14 @@ import { describe, expect, test } from 'vitest'
 import { messagesFor } from '../src/core/i18n/index.ts'
 import {
   detectConfigDirs,
+  isCodexDir,
   mergeConfig,
   profilesToRemove,
   readLogin,
+  sameDir,
   suggestNewConfigDir,
   suggestProfile,
+  suggestProviderProfile,
   tildify,
   validateAlias,
   validateNewConfigDir,
@@ -36,6 +39,18 @@ describe('setup profiles', () => {
     expect(await detectConfigDirs(join(dir, 'missing'))).toEqual([])
   })
 
+  test('isCodexDir matches ~/.codex and its suffixed variants only', () => {
+    expect(isCodexDir('~/.codex')).toBe(true)
+    expect(isCodexDir('~/.codex-work')).toBe(true)
+    expect(isCodexDir('~/.claude')).toBe(false)
+    expect(isCodexDir('~/.codex-remote')).toBe(true)
+  })
+
+  test('sameDir compares expanded, trailing-slash-insensitive paths', () => {
+    expect(sameDir('~/.codex', '~/.codex/')).toBe(true)
+    expect(sameDir('~/.codex', '~/.claude')).toBe(false)
+  })
+
   test('suggests alias and name, keeping what is already configured', () => {
     expect(suggestProfile('~/.claude', [], 0, pt)).toMatchObject({
       id: 'claudin',
@@ -50,6 +65,19 @@ describe('setup profiles', () => {
     const existing = [{ ...profile('pessoal', '~/.claude/'), name: 'Eu' }]
     expect(suggestProfile('~/.claude', existing, 0, pt)).toMatchObject({ id: 'pessoal', name: 'Eu' })
     expect(suggestProfile('~/.claude', [], 0, en)).toMatchObject({ id: 'claudin', name: 'Personal' })
+  })
+
+  test('suggests a provider profile with a free alias and folder', () => {
+    expect(suggestProviderProfile('openrouter', ['claudin'], ['~/.claude'], 1)).toEqual({
+      id: 'openrouter',
+      name: 'OpenRouter',
+      configDir: '~/.claude-openrouter',
+      color: '#61AFEF',
+      provider: { kind: 'openrouter' },
+    })
+    expect(
+      suggestProviderProfile('openrouter', ['openrouter', 'openrouter-2'], ['~/.claude-openrouter/'], 0),
+    ).toMatchObject({ id: 'openrouter-3', configDir: '~/.claude-openrouter-2' })
   })
 
   test('validates aliases', () => {

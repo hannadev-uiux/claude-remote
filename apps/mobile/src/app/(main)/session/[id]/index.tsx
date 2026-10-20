@@ -1,5 +1,5 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { ChevronDown, EllipsisVertical, PanelRight, Terminal } from 'lucide-react-native'
+import { router, Stack, useIsFocused, useLocalSearchParams } from 'expo-router'
+import { ChevronDown, EllipsisVertical, PanelRight, Radio, Terminal } from 'lucide-react-native'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Keyboard, Pressable, StyleSheet, View } from 'react-native'
@@ -15,6 +15,9 @@ import { type SessionMenuAction, sessionMenu } from '@/features/conversation/ses
 import { promptErrorMessage, usePrompt } from '@/features/conversation/use-prompt'
 import { toggleInspector } from '@/features/inspector/store'
 import { ResumeBanner } from '@/features/lifecycle/ResumeBanner'
+import { useLiveFollowStore } from '@/features/live-status/follow-store'
+import { useLiveStatusSettings } from '@/features/live-status/settings-store'
+import { followSession, unfollowSession } from '@/features/live-status/use-live-follow'
 import { ApprovalPolicyChip, ModeSelector } from '@/features/mode/ModeSelector'
 import { hasSwitchableModes } from '@/features/mode/modes'
 import { SessionMuteButton } from '@/features/mute/MuteControls'
@@ -28,6 +31,7 @@ import { CloseSessionSheet } from '@/features/sessions/components/CloseSessionSh
 import { SessionDetailsSheet } from '@/features/sessions/components/SessionDetailsSheet'
 import { StateBadge } from '@/features/sessions/components/StateBadge'
 import { useSessionsStore } from '@/features/sessions/store'
+import { useShortcutRequest } from '@/features/shortcuts/use-shortcut-request'
 import { SubagentsSheet } from '@/features/subagents/SubagentsSheet'
 import { subagentCounts } from '@/features/subagents/sort'
 import { ActionMenu, AgentBadge, headerActions, IconButton, ProfileTag, Text } from '@/ui'
@@ -36,7 +40,7 @@ export default function SessionRoute() {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useStyles()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, autofocus } = useLocalSearchParams<{ id: string; autofocus?: string }>()
   const session = useSessionsStore((s) => s.sessions[id])
   const profile = useConnectionStore((s) => s.hello?.profiles.find((p) => p.id === session?.profileId))
   const provider = providerName(profile)
@@ -45,11 +49,19 @@ export default function SessionRoute() {
   const controllable = session?.controllable ?? false
   const keyBarVisible = useKeyBarStore((s) => s.visible)
   const following = useFollowStore((s) => s.follow)
+  // Live status follow: offered when the daemon can follow and the live status is on.
+  const liveFollowed = useLiveFollowStore((s) => s.sessionIds.includes(id))
+  const followSupported = useLiveFollowStore((s) => s.supported)
+  const liveEnabled = useLiveStatusSettings((s) => s.enabled)
+  const liveFollow = followSupported && liveEnabled && session?.state !== 'ended' ? liveFollowed : null
   const [historyOpen, setHistoryOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
   const [subagentsOpen, setSubagentsOpen] = useState(false)
   const [modelOpen, setModelOpen] = useState(false)
+  // ⌘⇧O opens More options of the session on screen (others stay mounted under it on phones).
+  const [menuRequests, setMenuRequests] = useState(0)
+  useShortcutRequest('sessionMenu', () => setMenuRequests((n) => n + 1), useIsFocused())
   const subagentStats = subagentCounts(session?.subagents ?? [])
   const agent = session ? sessionAgent(session) : null
   // Two-column tablets reach the inspector (terminal, subagents, details) from the header.
@@ -61,7 +73,14 @@ export default function SessionRoute() {
     setDetailsOpen(true)
   }
   const menu = sessionMenu(
-    { controllable, keyBarVisible, following, subagents: subagentStats, provider: provider !== null },
+    {
+      controllable,
+      keyBarVisible,
+      following,
+      subagents: subagentStats,
+      provider: provider !== null,
+      liveFollow,
+    },
     t,
   )
   // `/model <id>` goes through the same path as a typed slash command, delivered now.
@@ -84,6 +103,10 @@ export default function SessionRoute() {
     toggleKeyBar: () => void setKeyBarVisible(!keyBarVisible),
     history: () => setHistoryOpen(true),
     toggleFollow: () => void setFollow(!following),
+    toggleLiveFollow: () => {
+      const change = liveFollowed ? unfollowSession(id) : followSession(id)
+      change.catch((error: unknown) => Alert.alert(t('sessionActions.failed'), promptErrorMessage(error, t)))
+    },
     close: () => {
       Keyboard.dismiss()
       setCloseOpen(true)
@@ -113,6 +136,7 @@ export default function SessionRoute() {
                   items={menu.items.map((item) => ({ ...item, onPress: actions[item.key] }))}
                   disabledReason={menu.disabledReason}
                   attention={subagentStats.running > 0}
+                  openRequests={menuRequests}
                 />
               </View>
             ) : null,
@@ -127,6 +151,9 @@ export default function SessionRoute() {
                 onPress={openDetails}
                 style={({ pressed }) => [styles.titleButton, pressed && styles.pressed]}
               >
+                {liveFollow ? (
+                  <Radio size={13} color={colors.accentText} accessibilityLabel={t('liveFollow.following')} />
+                ) : null}
                 <Text weight="bold" numberOfLines={1} style={styles.titleText}>
                   {title}
                 </Text>
@@ -218,7 +245,14 @@ export default function SessionRoute() {
             </>
           ) : null
         }
-        composer={<SmartComposer sessionId={id} prompt={prompt} disabled={!controllable} />}
+        composer={
+          <SmartComposer
+            sessionId={id}
+            prompt={prompt}
+            disabled={!controllable}
+            autoFocus={autofocus === '1'}
+          />
+        }
       />
     </>
   )

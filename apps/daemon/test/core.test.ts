@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test, vi } from 'vitest'
-import { ConfigError, loadConfig, resolveProfiles } from '../src/core/config.ts'
+import { ConfigError, loadConfig, profilesWithResolvableAgent, resolveProfiles } from '../src/core/config.ts'
 import { EventBus } from '../src/core/event-bus.ts'
 import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
@@ -71,6 +71,23 @@ describe('config', () => {
   })
 })
 
+describe('profilesWithResolvableAgent', () => {
+  test('keeps a profile whose agent binary resolves and drops the one that does not', async () => {
+    const profiles = [
+      { id: 'claudin', name: 'Claude', configDir: '/c', color: '#fff' },
+      { id: 'cdx', name: 'Codex', configDir: '/x', color: '#fff', agent: 'codex' as const },
+    ]
+    const exec = fakeExecutor((call) => ({ exitCode: call.args[0] === 'codex' ? 1 : 0 }))
+    const warn = vi.spyOn(silentLogger, 'warn')
+    const available = await profilesWithResolvableAgent(profiles, exec, silentLogger)
+    expect(available.map((p) => p.id)).toEqual(['claudin'])
+    expect(warn).toHaveBeenCalledWith(
+      { profile: 'cdx', agent: 'codex', command: 'codex' },
+      'agent binary not on PATH, not offering this profile to the app',
+    )
+  })
+})
+
 describe('token stores', () => {
   test('keychain store writes through security -i stdin, never in the arguments', async () => {
     let stored: string | null = null
@@ -115,7 +132,7 @@ describe('secret-tool token store', () => {
     const token = await ensureToken(new SecretToolTokenStore(exec))
     expect(exec.calls.map((c) => [c.file, ...c.args].join(' '))).toEqual([
       'secret-tool lookup service claude-remote account pairing-token',
-      'secret-tool store --label=Claude Remote pairing token service claude-remote account pairing-token',
+      'secret-tool store --label=Remote Harness pairing token service claude-remote account pairing-token',
     ])
     expect(exec.calls[1]?.options?.input).toBe(token)
     for (const call of exec.calls) expect(call.args).not.toContain(token)

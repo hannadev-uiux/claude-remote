@@ -14,6 +14,7 @@ import { relayFor } from '../push/push-relay'
 import { respondInBackground } from '../push/respond-in-background'
 import { useSessionsStore } from '../sessions/store'
 import { loadActivityMap, saveActivityMap } from './activity-store'
+import { followsLoaded, useLiveFollowStore } from './follow-store'
 import {
   type ActivityMap,
   DONE_DISMISS_MS,
@@ -27,6 +28,9 @@ import {
 } from './logic'
 import { SessionActivity } from './SessionActivity'
 import { useLiveStatusSettings } from './settings-store'
+
+/** How long matching the activities waits for the follows (an activity started by push needs them). */
+const FOLLOWS_WAIT_MS = 3_000
 
 type Tracked = LocalLiveInfo & {
   /** iOS Live Activity; null on Android, where the daemon owns the notification. */
@@ -42,6 +46,15 @@ type Tracked = LocalLiveInfo & {
   doneAt: number | null
   /** Ends the activity when the done window passes while the app is in front. */
   endTimer: ReturnType<typeof setTimeout> | null
+}
+
+/** The deep link an activity was started with; builds without the `expo-widgets` patch have none. */
+function activityUrl(instance: LiveActivity<LiveStatusProps>): string | null {
+  try {
+    return instance.getUrl()
+  } catch {
+    return null
+  }
 }
 
 /** The activities iOS still has for this app (none on Android, or with Live Activities off). */
@@ -114,6 +127,8 @@ export function useLiveStatus() {
           palette,
           ...(activityToken ? { activityToken } : {}),
           ...(relay ? { relay } : {}),
+          // The app draws the Android notification itself, with Allow / Deny (see push/background.ts).
+          ...(platform === 'android' ? { androidDataMessages: true } : {}),
         })
         const entry = tracked.get(sessionId)
         // Only an activity token lets the daemon update an iOS activity.
@@ -234,6 +249,7 @@ export function useLiveStatus() {
     const reconcile = async () => {
       if (Platform.OS !== 'ios') return
       const saved = await loadActivityMap()
+      await followsLoaded(FOLLOWS_WAIT_MS)
       if (disposed) return
       const record: ActivityMap = { ...saved }
       for (const [sessionId, entry] of tracked) {
@@ -244,7 +260,10 @@ export function useLiveStatus() {
       const { sessions } = useSessionsStore.getState()
       const { enabled } = useLiveStatusSettings.getState()
       const muted = useMuteStore.getState()
-      const result = reconcileActivities(record, [...byId.keys()], sessions, Date.now())
+      // Activities no record names may be ones the daemon started by push for a followed session.
+      const urls = Object.fromEntries(alive.map((instance) => [instance.getId(), activityUrl(instance)]))
+      const followed = new Set(useLiveFollowStore.getState().sessionIds)
+      const result = reconcileActivities(record, [...byId.keys()], sessions, Date.now(), { urls, followed })
       for (const id of result.end)
         void byId
           .get(id)
@@ -349,6 +368,19 @@ export function useLiveStatus() {
       sync(sessions, sessions)
     }
     const offMute = useMuteStore.subscribe(resync)
+    // Following a session that is already working starts its live status right away.
+    const offFollow = useLiveFollowStore.subscribe((state, prev) => {
+      if (!ready || AppState.currentState !== 'active') return
+      const { sessions } = useSessionsStore.getState()
+      const { enabled } = useLiveStatusSettings.getState()
+      const muted = useMuteStore.getState()
+      for (const id of state.sessionIds) {
+        const session = sessions[id]
+        if (prev.sessionIds.includes(id) || tracked.has(id) || !session || !enabled) continue
+        if (isMutedSession(session, muted)) continue
+        if (session.state === 'running' || session.state === 'waiting') start(session)
+      }
+    })
     const offSettings = useLiveStatusSettings.subscribe(resync)
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active' && ready) void reconcile()
@@ -362,6 +394,7 @@ export function useLiveStatus() {
       disposed = true
       offSessions()
       offMute()
+      offFollow()
       offSettings()
       appState.remove()
       for (const entry of tracked.values()) {

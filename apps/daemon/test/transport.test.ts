@@ -1,5 +1,5 @@
 import { PROTOCOL_VERSION, type ServerMessage } from '@remote-harness/protocol'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import WebSocket from 'ws'
 import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
@@ -78,6 +78,24 @@ describe('websocket handshake', () => {
     )
     expect(await client.next()).toMatchObject({ type: 'error', code: 'unauthorized' })
     expect(await client.closed).toBe(4001)
+  })
+
+  test('logs and records a malformed message after auth, instead of swallowing it', async () => {
+    const { daemon, token } = await boot()
+    const client = await connect(daemon.wsPort)
+    client.ws.send(JSON.stringify({ type: 'auth', id: 'a1', token, protocolVersion: PROTOCOL_VERSION }))
+    await client.next()
+    const warn = vi.spyOn(silentLogger, 'warn')
+    client.ws.send(JSON.stringify({ type: 'session.input', id: 'm1' })) // missing required `sessionId`
+    expect(await client.next()).toMatchObject({ type: 'error', replyTo: 'm1', code: 'bad_request' })
+    expect(warn).toHaveBeenCalledWith({ type: 'session.input', code: 'bad_request' }, 'request rejected')
+    client.ws.send(JSON.stringify({ type: 'diagnostics.errors', id: 'd1' }))
+    expect(await client.next()).toMatchObject({
+      type: 'diagnostics.result',
+      replyTo: 'd1',
+      errors: [{ type: 'session.input', code: 'bad_request' }],
+    })
+    client.ws.close()
   })
 
   test('rejects messages before auth', async () => {

@@ -102,7 +102,7 @@ The app SHALL ship five palettes, each defining every semantic token and the 16 
 - **THEN** it uses `#D14F00`, not the `#FE640B` fill, and reads at 3:1 or better
 
 ### Requirement: Settings screen
-The settings screen SHALL be organized as: **Machine** (the connection pill; the machine name, the alias when set else the daemon's hostname, with an Edit action that saves or clears the alias; one line `host:port · remote-harness <daemon version> · protocol <n>` leaving unknown parts out; `Forget this machine`), **Appearance** (theme swatches), **Profiles** (one row per profile with the agent badge, the name in the profile color, the dashed `via <provider>` chip when the profile has a provider, and `<agent> · <config dir> · alias <id>`; tapping opens a details sheet with the agent, the alias, the config dir, the profile's notifications toggle and, for a profile with a provider, the provider, its default model and the credits left, or the hint to run `remote-harness provider key <id>` when no key is stored), **Notifications** (`Push notifications` toggle for this phone with the hint "Only this phone · never the conversation", showing the push status and test while on; `Live status` toggle; a `Muted` row with `N profiles · M sessions` that opens a sheet with the per-profile switches and the muted sessions, each unmutable), **Daemon** (the daemon version and update channel with a `main` / `development` selector, `Check for updates`, the available version, `Update the computer` after a confirmation that warns about a downgrade and about busy sessions, the run progress and its outcome; for a daemon without remote updates, the `remote-harness update` command), **Voice** (transcription language) and **App** (version, update and channel, `Check for updates`, `Documentation`, `Report a problem`). All texts MUST be translated.
+The settings screen SHALL be organized as: **Machine** (the connection pill; the machine name, the alias when set else the daemon's hostname, with an Edit action that saves or clears the alias; one line `host:port · remote-harness <daemon version> · protocol <n>` leaving unknown parts out; `Forget this machine`), **Appearance** (theme swatches), **Profiles** (one row per profile with the agent badge, the name in the profile color, the dashed `via <provider>` chip when the profile has a provider, and `<agent> · <config dir> · alias <id>`; tapping opens a details sheet with the agent, the alias, the config dir, the profile's notifications toggle and, for a profile with a provider, the provider, its default model and the credits left, or the hint to run `remote-harness provider key <id>` when no key is stored), **New session** (`Open the session after creating it` toggle, on by default, per device), **Keyboard** (`Return key sends` toggle, off by default, per device, with the hint that the on-screen keyboard then has no new line), **Notifications** (`Push notifications` toggle for this phone with the hint "Only this phone · never the conversation", showing the push status and test while on; `Live status` toggle; a `Muted` row with `N profiles · M sessions` that opens a sheet with the per-profile switches and the muted sessions, each unmutable), **Permissions** (opens the Permissions screen, which lists every system permission the app and the computer rely on, its status, why it's needed, and how to fix it), **Daemon** (the daemon version and update channel with a `main` / `development` selector, `Check for updates`, the available version, `Update the computer` after a confirmation that warns about a downgrade and about busy sessions, the run progress and its outcome; for a daemon without remote updates, the `remote-harness update` command), **Voice** (transcription language) and **App** (version, update and channel, `Check for updates`, `Documentation`, `Report a problem`). All texts MUST be translated.
 
 #### Scenario: Rename the machine
 - **WHEN** the user taps Edit on the Machine card, types "MacBook Pro" and saves
@@ -124,6 +124,18 @@ The settings screen SHALL be organized as: **Machine** (the connection pill; the
 - **WHEN** the daemon reports 0.13.0 available on `main` and the user confirms "Update the computer"
 - **THEN** the card shows fetching, building and restarting, reconnects and shows 0.13.0
 
+#### Scenario: Turn off auto-open
+- **WHEN** the user turns off "Open the session after creating it"
+- **THEN** the choice is kept on this device across restarts, and the next successful `Start session` returns to the session list instead of opening the new session
+
+#### Scenario: Open Permissions
+- **WHEN** the user taps the Permissions entry
+- **THEN** the Permissions screen opens, showing the "On this phone" and "On this computer" sections
+
+#### Scenario: Return key sends
+- **WHEN** the user turns on "Return key sends"
+- **THEN** the choice is kept on this device across restarts, and the composer's on-screen return key sends
+
 ### Requirement: Tablet layout
 The app SHALL lay itself out by window width (points on iOS, dp on Android): below 700 the phone layout (one pane; Split View one third and Slide Over included); from 700 to 1099 two columns, the session list (340 wide) beside the conversation, with the inspector opening as a side sheet from a header button; from 1100 three columns, the list, the conversation (content at most 760 wide, the permission card and the queue sharing that width) and the inspector (320 wide by default). In the two-column class in portrait, the list SHALL instead slide over the dimmed conversation from a ☰ header button, opening on its own while no session is open and closing when one is picked. The inspector SHALL have the tabs **Terminal** (the live mirror of the pane), **Subagents** (with the count in the tab, the same rows as the subagents sheet) and **Details** (the same rows as the session details sheet), SHALL be resizable between 280 and 420 by dragging its edge, and SHALL remember its tab and width while the app runs. All texts MUST be translated.
 
@@ -144,7 +156,11 @@ The app SHALL lay itself out by window width (points on iOS, dp on Android): bel
 - **THEN** the inspector is 420 wide, its maximum
 
 ### Requirement: Hardware keyboard shortcuts
-With a hardware keyboard, besides ⌘N (new session), ⌘, (settings) and ⌘⏎ (send now), the app SHALL offer: ⌘1 to ⌘9 to open the nth session of the list in its current order; ⌘K to focus the session search (returning to the list on phones); ⌘T to open the open session's terminal (the inspector's Terminal tab on tablets, the terminal screen on phones); ⌘. to send Esc to the open session; ⌘⇧M to cycle its permission mode through default, accept edits and plan (never auto, which needs its confirmation); and ⌘A / ⌘D to allow or deny the oldest pending tool permission of the open session. ⌘A and ⌘D MUST do nothing while a text field is focused.
+With a hardware keyboard, on every layout (phones and tablets, iOS and Android; on Android Ctrl stands for ⌘ and only shortcuts on letters, digits, arrows, Enter and Esc reach the app), besides ⌘N (new session), ⌘, (settings) and ⌘⏎ (send now), the app SHALL offer: ⌘1 to ⌘9 to open the nth session of the list in its current order; ⌘K or ⌘F to focus the session search (returning to the list on phones); ⌘T to open the open session's terminal (the inspector's Terminal tab on tablets, the terminal screen on phones); ⌘. to send Esc to the open session; ⌘⇧M to cycle its permission mode through default, accept edits and plan (never auto, which needs its confirmation); ⌘A / ⌘D to allow or deny the oldest pending tool permission of the open session; ⌘↑ / ⌘↓ (and ⌥⌘↑ / ⌥⌘↓) to open the previous / next session of the list from inside a session, without wrapping and keeping the list as the screen "back" returns to; ⌘⇧O to open the open session's More options menu; ⌘L to focus its message input; and ⌘/ to open a translated **Keyboard shortcuts** sheet listing all of them, closed by Esc or ⌘/ again. ⌘A, ⌘D, ⌘↑ and ⌘↓ MUST do nothing while a text field is focused.
+
+Esc SHALL go back: from a session to the list, from any other pushed screen one step back, and close the open sheet or menu first when there is one. While a text field is focused, Esc SHALL first close the composer's suggestions when they are open, else blur the field; the next Esc goes back. On the raw terminal screen Esc MUST NOT be taken (it belongs to the terminal); ⌘[ SHALL go back from any screen, the terminal included, even with a focused field.
+
+While the session list is the visible screen (the phone's list, or the tablet's sidebar), ↑ / ↓ SHALL move a visible focus ring between sessions, scrolling to keep it in view, and Enter SHALL open the selected session; these keys MUST do nothing while a text field is focused. In the More options menu drawn by the app (Android), ↑ / ↓ SHALL move between the enabled items, Enter SHALL choose and Esc SHALL close; the iOS system sheet keeps its own keyboard handling.
 
 #### Scenario: Open the third session
 - **WHEN** the user presses ⌘3 with five sessions listed
@@ -161,3 +177,68 @@ With a hardware keyboard, besides ⌘N (new session), ⌘, (settings) and ⌘⏎
 #### Scenario: Cycle the mode
 - **WHEN** the open session is in `acceptEdits` and the user presses ⌘⇧M
 - **THEN** the app sends `session.setMode` `plan`
+
+#### Scenario: Back to the list on a phone
+- **WHEN** a session is open on a phone, no field is focused and the user presses Esc
+- **THEN** the session list is shown
+
+#### Scenario: Esc in the composer
+- **WHEN** the composer is focused without suggestions and the user presses Esc twice
+- **THEN** the first Esc blurs the composer and the second returns to the list
+
+#### Scenario: Esc closes suggestions first
+- **WHEN** the composer shows the `@` file suggestions and the user presses Esc
+- **THEN** the suggestions close and the composer keeps its focus
+
+#### Scenario: Terminal keeps Esc
+- **WHEN** the raw terminal screen is open and the user presses Esc
+- **THEN** the app stays on the terminal; ⌘[ returns to the session
+
+#### Scenario: Arrows on a phone
+- **WHEN** the phone shows the list with three sessions, no field is focused and the user presses ↓, ↓, Enter
+- **THEN** the focus ring moves to the second session and Enter opens it
+
+#### Scenario: Next session
+- **WHEN** the second of three listed sessions is open, no field is focused and the user presses ⌘↓
+- **THEN** the third session opens in its place and Esc returns to the list
+
+#### Scenario: Last session
+- **WHEN** the last listed session is open and the user presses ⌘↓
+- **THEN** nothing changes
+
+#### Scenario: More options from the keyboard
+- **WHEN** a session is open and the user presses ⌘⇧O
+- **THEN** its More options menu opens
+
+#### Scenario: Focus the input
+- **WHEN** a session is open and the user presses ⌘L
+- **THEN** the message input is focused
+
+#### Scenario: Shortcuts sheet
+- **WHEN** the user presses ⌘/
+- **THEN** the Keyboard shortcuts sheet lists the shortcuts with translated labels, and Esc closes it
+
+### Requirement: Edge swipe for the tablet sidebar
+In the two-column class in portrait (overlay sidebar), a rightward swipe starting at the left edge of the window, below the header, SHALL open the session list. The list follows the finger and, on release, stays open past half its width or after a quick rightward flick; otherwise it slides back. With the list open, a leftward swipe on the dimmed area SHALL close it, following the finger, and a tap there SHALL still close it. Opening and closing SHALL slide, instantly when the system's reduced motion is on.
+
+The edge swipe SHALL only exist on the list and on a session's conversation, where ☰ replaces the back button; there, the stack's back swipe MUST be off in this layout. Deeper screens (terminal, subagent, settings) MUST keep their back swipe and get no edge swipe, and phones MUST NOT get it at all. Swipes on the list's rows MUST keep their swipe actions.
+
+#### Scenario: Open with the edge swipe
+- **WHEN** an iPad in portrait shows a session's conversation and the user drags from the left edge 250 points to the right and lifts the finger
+- **THEN** the list stays open over the dimmed conversation
+
+#### Scenario: Short drag
+- **WHEN** the user drags from the left edge 100 points slowly and lifts the finger
+- **THEN** the list slides back and stays closed
+
+#### Scenario: Close with a swipe
+- **WHEN** the list is open and the user swipes left on the dimmed conversation
+- **THEN** the list follows the finger and closes
+
+#### Scenario: Phone back gesture
+- **WHEN** the app runs on a phone and the user swipes from the left edge on a session
+- **THEN** the stack goes back as before
+
+#### Scenario: Reduced motion
+- **WHEN** reduced motion is on and the user taps ☰
+- **THEN** the list appears without the slide animation
