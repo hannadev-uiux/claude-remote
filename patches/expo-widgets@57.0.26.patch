@@ -1,0 +1,106 @@
+diff --git a/build/Widgets.d.ts b/build/Widgets.d.ts
+index d4b5aacee380c056855f68c5ca62c9af24304745..e3a9e65e8a1cf225dc2d6861bf9edf4a72840a08 100644
+--- a/build/Widgets.d.ts
++++ b/build/Widgets.d.ts
+@@ -56,6 +56,11 @@ export declare class LiveActivity<T extends object = object> {
+      * Returns `null` if push notifications are not enabled or the token is not yet available.
+      */
+     getPushToken(): Promise<string | null>;
++    /**
++     * Returns the deep link URL the Live Activity was started with (also for activities started by a
++     * push-to-start notification), or `null` when it has none.
++     */
++    getUrl(): string | null;
+     /**
+      * Adds a listener for push token update events on this Live Activity instance.
+      * The token can be used to send content updates to this specific activity via APNs.
+diff --git a/build/Widgets.js b/build/Widgets.js
+index 9099a1bb3c10eaddc41518ba5b82117284f82135..4d0d9a867c6a3cd5421a3b7a96389b26b685d5ec 100644
+--- a/build/Widgets.js
++++ b/build/Widgets.js
+@@ -84,6 +84,13 @@ export class LiveActivity {
+     getPushToken() {
+         return this.nativeLiveActivity.getPushToken();
+     }
++    /**
++     * Returns the deep link URL the Live Activity was started with (also for activities started by a
++     * push-to-start notification), or `null` when it has none.
++     */
++    getUrl() {
++        return this.nativeLiveActivity.getUrl?.() ?? null;
++    }
+     /**
+      * Adds a listener for push token update events on this Live Activity instance.
+      * The token can be used to send content updates to this specific activity via APNs.
+diff --git a/build/Widgets.types.d.ts b/build/Widgets.types.d.ts
+index 15e026868625ce20a3e359e5cc8e5c7e937c4650..c44769d8fd1b597ee573430d18867b9d900d70cb 100644
+--- a/build/Widgets.types.d.ts
++++ b/build/Widgets.types.d.ts
+@@ -269,5 +269,6 @@ export declare class NativeLiveActivity extends SharedObject<LiveActivityEvents>
+     update(props: string, staleDate?: number): Promise<void>;
+     end(dismissalPolicy?: string, afterDate?: number, state?: string, contentDate?: number): Promise<void>;
+     getPushToken(): Promise<string | null>;
++    getUrl?(): string | null;
+ }
+ //# sourceMappingURL=Widgets.types.d.ts.map
+\ No newline at end of file
+diff --git a/ios/LiveActivity.swift b/ios/LiveActivity.swift
+index 5f34eb2b67a0c2389c8ad8e09c71aa391a0c65ef..83fe5f8363cd94625d0a4068917814e62f05fb52 100644
+--- a/ios/LiveActivity.swift
++++ b/ios/LiveActivity.swift
+@@ -44,6 +44,11 @@ final class LiveActivity: SharedObject {
+     await activity.end(content, dismissalPolicy: dismissalPolicy?.toDismissalPolicy(date: afterDate) ?? .default, timestamp: contentDate)
+   }
+ 
++  func getUrl() -> String? {
++    guard #available(iOS 16.1, *) else { return nil }
++    return Activity<LiveActivityAttributes>.activities.first(where: { $0.id == id })?.attributes.url
++  }
++
+   func getPushToken() throws -> String? {
+     guard #available(iOS 16.1, *) else { throw LiveActivitiesNotSupportedException() }
+ 
+diff --git a/ios/WidgetsModule.swift b/ios/WidgetsModule.swift
+index b1b4295e22726e6fe501aa5e514b56061dea57a1..f5cfd7494b5cb7e65c18d68ce0913141f0e3bda1 100644
+--- a/ios/WidgetsModule.swift
++++ b/ios/WidgetsModule.swift
+@@ -111,6 +111,10 @@ public final class WidgetsModule: Module {
+       AsyncFunction("getPushToken") { (instance: LiveActivity) in
+         try instance.getPushToken()
+       }
++
++      Function("getUrl") { (instance: LiveActivity) in
++        instance.getUrl()
++      }
+     }
+   }
+ 
+diff --git a/src/Widgets.ts b/src/Widgets.ts
+index 51ea140b4309c347d6f98290051be1c5062bff70..66919a4dab083ae4bee8c4b32b77980657ff67e1 100644
+--- a/src/Widgets.ts
++++ b/src/Widgets.ts
+@@ -131,6 +131,14 @@ export class LiveActivity<T extends object = object> {
+     return this.nativeLiveActivity.getPushToken();
+   }
+ 
++  /**
++   * Returns the deep link URL the Live Activity was started with (also for activities started by a
++   * push-to-start notification), or `null` when it has none.
++   */
++  getUrl(): string | null {
++    return this.nativeLiveActivity.getUrl?.() ?? null;
++  }
++
+   /**
+    * Adds a listener for push token update events on this Live Activity instance.
+    * The token can be used to send content updates to this specific activity via APNs.
+diff --git a/src/Widgets.types.ts b/src/Widgets.types.ts
+index fee5c7475b52218fa0e192a1d347dd32cb0fe1f8..6bc049f21b91ca462a777ccab0c00f0d49a32949 100644
+--- a/src/Widgets.types.ts
++++ b/src/Widgets.types.ts
+@@ -304,4 +304,5 @@ export declare class NativeLiveActivity extends SharedObject<LiveActivityEvents>
+     contentDate?: number
+   ): Promise<void>;
+   getPushToken(): Promise<string | null>;
++  getUrl?(): string | null;
+ }

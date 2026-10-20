@@ -166,6 +166,8 @@ const enUS = {
     history: 'Conversation history',
     follow: 'Follow output',
     stopFollowing: 'Stop following output',
+    followLive: 'Follow live status',
+    unfollowLive: 'Stop following live status',
     readOnly: 'Read-only session (no tmux pane): the terminal and the shortcuts are unavailable.',
     close: 'Close session',
     /** `n` is a plain number in parentheses, so no plural form applies. */
@@ -185,6 +187,8 @@ const enUS = {
     cleanupDetail_other: '{{path}} · {{count}} changes',
     copyPath: 'Copy folder path',
     hide: 'Hide from list',
+    followLive: 'Follow live status',
+    unfollowLive: 'Stop following live status',
     failed: "Couldn't complete the action",
     /** Labels of the swipe buttons: one short word each. */
     short: {
@@ -195,6 +199,8 @@ const enUS = {
       pin: 'Pin',
       unpin: 'Unpin',
       hide: 'Hide',
+      followLive: 'Follow',
+      unfollowLive: 'Unfollow',
       resume: 'Resume',
       cleanup: 'Clean up',
       copyPath: 'Copy',
@@ -755,6 +761,12 @@ const enUS = {
     details: 'Details',
     noSubagents: 'No subagents in this session.',
     resize: 'Resize the inspector',
+  },
+  /** Following a session's live status from this phone. */
+  liveFollow: {
+    following: 'Following live status',
+    autoFollow: 'Follow new sessions',
+    autoFollowHint: 'Live status of every new session of this profile on this phone.',
   },
   /** Labels of the hardware keyboard hints row (short, lowercase). */
   keys: {

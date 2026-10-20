@@ -2,7 +2,18 @@ import type { Session } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import * as Clipboard from 'expo-clipboard'
 import { router } from 'expo-router'
-import { Bell, BellOff, Ellipsis, EyeOff, type LucideIcon, Pin, PinOff, Power } from 'lucide-react-native'
+import {
+  Bell,
+  BellOff,
+  Ellipsis,
+  EyeOff,
+  type LucideIcon,
+  Pin,
+  PinOff,
+  Power,
+  Radio,
+  RadioOff,
+} from 'lucide-react-native'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, RefreshControl, ScrollView, TextInput, View } from 'react-native'
@@ -11,6 +22,9 @@ import { errorMessage } from '@/core/connection/error-message'
 import { keys, useKeyCommand } from '@/core/keyboard/key-commands'
 import { makeStyles, space, useTheme } from '@/core/theme'
 import { Button, Chip, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
+import { useLiveFollowStore } from '../live-status/follow-store'
+import { useLiveStatusSettings } from '../live-status/settings-store'
+import { followSession, unfollowSession } from '../live-status/use-live-follow'
 import { setMuted, useMuteStore } from '../mute/store'
 import { WaitingStrip } from '../permissions/components/WaitingStrip'
 import { NestedSubagents } from '../subagents/SubagentList'
@@ -52,6 +66,8 @@ const SWIPE_LOOK: Record<SwipeKey, { icon: LucideIcon; tone: SwipeTone }> = {
   resume: { icon: Power, tone: 'muted' },
   cleanup: { icon: Power, tone: 'muted' },
   copyPath: { icon: Power, tone: 'muted' },
+  followLive: { icon: Radio, tone: 'accent' },
+  unfollowLive: { icon: RadioOff, tone: 'accent' },
 }
 
 export function SessionsScreen({
@@ -124,6 +140,12 @@ export function SessionsScreen({
   const isMuted = (session: Session) =>
     muted.sessions.includes(session.id) || muted.profiles.includes(session.profileId)
   const isPinned = (session: Session) => prefs.pinned.includes(session.id)
+  // Follow needs a daemon that can follow, the live status on and a session that has not ended.
+  const followSupported = useLiveFollowStore((s) => s.supported)
+  const followed = useLiveFollowStore((s) => s.sessionIds)
+  const liveEnabled = useLiveStatusSettings((s) => s.enabled)
+  const liveFollow = (session: Session) =>
+    followSupported && liveEnabled && session.state !== 'ended' ? followed.includes(session.id) : null
   const fail = (error: unknown) => Alert.alert(t('sessionActions.failed'), errorMessage(error, t))
 
   const act = (session: Session, action: SwipeKey) => {
@@ -154,6 +176,12 @@ export function SessionsScreen({
         break
       case 'copyPath':
         void Clipboard.setStringAsync(session.cwd)
+        break
+      case 'followLive':
+        followSession(session.id).catch(fail)
+        break
+      case 'unfollowLive':
+        unfollowSession(session.id).catch(fail)
         break
       case 'more':
         break
@@ -224,7 +252,7 @@ export function SessionsScreen({
       <FlashList<Session>
         ref={listRef}
         data={items}
-        extraData={[muted, prefs]}
+        extraData={[muted, prefs, followed]}
         // On by default in FlashList 2: when a filter brings other sessions back, it kept the list
         // anchored to the last rows, with the rest above the viewport.
         maintainVisibleContentPosition={{ disabled: true }}
@@ -243,6 +271,7 @@ export function SessionsScreen({
                   profile={profilesById.get(session.profileId)}
                   muted={isMuted(session)}
                   pinned={isPinned(session)}
+                  following={liveFollow(session) === true}
                   pendingPermissions={pendingBySession[session.id] ?? 0}
                   sharedCheckout={sharedCheckout[session.id] ?? 0}
                   selected={session.id === selectedSessionId}
@@ -290,7 +319,15 @@ export function SessionsScreen({
         profile={actionsFor ? profilesById.get(actionsFor.profileId) : undefined}
         items={
           actionsFor
-            ? sessionActions(actionsFor, { muted: isMuted(actionsFor), pinned: isPinned(actionsFor) }, t)
+            ? sessionActions(
+                actionsFor,
+                {
+                  muted: isMuted(actionsFor),
+                  pinned: isPinned(actionsFor),
+                  liveFollow: liveFollow(actionsFor),
+                },
+                t,
+              )
             : []
         }
         onSelect={(action) => {

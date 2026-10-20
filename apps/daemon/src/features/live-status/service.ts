@@ -25,6 +25,20 @@ export type LiveRegistration = {
   palette?: LivePalette
   /** Android: the app draws the notification from data messages. */
   androidDataMessages?: boolean
+  /**
+   * iOS: a Live Activity started by push whose own token the app has not sent yet. The status is
+   * kept up to date, but nothing is sent until the app registers the activity (which replaces this).
+   */
+  awaitingActivity?: boolean
+}
+
+/** Starting a followed session's Live Activity by push (iOS 17.2+). */
+export type PushStart = {
+  /** The phone's push-to-start token and the relay grant that seals it. */
+  startToken: string
+  startRelay?: PushRelay
+  url: string
+  alert: { title: string; body: string }
 }
 
 type Entry = LiveRegistration & {
@@ -108,6 +122,17 @@ export class LiveStatusService {
     await this.flush(entry)
   }
 
+  /**
+   * Starts the Live Activity of a followed session with the phone's push-to-start token, and tracks
+   * the turn until the app registers the new activity's token.
+   */
+  async startByPush(registration: LiveRegistration, start: PushStart): Promise<void> {
+    await this.register({ ...registration, awaitingActivity: true })
+    const entry = this.entries.get(registration.sessionId)
+    if (!entry) return
+    await this.send(entry, 'start', this.now(), start)
+  }
+
   unregister(sessionId: string): void {
     const entry = this.entries.get(sessionId)
     if (!entry) return
@@ -179,17 +204,29 @@ export class LiveStatusService {
     await this.send(entry, final ? 'end' : 'update', now)
   }
 
-  /** One push to the registration; `end` dismisses at once (muted, closed or the done window over). */
-  private async send(entry: Entry, event: 'update' | 'end', now: number): Promise<void> {
+  /**
+   * One push to the registration; `end` dismisses at once (muted, closed or the done window over),
+   * `start` starts the activity by push. An entry awaiting its activity gets nothing else.
+   */
+  private async send(
+    entry: Entry,
+    event: 'update' | 'end' | 'start',
+    now: number,
+    start?: PushStart,
+  ): Promise<void> {
     if (!this.sender) return
+    if (entry.awaitingActivity && !start) return
     const profileId = this.options.profileOf(entry.sessionId)
+    const activityToken = start ? start.startToken : entry.activityToken
+    const relay = start ? start.startRelay : entry.relay
     try {
       const { invalid } = await this.sender.sendLive({
         sessionId: entry.sessionId,
         platform: entry.platform,
         fcmToken: entry.fcmToken,
-        ...(entry.activityToken ? { activityToken: entry.activityToken } : {}),
-        ...(entry.relay ? { relay: entry.relay } : {}),
+        ...(activityToken ? { activityToken } : {}),
+        ...(relay ? { relay } : {}),
+        ...(start ? { url: start.url, alert: start.alert } : {}),
         ...(entry.androidDataMessages ? { androidDataMessages: true } : {}),
         props: {
           ...liveProps(entry.status, this.options.info(entry.sessionId, profileId), this.options.messages),

@@ -74,6 +74,19 @@ describe('sessionMenu', () => {
     expect(label(false)).toBe('Follow output')
   })
 
+  test('live status follow appears only when the daemon can follow, before Close', () => {
+    const base = { controllable: false, keyBarVisible: false, following: false }
+    const keys = (liveFollow: boolean | null) =>
+      sessionMenu({ ...base, liveFollow }, en).items.map((i) => i.key)
+    expect(keys(null)).not.toContain('toggleLiveFollow')
+    expect(keys(false).slice(-2)).toEqual(['toggleLiveFollow', 'close'])
+    const item = (liveFollow: boolean) =>
+      sessionMenu({ ...base, liveFollow }, en).items.find((i) => i.key === 'toggleLiveFollow')
+    // Following only involves the phone and the daemon: available for read-only sessions too.
+    expect(item(false)).toEqual({ key: 'toggleLiveFollow', label: 'Follow live status', disabled: false })
+    expect(item(true)?.label).toBe('Stop following live status')
+  })
+
   test('a provider session offers "Change model…" after the terminal, disabled when read-only', () => {
     const items = (controllable: boolean) =>
       sessionMenu({ controllable, keyBarVisible: false, following: true, provider: true }, en).items

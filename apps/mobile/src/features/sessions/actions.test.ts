@@ -17,6 +17,16 @@ describe('sessionActions', () => {
     expect(keys(items)).toEqual(['resume', 'unmute', 'unpin', 'copyPath', 'hide'])
   })
 
+  test('the live status follow toggle follows the pin toggle when the daemon can follow', () => {
+    const session = { controllable: true, cwd: '/w/app' }
+    const flags = { muted: false, pinned: false }
+    expect(keys(sessionActions(session, { ...flags, liveFollow: null }, en))).not.toContain('followLive')
+    const off = sessionActions(session, { ...flags, liveFollow: false }, en)
+    expect(keys(off)).toEqual(['close', 'mute', 'pin', 'followLive', 'copyPath'])
+    expect(off[3]?.label).toBe('Follow live status')
+    expect(keys(sessionActions(session, { ...flags, liveFollow: true }, en))).toContain('unfollowLive')
+  })
+
   test('a read-only session in a worktree offers the cleanup with its details', () => {
     const cwd = '/Users/me/app/.claude/worktrees/remote-1'
     const guess = sessionActions({ controllable: false, cwd }, { muted: false, pinned: false }, en)

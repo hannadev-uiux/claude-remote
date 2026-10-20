@@ -365,6 +365,24 @@ export const LiveStatusPropsSchema = z.object({
 export type LiveStatusProps = z.infer<typeof LiveStatusPropsSchema>
 
 /**
+ * How the daemon reaches one phone with the live status of the sessions it follows: the FCM token
+ * (and its relay grant), and on iOS 17.2+ the push-to-start token with the relay grant that seals it.
+ */
+export const LiveFollowDeviceSchema = z.object({
+  platform: DevicePlatformSchema,
+  fcmToken: z.string().min(1),
+  relay: PushRelaySchema.optional(),
+  /** iOS push-to-start token (hex): lets the daemon start a Live Activity while the app is closed. */
+  startToken: z.string().min(1).optional(),
+  /** Relay grant sealing `startToken`, for daemons without a service account. */
+  startRelay: PushRelaySchema.optional(),
+  palette: LivePaletteSchema.optional(),
+  /** Android: the app draws the live status itself from data messages. */
+  androidDataMessages: z.boolean().optional(),
+})
+export type LiveFollowDevice = z.infer<typeof LiveFollowDeviceSchema>
+
+/**
  * Android live status sent as an FCM data message (`data.live`, JSON) to apps that draw the
  * notification themselves: `end` leaves a notification that can be swiped away.
  */

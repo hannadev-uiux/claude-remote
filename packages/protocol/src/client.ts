@@ -5,6 +5,7 @@ import {
   DevicePlatformSchema,
   DIRECTORY_LIST_LIMIT,
   InputModeSchema,
+  LiveFollowDeviceSchema,
   LivePaletteSchema,
   MAX_ATTACHMENTS,
   MAX_DIRECTORY_LIST_LIMIT,
@@ -122,6 +123,19 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     androidDataMessages: z.boolean().optional(),
   }),
   z.object({ type: z.literal('live.unregister'), id, sessionId }),
+  /** This phone follows the session: later turns start its live status in the background. */
+  z.object({ type: z.literal('live.follow'), id, sessionId, device: LiveFollowDeviceSchema }),
+  z.object({ type: z.literal('live.unfollow'), id, sessionId, fcmToken: z.string().min(1) }),
+  /** Follow every new session of the profile on this phone (or stop). */
+  z.object({
+    type: z.literal('live.autoFollow'),
+    id,
+    profileId: z.string().min(1),
+    enabled: z.boolean(),
+    device: LiveFollowDeviceSchema,
+  }),
+  /** Refreshes this phone's delivery data and asks for what it follows. */
+  z.object({ type: z.literal('live.follows'), id, device: LiveFollowDeviceSchema }),
   z.object({
     type: z.literal('files.search'),
     id,

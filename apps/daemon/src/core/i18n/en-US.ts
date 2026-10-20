@@ -532,6 +532,7 @@ export const enUS = {
   },
   push: {
     sessionDone: 'Session finished',
+    sessionWorking: 'Session working',
     sessionWaiting: 'Session waiting for you',
     permissionPending: 'Permission pending',
     questionPending: 'The agent is waiting for your answer',

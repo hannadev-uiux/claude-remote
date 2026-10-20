@@ -220,6 +220,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       muted: features.mute.get(),
       push: { mode: features.pushMode() },
       update: { channel: features.updateChannel() },
+      live: { follow: true },
     }),
   })
   const wsAddress = wss.address()
@@ -281,7 +282,7 @@ async function registerFeatures(
     if (justEnded(session, previous)) permissions.broker.cancelAll(session.id)
   })
   const push = await registerPushFeature(ctx, { isMuted, isEnded, sender: ctx.pushSender })
-  registerLiveStatusFeature(ctx, {
+  await registerLiveStatusFeature(ctx, {
     store: sessions.store,
     sender: push.sender,
     isMuted,

@@ -10,6 +10,7 @@ import { edgeSwipeEnabled, inspectorMode, sidebarMode, useLayout } from '@/core/
 import { space, useTheme } from '@/core/theme'
 import { InspectorPane } from '@/features/inspector/InspectorPane'
 import { setInspectorOpen, useInspectorStore } from '@/features/inspector/store'
+import { useLiveFollow } from '@/features/live-status/use-live-follow'
 import { useLiveStatus } from '@/features/live-status/use-live-status'
 import { selectPendingCounts, usePermissionsStore } from '@/features/permissions/store'
 import { usePush } from '@/features/push/use-push'
@@ -64,6 +65,7 @@ export default function MainLayout() {
   useDaemonSync()
   usePush()
   useLiveStatus()
+  useLiveFollow()
   const { layout, portrait } = useLayout()
   const pathname = usePathname()
   const pending = usePermissionsStore(useShallow(selectPendingCounts))

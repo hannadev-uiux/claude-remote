@@ -13,6 +13,8 @@ export type SessionAction =
   | 'cleanup'
   | 'copyPath'
   | 'hide'
+  | 'followLive'
+  | 'unfollowLive'
 
 export type SessionActionItem = { key: SessionAction; label: string; detail?: string; destructive?: boolean }
 
@@ -21,12 +23,15 @@ export type SessionFlags = {
   pinned: boolean
   /** The session's linked worktree when the daemon already told us; `undefined` when not asked yet. */
   worktree?: WorktreeInfo | null
+  /** This phone follows the session's live status; absent or `null` when the daemon cannot follow. */
+  liveFollow?: boolean | null
 }
 
 /**
  * Items of a session's action sheet (long press, "More"): Close for live sessions or Resume for
- * read-only ones, mute and pin toggles, Clean up worktree for read-only sessions in a worktree,
- * Copy folder path, and Hide for read-only sessions.
+ * read-only ones, mute and pin toggles, the live status follow toggle (when the daemon can follow),
+ * Clean up worktree for read-only sessions in a worktree, Copy folder path, and Hide for read-only
+ * sessions.
  */
 export function sessionActions(
   session: Pick<Session, 'controllable' | 'cwd'>,
@@ -45,6 +50,13 @@ export function sessionActions(
       ? { key: 'unpin', label: t('sessionActions.unpin') }
       : { key: 'pin', label: t('sessionActions.pin') },
   ]
+  if (typeof flags.liveFollow === 'boolean') {
+    items.push(
+      flags.liveFollow
+        ? { key: 'unfollowLive', label: t('sessionActions.unfollowLive') }
+        : { key: 'followLive', label: t('sessionActions.followLive') },
+    )
+  }
   const worktree = flags.worktree
   if (!live && (worktree || isWorktreePath(session.cwd))) {
     const detail = worktree

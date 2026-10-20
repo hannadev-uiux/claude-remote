@@ -47,6 +47,15 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     push: z.object({ mode: PushModeSchema }).optional(),
     /** Present when the daemon accepts `daemon.update.*` (absent in older daemons). */
     update: z.object({ channel: DaemonUpdateChannelSchema }).optional(),
+    /** Present when the daemon accepts `live.follow` and the other follow messages. */
+    live: z.object({ follow: z.boolean() }).optional(),
+  }),
+  /** Reply to the follow messages: what this phone follows. */
+  z.object({
+    type: z.literal('live.followed'),
+    replyTo,
+    sessionIds: z.array(z.string()),
+    autoFollowProfiles: z.array(z.string()),
   }),
   z.object({ type: z.literal('pong'), replyTo }),
   z.object({ type: z.literal('ack'), replyTo, data: z.record(z.string(), z.unknown()).optional() }),

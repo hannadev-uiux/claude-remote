@@ -532,6 +532,7 @@ export const esES = {
   },
   push: {
     sessionDone: 'Sesión terminada',
+    sessionWorking: 'Sesión trabajando',
     sessionWaiting: 'Sesión esperándote',
     permissionPending: 'Permiso pendiente',
     questionPending: 'El agente está esperando tu respuesta',

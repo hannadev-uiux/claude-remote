@@ -128,16 +128,32 @@ export type Reconciled = {
   map: ActivityMap
 }
 
+/** The session a Live Activity's deep link opens (`claude-remote://session/<id>`), or `null`. */
+export function sessionIdFromActivityUrl(url: string | null | undefined): string | null {
+  const match = /^(?:claude-remote|remoteharness):\/\/session\/([^/?#]+)/.exec(url ?? '')
+  return match?.[1] ? decodeURIComponent(match[1]) : null
+}
+
+/** Activities no record names: their deep links, and the sessions this phone follows. */
+export type FollowedOrphans = {
+  /** Activity id → the deep link it was started with (`null` when unknown). */
+  urls: Readonly<Record<string, string | null>>
+  followed: ReadonlySet<string>
+}
+
 /**
  * Matches the activities iOS still has (`alive`) with the saved record. An activity is adopted when
  * its session exists and is running or waiting, or is idle inside the done window (from `doneAt`,
- * else the session's last change). Every other alive activity is ended: one live status per session.
+ * else the session's last change). An activity no record names is adopted when its deep link names
+ * a followed session that is running or waiting and has none yet (the daemon started it by push).
+ * Every other alive activity is ended: one live status per session.
  */
 export function reconcileActivities(
   map: Readonly<ActivityMap>,
   alive: readonly string[],
   sessions: Readonly<Record<string, Pick<Session, 'state' | 'updatedAt'>>>,
   now: number,
+  orphans?: FollowedOrphans,
 ): Reconciled {
   const aliveIds = new Set(alive)
   const adopt: Record<string, string> = {}
@@ -154,6 +170,16 @@ export function reconcileActivities(
     adopt[sessionId] = record.activityId
     kept[sessionId] = live ? { activityId: record.activityId, doneAt: null } : { ...record, doneAt }
     claimed.add(record.activityId)
+  }
+  for (const activityId of alive) {
+    if (!orphans || claimed.has(activityId)) continue
+    const sessionId = sessionIdFromActivityUrl(orphans.urls[activityId])
+    const state = sessionId ? sessions[sessionId]?.state : undefined
+    if (!sessionId || !orphans.followed.has(sessionId) || adopt[sessionId]) continue
+    if (state !== 'running' && state !== 'waiting') continue
+    adopt[sessionId] = activityId
+    kept[sessionId] = { activityId, doneAt: null }
+    claimed.add(activityId)
   }
   return { adopt, end: alive.filter((id) => !claimed.has(id)), map: kept }
 }

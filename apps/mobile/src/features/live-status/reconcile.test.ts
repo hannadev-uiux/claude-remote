@@ -7,9 +7,54 @@ import {
   parallelTasks,
   parseActivityMap,
   reconcileActivities,
+  sessionIdFromActivityUrl,
 } from './logic'
 
 const now = Date.parse('2026-10-19T22:00:00.000Z')
+
+describe('activities started by push', () => {
+  const urls = {
+    'act-push': 'claude-remote://session/f',
+    'act-other': 'claude-remote://session/x',
+    'act-none': null,
+  }
+  const running = { state: 'running' as const, updatedAt: new Date(now).toISOString() }
+  const idle = { state: 'idle' as const, updatedAt: new Date(now).toISOString() }
+
+  test('adopts the orphan whose deep link names a followed, working session', () => {
+    const result = reconcileActivities(
+      {},
+      ['act-push', 'act-other', 'act-none'],
+      { f: running, x: running },
+      now,
+      { urls, followed: new Set(['f']) },
+    )
+    expect(result.adopt).toEqual({ f: 'act-push' })
+    expect(result.map).toEqual({ f: { activityId: 'act-push', doneAt: null } })
+    expect(result.end.sort()).toEqual(['act-none', 'act-other'])
+  })
+
+  test('a saved activity wins over a pushed one, and idle sessions adopt nothing', () => {
+    const saved = reconcileActivities(
+      { f: { activityId: 'act-saved', doneAt: null } },
+      ['act-saved', 'act-push'],
+      { f: running },
+      now,
+      { urls, followed: new Set(['f']) },
+    )
+    expect(saved.adopt).toEqual({ f: 'act-saved' })
+    expect(saved.end).toEqual(['act-push'])
+    const quiet = reconcileActivities({}, ['act-push'], { f: idle }, now, { urls, followed: new Set(['f']) })
+    expect(quiet.end).toEqual(['act-push'])
+  })
+
+  test('reads the session from either deep link scheme', () => {
+    expect(sessionIdFromActivityUrl('claude-remote://session/abc')).toBe('abc')
+    expect(sessionIdFromActivityUrl('remoteharness://session/a%20b?x=1')).toBe('a b')
+    expect(sessionIdFromActivityUrl('https://example.com/session/abc')).toBeNull()
+    expect(sessionIdFromActivityUrl(null)).toBeNull()
+  })
+})
 const at = (msAgo: number) => new Date(now - msAgo).toISOString()
 const live = (state: Session['state'], updatedAt = at(0)) => ({ state, updatedAt })
 const fiveMin = 5 * 60_000
