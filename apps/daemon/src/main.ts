@@ -6,13 +6,20 @@ import {
 } from '@remote-harness/protocol'
 import type { FastifyInstance } from 'fastify'
 import type { WebSocketServer } from 'ws'
-import { type Config, loadConfig, profilesWithResolvableAgent, resolveProfiles } from './core/config.ts'
+import {
+  type Config,
+  loadConfig,
+  profilesWithResolvableAgent,
+  resolveProfiles,
+  updateConfigFile,
+} from './core/config.ts'
 import { EventBus } from './core/event-bus.ts'
 import type { DaemonEvents } from './core/events.ts'
 import { KeyedMutex } from './core/keyed-mutex.ts'
 import type { Logger } from './core/logger.ts'
+import { pairingAddress, pairingUrl } from './core/pairing.ts'
 import { hostName } from './core/paths.ts'
-import { ensureHookSecret, ensureToken, type TokenStore } from './core/secrets.ts'
+import { ensureHookSecret, ensureToken, generateToken, type TokenStore } from './core/secrets.ts'
 import { DAEMON_VERSION } from './core/version.ts'
 import { registerAttachmentsFeature } from './features/attachments/index.ts'
 import { registerAutocompleteFeature } from './features/autocomplete/index.ts'
@@ -27,7 +34,7 @@ import { registerMuteFeature } from './features/mute/index.ts'
 import type { MuteStore } from './features/mute/store.ts'
 import { registerPaneFeature } from './features/pane/index.ts'
 import { registerPermissionsFeature } from './features/permissions/index.ts'
-import { registerPowerFeature } from './features/power/index.ts'
+import { type KeepAwakeController, registerPowerFeature } from './features/power/index.ts'
 import { registerProvidersFeature } from './features/providers/index.ts'
 import { registerPushFeature } from './features/push/index.ts'
 import type { PushSender } from './features/push/sender.ts'
@@ -42,6 +49,7 @@ import {
   type DesktopOptions,
   registerBlockedRemoteUpdates,
   registerUpdatesFeature,
+  type TrayShellDeps,
 } from './features/updates/index.ts'
 import type { Executor } from './infra/exec.ts'
 import { findTailscaleAddress } from './infra/network.ts'
@@ -177,15 +185,30 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   }
 
   router.register('ping', () => ({ type: 'pong' }))
-  hooks.post('/admin/reload-token', async () => {
+  const reloadToken = async () => {
     token = await ensureToken(options.tokenStore)
     hub.closeAll(4003, 'token rotated')
     bus.emit('token.rotated', { token })
     logger.info('token reloaded, connections closed')
     return { ok: true }
-  })
+  }
+  hooks.post('/admin/reload-token', reloadToken)
 
-  const features = await registerFeatures(context, options.desktop, options.sleepInhibitor ?? null)
+  /** Where the app connects, set once the WebSocket server listens (after Tailscale is up). */
+  let endpoint: { host: string; port: number } | null = null
+  const features = await registerFeatures(context, options.desktop, options.sleepInhibitor ?? null, {
+    pairing: () =>
+      endpoint
+        ? {
+            url: pairingUrl(endpoint.host, endpoint.port, token),
+            address: pairingAddress(endpoint.host, endpoint.port),
+          }
+        : null,
+    rotateToken: async () => {
+      await options.tokenStore.set(generateToken())
+      await reloadToken()
+    },
+  })
 
   await hooks.listen({ host: '127.0.0.1', port: options.hookPort ?? config.hookPort })
   const hookAddress = hooks.server.address()
@@ -225,6 +248,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   })
   const wsAddress = wss.address()
   const wsPort = typeof wsAddress === 'object' && wsAddress ? wsAddress.port : config.wsPort
+  endpoint = { host: wsHost, port: wsPort }
   logger.info(
     { ws: `${wsHost}:${wsPort}`, hooks: `127.0.0.1:${hookPort}`, profiles: profiles.map((p) => p.id) },
     'daemon started',
@@ -250,6 +274,7 @@ async function registerFeatures(
   ctx: DaemonContext,
   desktop: DesktopOptions | undefined,
   sleepInhibitor: SleepInhibitor | null,
+  pairing: Pick<TrayShellDeps, 'pairing' | 'rotateToken'>,
 ): Promise<{ mute: MuteStore; pushMode: () => PushMode; updateChannel: () => DaemonUpdateChannel }> {
   const sessions = registerSessionsFeature(ctx, ctx.tmux)
   const transcript = registerTranscriptFeature(ctx, sessions.store, (id, at) =>
@@ -289,6 +314,9 @@ async function registerFeatures(
     follow: transcript.follow,
   })
   let updateChannel = () => ctx.config.update.channel
+  // Registered after the updates feature (it needs the sessions restored): the tray reads it lazily.
+  let power: KeepAwakeController | null = null
+  let pushSetting = ctx.config.push
   if (desktop) {
     const updates = await registerUpdatesFeature(ctx, {
       store: sessions.store,
@@ -308,6 +336,22 @@ async function registerFeatures(
         },
         phones: () => ({ count: push.devices.list().length, push: push.mode() !== 'off' }),
         closeSession: (id) => lifecycle.closer.close(id),
+        ...pairing,
+        keepAwake: {
+          mode: () => power?.state().mode ?? ctx.config.keepAwake,
+          set: async (mode) => {
+            await updateConfigFile({ keepAwake: mode })
+            await power?.setMode(mode)
+          },
+        },
+        push: {
+          setting: () => pushSetting,
+          set: async (setting) => {
+            await updateConfigFile({ push: setting })
+            pushSetting = setting
+            await push.reloadMode()
+          },
+        },
       },
     })
     updateChannel = updates.channel
@@ -315,7 +359,7 @@ async function registerFeatures(
     await registerBlockedRemoteUpdates(ctx)
   }
   await sessions.start()
-  registerPowerFeature(ctx, sessions.store, sleepInhibitor)
+  power = registerPowerFeature(ctx, sessions.store, sleepInhibitor)
   // After the sessions, so prompts queued for sessions that ended meanwhile are dropped.
   await queue.service.load().catch((error) => ctx.logger.warn({ err: error }, 'queue restore failed'))
   return { mute: mute.store, pushMode: push.mode, updateChannel: () => updateChannel() }

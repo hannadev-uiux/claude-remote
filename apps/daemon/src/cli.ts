@@ -28,6 +28,7 @@ import {
 import { envVar } from './core/env.ts'
 import { type Messages, messagesFor } from './core/i18n/index.ts'
 import { createLogger } from './core/logger.ts'
+import { pairingUrl } from './core/pairing.ts'
 import { paths } from './core/paths.ts'
 import {
   ensureHookSecret,
@@ -174,11 +175,6 @@ function builtCliPath(): string | null {
     new URL(import.meta.url.endsWith('.ts') ? '../dist/cli.js' : './cli.js', import.meta.url),
   )
   return existsSync(path) ? path : null
-}
-
-export function pairingUrl(host: string, port: number, token: string): string {
-  const params = new URLSearchParams({ host, port: String(port), token })
-  return `claude-remote://pair?${params.toString()}`
 }
 
 async function notifyDaemon(path: string): Promise<boolean> {

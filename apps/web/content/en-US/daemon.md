@@ -61,6 +61,7 @@ The old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working for
 - `push`: `auto` (your Firebase service account when present, else the relay) or `off`.
 - `update`: the channel `update` and the background check follow, and whether updates apply by themselves.
 - `tray`: the menu bar / tray icon.
+- `trayPermissions`: whether the tray offers Allow / Always allow / Deny for a waiting permission (on by default; also under the tray's Preferences).
 
 Edits to the file take effect when the daemon restarts (`remote-harness service install` again, or restart from the tray).
 
@@ -110,7 +111,7 @@ The service checks its channel on the git remote every 6 hours and shows a deskt
 
 ## Tray icon
 
-The service daemon shows a menu bar icon on macOS (a small Swift helper built on first start with the Command Line Tools) and a tray icon on Linux (`python3` with GTK 3 and AyatanaAppIndicator3 or AppIndicator3). The menu shows the running sessions and the pending permissions (answer them from there), starts a new session, shows the pairing code, checks or applies updates, picks the channel, opens the logs, the config and the documentation, and restarts the daemon. `"tray": false` turns it off; without the helper, and in WSL, the daemon runs headless.
+The service daemon shows a menu bar icon on macOS (a small Swift helper built on first start with the Command Line Tools) and a tray icon on Linux (`python3` with GTK 3 and AyatanaAppIndicator3 or AppIndicator3). The menu shows the running sessions and the pending permissions (answer them from there), starts a new session, shows the pairing code, checks or applies updates, picks the channel, opens the logs, the config and the documentation, and restarts the daemon. **Pair a phone** shows the pairing QR code right in the menu on macOS, the address, the pairing in the terminal and **Rotate token…** (the paired phones must pair again). **Preferences** toggles the permission answers in the menu, the keep-awake mode and push notifications, applied at once, and opens the config file for the rest. Under the service, **Quit** either hides the icon or stops the service until the next login. `"tray": false` turns it off; without the helper, and in WSL, the daemon runs headless.
 
 ## Data and logs
 
