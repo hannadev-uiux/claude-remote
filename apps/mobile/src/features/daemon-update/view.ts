@@ -14,21 +14,47 @@ export type DaemonUpdatePhase =
 
 const STEP_INDEX: Record<RunningStep, 1 | 2 | 3> = { fetching: 1, building: 2, restarting: 3 }
 
-/** Version of an available update, with the short commit when the number did not change. */
+/** Names a same-version update ("0.13.0 · new commits (bcf5378)"); the card passes the translation. */
+export type NewCommitsLabel = (version: string, commit: string) => string
+
+const plainNewCommits: NewCommitsLabel = (version, commit) => `${version} (${commit})`
+
+/** Version of an available update, or the version with "new commits" when the number did not change. */
 export function availableLabel(
   available: { version: string | null; commit: string },
   current: string,
+  newCommits: NewCommitsLabel = plainNewCommits,
 ): string {
   const commit = available.commit.slice(0, 7)
   if (!available.version) return commit
-  return available.version === current ? `${available.version} (${commit})` : available.version
+  return available.version === current ? newCommits(available.version, commit) : available.version
+}
+
+/** Refusals of `daemon.update.start` the app translates (the daemon's reply texts). */
+export type StartRefusal = 'running' | 'nothing' | 'notInstaller'
+
+const REFUSALS: Record<string, StartRefusal> = {
+  'an update is already running': 'running',
+  // Daemons before 0.15 said it this way.
+  'an update is running': 'running',
+  'already up to date': 'nothing',
+  'cannot update: not-installer': 'notInstaller',
+}
+
+/** Which known refusal a start error is, if any. */
+export function startRefusal(message: string): StartRefusal | null {
+  return REFUSALS[message.trim()] ?? null
 }
 
 /**
  * The card's state. `restarting` stays while the app is disconnected: the daemon that answers next
  * reports the run as done.
  */
-export function daemonUpdatePhase(info: DaemonUpdateInfo | null, supported: boolean): DaemonUpdatePhase {
+export function daemonUpdatePhase(
+  info: DaemonUpdateInfo | null,
+  supported: boolean,
+  newCommits?: NewCommitsLabel,
+): DaemonUpdatePhase {
   if (!supported) return { kind: 'unsupported' }
   if (!info) return { kind: 'loading' }
   if (info.blocked) return { kind: 'blocked', reason: info.blocked }
@@ -39,7 +65,7 @@ export function daemonUpdatePhase(info: DaemonUpdateInfo | null, supported: bool
   if (info.available)
     return {
       kind: 'available',
-      label: availableLabel(info.available, info.current),
+      label: availableLabel(info.available, info.current, newCommits),
       downgrade: info.available.downgrade,
     }
   return { kind: 'upToDate' }

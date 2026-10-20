@@ -7,7 +7,12 @@ import { createLogger } from '../src/core/logger.ts'
 import { SourceUpdater } from '../src/features/update/update.ts'
 import type { UpdateState } from '../src/features/updates/checker.ts'
 import { updateBlocker } from '../src/features/updates/index.ts'
-import { buildUpdateInfo, RemoteUpdates, runInProgress } from '../src/features/updates/remote.ts'
+import {
+  buildUpdateInfo,
+  launchRefusal,
+  RemoteUpdates,
+  runInProgress,
+} from '../src/features/updates/remote.ts'
 import {
   advanceRun,
   RunRecorder,
@@ -119,8 +124,11 @@ describe('RemoteUpdates', () => {
     let failure: ((code: number | null) => void) | undefined
     const checks: boolean[] = []
     const launches: DaemonUpdateChannel[] = []
+    const finished: string[] = []
+    // Like the feature: set while the spawned updater runs, cleared when it exits (any code).
+    let updating = false
     const runPath = join(home.dir(), 'update-run.json')
-    const remote = new RemoteUpdates({
+    const remote: RemoteUpdates = new RemoteUpdates({
       hub: { broadcast: (message) => broadcasts.push(message) },
       router,
       logger,
@@ -144,10 +152,22 @@ describe('RemoteUpdates', () => {
       saveChannel: async (next) => {
         channel = next
       },
+      refusal: () =>
+        launchRefusal({
+          updating: updating || remote.running(),
+          installer: true,
+          available: o.available !== false,
+        }),
       launch: (onFailure) => {
         failure = onFailure
         launches.push(channel)
-        return o.launch ?? true
+        if (o.launch === false) return { ok: false, error: 'spawn node ENOENT' }
+        updating = true
+        return { ok: true }
+      },
+      onFinished: (run) => {
+        updating = false
+        finished.push(run.step)
       },
       pollMs: 20,
     })
@@ -157,7 +177,11 @@ describe('RemoteUpdates', () => {
       await router.dispatch(message, connection)
       return connection.sent.at(-1)
     }
-    return { remote, send, broadcasts, checks, launches, runPath, fail: (code: number) => failure?.(code) }
+    const exit = (code: number) => {
+      updating = false
+      if (code !== 0) failure?.(code)
+    }
+    return { remote, send, broadcasts, checks, launches, finished, runPath, fail: exit, exit }
   }
 
   test('check saves a new channel and answers the info', async () => {
@@ -182,7 +206,7 @@ describe('RemoteUpdates', () => {
     expect(await send({ type: 'daemon.update.start', id: '2', channel: 'main' })).toMatchObject({
       type: 'error',
       code: 'bad_request',
-      message: 'an update is running',
+      message: 'an update is already running',
     })
 
     // The CLI writes the next steps; the daemon broadcasts them.
@@ -218,8 +242,42 @@ describe('RemoteUpdates', () => {
     expect(await broken.send({ type: 'daemon.update.start', id: '1', channel: 'main' })).toMatchObject({
       type: 'error',
       code: 'internal',
+      message: 'could not start the updater: spawn node ENOENT',
     })
-    expect(await readRun(broken.runPath)).toMatchObject({ step: 'failed' })
+    expect(await readRun(broken.runPath)).toMatchObject({
+      step: 'failed',
+      error: 'could not start the updater: spawn node ENOENT',
+    })
+  })
+
+  test('a refused start records no run (#225)', async () => {
+    const upToDate = setup({ available: false })
+    await upToDate.send({ type: 'daemon.update.start', id: '1', channel: 'main' })
+    expect(await readRun(upToDate.runPath)).toBeNull()
+    expect(upToDate.launches).toEqual([])
+  })
+
+  test('after an updater that exits 0 without a restart, the next update starts (#225)', async () => {
+    const { send, exit, launches, runPath, finished, remote } = setup()
+    await send({ type: 'daemon.update.start', id: '1', channel: 'main' })
+    // The CLI found the checkout up to date: it records done and exits 0, and this daemon stays.
+    const run = (await readRun(runPath))!
+    await writeRun(runPath, advanceRun(run, 'done', new Date(), { to: '0.12.0', commit: 'abc' }))
+    exit(0)
+    await vi.waitFor(() => expect(finished).toEqual(['done']))
+    expect(await send({ type: 'daemon.update.start', id: '2', channel: 'main' })).toMatchObject({
+      type: 'daemon.update.info',
+      info: { run: { step: 'fetching' } },
+    })
+    expect(launches).toEqual(['main', 'main'])
+    remote.stop()
+  })
+
+  test('launchRefusal names why an update cannot start', () => {
+    expect(launchRefusal({ updating: true, installer: true, available: true })).toBe('running')
+    expect(launchRefusal({ updating: false, installer: false, available: true })).toBe('not-installer')
+    expect(launchRefusal({ updating: false, installer: true, available: false })).toBe('nothing')
+    expect(launchRefusal({ updating: false, installer: true, available: true })).toBeNull()
   })
 
   test('start on another channel saves it and checks before updating', async () => {

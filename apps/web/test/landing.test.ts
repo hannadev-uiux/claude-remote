@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { esc, inline } from '../src/html.ts'
 import { CATALOGS, WEB_LOCALES } from '../src/i18n/index.ts'
 import { INSTALL_COMMANDS, renderLanding, renderNotFound } from '../src/landing.ts'
-import { faviconSvg, robotsTxt, sitemapXml } from '../src/site.ts'
+import { AUTHOR, CONTRIBUTORS, faviconSvg, robotsTxt, sitemapXml } from '../src/site.ts'
 
 /** Dotted paths of every leaf, with array lengths, so the three catalogs can be compared. */
 function shape(value: unknown, prefix = ''): string[] {
@@ -64,10 +64,20 @@ describe('renderLanding', () => {
     expect(html).toContain(m.hero.title)
     expect(html).toContain(m.faq.items[0]?.q ?? 'missing')
     expect(html).not.toMatch(/undefined|\[object Object\]|\{\{/)
+    // Agents show their marks, not the two-letter codes; the footer credits the author and contributors.
+    expect(html).not.toMatch(/>(cl|cx|ki|qw)</)
+    for (const id of ['claude', 'codex', 'kimi', 'qwen', 'openrouter'])
+      expect(html).toContain(`class="mk ${id}"`)
+    expect(html).toContain(`<a href="${AUTHOR.url}">${AUTHOR.name}</a>`)
+    for (const login of CONTRIBUTORS) expect(html).toContain(`href="https://github.com/${login}"`)
+    expect(html).toContain(m.footer.contributors)
     // The only external resources are the fonts.
     const externals = [...html.matchAll(/(?:href|src)="(https?:\/\/[^"]+)"/g)].map((match) => match[1])
+    // Links (not resources) to the contributors' profiles and the author's site are fine too.
+    const credits = [AUTHOR.url, ...CONTRIBUTORS.map((login) => `https://github.com/${login}`)]
     const foreign = externals.filter(
       (url) =>
+        !credits.includes(url ?? '') &&
         !/^https:\/\/(fonts\.g(oogleapis|static)\.com|github\.com\/maarkN|raw\.githubusercontent\.com\/maarkN|remoteharness\.app)/.test(
           url ?? '',
         ),

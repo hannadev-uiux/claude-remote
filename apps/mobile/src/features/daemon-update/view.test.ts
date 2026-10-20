@@ -1,6 +1,13 @@
 import type { DaemonUpdateInfo, DaemonUpdateRun } from '@remote-harness/protocol'
 import { describe, expect, test } from 'vitest'
-import { availableLabel, confirmationWarnings, daemonUpdatePhase, RUN_NOTE_MS, runNote } from './view'
+import {
+  availableLabel,
+  confirmationWarnings,
+  daemonUpdatePhase,
+  RUN_NOTE_MS,
+  runNote,
+  startRefusal,
+} from './view'
 
 const info = (patch: Partial<DaemonUpdateInfo> = {}): DaemonUpdateInfo => ({
   current: '0.12.0',
@@ -51,6 +58,29 @@ describe('daemon update phase', () => {
   test('a new commit with the same version shows the short commit', () => {
     expect(availableLabel({ version: '0.12.0', commit: 'abcdef1234' }, '0.12.0')).toBe('0.12.0 (abcdef1)')
     expect(availableLabel({ version: null, commit: 'abcdef1234' }, '0.12.0')).toBe('abcdef1')
+  })
+
+  test('the card names it "new commits" through its translation (#225)', () => {
+    const newCommits = (version: string, commit: string) => `${version} · new commits (${commit})`
+    expect(availableLabel({ version: '0.13.0', commit: 'bcf5378aa' }, '0.13.0', newCommits)).toBe(
+      '0.13.0 · new commits (bcf5378)',
+    )
+    expect(availableLabel({ version: '0.14.0', commit: 'bcf5378aa' }, '0.13.0', newCommits)).toBe('0.14.0')
+    expect(
+      daemonUpdatePhase(
+        info({ current: '0.13.0', available: { version: '0.13.0', commit: 'bcf5378aa', downgrade: false } }),
+        true,
+        newCommits,
+      ),
+    ).toMatchObject({ kind: 'available', label: '0.13.0 · new commits (bcf5378)' })
+  })
+
+  test('known refusals of a start are recognized; others are not', () => {
+    expect(startRefusal('an update is already running')).toBe('running')
+    expect(startRefusal('an update is running')).toBe('running')
+    expect(startRefusal('already up to date')).toBe('nothing')
+    expect(startRefusal('cannot update: not-installer')).toBe('notInstaller')
+    expect(startRefusal('could not start the updater: spawn ENOENT')).toBeNull()
   })
 })
 

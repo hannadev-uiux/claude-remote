@@ -859,6 +859,12 @@ const ptBR = {
     confirmOlder: 'Isto instala a {{version}}, anterior à {{current}}, porque o canal mudou.',
     confirmBusy: 'Há uma sessão rodando ou esperando por você agora.',
     confirm: 'Atualizar',
+    newCommits: '{{version}} · novos commits ({{commit}})',
+    refused: {
+      running: 'Já há uma atualização em andamento no computador.',
+      nothing: 'O computador já está atualizado.',
+      notInstaller: 'Este daemon não roda pelo instalador, então não consegue se atualizar.',
+    },
   },
   terminal: {
     space: 'espaço',
