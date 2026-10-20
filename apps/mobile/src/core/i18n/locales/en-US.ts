@@ -114,6 +114,9 @@ const enUS = {
   conversation: {
     turnDuration: 'Turn completed in {{duration}}',
     compacted: 'Conversation compacted',
+    compactedWithTrigger: 'Conversation compacted {{trigger}}',
+    compactTrigger: { manual: 'manually', auto: 'automatically' },
+    compactSummary: 'Summary (tap to see)',
     interrupted: 'Interrupted',
     loading: 'loading conversation…',
     newMessages: '↓ new messages',

@@ -16,6 +16,7 @@ import { KeyBar } from './components/KeyBar'
 import { LinkSheet } from './components/LinkSheet'
 import {
   AssistantMessage,
+  CompactSummary,
   SystemLine,
   TaggedEntry,
   TaskNotification,
@@ -47,7 +48,15 @@ function renderItem({ item }: { item: TimelineItem }) {
       if (item.subtype === 'task_notification')
         return <TaskNotification text={item.text} status={item.status} note={item.note} />
       if (item.subtype === 'tagged' && item.tag) return <TaggedEntry tag={item.tag} text={item.text} />
-      return <SystemLine text={item.text} subtype={item.subtype} durationMs={item.durationMs} />
+      if (item.subtype === 'compact_summary') return <CompactSummary text={item.text} />
+      return (
+        <SystemLine
+          text={item.text}
+          subtype={item.subtype}
+          durationMs={item.durationMs}
+          trigger={item.trigger}
+        />
+      )
     case 'unknown':
       return <UnknownEntry raw={item.raw} />
   }

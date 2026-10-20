@@ -110,6 +110,9 @@ const ptBR = {
   conversation: {
     turnDuration: 'Turno concluído em {{duration}}',
     compacted: 'Conversa compactada',
+    compactedWithTrigger: 'Conversa compactada {{trigger}}',
+    compactTrigger: { manual: 'manualmente', auto: 'automaticamente' },
+    compactSummary: 'Resumo (toque para ver)',
     interrupted: 'Interrompido',
     loading: 'carregando conversa…',
     newMessages: '↓ novas mensagens',

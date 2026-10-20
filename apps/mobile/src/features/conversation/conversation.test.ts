@@ -125,6 +125,21 @@ describe('systemText', () => {
     )
     expect(systemText({ subtype: 'info', text: 'raw' }, t)).toBe('raw')
   })
+
+  test('qualifies the compaction line by trigger when known', () => {
+    expect(
+      systemText({ subtype: 'compact_boundary', text: 'Conversation compacted', trigger: 'auto' }, en),
+    ).toBe('Conversation compacted automatically')
+    expect(
+      systemText({ subtype: 'compact_boundary', text: 'Conversation compacted', trigger: 'manual' }, pt),
+    ).toBe('Conversa compactada manualmente')
+    expect(
+      systemText({ subtype: 'compact_boundary', text: 'Conversation compacted', trigger: 'idle' }, en),
+    ).toBe('Conversation compacted')
+    expect(systemText({ subtype: 'compact_boundary', text: 'Conversation compacted' }, en)).toBe(
+      'Conversation compacted',
+    )
+  })
 })
 
 describe('task notifications', () => {

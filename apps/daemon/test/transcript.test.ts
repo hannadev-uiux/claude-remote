@@ -200,6 +200,73 @@ describe('tagged user entries', () => {
   })
 })
 
+describe('compaction entries', () => {
+  const compactSummary = (content: string) =>
+    JSON.stringify({
+      type: 'user',
+      uuid: 'u',
+      isCompactSummary: true,
+      isVisibleInTranscriptOnly: true,
+      message: { role: 'user', content },
+    })
+  const compactBoundary = (compactMetadata?: Record<string, unknown>) =>
+    JSON.stringify({
+      type: 'system',
+      uuid: 'b',
+      subtype: 'compact_boundary',
+      content: 'Conversation compacted',
+      ...(compactMetadata ? { compactMetadata } : {}),
+    })
+
+  test('the boilerplate written for the model is stripped from the summary', () => {
+    const content =
+      'Summary:\n1. Did things\n' +
+      '\nIf you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /tmp/example/session.jsonl\n' +
+      'Continue the conversation from where it left off without asking the user any further questions.'
+    const [entry, ...rest] = parseTranscriptLine(compactSummary(content), 0)
+    expect(rest).toEqual([])
+    expect(entry).toMatchObject({
+      kind: 'system',
+      subtype: 'compact_summary',
+      text: 'Summary:\n1. Did things',
+    })
+    expect(JSON.stringify(entry)).not.toContain('/tmp/example/session.jsonl')
+  })
+
+  test('a summary without the boilerplate marker is kept whole', () => {
+    const content = 'Summary:\n1. Did things, no trailing instructions here'
+    expect(parseTranscriptLine(compactSummary(content), 0)[0]).toMatchObject({
+      kind: 'system',
+      subtype: 'compact_summary',
+      text: content,
+    })
+  })
+
+  test('a regular user line (no isCompactSummary) is not affected', () => {
+    const line = JSON.stringify({ type: 'user', uuid: 'u', message: { role: 'user', content: 'hello' } })
+    expect(parseTranscriptLine(line, 0)[0]).toMatchObject({ kind: 'user', text: 'hello' })
+  })
+
+  test('compact_boundary carries a known trigger', () => {
+    expect(parseTranscriptLine(compactBoundary({ trigger: 'auto' }), 0)[0]).toMatchObject({
+      kind: 'system',
+      subtype: 'compact_boundary',
+      text: 'Conversation compacted',
+      trigger: 'auto',
+    })
+  })
+
+  test('compact_boundary without compactMetadata has no trigger field', () => {
+    const entry = parseTranscriptLine(compactBoundary(), 0)[0]
+    expect(entry).toMatchObject({
+      kind: 'system',
+      subtype: 'compact_boundary',
+      text: 'Conversation compacted',
+    })
+    expect(entry).not.toHaveProperty('trigger')
+  })
+})
+
 describe('images', () => {
   async function imageLines(): Promise<string[]> {
     return (await readFile(imagesFixture, 'utf8')).split('\n').filter(Boolean)

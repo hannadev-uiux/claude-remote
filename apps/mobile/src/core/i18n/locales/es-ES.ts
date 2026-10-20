@@ -110,6 +110,9 @@ const esES = {
   conversation: {
     turnDuration: 'Turno completado en {{duration}}',
     compacted: 'Conversación compactada',
+    compactedWithTrigger: 'Conversación compactada {{trigger}}',
+    compactTrigger: { manual: 'manualmente', auto: 'automáticamente' },
+    compactSummary: 'Resumen (toca para ver)',
     interrupted: 'Interrumpido',
     loading: 'cargando conversación…',
     newMessages: '↓ mensajes nuevos',
