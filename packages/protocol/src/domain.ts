@@ -595,3 +595,32 @@ export const DaemonUpdateInfoSchema = z.object({
   run: DaemonUpdateRunSchema.nullable(),
 })
 export type DaemonUpdateInfo = z.infer<typeof DaemonUpdateInfoSchema>
+
+/** A system permission's status, shared by the phone side and the computer side of the Permissions screen. */
+export const PermissionStatusSchema = z.enum(['allowed', 'denied', 'not_asked', 'limited', 'not_available'])
+export type PermissionStatus = z.infer<typeof PermissionStatusSchema>
+
+/** Computer-side rows reported by `machine.permissions`. */
+export const MachinePermissionIdSchema = z.enum([
+  'folderAccess',
+  'fullDiskAccess',
+  'accessibility',
+  'desktopNotifications',
+  'keychain',
+])
+export type MachinePermissionId = z.infer<typeof MachinePermissionIdSchema>
+
+export const MachinePermissionEntrySchema = z.object({ path: z.string(), status: PermissionStatusSchema })
+export type MachinePermissionEntry = z.infer<typeof MachinePermissionEntrySchema>
+
+/** `entries` is only present on `folderAccess`: one per folder the daemon checked. */
+export const MachinePermissionSchema = z.object({
+  id: MachinePermissionIdSchema,
+  status: PermissionStatusSchema,
+  entries: z.array(MachinePermissionEntrySchema).optional(),
+})
+export type MachinePermission = z.infer<typeof MachinePermissionSchema>
+
+/** `x-apple.systempreferences:` panes `machine.openSettingsPane` can open on the computer. */
+export const SettingsPaneSchema = z.enum(['fullDiskAccess', 'accessibility'])
+export type SettingsPane = z.infer<typeof SettingsPaneSchema>

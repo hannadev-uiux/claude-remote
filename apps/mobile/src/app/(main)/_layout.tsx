@@ -118,6 +118,7 @@ export default function MainLayout() {
         <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
         <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
         <Stack.Screen name="report" options={{ title: t('errorReports.problem.title') }} />
+        <Stack.Screen name="permissions" options={{ title: t('systemPermissions.title') }} />
         <Stack.Screen name="session/[id]/index" options={{ title: '', gestureEnabled: !overlayEdge }} />
         <Stack.Screen name="session/[id]/terminal" options={{ title: t('nav.terminal') }} />
         <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: t('nav.subagent') }} />

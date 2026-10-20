@@ -110,6 +110,9 @@ const clientSamples: ClientMessage[] = [
   { type: 'directories.list', id: '1', path: '~', limit: 200 },
   { type: 'directories.list', id: '1', path: '~/work', prefix: 'ap', hidden: true, limit: 20 },
   { type: 'diagnostics.errors', id: '1' },
+  { type: 'machine.permissions', id: '1' },
+  { type: 'machine.openSettingsPane', id: '1', pane: 'fullDiskAccess' },
+  { type: 'machine.openSettingsPane', id: '1', pane: 'accessibility' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'session.start', id: '1', profileId: 'work', cwd: '/tmp', model: 'anthropic/claude-opus-5.5' },
@@ -339,6 +342,23 @@ const serverSamples: ServerMessage[] = [
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
   { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
   { type: 'transcript.image', replyTo: '1', imageId: '12.0', mediaType: 'image/png', data: 'iVBORw0KGgo=' },
+  {
+    type: 'machine.permissions.results',
+    replyTo: '1',
+    permissions: [
+      {
+        id: 'folderAccess',
+        status: 'denied',
+        entries: [
+          { path: '/Users/u/Desktop', status: 'allowed' },
+          { path: '/Users/u/work/api', status: 'denied' },
+        ],
+      },
+      { id: 'fullDiskAccess', status: 'not_available' },
+      { id: 'keychain', status: 'allowed' },
+    ],
+  },
+  { type: 'machine.permissions.results', replyTo: '1', permissions: [] },
 ]
 
 describe('client messages', () => {
