@@ -17,6 +17,7 @@ import { usePush } from '@/features/push/use-push'
 import { extractSessionIdFromPathname } from '@/features/sessions/active-session'
 import { ListTitle } from '@/features/sessions/components/ListTitle'
 import { SessionListActions } from '@/features/sessions/components/SessionListActions'
+import { trackPathname } from '@/features/sessions/open-session'
 import { SessionsScreen } from '@/features/sessions/SessionsScreen'
 import { KeyboardShortcutsSheet } from '@/features/shortcuts/KeyboardShortcutsSheet'
 import { backAction } from '@/features/shortcuts/logic'
@@ -24,6 +25,13 @@ import { setShortcutsSheetOpen, useShortcutsStore } from '@/features/shortcuts/s
 import { useSessionShortcuts } from '@/features/shortcuts/use-session-shortcuts'
 import { useDaemonSync } from '@/features/sync/use-daemon-sync'
 import { IconButton, MasterDetailLayout, stackScreenOptions } from '@/ui'
+
+/**
+ * The list is always the bottom of the stack, also when a link (Live Activity, notification) opens
+ * a session at start-up: the session then has a back button, and going "home" never stacks the list
+ * on top of it.
+ */
+export const unstable_settings = { anchor: 'index' }
 
 /**
  * ⌘N, ⌘, and ⌘/ (the shortcuts sheet); Esc leaves a focused field, then goes back (a session to the
@@ -78,6 +86,7 @@ export default function MainLayout() {
   const inspectorWidth = useInspectorStore((s) => s.width)
   useShellKeyCommands(pathname)
   useSessionShortcuts(selectedSessionId, layout)
+  trackPathname(pathname)
 
   // Portrait tablets: the list slides over the conversation; it opens on its own while no session
   // is open and closes when one is picked.
@@ -96,12 +105,16 @@ export default function MainLayout() {
       <SessionsScreen pendingBySession={pending} selectedSessionId={selectedSessionId} interactive />
     </>
   )
-  // Where ☰ replaces the back button, the swipe from the left edge opens the list instead of going back.
+  // On the list and a session's conversation, ☰ replaces the back button and the swipe from the
+  // left edge opens the list instead of going back. Deeper screens keep both.
   const overlayEdge = sidebar === 'overlay'
-  const menuButton =
-    sidebar === 'overlay'
-      ? () => <IconButton icon={Menu} label={t('tablet.sidebar')} onPress={() => setSidebarOpen(true)} />
-      : undefined
+  const menuButton = overlayEdge
+    ? {
+        headerLeft: () => (
+          <IconButton icon={Menu} label={t('tablet.sidebar')} onPress={() => setSidebarOpen(true)} />
+        ),
+      }
+    : {}
 
   return (
     <MasterDetailLayout
@@ -121,18 +134,25 @@ export default function MainLayout() {
       inspectorWidth={inspectorWidth}
       onCloseInspector={() => setInspectorOpen(false)}
     >
-      <Stack
-        screenOptions={{ ...stackScreenOptions(theme), ...(menuButton ? { headerLeft: menuButton } : {}) }}
-      >
+      <Stack screenOptions={stackScreenOptions(theme)}>
         <Stack.Screen
           name="index"
-          options={{ headerTitle: () => <ListTitle />, gestureEnabled: !overlayEdge }}
+          // The list is the root: never a back button there.
+          options={{
+            headerTitle: () => <ListTitle />,
+            headerBackVisible: false,
+            gestureEnabled: !overlayEdge,
+            ...menuButton,
+          }}
         />
         <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
         <Stack.Screen name="new" options={{ title: t('nav.newSession'), presentation: 'modal' }} />
         <Stack.Screen name="report" options={{ title: t('errorReports.problem.title') }} />
         <Stack.Screen name="permissions" options={{ title: t('systemPermissions.title') }} />
-        <Stack.Screen name="session/[id]/index" options={{ title: '', gestureEnabled: !overlayEdge }} />
+        <Stack.Screen
+          name="session/[id]/index"
+          options={{ title: '', gestureEnabled: !overlayEdge, ...menuButton }}
+        />
         <Stack.Screen name="session/[id]/terminal" options={{ title: t('nav.terminal') }} />
         <Stack.Screen name="session/[id]/agent/[agentId]" options={{ title: t('nav.subagent') }} />
       </Stack>

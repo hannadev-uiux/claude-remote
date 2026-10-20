@@ -1,7 +1,6 @@
 import type { Session } from '@remote-harness/protocol'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import * as Clipboard from 'expo-clipboard'
-import { router } from 'expo-router'
 import {
   Bell,
   BellOff,
@@ -39,6 +38,7 @@ import { SessionSearch } from './components/SessionSearch'
 import { closeOpenRow, type SwipeAction, SwipeableRow, type SwipeTone } from './components/SwipeableRow'
 import { isFiltering, listSessions, NO_FILTER, type SessionFilter, type StateFilter } from './filter'
 import { moveCursor } from './keyboard-nav'
+import { openSession } from './open-session'
 import { setHidden, setPinned, useSessionPrefsStore } from './prefs-store'
 import { setSessionSort, useSessionSortStore } from './sort-store'
 import { refreshSessions, useSessionsStore } from './store'
@@ -128,7 +128,7 @@ export function SessionsScreen({
     () => {
       if (TextInput.State.currentlyFocusedInput()) return false
       const id = keyboardCursorRef.current
-      if (id) router.push({ pathname: '/session/[id]', params: { id } })
+      if (id) openSession(id)
     },
     interactive,
   )
@@ -161,7 +161,7 @@ export function SessionsScreen({
         if (!client) return
         client
           .request({ type: 'session.resume', profileId: session.profileId, sessionId: session.id })
-          .then(() => router.push({ pathname: '/session/[id]', params: { id: session.id } }), fail)
+          .then(() => openSession(session.id), fail)
         break
       case 'mute':
       case 'unmute':
