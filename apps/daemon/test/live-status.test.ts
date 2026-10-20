@@ -191,6 +191,9 @@ describe('pending permission and glyphs', () => {
     const props = liveProps(status, info, pt)
     expect(props.pending).toEqual({ requestId: 'r1', tool: 'pr', allow: 'Permitir', deny: 'Negar' })
     expect(props.glyphs).toEqual(['?', '⌘'])
+    // Handed over to the terminal: still waiting, without the lock-screen answer.
+    const handedOver = reduceLiveStatus(status, { type: 'waiting', permission: true, pending: null }, 3)
+    expect(handedOver).toMatchObject({ state: 'waiting', step: 'permission', pending: null })
     const resumed = reduceLiveStatus(status, { type: 'resumed' }, 4)
     expect(resumed).toMatchObject({ state: 'working', pending: null })
     expect(liveProps(resumed, info, en).pending).toBeNull()

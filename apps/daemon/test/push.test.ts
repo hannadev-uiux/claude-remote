@@ -178,6 +178,33 @@ describe('PushService', () => {
     expect(JSON.stringify(plan)).not.toContain('secret')
   })
 
+  test('reminders exist for questions and plans only, without content or actions', async () => {
+    const { service } = await setup()
+    const base = {
+      requestId: 'r1',
+      sessionId: 's',
+      profileId: 'drclaude',
+      tool: 'ExitPlanMode',
+      input: {},
+      suggestedRule: null,
+      defaultScope: 'project' as const,
+      createdAt: '',
+      expiresAt: '',
+    }
+    expect(service.messageForReminder(base)).toBeNull()
+    const plan = service.messageForReminder({ ...base, interaction: { kind: 'plan', plan: 'secret plan' } })
+    expect(plan).toMatchObject({
+      title: 'Plan still waiting for review',
+      data: { sessionId: 's', event: 'PermissionReminder' },
+    })
+    expect(plan?.category).toBeUndefined()
+    expect(JSON.stringify(plan)).not.toContain('secret')
+    expect(
+      service.messageForReminder({ ...base, interaction: { kind: 'question', title: null, questions: [] } })
+        ?.title,
+    ).toBe('Still waiting for your answer')
+  })
+
   test('permission_prompt notifications are left to the permission flow', async () => {
     const { service } = await setup()
     expect(

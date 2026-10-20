@@ -28,9 +28,11 @@ export function bindPermissions(
 ): () => void {
   const offs = [
     client.onReady(() => usePermissionsStore.setState({ pending: {} })),
+    // A request sent again (handed over to the terminal) replaces its data without a new haptic.
     client.on('permission.request', ({ request }) => {
+      const known = request.requestId in usePermissionsStore.getState().pending
       usePermissionsStore.setState((s) => ({ pending: { ...s.pending, [request.requestId]: request } }))
-      onNewRequest?.(request)
+      if (!known) onNewRequest?.(request)
     }),
     client.on('permission.resolved', ({ requestId, sessionId, outcome }) => {
       usePermissionsStore.setState((s) => {

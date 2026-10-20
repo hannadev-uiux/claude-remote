@@ -108,6 +108,74 @@ describe('tray shell menu', () => {
     expect(trayIcon({ pending: null, sessions: [session('x', 'idle')] })).toBe('idle')
   })
 
+  test('Pair a phone: QR on macOS, the address, the terminal and a confirmed token rotation', () => {
+    const pairing = { url: 'claude-remote://pair?host=h&port=1&token=t', address: '100.64.0.2:7337' }
+    const find = (items: TrayItem[], label: string) =>
+      items.find((i): i is Extract<TrayItem, { type: 'submenu' }> => 'items' in i && i.label === label)
+    const mac = find(buildTrayMenu({ ...base, pairing, qr: true }, en).items, 'Pair a phone')
+    expect(mac?.items[0]).toEqual({ type: 'qr', text: pairing.url })
+    expect(labels(mac?.items ?? [])).toEqual(
+      expect.arrayContaining(['100.64.0.2:7337', 'Show the pairing in the terminal', 'Rotate token…']),
+    )
+    expect(ids(mac?.items ?? [])).toEqual(expect.arrayContaining(['pair', 'rotate-token']))
+    // Linux helpers get no QR item; before the daemon listens, the single item stays.
+    const linux = find(buildTrayMenu({ ...base, pairing, qr: false }, en).items, 'Pair a phone')
+    expect(linux?.items.some((i) => 'type' in i && i.type === 'qr')).toBe(false)
+    expect(buildTrayMenu({ ...base, pairing: null }, en).items).toContainEqual({
+      id: 'pair',
+      label: 'Pair a phone…',
+    })
+  })
+
+  test('Preferences: permissions here, keep awake, push and the config file', () => {
+    const prefs = { permissions: true, keepAwake: 'sessions' as const, push: true }
+    const menu = buildTrayMenu({ ...base, prefs }, en)
+    const sub = menu.items.find(
+      (i): i is Extract<TrayItem, { type: 'submenu' }> => 'items' in i && i.label === 'Preferences',
+    )
+    expect(sub?.items[0]).toEqual({
+      id: 'pref:permissions',
+      label: 'Show permission requests here',
+      checked: true,
+    })
+    const awake = sub?.items.find(
+      (i): i is Extract<TrayItem, { type: 'submenu' }> =>
+        'items' in i && i.label === 'Keep the computer awake',
+    )
+    expect(awake?.items).toEqual([
+      { id: 'awake:off', label: 'Never', checked: false },
+      { id: 'awake:sessions', label: 'While sessions are active', checked: true },
+      { id: 'awake:always', label: 'Always', checked: false },
+    ])
+    expect(ids(sub?.items ?? [])).toEqual(expect.arrayContaining(['pref:push', 'prefs']))
+    // Answers off: the waiting request keeps only Open in terminal.
+    const pending = {
+      requestId: 'r1',
+      sessionId: 'b',
+      title: 'T',
+      profile: 'Work',
+      summary: 'Bash · ls',
+      canAlways: true,
+    }
+    const quiet = buildTrayMenu({ ...base, pending, prefs: { ...prefs, permissions: false } }, en)
+    expect(ids(quiet.items)).toContain('focus:b')
+    expect(ids(quiet.items)).not.toContain('allow:r1')
+    expect(ids(quiet.items)).not.toContain('deny:r1')
+  })
+
+  test('Quit asks about the service only under a service manager', () => {
+    const managed = buildTrayMenu({ ...base, canStopService: true }, en).items.at(-1)
+    expect(managed).toEqual({
+      type: 'submenu',
+      label: 'Quit',
+      items: [
+        { id: 'quit', label: 'Hide the icon (the service keeps running)' },
+        { id: 'quit-service', label: 'Stop the service until the next login' },
+      ],
+    })
+    expect(buildTrayMenu(base, en).items.at(-1)).toEqual({ id: 'quit', label: 'Quit tray' })
+  })
+
   test('pendingSummary keeps the tool and a short detail, never the whole input', () => {
     expect(pendingSummary({ tool: 'Bash', input: { command: 'gh pr create --fill --base main' } })).toBe(
       'Bash · gh pr create --fill --base main',

@@ -39,6 +39,7 @@ El comando antiguo `claude-remote` y las variables `CLAUDE_REMOTE_*` siguen func
   "hookPort": 7338,
   "defaultRuleScope": "project",
   "permissionTimeoutSec": 280,
+  "questionTimeoutSec": 3300,
   "inputStrategy": "paste",
   "recentDays": 7,
   "tmuxSession": "claude-remote",
@@ -51,7 +52,8 @@ El comando antiguo `claude-remote` y las variables `CLAUDE_REMOTE_*` siguen func
 - `profiles`: uno por cuenta de Claude Code. `id` es el alias (el nombre del lanzador), `configDir` el `CLAUDE_CONFIG_DIR` de la cuenta, `color` el color de la etiqueta en la app. Opcionales: `agent` (`claude` por defecto) y `provider` (abajo).
 - `wsPort`, `hookPort`: los puertos de la app y de los hooks.
 - `defaultRuleScope`: adónde van las reglas "permitir siempre" por defecto, `project` o `user`.
-- `permissionTimeoutSec`: cuánto tiempo retiene el daemon una petición de permiso para el móvil antes de que el diálogo del terminal tome el control.
+- `permissionTimeoutSec`: cuánto tiempo retiene el daemon una petición de permiso para el móvil antes de que el diálogo del terminal tome el control. La petición sigue en la app como "Responde en la terminal" hasta que la sesión avance.
+- `questionTimeoutSec`: lo mismo para preguntas y aprobación de planes (3300 por defecto). Una pregunta todavía abierta después de 10 minutos envía un push de recordatorio. El timeout del hook escrito en la configuración del agente cubre ambos, y `remote-harness install` o `update` lo reescribe.
 - `inputStrategy`: `paste` (por defecto) o `type` para los prompts enviados desde el móvil.
 - `recentDays`: hasta cuándo se listan las sesiones terminadas.
 - `tmuxSession`: la sesión de tmux que usan los lanzadores.
@@ -59,6 +61,7 @@ El comando antiguo `claude-remote` y las variables `CLAUDE_REMOTE_*` siguen func
 - `push`: `auto` (tu cuenta de servicio de Firebase cuando existe, si no el relay) u `off`.
 - `update`: el canal que siguen `update` y la comprobación, y si las actualizaciones se aplican solas.
 - `tray`: el icono de la barra de menús / bandeja.
+- `trayPermissions`: si la bandeja ofrece Permitir / Permitir siempre / Denegar para un permiso pendiente (activado por defecto; también en las Preferencias de la bandeja).
 
 Los cambios en el archivo se aplican cuando el daemon se reinicia (`remote-harness service install` de nuevo, o reiniciar desde la bandeja).
 
@@ -108,7 +111,7 @@ El servicio comprueba su canal en el remoto de git cada 6 horas y muestra una no
 
 ## Icono de la bandeja
 
-El daemon del servicio muestra un icono en la barra de menús de macOS (un pequeño ayudante en Swift compilado en el primer inicio con las Command Line Tools) y un icono en la bandeja de Linux (`python3` con GTK 3 y AyatanaAppIndicator3 o AppIndicator3). El menú muestra las sesiones en marcha y los permisos pendientes (respóndelos desde ahí), abre una sesión nueva, muestra el código de emparejamiento, comprueba o aplica actualizaciones, elige el canal, abre los registros, la configuración y la documentación, y reinicia el daemon. `"tray": false` lo desactiva; sin el ayudante, y en WSL, el daemon funciona sin interfaz.
+El daemon del servicio muestra un icono en la barra de menús de macOS (un pequeño ayudante en Swift compilado en el primer inicio con las Command Line Tools) y un icono en la bandeja de Linux (`python3` con GTK 3 y AyatanaAppIndicator3 o AppIndicator3). El menú muestra las sesiones en marcha y los permisos pendientes (respóndelos desde ahí), abre una sesión nueva, muestra el código de emparejamiento, comprueba o aplica actualizaciones, elige el canal, abre los registros, la configuración y la documentación, y reinicia el daemon. **Emparejar un móvil** muestra el QR de emparejamiento en el propio menú en macOS, la dirección, el emparejamiento en la terminal y **Cambiar el token…** (los móviles emparejados deben emparejarse de nuevo). **Preferencias** activa o desactiva las respuestas de permisos en el menú, el modo de mantener despierto y las notificaciones push, aplicados al momento, y abre el archivo de configuración para lo demás. Con el servicio, **Salir** oculta el icono o detiene el servicio hasta el próximo inicio de sesión. `"tray": false` lo desactiva; sin el ayudante, y en WSL, el daemon funciona sin interfaz.
 
 ## Datos y registros
 

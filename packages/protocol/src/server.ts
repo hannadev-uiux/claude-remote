@@ -27,6 +27,7 @@ import {
   SessionStateSchema,
   SubagentInfoSchema,
   TranscriptEntrySchema,
+  WorktreeCopySchema,
   WorktreeInfoSchema,
 } from './domain.ts'
 
@@ -165,6 +166,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     replyTo,
     checkout: CheckoutSchema.nullable(),
     peers: z.array(CheckoutPeerSchema),
+    /** Inside a checkout: what an isolated copy (worktree) would inherit. */
+    worktreeCopy: WorktreeCopySchema.optional(),
   }),
   /** `null` when the session's folder is not inside a linked git worktree. */
   z.object({ type: z.literal('worktree.info'), replyTo, worktree: WorktreeInfoSchema.nullable() }),

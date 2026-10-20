@@ -8,7 +8,9 @@ import {
   CHECKOUT_CACHE_MS,
   CheckoutResolver,
   needsCheckout,
+  worktreeCandidates,
   worktreeName,
+  worktreeSlug,
 } from '../src/features/checkout/resolver.ts'
 import { SessionStore } from '../src/features/sessions/store.ts'
 import type { SessionRecord } from '../src/features/sessions/types.ts'
@@ -131,6 +133,18 @@ test('worktreeName is a valid, sortable branch and directory name', () => {
   expect(worktreeName(new Date(2026, 9, 5, 7, 3, 9))).toBe('remote-20261005-070309')
 })
 
+test('a session name becomes a worktree slug', () => {
+  expect(worktreeSlug('Rate limit on login')).toBe('rate-limit-on-login')
+  expect(worktreeSlug('  Correção: Ação rápida!  ')).toBe('correcao-acao-rapida')
+  expect(worktreeSlug('🚀 ✨')).toBe('')
+  const long = worktreeSlug('one two three four five six seven eight nine ten')
+  expect(long).toBe('one-two-three-four-five-six-seven-eight')
+  expect(long.length).toBeLessThanOrEqual(40)
+  expect(worktreeSlug('x'.repeat(60))).toBe('x'.repeat(40))
+  expect(worktreeCandidates('fix')).toEqual(['fix', ...[2, 3, 4, 5, 6, 7, 8, 9].map((n) => `fix-${n}`)])
+  expect(worktreeCandidates('')).toEqual([])
+})
+
 describe('checkout feature', () => {
   function setup(checkouts: Record<string, Checkout | null>) {
     const broadcast: ServerMessage[] = []
@@ -210,6 +224,7 @@ describe('checkout feature', () => {
       replyTo: '1',
       checkout: api,
       peers: [{ id: 'live', title: 'Fix login' }],
+      worktreeCopy: { localSettings: false, include: [] },
     })
     await router.dispatch({ type: 'checkout.inspect', id: '2', profileId: 'claudin', cwd: '/etc' }, conn)
     expect(conn.sent[1]).toMatchObject({ type: 'error', code: 'invalid_cwd' })

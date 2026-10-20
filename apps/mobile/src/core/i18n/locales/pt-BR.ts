@@ -234,6 +234,8 @@ const ptBR = {
     cleanupFailed: 'O worktree não foi excluído. Nada foi perdido.',
     retry: 'Tentar de novo',
     keepAfterFailure: 'Manter o worktree',
+    worktreeInUse:
+      'O agente ainda está usando o worktree, então ele não foi apagado. Tente de novo em instantes ou mantenha-o.',
   },
   providers: {
     via: 'via {{provider}}',
@@ -404,6 +406,7 @@ const ptBR = {
       plan: 'plano pronto para revisão',
       waiting: 'esperando você',
       open: 'Abrir',
+      terminal: 'responda no terminal',
     },
     detail: {
       command: 'comando',
@@ -421,6 +424,13 @@ const ptBR = {
       profile: 'Perfil {{name}}',
       profileDetail: 'settings.json do perfil — todas as sessões dele',
       confirm: 'Gravar e permitir',
+    },
+    handover: {
+      label: 'Responda no terminal',
+      body: 'O agente ainda está esperando, mas o app não consegue mais responder. Responda no terminal.',
+      onComputer:
+        'O agente ainda está esperando, mas o app não consegue mais responder. Responda no computador.',
+      openTerminal: 'Abrir terminal',
     },
     question: {
       title: '{{agent}} tem uma pergunta',
@@ -616,6 +626,8 @@ const ptBR = {
     modelDefault: 'Padrão do provedor',
     directory: 'Diretório',
     placeholder: '~/workspaces/projeto',
+    name: 'Nome (opcional)',
+    namePlaceholder: 'ex.: Limite de tentativas no login',
     start: 'Iniciar sessão',
     starting: 'Iniciando {{agent}} em {{path}}…',
     recent: 'Recentes',
@@ -625,6 +637,10 @@ const ptBR = {
     detached: 'HEAD destacado',
     worktree: 'Cópia isolada (git worktree)',
     worktreeHint: 'O agente trabalha numa branch própria em .claude/worktrees, sem mexer neste checkout.',
+    carryOver: 'Vai junto: {{items}}',
+    carryLocalSettings: 'Permissões locais (.claude/settings.local.json)',
+    carryHint:
+      'Para copiar arquivos ignorados pelo git, como .env, liste-os em .worktreeinclude na raiz do repositório.',
     busy_one: 'Outra sessão está trabalhando neste checkout:',
     busy_other: '{{count}} sessões estão trabalhando neste checkout:',
     busyHint: 'O worktree mantém as sessões separadas.',
@@ -813,9 +829,8 @@ const ptBR = {
     summaryRunning_other: '{{count}} subagentes · {{running}} rodando',
     tools_one: '{{count}} ferramenta',
     tools_other: '{{count}} ferramentas',
-    state: { running: 'rodando', done: 'concluído' },
-    running: '· rodando',
-    done: '· concluído',
+    state: { running: 'rodando', done: '✓ concluído', failed: '× falhou', stopped: '■ parado' },
+    unnamed: 'Subagente #{{n}}',
     more_one: '+{{count}} subagente ({{running}} rodando)',
     more_other: '+{{count}} subagentes ({{running}} rodando)',
   },
@@ -861,6 +876,9 @@ const ptBR = {
     keyboardCard: 'Teclado',
     returnSends: 'Return envia',
     returnSendsHint: 'O teclado da tela envia a mensagem; nova linha então só com teclado físico (⇧⏎).',
+    autocorrect: 'Correção automática na mensagem',
+    autocorrectHint:
+      'Corrige acentos e erros de digitação enquanto você escreve. Nunca ao digitar um /comando ou um @arquivo.',
     notifications: 'Notificações',
     push: 'Notificações push',
     pushHint: 'Só este celular · nunca a conversa',
@@ -882,6 +900,9 @@ const ptBR = {
     title: 'Relatórios de erro',
     hint: 'Ajude a corrigir bugs enviando relatórios de erro. Eles nunca incluem suas sessões: nada de prompts, conversa, saída do terminal, caminhos ou nomes.',
     preferences: { auto: 'Enviar automaticamente', ask: 'Perguntar sempre', never: 'Nunca' },
+    performance: 'Enviar dados de desempenho',
+    performanceHint:
+      'Início do app, telas travadas e momentos lentos do app, para achar o que o deixa lento. Nunca suas sessões nem o endereço do seu computador.',
     unavailable:
       'Este build não tem Firebase: os relatórios só podem ser compartilhados ou abertos como issue no GitHub.',
     recorded_one: '{{count}} erro registrado neste aparelho',

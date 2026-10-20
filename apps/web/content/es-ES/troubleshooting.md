@@ -62,6 +62,16 @@ El lanzador se niega a abrir una ventana cuando el perfil no tiene clave e impri
 
 Cuando el build de TestFlight o de Google Play esté disponible, instálalo junto al build que hiciste tú: tiene otra firma, así que empieza vacío. Empareja de nuevo escaneando `remote-harness pair`; el emparejamiento antiguo sigue funcionando hasta que toques **Olvidar esta máquina** en ese build o rotes el token. El push se registra solo en el primer arranque del nuevo build, y el ordenador descarta el registro antiguo cuando deja de conectarse. Después borra el development build.
 
+## La app va lenta o se congela
+
+Activa Ajustes → Informes de errores → **Enviar datos de rendimiento** en ese móvil (solo en builds con Firebase) y usa la app como siempre. Tras unos minutos, la página **Performance** de la consola de Firebase muestra, por modelo de dispositivo y sistema:
+
+- `_app_start` y la traza `app_ready` (`ready_ms`: desde el arranque de la app hasta la primera conexión con tu ordenador; `outcome` `connected` o `timeout`);
+- `js_responsiveness`: una traza por periodo en primer plano, con `stalls` (JavaScript bloqueado 1 s o más), `long_stalls` (5 s o más), `stall_max_ms` y `stall_total_ms`, filtrable por `layout`;
+- fotogramas lentos y congelados en **Screen rendering**.
+
+Un bloqueo que termina con el sistema cerrando la app pierde su última traza `js_responsiveness`. Un `app_ready` largo o un crash en Crashlytics en el siguiente arranque siguen siendo una pista. Los builds de depuración solo envían con el flag de depuración de Firebase activado.
+
 ## Pedir ayuda
 
 Abre una issue con la salida de `remote-harness doctor`, las versiones (sistema, Node, Claude Code, app) y los registros del daemon de `~/.remote-harness/logs`, tras quitar tokens y contenido de sesiones. Los problemas de seguridad van a [Seguridad y privacidad](/es/docs/security/#informar-de-una-vulnerabilidad), nunca a issues públicas.

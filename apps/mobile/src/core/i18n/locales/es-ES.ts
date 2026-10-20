@@ -234,6 +234,8 @@ const esES = {
     cleanupFailed: 'El worktree no se eliminó. No se perdió nada.',
     retry: 'Reintentar',
     keepAfterFailure: 'Mantener el worktree',
+    worktreeInUse:
+      'El agente todavía está usando el worktree, así que no se borró. Inténtalo de nuevo en un momento o consérvalo.',
   },
   providers: {
     via: 'vía {{provider}}',
@@ -404,6 +406,7 @@ const esES = {
       plan: 'plan listo para revisar',
       waiting: 'esperando por ti',
       open: 'Abrir',
+      terminal: 'responde en la terminal',
     },
     detail: {
       command: 'comando',
@@ -421,6 +424,12 @@ const esES = {
       profile: 'Perfil {{name}}',
       profileDetail: 'settings.json del perfil — todas sus sesiones',
       confirm: 'Guardar y permitir',
+    },
+    handover: {
+      label: 'Responde en la terminal',
+      body: 'El agente sigue esperando, pero la app ya no puede responder. Responde en la terminal.',
+      onComputer: 'El agente sigue esperando, pero la app ya no puede responder. Responde en el ordenador.',
+      openTerminal: 'Abrir terminal',
     },
     question: {
       title: '{{agent}} tiene una pregunta',
@@ -617,6 +626,8 @@ const esES = {
     modelDefault: 'Predeterminado del proveedor',
     directory: 'Directorio',
     placeholder: '~/workspaces/proyecto',
+    name: 'Nombre (opcional)',
+    namePlaceholder: 'p. ej.: Límite de intentos en el login',
     start: 'Crear sesión',
     starting: 'Iniciando {{agent}} en {{path}}…',
     recent: 'Recientes',
@@ -626,6 +637,10 @@ const esES = {
     detached: 'HEAD separado',
     worktree: 'Copia aislada (git worktree)',
     worktreeHint: 'El agente trabaja en su propia rama en .claude/worktrees, sin tocar este checkout.',
+    carryOver: 'Se lleva: {{items}}',
+    carryLocalSettings: 'Permisos locales (.claude/settings.local.json)',
+    carryHint:
+      'Para copiar archivos ignorados por git, como .env, lístalos en .worktreeinclude en la raíz del repositorio.',
     busy_one: 'Otra sesión está trabajando en este checkout:',
     busy_other: '{{count}} sesiones están trabajando en este checkout:',
     busyHint: 'El worktree mantiene las sesiones separadas.',
@@ -814,9 +829,8 @@ const esES = {
     summaryRunning_other: '{{count}} subagentes · {{running}} en marcha',
     tools_one: '{{count}} herramienta',
     tools_other: '{{count}} herramientas',
-    state: { running: 'en marcha', done: 'terminado' },
-    running: '· en marcha',
-    done: '· terminado',
+    state: { running: 'en marcha', done: '✓ terminado', failed: '× falló', stopped: '■ detenido' },
+    unnamed: 'Subagente #{{n}}',
     more_one: '+{{count}} subagente ({{running}} en marcha)',
     more_other: '+{{count}} subagentes ({{running}} en marcha)',
   },
@@ -863,6 +877,9 @@ const esES = {
     returnSends: 'Intro envía',
     returnSendsHint:
       'El teclado en pantalla envía el mensaje; las líneas nuevas, solo con teclado físico (⇧⏎).',
+    autocorrect: 'Autocorrección en el mensaje',
+    autocorrectHint:
+      'Corrige acentos y erratas mientras escribes. Nunca al escribir un /comando o un @archivo.',
     notifications: 'Notificaciones',
     push: 'Notificaciones push',
     pushHint: 'Solo este teléfono · nunca la conversación',
@@ -884,6 +901,9 @@ const esES = {
     title: 'Informes de errores',
     hint: 'Ayuda a corregir fallos enviando informes de errores. Nunca incluyen tus sesiones: ni prompts, ni conversación, ni salida del terminal, rutas o nombres.',
     preferences: { auto: 'Enviar automáticamente', ask: 'Preguntar cada vez', never: 'Nunca' },
+    performance: 'Enviar datos de rendimiento',
+    performanceHint:
+      'Inicio de la app, pantallas congeladas y momentos lentos de la app, para encontrar qué la hace lenta. Nunca tus sesiones ni la dirección de tu ordenador.',
     unavailable:
       'Esta compilación no tiene Firebase: los informes solo se pueden compartir o publicar como issue en GitHub.',
     recorded_one: '{{count}} error registrado en este teléfono',

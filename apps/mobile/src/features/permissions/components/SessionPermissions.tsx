@@ -7,6 +7,7 @@ import { Text } from '@/ui'
 import { selectPendingFor, usePermissionsStore } from '../store'
 import { useRespond } from '../use-respond'
 import { AlwaysAllowSheet } from './AlwaysAllowSheet'
+import { HandoverCard } from './HandoverCard'
 import { PermissionCard } from './PermissionCard'
 import { PlanCard } from './PlanCard'
 import { QuestionCard } from './QuestionCard'
@@ -16,10 +17,13 @@ export function SessionPermissions({
   sessionId,
   cwd,
   profileId,
+  onOpenTerminal,
 }: {
   sessionId: string
   cwd: string
   profileId: string
+  /** Opens the session's terminal (controllable sessions): where handed-over requests are answered. */
+  onOpenTerminal?: () => void
 }) {
   const { t } = useTranslation()
   const pending = usePermissionsStore(useShallow(selectPendingFor(sessionId)))
@@ -33,7 +37,9 @@ export function SessionPermissions({
 
   return (
     <>
-      {current && interaction?.kind === 'question' ? (
+      {current?.terminal ? (
+        <HandoverCard key={current.requestId} request={current} onOpenTerminal={onOpenTerminal} />
+      ) : current && interaction?.kind === 'question' ? (
         <QuestionCard
           key={current.requestId}
           title={interaction.title}

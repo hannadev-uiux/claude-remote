@@ -1,12 +1,12 @@
 import Constants from 'expo-constants'
 import * as Notifications from 'expo-notifications'
-import { router } from 'expo-router'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppState, Platform } from 'react-native'
 import { useConnectionStore } from '@/core/connection'
 import type { TFunction } from '@/core/i18n/create'
 import { devicePlatform } from '@/core/platform/platform'
+import { openSession as openSessionScreen } from '@/features/sessions/open-session'
 import { answerAction, showLiveMessage } from './background'
 import { loadMessaging } from './firebase'
 import {
@@ -87,7 +87,7 @@ async function requestPermission(messaging: NonNullable<ReturnType<typeof loadMe
 
 function openSession(data: PushData) {
   if (!firstTap(data.requestId ?? `${data.sessionId}:${data.event ?? ''}`, Date.now())) return
-  router.push({ pathname: '/session/[id]', params: { id: data.sessionId } })
+  openSessionScreen(data.sessionId)
 }
 
 async function handleResponse(response: Notifications.NotificationResponse) {

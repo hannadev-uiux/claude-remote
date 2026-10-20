@@ -238,6 +238,8 @@ const enUS = {
     cleanupFailed: 'The worktree was not deleted. Nothing was lost.',
     retry: 'Retry',
     keepAfterFailure: 'Keep the worktree',
+    worktreeInUse:
+      'The agent is still using the worktree, so it was not deleted. Try again in a moment, or keep it.',
   },
   providers: {
     /** Dashed chip on profile rows and in Settings; the provider is a product name. */
@@ -405,6 +407,7 @@ const enUS = {
       plan: 'plan ready for review',
       waiting: 'waiting for you',
       open: 'Open',
+      terminal: 'answer in the terminal',
     },
     detail: {
       command: 'command',
@@ -422,6 +425,13 @@ const enUS = {
       profile: 'Profile {{name}}',
       profileDetail: "the profile's settings.json — all of its sessions",
       confirm: 'Save and allow',
+    },
+    handover: {
+      label: 'Answer in the terminal',
+      body: 'The agent is still waiting, but the app can no longer answer this. Answer it in the terminal.',
+      onComputer:
+        'The agent is still waiting, but the app can no longer answer this. Answer it on the computer.',
+      openTerminal: 'Open terminal',
     },
     question: {
       title: '{{agent}} has a question',
@@ -617,6 +627,8 @@ const enUS = {
     modelDefault: 'Provider default',
     directory: 'Directory',
     placeholder: '~/workspaces/project',
+    name: 'Name (optional)',
+    namePlaceholder: 'e.g. Rate limit on login',
     start: 'Start session',
     starting: 'Starting {{agent}} in {{path}}…',
     recent: 'Recent',
@@ -626,6 +638,10 @@ const enUS = {
     detached: 'detached HEAD',
     worktree: 'Isolated copy (git worktree)',
     worktreeHint: 'The agent works on its own branch in .claude/worktrees, without touching this checkout.',
+    carryOver: 'Carried over: {{items}}',
+    carryLocalSettings: 'Local permissions (.claude/settings.local.json)',
+    carryHint:
+      'To copy git-ignored files such as .env, list them in .worktreeinclude at the repository root.',
     busy_one: 'Another session is working in this checkout:',
     busy_other: '{{count}} sessions are working in this checkout:',
     busyHint: 'The worktree keeps them apart.',
@@ -814,9 +830,8 @@ const enUS = {
     summaryRunning_other: '{{count}} subagents · {{running}} running',
     tools_one: '{{count}} tool',
     tools_other: '{{count}} tools',
-    state: { running: 'running', done: 'done' },
-    running: '· running',
-    done: '· done',
+    state: { running: 'running', done: '✓ done', failed: '× failed', stopped: '■ stopped' },
+    unnamed: 'Subagent #{{n}}',
     more_one: '+{{count}} subagent ({{running}} running)',
     more_other: '+{{count}} subagents ({{running}} running)',
   },
@@ -863,6 +878,8 @@ const enUS = {
     returnSends: 'Return key sends',
     returnSendsHint:
       'The on-screen keyboard sends the message; new lines then only with a hardware keyboard (⇧⏎).',
+    autocorrect: 'Autocorrect in the message input',
+    autocorrectHint: 'Fixes accents and typos as you type. Never while typing a /command or an @file.',
     notifications: 'Notifications',
     push: 'Push notifications',
     pushHint: 'Only this phone · never the conversation',
@@ -884,6 +901,9 @@ const enUS = {
     title: 'Error reports',
     hint: 'Help fix bugs by sending error reports. They never include your sessions: no prompts, conversation, terminal output, paths or names.',
     preferences: { auto: 'Send automatically', ask: 'Ask each time', never: 'Never' },
+    performance: 'Send performance data',
+    performanceHint:
+      'App start, frozen screens and slow moments of the app, to find what makes it slow. Never your sessions or the address of your computer.',
     unavailable: 'This build has no Firebase: reports can only be shared or posted as a GitHub issue.',
     recorded_one: '{{count}} error recorded on this phone',
     recorded_other: '{{count}} errors recorded on this phone',

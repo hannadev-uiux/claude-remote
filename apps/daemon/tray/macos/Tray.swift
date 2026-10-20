@@ -1,6 +1,7 @@
 // Remote Harness menu bar icon. The daemon starts it and sends the menu as JSON lines on stdin;
 // clicks go back as JSON lines on stdout. It quits when stdin closes (the daemon stopped).
 import AppKit
+import CoreImage
 
 struct TrayItem: Decodable {
   let id: String?
@@ -9,6 +10,8 @@ struct TrayItem: Decodable {
   let checked: Bool?
   let type: String?
   let items: [TrayItem]?
+  /// Contents of a `qr` item.
+  let text: String?
 }
 
 struct TrayMessage: Decodable {
@@ -92,6 +95,10 @@ final class Tray: NSObject {
         menu.addItem(.separator())
         continue
       }
+      if item.type == "qr" {
+        if let text = item.text, let entry = Tray.qrItem(text) { menu.addItem(entry) }
+        continue
+      }
       let entry = NSMenuItem(title: item.label ?? "", action: nil, keyEquivalent: "")
       if item.type == "submenu" {
         entry.submenu = build(item.items ?? [])
@@ -105,6 +112,40 @@ final class Tray: NSObject {
       menu.addItem(entry)
     }
     return menu
+  }
+
+  /// Side of the pairing QR code in the menu, in points.
+  private static let qrSide: CGFloat = 200
+
+  /// A menu item showing `text` as a QR code (the pairing link), on white with a quiet zone so the
+  /// phone's camera reads it in light and dark mode. Nil when CoreImage cannot encode it.
+  private static func qrItem(_ text: String) -> NSMenuItem? {
+    guard let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+    filter.setValue(Data(text.utf8), forKey: "inputMessage")
+    filter.setValue("M", forKey: "inputCorrectionLevel")
+    guard let output = filter.outputImage else { return nil }
+    let scale = (qrSide * 2) / output.extent.width
+    let scaled = output.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+    let rep = NSCIImageRep(ciImage: scaled)
+    let image = NSImage(size: NSSize(width: qrSide, height: qrSide))
+    image.addRepresentation(rep)
+
+    let padding: CGFloat = 12
+    let side = qrSide + padding * 2
+    let container = NSView(frame: NSRect(x: 0, y: 0, width: side + 32, height: side + 16))
+    let card = NSView(frame: NSRect(x: 16, y: 8, width: side, height: side))
+    card.wantsLayer = true
+    card.layer?.backgroundColor = NSColor.white.cgColor
+    card.layer?.cornerRadius = 8
+    let view = NSImageView(frame: NSRect(x: padding, y: padding, width: qrSide, height: qrSide))
+    view.image = image
+    view.imageScaling = .scaleProportionallyUpOrDown
+    view.setAccessibilityLabel("Pairing QR code")
+    card.addSubview(view)
+    container.addSubview(card)
+    let entry = NSMenuItem()
+    entry.view = container
+    return entry
   }
 
   @objc private func clicked(_ sender: NSMenuItem) {

@@ -62,6 +62,16 @@ The launcher refuses to open a window when the profile has no key and prints the
 
 When the TestFlight or Google Play build is available, install it next to the build you made yourself: it has a different signature, so it starts empty. Pair it again by scanning `remote-harness pair`; the old pairing keeps working until you tap **Forget this machine** in that build or rotate the token. Push registers itself on the first launch of the new build, and the computer drops the old registration once it stops connecting. Then delete the development build.
 
+## The app is slow or freezes
+
+Turn on Settings → Error reports → **Send performance data** on that phone (builds with Firebase only) and use the app as usual. After some minutes, the Firebase console's **Performance** page shows, per device model and OS:
+
+- `_app_start` and the custom `app_ready` trace (`ready_ms`: from the app's start to the first connection to your computer; `outcome` `connected` or `timeout`);
+- `js_responsiveness`: one trace per stretch in the foreground, with `stalls` (JavaScript blocked 1 s or more), `long_stalls` (5 s or more), `stall_max_ms` and `stall_total_ms`, filterable by `layout`;
+- slow and frozen frames under **Screen rendering**.
+
+A freeze that ends with the system closing the app loses its last `js_responsiveness` trace. A long `app_ready` or a crash in Crashlytics on the next start is still a hint. Debug builds only send with Firebase's debug flag on.
+
 ## Getting help
 
 Open an issue with the output of `remote-harness doctor`, the versions (OS, Node, Claude Code, the app) and the daemon logs from `~/.remote-harness/logs`, after removing tokens and session content. Security problems go to [Security & privacy](/en/docs/security/#reporting-a-vulnerability), never to public issues.

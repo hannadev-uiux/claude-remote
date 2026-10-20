@@ -138,6 +138,7 @@ const clientSamples: ClientMessage[] = [
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'session.start', id: '1', profileId: 'work', cwd: '/tmp', model: 'anthropic/claude-opus-5.5' },
+  { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', name: 'Rate limit on login' },
   { type: 'checkout.inspect', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.resume', id: '1', profileId: 'claudin', sessionId: 's' },
   { type: 'pane.subscribe', id: '1', sessionId: 's' },
@@ -241,6 +242,7 @@ const serverSamples: ServerMessage[] = [
           },
         ],
       },
+      terminal: true,
     },
   },
   { type: 'permission.resolved', requestId: 'r', sessionId: 's', outcome: 'expired' },
@@ -255,6 +257,20 @@ const serverSamples: ServerMessage[] = [
       updatedAt: 'now',
       startedAt: null,
       toolCount: 0,
+    },
+  },
+  {
+    type: 'subagent.updated',
+    sessionId: 's',
+    subagent: {
+      agentId: 'b',
+      agentType: 'Explore',
+      description: 'Find usages',
+      state: 'done',
+      outcome: 'failed',
+      updatedAt: 'now',
+      startedAt: 'earlier',
+      toolCount: 3,
     },
   },
   { type: 'files.results', replyTo: '1', query: 'q', items: [{ path: 'src/', kind: 'dir' }] },
@@ -363,6 +379,13 @@ const serverSamples: ServerMessage[] = [
   },
   { type: 'checkout.info', replyTo: '1', checkout: { root: '/tmp', branch: null }, peers: [] },
   { type: 'checkout.info', replyTo: '1', checkout: null, peers: [{ id: 's', title: 'x' }] },
+  {
+    type: 'checkout.info',
+    replyTo: '1',
+    checkout: { root: '/tmp', branch: 'main' },
+    peers: [],
+    worktreeCopy: { localSettings: true, include: ['.env'] },
+  },
   { type: 'attachment.uploaded', replyTo: '1', attachmentId: 'a1' },
   { type: 'transcript.image', replyTo: '1', imageId: '12.0', mediaType: 'image/png', data: 'iVBORw0KGgo=' },
   {
@@ -413,6 +436,17 @@ describe('client messages', () => {
     })
     const result = parseClientMessage({ type: 42, id: '1' })
     expect(result.ok ? undefined : result.error.type).toBeUndefined()
+  })
+
+  test('a session name is trimmed, one line and at most 80 characters', () => {
+    const start = (name: string) =>
+      parseClientMessage({ type: 'session.start', id: '1', profileId: 'p', cwd: '/tmp', name })
+    expect(start('  Login  ')).toMatchObject({ ok: true, value: { name: 'Login' } })
+    expect(start('a\nb').ok).toBe(false)
+    expect(start('a\tb').ok).toBe(false)
+    expect(start('   ').ok).toBe(false)
+    expect(start('x'.repeat(80)).ok).toBe(true)
+    expect(start('x'.repeat(81)).ok).toBe(false)
   })
 
   test('strips unknown fields', () => {

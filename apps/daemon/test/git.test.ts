@@ -131,7 +131,9 @@ describe('GitClient.removeWorktree', () => {
   const list = (locked?: string) =>
     `worktree /w/app\nbranch refs/heads/main\n\nworktree ${info.path}\nbranch refs/heads/x\n${locked === undefined ? '' : `locked ${locked}\n`}`
 
-  function setup(options: { locked?: string; alive?: boolean; renameError?: string } = {}) {
+  function setup(
+    options: { locked?: string; alive?: boolean; renameError?: string; missing?: boolean } = {},
+  ) {
     const exec = fakeExecutor((call) => {
       const cmd = sub(call)
       if (cmd === 'worktree list --porcelain') return { stdout: list(options.locked) }
@@ -155,7 +157,10 @@ describe('GitClient.removeWorktree', () => {
       rm: vi.fn(async (p: string) => {
         fsCalls.push(`rm ${p}`)
       }),
-      realpath: vi.fn(async (p: string) => p),
+      realpath: vi.fn(async (p: string) => {
+        if (options.missing && p === info.path) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+        return p
+      }),
     } as unknown as GitFs
     const git = new GitClient(exec, { fs, isAlive: () => options.alive ?? false })
     return { exec, fsCalls, git, cmds: () => exec.calls.map(sub) }
@@ -194,6 +199,23 @@ describe('GitClient.removeWorktree', () => {
     await expect(live.git.removeWorktree(info)).rejects.toThrow(/locked by a running process \(pid 4242\)/)
     expect(live.cmds()).toEqual(['worktree list --porcelain'])
     expect(live.fsCalls).toEqual([])
+  })
+
+  test('a worktree the agent already removed only leaves git records and the branch to clean', async () => {
+    const { git, cmds, fsCalls } = setup({ missing: true, locked: 'claude session x (pid 4242 start Mon)' })
+    await (await git.removeWorktree(info)).purged
+    expect(cmds()).toEqual(['worktree prune', 'branch -d x'])
+    expect(fsCalls).toEqual([])
+  })
+
+  test('the lock reports its process and whether it still runs', async () => {
+    expect(await setup().git.worktreeLock('/w/app', info.path)).toBeNull()
+    expect(
+      await setup({ locked: 'claude session x (pid 4242 start Mon)', alive: true }).git.worktreeLock(
+        '/w/app',
+        info.path,
+      ),
+    ).toEqual({ reason: 'claude session x (pid 4242 start Mon)', pid: 4242, alive: true })
   })
 
   test('a failed move keeps the worktree and says why', async () => {

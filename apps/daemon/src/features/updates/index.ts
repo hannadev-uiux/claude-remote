@@ -1,6 +1,12 @@
 import { join } from 'node:path'
 import type { DaemonUpdateBlocker, PermissionRequestInfo, Profile } from '@remote-harness/protocol'
-import { effectiveLocale, loadConfig, updateConfigFile } from '../../core/config.ts'
+import {
+  effectiveLocale,
+  isKeepAwakeMode,
+  type KeepAwakeMode,
+  loadConfig,
+  updateConfigFile,
+} from '../../core/config.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
 import { hostName, paths, shortenHome } from '../../core/paths.ts'
 import { DAEMON_VERSION } from '../../core/version.ts'
@@ -9,6 +15,8 @@ import { currentWsl, resolvePlatform } from '../../infra/platform.ts'
 import { spawnJsonLines, trayAssetsDir, trayCommand } from '../../infra/tray-helper.ts'
 import type { DaemonContext } from '../../main.ts'
 import { showInTerminal } from '../pane/show-in-terminal.ts'
+import type { PushSetting } from '../push/mode.ts'
+import { stopService } from '../service/stop.ts'
 import type { SessionStore } from '../sessions/store.ts'
 import { installerSourceDir, SourceUpdater, type UpdateSource, updateSource } from '../update/update.ts'
 import { isQuietMoment, isUpdateChannel, underServiceManager, updateLabel } from './channel.ts'
@@ -16,6 +24,7 @@ import { type AvailableUpdate, UpdateChecker } from './checker.ts'
 import {
   buildTrayMenu,
   CHANNEL_ACTION_PREFIX,
+  KEEP_AWAKE_ACTION_PREFIX,
   pendingSummary,
   TRAY_ACTIONS,
   TRAY_PREFIXES,
@@ -44,6 +53,13 @@ export type TrayShellDeps = {
   phones: () => { count: number; push: boolean }
   /** Graceful close of a session (change 57). */
   closeSession: (sessionId: string) => Promise<unknown>
+  /** The pairing link and `host:port` once the daemon listens for the app. */
+  pairing: () => { url: string; address: string } | null
+  /** Stores a new token and closes the app connections (phones pair again). */
+  rotateToken: () => Promise<void>
+  keepAwake: { mode: () => KeepAwakeMode; set: (mode: KeepAwakeMode) => Promise<void> }
+  /** The config's `push` setting, and writing + applying a new one. */
+  push: { setting: () => PushSetting; set: (setting: PushSetting) => Promise<void> }
 }
 
 /** First check after start, then how often due checks and automatic updates are evaluated. */
@@ -68,7 +84,11 @@ export async function registerUpdatesFeature(
   const locale = effectiveLocale(ctx.config)
   const m = messagesFor(locale).updates
   const source = updateSource(deps.options.cliPath, installerSourceDir())
-  let settings = { update: ctx.config.update, tray: ctx.config.tray }
+  let settings = {
+    update: ctx.config.update,
+    tray: ctx.config.tray,
+    trayPermissions: ctx.config.trayPermissions,
+  }
   let updating = false
   /** Commit whose update failed: automatic updates do not retry it (the menu still can). */
   let failedCommit: string | null = null
@@ -134,7 +154,8 @@ export async function registerUpdatesFeature(
     }))
     const oldest = shell
       .pendingPermissions()
-      .filter((p) => !p.interaction)
+      // Questions are answered in the app; handed-over requests in the terminal right here.
+      .filter((p) => !p.interaction && !p.terminal)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0]
     const pending: TrayPending | null = oldest
       ? {
@@ -153,6 +174,14 @@ export async function registerUpdatesFeature(
       pending,
       phones: shell.phones(),
       canStart: shell.profiles.length > 0,
+      pairing: shell.pairing(),
+      qr: platform === 'darwin',
+      prefs: {
+        permissions: settings.trayPermissions,
+        keepAwake: shell.keepAwake.mode(),
+        push: shell.push.setting() !== 'off',
+      },
+      canStopService: underServiceManager(),
     }
   }
 
@@ -266,7 +295,7 @@ export async function registerUpdatesFeature(
   const reload = async () => {
     const config = await loadConfig(ctx.logger)
     const channelChanged = config.update.channel !== settings.update.channel
-    settings = { update: config.update, tray: config.tray }
+    settings = { update: config.update, tray: config.tray, trayPermissions: config.trayPermissions }
     refreshMenu()
     remote.broadcast()
     if (channelChanged) await check(true)
@@ -327,7 +356,24 @@ export async function registerUpdatesFeature(
         await desktop.runInTerminal(`${quote(join(paths.bin(), 'remote-harness'))} doctor`)
       else if (id === TRAY_ACTIONS.restart && underServiceManager()) deps.options.restart()
       else if (id === TRAY_ACTIONS.quit) tray?.stop()
-      else if (id === TRAY_ACTIONS.newSession) {
+      else if (id === TRAY_ACTIONS.quitService && underServiceManager()) {
+        // The service manager stops this daemon (SIGTERM) right after; the icon goes first.
+        tray?.stop()
+        await stopService(ctx.exec)
+      } else if (id === TRAY_ACTIONS.rotateToken && shell) {
+        await shell.rotateToken()
+        refreshMenu()
+      } else if (id === TRAY_ACTIONS.prefPermissions) {
+        await updateConfigFile({ trayPermissions: !settings.trayPermissions })
+        await reload()
+      } else if (id === TRAY_ACTIONS.prefPush && shell) {
+        await shell.push.set(shell.push.setting() === 'off' ? 'auto' : 'off')
+        refreshMenu()
+      } else if (id.startsWith(KEEP_AWAKE_ACTION_PREFIX) && shell) {
+        const mode = id.slice(KEEP_AWAKE_ACTION_PREFIX.length)
+        if (isKeepAwakeMode(mode)) await shell.keepAwake.set(mode)
+        refreshMenu()
+      } else if (id === TRAY_ACTIONS.newSession) {
         const profile = shell?.profiles[0]
         if (profile) await desktop.runInTerminal(quote(join(paths.bin(), profile.id)))
       } else if (id === TRAY_ACTIONS.pair)
@@ -364,6 +410,7 @@ export async function registerUpdatesFeature(
     deps.store.onChange(scheduleRefresh)
     ctx.bus.on('permission.requested', scheduleRefresh)
     ctx.bus.on('permission.resolved', scheduleRefresh)
+    ctx.bus.on('permission.handover', scheduleRefresh)
   }
 
   void tray?.launch().then(refreshMenu)

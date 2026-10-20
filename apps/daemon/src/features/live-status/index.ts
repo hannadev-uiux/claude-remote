@@ -234,6 +234,10 @@ export async function registerLiveStatusFeature(
       ...(info.interaction ? {} : { pending: { requestId: info.requestId, tool: info.tool } }),
     }),
   )
+  // Handed over to the terminal: still waiting, but the lock screen can no longer answer it.
+  ctx.bus.on('permission.handover', (info) =>
+    service.handle(info.sessionId, { type: 'waiting', permission: true, pending: null }),
+  )
   ctx.bus.on('permission.resolved', ({ info }) => service.handle(info.sessionId, { type: 'resumed' }))
   ctx.onStop(() => {
     offStore()

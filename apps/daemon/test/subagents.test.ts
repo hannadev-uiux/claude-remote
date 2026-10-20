@@ -6,12 +6,17 @@ import { silentLogger } from '../src/core/logger.ts'
 import { SessionStore } from '../src/features/sessions/store.ts'
 import type { SessionRecord } from '../src/features/sessions/types.ts'
 import {
+  cleanName,
   countToolUses,
   INACTIVITY_MS,
   SubagentTracker,
   subagentsDir,
 } from '../src/features/subagents/tracker.ts'
-import { parseTranscriptLine } from '../src/features/transcript/parser.ts'
+import {
+  parseTranscriptLine,
+  subagentOutcome,
+  subagentPromptLine,
+} from '../src/features/transcript/parser.ts'
 import { hookEvent, useTempHome } from './helpers.ts'
 
 const fixture = join(import.meta.dirname, 'fixtures', 'session.jsonl')
@@ -42,6 +47,7 @@ function setup(now = Date.now) {
   tracker = new SubagentTracker(store, { broadcast: (m) => sent.push(m) }, silentLogger, {
     now,
     dirPollMs: 50,
+    outcomeChecksMs: [],
   })
   store.onChange((s) => tracker!.sync(s))
   const transcriptPath = join(home.dir(), 'proj', 'sess.jsonl')
@@ -66,6 +72,44 @@ function setup(now = Date.now) {
     }))
   return { sent, store, add, dir: subagentsDir(transcriptPath), transcriptPath }
 }
+
+const user = (content: unknown) => JSON.stringify({ type: 'user', message: { role: 'user', content } })
+
+describe('subagent names and outcome', () => {
+  test('blank names are null', () => {
+    expect(cleanName('  Explore ')).toBe('Explore')
+    expect(cleanName('   ')).toBeNull()
+    expect(cleanName(undefined)).toBeNull()
+  })
+
+  test('the prompt line is the first non-empty line of the first user message', () => {
+    expect(subagentPromptLine(user('\n  Review the diff\nDetails…'))).toBe('Review the diff')
+    expect(subagentPromptLine(user([{ type: 'text', text: 'Find usages' }]))).toBe('Find usages')
+    expect(subagentPromptLine(user('x'.repeat(100)))).toHaveLength(80)
+    expect(subagentPromptLine(JSON.stringify({ type: 'assistant', message: { content: 'hi' } }))).toBeNull()
+    expect(subagentPromptLine('not json')).toBeNull()
+  })
+
+  test('an error result of the spawning call means failed', () => {
+    const lines = [
+      user([{ type: 'tool_result', tool_use_id: 'toolu_1', is_error: true, content: 'boom' }]),
+      user([{ type: 'tool_result', tool_use_id: 'toolu_2', content: 'ok' }]),
+    ]
+    expect(subagentOutcome(lines, { agentId: 'a1', toolUseId: 'toolu_1' })).toBe('failed')
+    expect(subagentOutcome(lines, { agentId: 'a2', toolUseId: 'toolu_2' })).toBeNull()
+  })
+
+  test('a background task notification gives the status, the last one wins', () => {
+    const note = (id: string, status: string) =>
+      user(`<task-notification>\n<task-id>${id}</task-id>\n<status>${status}</status>\n</task-notification>`)
+    expect(subagentOutcome([note('a1', 'killed')], { agentId: 'a1', toolUseId: null })).toBe('stopped')
+    expect(subagentOutcome([note('a1', 'failed')], { agentId: 'a1', toolUseId: null })).toBe('failed')
+    expect(
+      subagentOutcome([note('a1', 'failed'), note('a1', 'completed')], { agentId: 'a1', toolUseId: null }),
+    ).toBe('completed')
+    expect(subagentOutcome([note('b9', 'failed')], { agentId: 'a1', toolUseId: null })).toBeNull()
+  })
+})
 
 describe('SubagentTracker', () => {
   test('maps the subagents folder next to the transcript', () => {
@@ -104,6 +148,51 @@ describe('SubagentTracker', () => {
       await new Promise((r) => setTimeout(r, 5))
     }
     await waitFor(() => (store.get('sess')?.subagents.length ?? 0) === ids.length)
+  })
+
+  test('a meta file written late, or missing, still names the subagent', async () => {
+    const { store, add, dir } = setup()
+    add()
+    await mkdir(dir, { recursive: true })
+    await writeFile(join(dir, 'agent-c1.jsonl'), `${user('Look for the login handler\nand more')}\n`)
+    await tracker!.touch('sess', 'c1')
+    // No meta yet: the prompt's first line.
+    expect(store.get('sess')?.subagents[0]).toMatchObject({
+      description: 'Look for the login handler',
+      agentType: null,
+    })
+    await writeFile(
+      join(dir, 'agent-c1.meta.json'),
+      JSON.stringify({ agentType: ' Explore ', description: '' }),
+    )
+    await tracker!.touch('sess', 'c1')
+    expect(store.get('sess')?.subagents[0]).toMatchObject({
+      description: 'Look for the login handler',
+      agentType: 'Explore',
+    })
+  })
+
+  test('a failed spawning call marks the finished subagent failed', async () => {
+    const { store, add, dir, transcriptPath } = setup()
+    add()
+    await mkdir(dir, { recursive: true })
+    await writeFile(
+      join(dir, 'agent-d1.meta.json'),
+      JSON.stringify({ description: 'Run tests', toolUseId: 'toolu_9' }),
+    )
+    await writeFile(join(dir, 'agent-d1.jsonl'), '{}\n')
+    await tracker!.touch('sess', 'd1')
+    tracker!.handleHook(hookEvent('SubagentStop', { session_id: 'sess', agent_id: 'd1', agent_type: '' }))
+    await writeFile(
+      transcriptPath,
+      `${user([{ type: 'tool_result', tool_use_id: 'toolu_9', is_error: true, content: 'boom' }])}\n`,
+    )
+    await tracker!.checkOutcome('sess', 'd1')
+    expect(store.get('sess')?.subagents[0]).toMatchObject({
+      state: 'done',
+      outcome: 'failed',
+      agentType: null,
+    })
   })
 
   test('SubagentStop marks done and Stop records background tasks', async () => {

@@ -1,5 +1,4 @@
 import type { PermissionRequestInfo } from '@remote-harness/protocol'
-import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View } from 'react-native'
@@ -8,6 +7,7 @@ import { makeStyles, radius, space } from '@/core/theme'
 import { formatElapsed } from '@/core/utils/time'
 import { useNow } from '@/core/utils/use-now'
 import { sessionAgent } from '@/features/sessions/agent'
+import { openSession } from '@/features/sessions/open-session'
 import { useSessionsStore } from '@/features/sessions/store'
 import { AgentBadge, Button, ProfileTag, Text } from '@/ui'
 import { describePermission } from '../describe'
@@ -15,10 +15,6 @@ import { usePermissionsStore } from '../store'
 import { pendingForStrip, type StripItem, stripSessionId } from '../strip'
 import { useRespond } from '../use-respond'
 import { AlwaysAllowSheet } from './AlwaysAllowSheet'
-
-function openSession(id: string) {
-  router.push({ pathname: '/session/[id]', params: { id } })
-}
 
 /**
  * Pinned above the session list while something waits for the user: the oldest pending request
@@ -48,9 +44,10 @@ export function WaitingStrip() {
   const profile = profiles.find((p) => p.id === profileId)
   const agent = session ? sessionAgent(session) : null
   const request = oldest.kind === 'request' ? oldest.request : null
-  const answerable = request !== null && !request.interaction
-  const status =
-    request?.interaction?.kind === 'question'
+  const answerable = request !== null && !request.interaction && !request.terminal
+  const status = request?.terminal
+    ? t('permissions.strip.terminal')
+    : request?.interaction?.kind === 'question'
       ? t('permissions.strip.question')
       : request?.interaction?.kind === 'plan'
         ? t('permissions.strip.plan')

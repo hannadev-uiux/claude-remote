@@ -12,6 +12,7 @@ import {
   PermissionAnswerSchema,
   PushRelaySchema,
   RuleScopeSchema,
+  SessionNameSchema,
   SettingsPaneSchema,
   WorktreeActionSchema,
 } from './domain.ts'
@@ -168,6 +169,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     worktree: z.boolean().optional(),
     /** Model of the new session (`--model <id>`); the profile's provider default when absent. */
     model: z.string().min(1).optional(),
+    /** Display name: the session's title at once, and `--name` for agents that take one. */
+    name: SessionNameSchema.optional(),
   }),
   z.object({ type: z.literal('checkout.inspect'), id, profileId: z.string().min(1), cwd: z.string().min(1) }),
   z.object({ type: z.literal('session.resume'), id, profileId: z.string().min(1), sessionId }),

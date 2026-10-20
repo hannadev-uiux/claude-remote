@@ -75,6 +75,8 @@ export const SubagentInfoSchema = z.object({
   agentType: z.string().nullable(),
   description: z.string().nullable().default(null),
   state: z.enum(['running', 'done']),
+  /** How a `done` subagent ended when it did not complete: an error result, or killed/cancelled. */
+  outcome: z.enum(['failed', 'stopped']).optional(),
   updatedAt: z.string(),
   /** When the subagent was first seen (`null` from older daemons). */
   startedAt: z.string().nullable().default(null),
@@ -159,6 +161,13 @@ export function checkoutPeers<T extends Pick<Session, 'id' | 'controllable' | 's
 
 export const CheckoutPeerSchema = z.object({ id: z.string(), title: z.string() })
 export type CheckoutPeer = z.infer<typeof CheckoutPeerSchema>
+
+/**
+ * What a worktree started in a checkout inherits (Claude Code does it): the checkout's local
+ * settings, when it has `.claude/settings.local.json`, and the entries of its `.worktreeinclude`.
+ */
+export const WorktreeCopySchema = z.object({ localSettings: z.boolean(), include: z.array(z.string()) })
+export type WorktreeCopy = z.infer<typeof WorktreeCopySchema>
 
 /** A linked git worktree a session works in (never the repository's main checkout). */
 export const WorktreeInfoSchema = z.object({
@@ -443,6 +452,11 @@ export const PermissionRequestInfoSchema = z.object({
   createdAt: z.string(),
   expiresAt: z.string(),
   interaction: PermissionInteractionSchema.optional(),
+  /**
+   * The hook stopped waiting (timeout, or closed by the agent) while the agent's own dialog may
+   * still be open: answer it in the terminal. Resolved when the session moves on.
+   */
+  terminal: z.boolean().optional(),
 })
 export type PermissionRequestInfo = z.infer<typeof PermissionRequestInfoSchema>
 
@@ -478,6 +492,17 @@ export type DirectoryItem = z.infer<typeof DirectoryItemSchema>
 /** Default and maximum number of items in `directories.results`. */
 export const DIRECTORY_LIST_LIMIT = 200
 export const MAX_DIRECTORY_LIST_LIMIT = 500
+
+/** Longest name a session can be given when it starts. */
+export const SESSION_NAME_MAX = 80
+/** A session's display name: trimmed, one line, no control characters. */
+export const SessionNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(SESSION_NAME_MAX)
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are what is rejected.
+  .refine((name) => !/[\u0000-\u001f\u007f]/.test(name), 'the name must be a single line')
 
 export const MuteStateSchema = z.object({
   profiles: z.array(z.string()).default([]),

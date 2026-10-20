@@ -18,6 +18,8 @@ import { expandHome, paths } from './paths.ts'
 export const KEEP_AWAKE_MODES = ['off', 'sessions', 'always'] as const
 export const KeepAwakeModeSchema = z.enum(KEEP_AWAKE_MODES)
 export type KeepAwakeMode = z.infer<typeof KeepAwakeModeSchema>
+export const isKeepAwakeMode = (value: string): value is KeepAwakeMode =>
+  (KEEP_AWAKE_MODES as readonly string[]).includes(value)
 
 export const ConfigSchema = z.object({
   profiles: z.array(ProfileSchema).min(1),
@@ -26,7 +28,9 @@ export const ConfigSchema = z.object({
   defaultRuleScope: RuleScopeSchema.default('project'),
   /** How long the daemon waits for the phone before letting the TUI show the dialog. */
   permissionTimeoutSec: z.number().int().positive().default(280),
-  /** Timeout written into the PermissionRequest hook; must exceed permissionTimeoutSec. */
+  /** Same, for questions and plan approvals (`AskUserQuestion`, `ExitPlanMode`). */
+  questionTimeoutSec: z.number().int().positive().default(3300),
+  /** Lower bound of the PermissionRequest hook timeout (see `hookTimeoutSec`). */
   hookPermissionTimeoutSec: z.number().int().positive().default(300),
   inputStrategy: z.enum(['paste', 'type']).default('paste'),
   pasteEnterDelayMs: z.number().int().nonnegative().default(80),
@@ -45,6 +49,8 @@ export const ConfigSchema = z.object({
     .default({ channel: 'main', auto: false }),
   /** Menu bar / tray icon of the service daemon (where a helper is available). */
   tray: z.boolean().default(true),
+  /** The tray offers Allow / Always allow / Deny for the waiting permission. */
+  trayPermissions: z.boolean().default(true),
   /** When the service daemon prevents idle sleep: never, while sessions are active, or always. */
   keepAwake: KeepAwakeModeSchema.default('sessions'),
 })
@@ -60,6 +66,20 @@ export function defaultProfiles(locale: Locale = systemLocale()): Profile[] {
       color: '#D97757',
     },
   ]
+}
+
+/**
+ * Timeout written into the PermissionRequest hook: longer than both daemon waits, so the daemon
+ * always answers (or hands the request over to the terminal) before the agent closes the hook.
+ */
+export function hookTimeoutSec(
+  config: Pick<Config, 'hookPermissionTimeoutSec' | 'permissionTimeoutSec' | 'questionTimeoutSec'>,
+): number {
+  return Math.max(
+    config.hookPermissionTimeoutSec,
+    config.permissionTimeoutSec + 20,
+    config.questionTimeoutSec + 20,
+  )
 }
 
 /** Language of the CLI, setup and push: the configured one, else the system one. */

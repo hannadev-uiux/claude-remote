@@ -6,7 +6,7 @@ import WebSocket from 'ws'
 import { silentLogger } from '../src/core/logger.ts'
 import { paths } from '../src/core/paths.ts'
 import { FileTokenStore } from '../src/core/secrets.ts'
-import { buildHookOutput, PermissionBroker } from '../src/features/permissions/broker.ts'
+import { type BrokerOptions, buildHookOutput, PermissionBroker } from '../src/features/permissions/broker.ts'
 import { parseInteraction } from '../src/features/permissions/interaction.ts'
 
 const DENY = 'Denied by Remote Harness'
@@ -102,13 +102,27 @@ describe('PermissionBroker', () => {
       name: 'Bash',
       input: { command: 'pnpm test' },
     },
+    extra: Partial<BrokerOptions> = {},
   ) {
     const sent: ServerMessage[] = []
     const rules: unknown[] = []
+    const handovers: string[] = []
+    const reminders: string[] = []
+    const watching = new Map<string, () => void>()
+    /** The session moves on (a tool result in the transcript, a turn hook). */
+    const move = (sessionId = 's') => watching.get(sessionId)?.()
     const broker = new PermissionBroker(
       { broadcast: (m) => sent.push(m) },
       {
         timeoutMs,
+        handoverGraceMs: 20,
+        watch: (sessionId, onMove) => {
+          watching.set(sessionId, onMove)
+          return () => watching.delete(sessionId)
+        },
+        onHandover: (info, end) => handovers.push(`${info.tool}:${end}`),
+        onReminder: (info) => reminders.push(info.tool),
+        ...extra,
         defaultScope: 'project',
         profiles: [{ id: 'claudin', name: 'P', configDir: '/cfg', color: '' }],
         denyMessage: DENY,
@@ -129,8 +143,10 @@ describe('PermissionBroker', () => {
           { type: 'permission.request' }
         >
       ).request.requestId
-    return { sent, broker, hook, requestId, rules }
+    return { sent, broker, hook, requestId, rules, handovers, reminders, watching, move }
   }
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
   test('allow resolves the hook and notifies clients', async () => {
     const { broker, hook, sent, requestId } = setup()
@@ -156,19 +172,90 @@ describe('PermissionBroker', () => {
     expect(await pending).toMatchObject({ hookSpecificOutput: { decision: { behavior: 'deny' } } })
   })
 
-  test('timeout returns no decision', async () => {
-    const { broker, hook, sent } = setup(20)
+  test('timeout returns no decision and hands the request over to the terminal', async () => {
+    const { broker, hook, sent, requestId, handovers, move, watching } = setup(20)
     expect(await broker.handle(hook, new AbortController().signal)).toEqual({})
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.request', request: { terminal: true } })
+    expect(sent.some((m) => m.type === 'permission.resolved')).toBe(false)
+    expect(handovers).toEqual(['Bash:expired'])
+    // Still waiting: queued prompts hold, late clients see it, the phone cannot answer it.
+    expect(broker.hasPending('s')).toBe(true)
+    expect(broker.list()).toMatchObject([{ terminal: true }])
+    expect(() => broker.respond(requestId(), { behavior: 'allow' })).toThrow(
+      expect.objectContaining({ code: 'already_resolved' }),
+    )
+    expect(broker.denyAll('s')).toBe(0)
+    move()
     expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'expired' })
+    expect(broker.hasPending('s')).toBe(false)
+    expect(watching.size).toBe(0)
   })
 
-  test('cancelled when Claude Code drops the request', async () => {
-    const { broker, hook, sent } = setup()
+  test('a question waits for its own, longer timeout', async () => {
+    const { broker, hook, sent, requestId } = setup(20, QUESTION, { questionTimeoutMs: 1_000 })
+    const pending = broker.handle(hook, new AbortController().signal)
+    await sleep(60)
+    expect(sent).toHaveLength(1)
+    broker.answer(requestId(), { kind: 'question', answers: { 'Which database?': 'SQLite' } })
+    expect(await pending).toMatchObject({ hookSpecificOutput: { decision: { behavior: 'allow' } } })
+  })
+
+  test('closed by Claude Code after an answer in the terminal: cancelled, never handed over', async () => {
+    const { broker, hook, sent, move, handovers } = setup()
     const controller = new AbortController()
     const pending = broker.handle(hook, controller.signal)
+    move()
     controller.abort()
     expect(await pending).toEqual({})
     expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'cancelled' })
+    expect(handovers).toEqual([])
+  })
+
+  test('closed by Claude Code, transcript within the grace: cancelled without a handover', async () => {
+    const { broker, hook, sent, move, handovers } = setup()
+    const controller = new AbortController()
+    const pending = broker.handle(hook, controller.signal)
+    controller.abort()
+    await pending
+    move()
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'cancelled' })
+    await sleep(40)
+    expect(handovers).toEqual([])
+    expect(sent.filter((m) => m.type === 'permission.request')).toHaveLength(1)
+  })
+
+  test('closed by Claude Code while the dialog stays open: handed over after the grace', async () => {
+    const { broker, hook, sent, handovers } = setup()
+    const controller = new AbortController()
+    const pending = broker.handle(hook, controller.signal)
+    controller.abort()
+    await pending
+    expect(broker.hasPending('s')).toBe(true)
+    await sleep(40)
+    expect(handovers).toEqual(['Bash:aborted'])
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.request', request: { terminal: true } })
+    // A new request of the session means the agent went past the old dialog.
+    void broker.handle(hook, new AbortController().signal)
+    expect(sent.at(-2)).toMatchObject({ type: 'permission.resolved', outcome: 'cancelled' })
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.request' })
+    expect(sent.at(-1)).not.toHaveProperty('request.terminal')
+    broker.cancelAll('s')
+  })
+
+  test('a session that ends drops its handed-over requests', async () => {
+    const { broker, hook, sent } = setup(20)
+    await broker.handle(hook, new AbortController().signal)
+    expect(broker.cancelAll('s')).toBe(1)
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'expired' })
+  })
+
+  test('shutdown releases hooks without handing them over', async () => {
+    const { broker, hook, sent, handovers } = setup()
+    const pending = broker.handle(hook, new AbortController().signal)
+    broker.dispose()
+    expect(await pending).toEqual({})
+    expect(sent.at(-1)).toMatchObject({ type: 'permission.resolved', outcome: 'expired' })
+    expect(handovers).toEqual([])
   })
 
   test('cancelAll drops the requests of a session that ended', async () => {
@@ -192,6 +279,23 @@ describe('PermissionBroker', () => {
     expect(rules).toEqual([
       { rule: 'Bash(pnpm test:*)', scope: 'project', file: '/w/.claude/settings.local.json', sessionId: 's' },
     ])
+  })
+
+  test('a project rule approved in a worktree session is recorded in the main checkout', async () => {
+    const { broker, requestId, rules } = setup()
+    const hook = hookEvent('PermissionRequest', {
+      session_id: 's',
+      cwd: '/w/.claude/worktrees/login',
+      tool_name: 'Bash',
+      tool_input: { command: 'pnpm test' },
+    })
+    const pending = broker.handle(hook, new AbortController().signal)
+    broker.respond(requestId(), {
+      behavior: 'allow',
+      always: { rule: 'Bash(pnpm test:*)', scope: 'project' },
+    })
+    await pending
+    expect(rules).toMatchObject([{ file: '/w/.claude/settings.local.json' }])
   })
 
   const QUESTION = {

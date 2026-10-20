@@ -1,5 +1,4 @@
 import type { Profile, Session } from '@remote-harness/protocol'
-import { router } from 'expo-router'
 import { BellOff, ChevronRight, Pencil, Pin, Radio } from 'lucide-react-native'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +10,7 @@ import { AgentBadge, Badge, ProfileTag, Text } from '@/ui'
 import { draftSummary } from '../../drafts/logic'
 import { useDraftsStore } from '../../drafts/store'
 import { sessionAgent } from '../agent'
+import { openSession } from '../open-session'
 import { isWorktreePath } from '../summary'
 import { StateBadge } from './StateBadge'
 
@@ -60,7 +60,7 @@ export const SessionRow = memo(function SessionRow({
   const subagents = session.subagents.length
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/session/[id]', params: { id: session.id } })}
+      onPress={() => openSession(session.id)}
       onLongPress={onLongPress}
       delayLongPress={350}
       onHoverIn={() => setHovered(true)}

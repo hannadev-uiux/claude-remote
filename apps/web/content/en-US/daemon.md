@@ -39,6 +39,7 @@ The old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working for
   "hookPort": 7338,
   "defaultRuleScope": "project",
   "permissionTimeoutSec": 280,
+  "questionTimeoutSec": 3300,
   "inputStrategy": "paste",
   "recentDays": 7,
   "tmuxSession": "claude-remote",
@@ -51,7 +52,8 @@ The old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working for
 - `profiles`: one per Claude Code account. `id` is the alias (the launcher's name), `configDir` the account's `CLAUDE_CONFIG_DIR`, `color` the tag color in the app. Optional `agent` (`claude` by default) and `provider` (below).
 - `wsPort`, `hookPort`: the app and the hooks ports.
 - `defaultRuleScope`: where "always allow" rules go by default, `project` or `user`.
-- `permissionTimeoutSec`: how long the daemon holds a permission request for the phone before the terminal dialog takes over.
+- `permissionTimeoutSec`: how long the daemon holds a permission request for the phone before the terminal dialog takes over. The request stays in the app as "Answer in the terminal" until the session moves on.
+- `questionTimeoutSec`: the same for questions and plan approvals (3300 by default). A question still open after 10 minutes sends one reminder push. The hook timeout written into the agent's settings covers both, and `remote-harness install` or `update` rewrites it.
 - `inputStrategy`: `paste` (default) or `type` for prompts sent from the phone.
 - `recentDays`: how far back ended sessions are listed.
 - `tmuxSession`: the tmux session the launchers use.
@@ -59,6 +61,7 @@ The old `claude-remote` command and `CLAUDE_REMOTE_*` variables keep working for
 - `push`: `auto` (your Firebase service account when present, else the relay) or `off`.
 - `update`: the channel `update` and the background check follow, and whether updates apply by themselves.
 - `tray`: the menu bar / tray icon.
+- `trayPermissions`: whether the tray offers Allow / Always allow / Deny for a waiting permission (on by default; also under the tray's Preferences).
 
 Edits to the file take effect when the daemon restarts (`remote-harness service install` again, or restart from the tray).
 
@@ -108,7 +111,7 @@ The service checks its channel on the git remote every 6 hours and shows a deskt
 
 ## Tray icon
 
-The service daemon shows a menu bar icon on macOS (a small Swift helper built on first start with the Command Line Tools) and a tray icon on Linux (`python3` with GTK 3 and AyatanaAppIndicator3 or AppIndicator3). The menu shows the running sessions and the pending permissions (answer them from there), starts a new session, shows the pairing code, checks or applies updates, picks the channel, opens the logs, the config and the documentation, and restarts the daemon. `"tray": false` turns it off; without the helper, and in WSL, the daemon runs headless.
+The service daemon shows a menu bar icon on macOS (a small Swift helper built on first start with the Command Line Tools) and a tray icon on Linux (`python3` with GTK 3 and AyatanaAppIndicator3 or AppIndicator3). The menu shows the running sessions and the pending permissions (answer them from there), starts a new session, shows the pairing code, checks or applies updates, picks the channel, opens the logs, the config and the documentation, and restarts the daemon. **Pair a phone** shows the pairing QR code right in the menu on macOS, the address, the pairing in the terminal and **Rotate token…** (the paired phones must pair again). **Preferences** toggles the permission answers in the menu, the keep-awake mode and push notifications, applied at once, and opens the config file for the rest. Under the service, **Quit** either hides the icon or stops the service until the next login. `"tray": false` turns it off; without the helper, and in WSL, the daemon runs headless.
 
 ## Data and logs
 

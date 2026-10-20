@@ -7,4 +7,8 @@ export type DaemonEvents = {
   hook: HookEvent
   'permission.requested': PermissionRequestInfo
   'permission.resolved': { info: PermissionRequestInfo; outcome: PermissionOutcome }
+  /** The hook stopped waiting; the request is answered in the terminal until the session moves on. */
+  'permission.handover': PermissionRequestInfo
+  /** A question or plan is still open after a while. */
+  'permission.reminder': PermissionRequestInfo
 }

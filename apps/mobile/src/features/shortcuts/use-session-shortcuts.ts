@@ -9,6 +9,7 @@ import { hasSwitchableModes } from '@/features/mode/modes'
 import { buildRespond } from '@/features/permissions/describe'
 import { usePermissionsStore } from '@/features/permissions/store'
 import { listSessions, NO_FILTER } from '@/features/sessions/filter'
+import { openSession } from '@/features/sessions/open-session'
 import { useSessionPrefsStore } from '@/features/sessions/prefs-store'
 import { requestSearchFocus } from '@/features/sessions/search-focus'
 import { useSessionSortStore } from '@/features/sessions/sort-store'
@@ -50,7 +51,6 @@ export function useSessionShortcuts(selectedSessionId: string | null, layout: La
     const cmd = keys.keyModifierCommand
     const client = () => useConnectionStore.getState().client
     const typing = () => TextInput.State.currentlyFocusedInput() != null
-    const openSession = (id: string) => router.push({ pathname: '/session/[id]', params: { id } })
 
     const answer = (decision: 'allow' | 'deny') => {
       const id = selected.current
@@ -61,7 +61,7 @@ export function useSessionShortcuts(selectedSessionId: string | null, layout: La
     }
 
     const focusSearch = () => {
-      if (layoutRef.current === 'compact') router.navigate('/')
+      if (layoutRef.current === 'compact') router.dismissTo('/')
       requestSearchFocus()
     }
 

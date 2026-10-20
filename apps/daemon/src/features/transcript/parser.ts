@@ -387,6 +387,90 @@ export function parseMetaLine(raw: string): TranscriptMetaUpdate | null {
   return null
 }
 
+/** How a subagent ended, as its parent's transcript tells it. */
+export type SubagentOutcome = 'completed' | 'failed' | 'stopped'
+
+const TASK_STATUS: Record<string, SubagentOutcome> = {
+  completed: 'completed',
+  failed: 'failed',
+  killed: 'stopped',
+  cancelled: 'stopped',
+  stopped: 'stopped',
+}
+
+/** The text of a user line's message: string content, or its text parts. */
+function userLineTexts(line: Record<string, unknown>): { texts: string[]; parts: unknown[] } {
+  const message = line.message
+  if (line.type !== 'user' || !isObject(message)) return { texts: [], parts: [] }
+  const content = message.content
+  if (typeof content === 'string') return { texts: [content], parts: [] }
+  if (!Array.isArray(content)) return { texts: [], parts: [] }
+  const texts = content.flatMap((part) =>
+    isObject(part) && part.type === 'text' && typeof part.text === 'string' ? [part.text] : [],
+  )
+  return { texts, parts: content }
+}
+
+/**
+ * How a subagent ended, from lines of its parent's transcript: the result of the `Agent`/`Task`
+ * call that spawned it (`toolUseId`) when it is an error, or the task notification of a background
+ * subagent (`<task-id>` is its agent id). The last one found wins; null when the lines do not say.
+ */
+export function subagentOutcome(
+  lines: readonly string[],
+  ids: { agentId: string; toolUseId: string | null },
+): SubagentOutcome | null {
+  let outcome: SubagentOutcome | null = null
+  for (const raw of lines) {
+    if (!raw.includes(ids.agentId) && !(ids.toolUseId && raw.includes(ids.toolUseId))) continue
+    let line: unknown
+    try {
+      line = JSON.parse(raw)
+    } catch {
+      continue
+    }
+    if (!isObject(line)) continue
+    const { texts, parts } = userLineTexts(line)
+    for (const part of parts) {
+      if (
+        isObject(part) &&
+        part.type === 'tool_result' &&
+        ids.toolUseId &&
+        part.tool_use_id === ids.toolUseId
+      ) {
+        if (part.is_error === true) outcome = 'failed'
+      }
+    }
+    for (const text of texts) {
+      if (!text.includes('<task-notification>') || !text.includes(`<task-id>${ids.agentId}</task-id>`))
+        continue
+      const status = /<status>(\w+)<\/status>/.exec(text)?.[1]
+      const mapped = status ? TASK_STATUS[status] : undefined
+      if (mapped) outcome = mapped
+    }
+  }
+  return outcome
+}
+
+/** The first non-empty line of a user message (a subagent's prompt), cut at `max`; null otherwise. */
+export function subagentPromptLine(raw: string, max = 80): string | null {
+  let line: unknown
+  try {
+    line = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!isObject(line)) return null
+  for (const text of userLineTexts(line).texts) {
+    const first = text
+      .split('\n')
+      .map((l) => l.trim())
+      .find(Boolean)
+    if (first) return first.length > max ? `${first.slice(0, max - 1)}…` : first
+  }
+  return null
+}
+
 /** Claude Code's `.jsonl`, as the transcript service reads formats. */
 export const claudeTranscript: TranscriptFormat = {
   parseLine: parseTranscriptLine,

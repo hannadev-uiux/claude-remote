@@ -10,6 +10,7 @@ import {
 } from '../src/features/lifecycle/close.ts'
 import { SessionStore } from '../src/features/sessions/store.ts'
 import type { SessionRecord } from '../src/features/sessions/types.ts'
+import { WorktreeLockedError } from '../src/infra/git.ts'
 import { useTempHome } from './helpers.ts'
 
 const home = useTempHome()
@@ -53,6 +54,8 @@ function setup(
     worktree?: WorktreeInfo | null
     /** What a later inspection sees (after a commit/push, or after the agent exited). */
     later?: WorktreeInfo | null
+    /** Whether the worktree's lock holder is still running, per check. */
+    lockAlive?: () => boolean
   } = {},
 ) {
   const store = new SessionStore({ broadcast: () => {} }, join(home.dir(), 's.json'), silentLogger, 60_000)
@@ -71,6 +74,11 @@ function setup(
       if (inspections > 1 && options.later !== undefined) return options.later
       return options.worktree === undefined ? null : options.worktree
     }),
+    worktreeLock: vi.fn(async () =>
+      options.lockAlive
+        ? { reason: 'claude session (pid 4242)', pid: 4242, alive: options.lockAlive() }
+        : null,
+    ),
     commitAll: vi.fn(async () => {}),
     push: vi.fn(async () => {}),
     removeWorktree: vi.fn(async () => ({ purged: Promise.resolve() })),
@@ -88,6 +96,7 @@ function setup(
     sleep: async () => {},
     timeoutMs: 2_000,
     pollMs: 500,
+    lockWaitMs: 1_500,
   }
   return { store, tmux, git, denyPending, log, service: new CloseService(deps) }
 }
@@ -154,6 +163,38 @@ describe('CloseService.close', () => {
     expect(git.removeWorktree).toHaveBeenCalledWith(expect.objectContaining({ path: worktree.path }), {
       force: false,
     })
+  })
+
+  test('waits for the agent to release the worktree before removing it', async () => {
+    let checks = 0
+    const { service, git, tmux } = setup({ worktree, lockAlive: () => ++checks < 3 })
+    tmux.hasPane.mockImplementation(async () => false)
+    expect(await service.close('s', 'delete')).toEqual({ closed: 'exited', worktree: 'deleted' })
+    expect(git.worktreeLock).toHaveBeenCalledTimes(3)
+    expect(tmux.killPane).not.toHaveBeenCalled()
+    expect(git.removeWorktree).toHaveBeenCalled()
+  })
+
+  test('an agent stuck in its exit dialog has its pane ended, then the worktree goes', async () => {
+    let killed = false
+    const { service, store, git, tmux } = setup({ worktree, lockAlive: () => !killed })
+    // The SessionEnd hook ends the session, but the pane stays (Claude Code's "keep or remove?" dialog).
+    tmux.hasPane.mockImplementation(async () => {
+      store.upsert('s', { state: 'ended', controllable: false, paneId: null })
+      return !killed
+    })
+    tmux.killPane.mockImplementation(async () => {
+      killed = true
+    })
+    expect(await service.close('s', 'delete')).toEqual({ closed: 'exited', worktree: 'deleted' })
+    expect(tmux.killPane).toHaveBeenCalledWith('%1')
+    expect(git.removeWorktree).toHaveBeenCalled()
+  })
+
+  test('a lock that is never released reaches the app as session_busy, worktree kept', async () => {
+    const { service, git } = setup({ paneAlive: () => false, worktree, lockAlive: () => true })
+    git.removeWorktree.mockRejectedValueOnce(new WorktreeLockedError(4242, 'claude session (pid 4242)'))
+    await expect(service.close('s', 'delete')).rejects.toMatchObject({ code: 'session_busy' })
   })
 
   test('a failed push keeps the worktree and surfaces git’s message', async () => {

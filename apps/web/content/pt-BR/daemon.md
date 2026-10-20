@@ -39,6 +39,7 @@ O comando antigo `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam fun
   "hookPort": 7338,
   "defaultRuleScope": "project",
   "permissionTimeoutSec": 280,
+  "questionTimeoutSec": 3300,
   "inputStrategy": "paste",
   "recentDays": 7,
   "tmuxSession": "claude-remote",
@@ -51,7 +52,8 @@ O comando antigo `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam fun
 - `profiles`: um por conta do Claude Code. `id` é o alias (o nome do atalho), `configDir` o `CLAUDE_CONFIG_DIR` da conta, `color` a cor da etiqueta no app. Opcionais: `agent` (`claude` por padrão) e `provider` (abaixo).
 - `wsPort`, `hookPort`: as portas do app e dos hooks.
 - `defaultRuleScope`: para onde vão as regras "permitir sempre" por padrão, `project` ou `user`.
-- `permissionTimeoutSec`: quanto tempo o daemon segura um pedido de permissão para o celular antes de o diálogo do terminal assumir.
+- `permissionTimeoutSec`: quanto tempo o daemon segura um pedido de permissão para o celular antes de o diálogo do terminal assumir. O pedido continua no app como "Responda no terminal" até a sessão seguir.
+- `questionTimeoutSec`: o mesmo para perguntas e aprovação de plano (3300 por padrão). Uma pergunta ainda aberta depois de 10 minutos manda um push de lembrete. O timeout do hook gravado nas configurações do agente cobre os dois, e `remote-harness install` ou `update` o reescreve.
 - `inputStrategy`: `paste` (padrão) ou `type` para os prompts enviados pelo celular.
 - `recentDays`: até quando sessões encerradas são listadas.
 - `tmuxSession`: a sessão do tmux que os atalhos usam.
@@ -59,6 +61,7 @@ O comando antigo `claude-remote` e as variáveis `CLAUDE_REMOTE_*` continuam fun
 - `push`: `auto` (a sua conta de serviço do Firebase quando existe, senão o relay) ou `off`.
 - `update`: o canal que `update` e a verificação seguem, e se as atualizações se aplicam sozinhas.
 - `tray`: o ícone na barra de menus / bandeja.
+- `trayPermissions`: se a bandeja oferece Permitir / Sempre permitir / Negar para uma permissão pendente (ligado por padrão; também nas Preferências da bandeja).
 
 Mudanças no arquivo valem quando o daemon reinicia (`remote-harness service install` de novo, ou reiniciar pela bandeja).
 
@@ -108,7 +111,7 @@ O serviço confere o canal dele no remoto git a cada 6 horas e mostra uma notifi
 
 ## Ícone na bandeja
 
-O daemon do serviço mostra um ícone na barra de menus do macOS (um pequeno auxiliar em Swift compilado no primeiro início com as Command Line Tools) e um ícone na bandeja do Linux (`python3` com GTK 3 e AyatanaAppIndicator3 ou AppIndicator3). O menu mostra as sessões em andamento e as permissões pendentes (responda por ali), abre uma sessão nova, mostra o código de pareamento, confere ou aplica atualizações, escolhe o canal, abre os logs, a configuração e a documentação, e reinicia o daemon. `"tray": false` desliga; sem o auxiliar, e no WSL, o daemon roda sem interface.
+O daemon do serviço mostra um ícone na barra de menus do macOS (um pequeno auxiliar em Swift compilado no primeiro início com as Command Line Tools) e um ícone na bandeja do Linux (`python3` com GTK 3 e AyatanaAppIndicator3 ou AppIndicator3). O menu mostra as sessões em andamento e as permissões pendentes (responda por ali), abre uma sessão nova, mostra o código de pareamento, confere ou aplica atualizações, escolhe o canal, abre os logs, a configuração e a documentação, e reinicia o daemon. **Parear um celular** mostra o QR de pareamento no próprio menu no macOS, o endereço, o pareamento no terminal e **Trocar o token…** (os celulares pareados precisam parear de novo). **Preferências** liga e desliga as respostas de permissão no menu, o modo de manter acordado e as notificações push, aplicados na hora, e abre o arquivo de configuração para o resto. Com o serviço, **Sair** esconde o ícone ou para o serviço até o próximo login. `"tray": false` desliga; sem o auxiliar, e no WSL, o daemon roda sem interface.
 
 ## Dados e logs
 

@@ -17,6 +17,7 @@ import '@/core/i18n'
 import { restoreThemePreference, ThemeProvider, useTheme } from '@/core/theme'
 import { useBackgroundUpdates } from '@/core/updates'
 import { restoreCommandRecents } from '@/features/autocomplete/recents-store'
+import { restoreAutocorrectSetting } from '@/features/conversation/autocorrect-store'
 import { restoreFollow } from '@/features/conversation/follow-store'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
@@ -28,6 +29,8 @@ import { CrashPromptSheet } from '@/features/error-reports/components/CrashPromp
 import { ErrorFallback } from '@/features/error-reports/components/ErrorFallback'
 import { restoreOpenAfterCreateSettings } from '@/features/lifecycle/open-after-create-store'
 import { restoreLiveStatusSetting } from '@/features/live-status/settings-store'
+import { restorePerformanceSetting } from '@/features/performance/store'
+import { usePerformanceMonitoring } from '@/features/performance/use-performance'
 import { restorePushSettings } from '@/features/push/push-settings-store'
 import { restoreSessionPrefs } from '@/features/sessions/prefs-store'
 import { restoreSessionSort } from '@/features/sessions/sort-store'
@@ -57,8 +60,10 @@ export default function RootLayout() {
   const credentialsLoaded = useConnectionStore((s) => s.credentialsLoaded)
   const ready = fontsLoaded && credentialsLoaded
   useBackgroundUpdates()
+  usePerformanceMonitoring()
 
   useEffect(() => {
+    void restorePerformanceSetting()
     void restoreThemePreference()
     void restoreMachineAlias()
     void restoreSessionSort()
@@ -66,6 +71,7 @@ export default function RootLayout() {
     void restorePushSettings()
     void restoreOpenAfterCreateSettings()
     void restoreReturnKeySettings()
+    void restoreAutocorrectSetting()
     void restoreKeyBar()
     void restoreKeyboardToolbar()
     void restoreFollow()

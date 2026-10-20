@@ -1,3 +1,4 @@
+import { SESSION_NAME_MAX } from '@remote-harness/protocol'
 import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { ChevronRight, Folder, FolderGit2, FolderSearch, GitBranch } from 'lucide-react-native'
@@ -13,7 +14,7 @@ import { providerName } from '@/features/providers/logic'
 import { ModelPickerSheet } from '@/features/providers/ModelPickerSheet'
 import { ProfileProviderChip } from '@/features/providers/ProfileProviderChip'
 import { useSessionsStore } from '@/features/sessions/store'
-import { AgentBadge, Button, Card, Screen, Text } from '@/ui'
+import { AgentBadge, Button, Card, Chip, Screen, Text } from '@/ui'
 import { DirectoryPickerSheet } from './DirectoryPickerSheet'
 import {
   completeDirectory,
@@ -21,7 +22,15 @@ import {
   matchingSuggestions,
   splitDirectoryInput,
 } from './directory-input'
-import { canStartInWorktree, profileAgent, profileDetail, recentDetail } from './new-session'
+import {
+  canStartInWorktree,
+  cleanSessionName,
+  nameSuggestions,
+  profileAgent,
+  profileDetail,
+  recentDetail,
+  worktreeCarryOver,
+} from './new-session'
 import { useOpenAfterCreateSettings } from './open-after-create-store'
 import { INSPECT_BEFORE_START_MS, planStart, startErrorMessage, withTimeout } from './start-plan'
 import { useDirectories, useDirectoriesSupported } from './use-directories'
@@ -42,6 +51,7 @@ export function NewSessionScreen() {
   const profiles = useConnectionStore(selectProfiles)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [cwd, setCwd] = useState('')
+  const [name, setName] = useState('')
   const [worktree, setWorktree] = useState(false)
   const [busy, setBusy] = useState(false)
   // Set synchronously so a second tap during the inspection or the launch is ignored.
@@ -98,6 +108,10 @@ export function NewSessionScreen() {
   const checkout = current?.checkout ?? null
   const worktreeAllowed = selectedProfile ? canStartInWorktree(profileAgent(selectedProfile)) : false
   const peers = current?.peers ?? []
+  const carryOver = worktreeCarryOver(current?.worktreeCopy, t)
+  const nameChips = cwd.trim()
+    ? nameSuggestions(checkout?.branch ?? null, Object.values(sessions), cwd.trim())
+    : []
 
   // Folder autocomplete: the listing may lag the text, so it is narrowed to what is typed now.
   const directoriesSupported = useDirectoriesSupported()
@@ -139,6 +153,7 @@ export function NewSessionScreen() {
     if (!client || !profileId || !cwd.trim()) return finish()
     setBusy(true)
     setError(null)
+    const sessionName = cleanSessionName(name)
     try {
       const reply = await client.request({
         type: 'session.start',
@@ -146,6 +161,7 @@ export function NewSessionScreen() {
         cwd: cwd.trim(),
         ...(inWorktree ? { worktree: true } : {}),
         ...(model ? { model } : {}),
+        ...(sessionName ? { name: sessionName } : {}),
       })
       const started = reply.type === 'session.started' ? reply : null
       if (openAfterCreate && started && !started.sessionId) {
@@ -314,6 +330,27 @@ export function NewSessionScreen() {
         ) : null}
 
         <Text size="xs" color="textMuted" style={styles.section}>
+          {t('newSession.name')}
+        </Text>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder={t('newSession.namePlaceholder')}
+          placeholderTextColor={colors.textDim}
+          maxLength={SESSION_NAME_MAX}
+          returnKeyType="done"
+          accessibilityLabel={t('newSession.name')}
+          style={styles.input}
+        />
+        {nameChips.length > 0 ? (
+          <View style={styles.chips}>
+            {nameChips.map((chip) => (
+              <Chip key={chip} label={chip} selected={chip === name.trim()} onPress={() => setName(chip)} />
+            ))}
+          </View>
+        ) : null}
+
+        <Text size="xs" color="textMuted" style={styles.section}>
           {t('newSession.recent')}
         </Text>
         {(projects.data ?? []).map((p) => {
@@ -359,6 +396,16 @@ export function NewSessionScreen() {
               <Text size="xs" color="textDim">
                 {t('newSession.worktreeHint')}
               </Text>
+              {carryOver.items.length > 0 ? (
+                <Text size="xs" color="textMuted">
+                  {t('newSession.carryOver', { items: carryOver.items.join(' · ') })}
+                </Text>
+              ) : null}
+              {carryOver.hint ? (
+                <Text size="xs" color="textDim">
+                  {carryOver.hint}
+                </Text>
+              ) : null}
             </View>
             <Switch
               value={worktree}
@@ -488,6 +535,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.colors.surface,
   },
   branch: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
   option: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs },
   project: {
     flexDirection: 'row',

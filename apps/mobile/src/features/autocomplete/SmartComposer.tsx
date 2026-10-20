@@ -13,6 +13,8 @@ import { IconButton } from '@/ui'
 import { AttachmentChips } from '../attachments/components/AttachmentChips'
 import { remainingSlots } from '../attachments/limits'
 import { type ImageSource, useImagePicker } from '../attachments/use-image-picker'
+import { composerAutocorrect } from '../conversation/autocorrect'
+import { useAutocorrectSettings } from '../conversation/autocorrect-store'
 import { PromptComposer } from '../conversation/components/PromptComposer'
 import { keyboardHints } from '../conversation/keyboard-hints'
 import { hardwareKeyboard } from '../conversation/keyboard-toolbar'
@@ -160,6 +162,7 @@ export function SmartComposer({ sessionId, prompt, disabled, autoFocus }: Props)
   const tablet = layout !== 'compact'
   const hardware = hardwareKeyboard({ os: Platform.OS, tablet, focused, keyboardHeight })
   const returnSends = useReturnKeySettings((s) => s.sends)
+  const autocorrect = useAutocorrectSettings((s) => s.enabled)
   const submit = hardware || returnSends
   const rows = useMemo(() => (trigger ? pickableRows(suggestions) : []), [trigger, suggestions])
   const [highlight, setHighlight] = useState(0)
@@ -207,6 +210,11 @@ export function SmartComposer({ sessionId, prompt, disabled, autoFocus }: Props)
         setCursor(e.nativeEvent.selection.end)
         setSelected(e.nativeEvent.selection)
       }}
+      autoCorrect={composerAutocorrect({
+        enabled: autocorrect,
+        text: prompt.text,
+        triggerActive: found !== null,
+      })}
       onSend={() => void send()}
       sending={prompt.sending}
       disabled={disabled}
