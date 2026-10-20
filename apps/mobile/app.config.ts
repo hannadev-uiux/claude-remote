@@ -369,7 +369,7 @@ const appConfig = (config: ConfigContext['config']): ExpoConfig => ({
   ...config,
   name: 'Remote Harness',
   slug: 'claude-remote',
-  version: '0.15.0',
+  version: '0.16.0',
   // `remoteharness://` first; `claude-remote://` stays for the pairing QR codes already printed (and
   // printed by daemons until app builds without the new scheme are gone).
   scheme: ['remoteharness', 'claude-remote'],
