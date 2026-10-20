@@ -53,6 +53,8 @@ export const ConfigSchema = z.object({
   trayPermissions: z.boolean().default(true),
   /** When the service daemon prevents idle sleep: never, while sessions are active, or always. */
   keepAwake: KeepAwakeModeSchema.default('sessions'),
+  /** Overrides the OS host name shown in the app and the live status; unset = the host name. */
+  machineName: z.string().trim().min(1).max(60).optional(),
 })
 export type Config = z.infer<typeof ConfigSchema>
 

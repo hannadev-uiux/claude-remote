@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import type { PushMode } from '@remote-harness/protocol'
 import { effectiveLocale, loadConfig } from '../../core/config.ts'
 import { messagesFor } from '../../core/i18n/index.ts'
-import { hostName, paths } from '../../core/paths.ts'
+import { displayHostName, paths } from '../../core/paths.ts'
 import type { DaemonContext } from '../../main.ts'
 import { DeviceRegistry } from './devices.ts'
 import { type PushSetting, resolvePushMode, SwitchablePushSender } from './mode.ts'
@@ -45,7 +45,7 @@ export async function registerPushFeature(
     isMuted: options.isMuted,
     messages: messagesFor(effectiveLocale(ctx.config)).push,
     mode: () => sender.mode,
-    host: hostName(),
+    host: displayHostName(ctx.config),
   })
 
   ctx.router.register('device.register', async (msg) => {

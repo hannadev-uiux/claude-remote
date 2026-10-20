@@ -18,9 +18,11 @@ export class TrayHost {
 
   constructor(
     private readonly start: () => Promise<TrayProcess | null>,
-    private readonly onClick: (id: string) => void,
+    private readonly onClick: (id: string, value?: string) => void,
     private readonly logger: Logger,
     private readonly restartDelayMs = RESTART_DELAY_MS,
+    /** The helper reported `{type:'ready', windows}` — whether it can open the Preferences/Sessions windows. */
+    private readonly onReady: (windows: boolean) => void = () => {},
   ) {}
 
   get running(): boolean {
@@ -41,8 +43,15 @@ export class TrayHost {
     this.process = process
     process.onMessage((message) => {
       if (!message || typeof message !== 'object') return
-      const { type, id } = message as { type?: unknown; id?: unknown }
-      if (type === 'click' && typeof id === 'string') this.onClick(id)
+      const { type, id, value, windows } = message as {
+        type?: unknown
+        id?: unknown
+        value?: unknown
+        windows?: unknown
+      }
+      if (type === 'click' && typeof id === 'string')
+        this.onClick(id, typeof value === 'string' ? value : undefined)
+      else if (type === 'ready') this.onReady(windows === true)
     })
     process.onExit((code, early) => {
       this.process = null

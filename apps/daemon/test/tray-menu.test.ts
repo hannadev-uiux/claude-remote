@@ -3,7 +3,9 @@ import { messagesFor } from '../src/core/i18n/index.ts'
 import {
   buildTrayMenu,
   MAX_TRAY_SESSIONS,
+  MAX_TRAY_SESSIONS_WINDOW,
   pendingSummary,
+  TRAY_ACTIONS,
   type TrayItem,
   type TrayMenuState,
   type TraySession,
@@ -38,6 +40,8 @@ const session = (id: string, state: TraySession['state'], patch: Partial<TraySes
   state,
   worktree: false,
   controllable: state !== 'ended',
+  agent: 'claude',
+  updatedAt: '2026-01-01T00:00:00.000Z',
   ...patch,
 })
 
@@ -80,12 +84,36 @@ describe('tray shell menu', () => {
     expect(labels(menu.items)).toContain('Sessions · 5 · 1 running')
     expect(labels(menu.items)).toContain('Session a · running')
     expect(labels(menu.items)).toContain('~/projects/acme-api · Work · worktree')
-    expect(ids(menu.items)).toEqual(expect.arrayContaining(['focus:a', 'close:a', 'focus:c', 'close:c']))
+    expect(ids(menu.items)).toEqual(
+      expect.arrayContaining(['focus:a', 'rename:a', 'close:a', 'focus:c', 'rename:c', 'close:c']),
+    )
     expect(ids(menu.items)).not.toContain('focus:d')
     expect(labels(menu.items)).toContain('2 ended sessions')
     const many = Array.from({ length: MAX_TRAY_SESSIONS + 3 }, (_, i) => session(`s${i}`, 'idle'))
     const capped = buildTrayMenu({ ...base, sessions: many }, en)
     expect(ids(capped.items).filter((id) => id.startsWith('focus:'))).toHaveLength(MAX_TRAY_SESSIONS)
+    expect(ids(capped.items)).not.toContain(TRAY_ACTIONS.seeAll)
+  })
+
+  test('a helper with windows caps at 5 and adds "See all sessions…"; without windows it stays at 8', () => {
+    const sessions = Array.from({ length: MAX_TRAY_SESSIONS_WINDOW + 3 }, (_, i) => session(`s${i}`, 'idle'))
+    const windowed = buildTrayMenu({ ...base, sessions, windows: true }, en)
+    expect(ids(windowed.items).filter((id) => id.startsWith('focus:'))).toHaveLength(MAX_TRAY_SESSIONS_WINDOW)
+    expect(labels(windowed.items)).toContain('See all sessions…')
+    expect(windowed.sessions).toEqual(sessions)
+    expect(windowed.sessionsWindow).toEqual({
+      title: 'Sessions',
+      searchPlaceholder: 'Search sessions',
+      actions: {
+        focus: 'Open in terminal (tmux)',
+        rename: 'Rename…',
+        close: 'Close session',
+        copyPath: 'Copy path',
+      },
+      renamePrompt: { title: 'Rename session', confirm: 'Rename', cancel: 'Cancel' },
+    })
+    const few = buildTrayMenu({ ...base, sessions: sessions.slice(0, 2), windows: true }, en)
+    expect(ids(few.items)).not.toContain(TRAY_ACTIONS.seeAll)
   })
 
   test('the oldest pending permission goes first with Allow / Always / Deny / Focus', () => {
@@ -128,7 +156,14 @@ describe('tray shell menu', () => {
   })
 
   test('Preferences: permissions here, keep awake, push and the config file', () => {
-    const prefs = { permissions: true, keepAwake: 'sessions' as const, push: true }
+    const prefs = {
+      permissions: true,
+      keepAwake: 'sessions' as const,
+      push: true,
+      machineName: 'MacBook Pro',
+      showInMenuBar: true,
+      startAtLogin: true,
+    }
     const menu = buildTrayMenu({ ...base, prefs }, en)
     const sub = menu.items.find(
       (i): i is Extract<TrayItem, { type: 'submenu' }> => 'items' in i && i.label === 'Preferences',
@@ -161,6 +196,49 @@ describe('tray shell menu', () => {
     expect(ids(quiet.items)).toContain('focus:b')
     expect(ids(quiet.items)).not.toContain('allow:r1')
     expect(ids(quiet.items)).not.toContain('deny:r1')
+  })
+
+  test('a helper with windows gets a single Preferences item instead of the submenu, plus the window payload', () => {
+    const prefs = {
+      permissions: true,
+      keepAwake: 'sessions' as const,
+      push: true,
+      machineName: 'MacBook Pro',
+      showInMenuBar: true,
+      startAtLogin: false,
+    }
+    const profiles = [{ id: 'claudin', name: 'Work', agent: 'claude', color: '#D97757' }]
+    const menu = buildTrayMenu({ ...base, prefs, profiles, windows: true }, en)
+    expect(menu.items).toContainEqual({ id: 'prefs', label: 'Preferences…' })
+    expect(menu.items.some((i) => 'items' in i && 'label' in i && i.label === 'Preferences')).toBe(false)
+    expect(menu.prefsWindow?.title).toBe('Remote Harness Preferences')
+    const tab = (id: string) => menu.prefsWindow?.tabs.find((t) => t.id === id)
+    expect(tab('general')?.sections[0]?.rows).toEqual(
+      expect.arrayContaining([
+        { kind: 'text', id: 'pref:machine-name', label: 'Machine name', value: 'MacBook Pro' },
+        { kind: 'toggle', id: 'pref:show-in-menu-bar', label: 'Show in menu bar', checked: true },
+      ]),
+    )
+    expect(tab('general')?.sections[0]?.rows).toContainEqual({
+      kind: 'toggle',
+      id: 'pref:start-at-login',
+      label: 'Start at login',
+      checked: false,
+    })
+    // startAtLogin null (no service manager known): the row is omitted, not shown disabled.
+    const noManager = buildTrayMenu(
+      { ...base, prefs: { ...prefs, startAtLogin: null }, profiles, windows: true },
+      en,
+    )
+    const noManagerTab = noManager.prefsWindow?.tabs.find((t) => t.id === 'general')
+    expect(noManagerTab?.sections[0]?.rows.some((r) => 'id' in r && r.id === 'pref:start-at-login')).toBe(
+      false,
+    )
+    expect(tab('profiles')?.sections[0]?.rows).toEqual([{ kind: 'value', label: 'Work', value: 'claude' }])
+    expect(menu.sessions).toEqual([]) // `base` has no sessions, but the field is still sent
+    // Without windows, nothing is sent: the submenu already carries everything a thin helper needs.
+    const thin = buildTrayMenu({ ...base, prefs, profiles }, en)
+    expect(thin.prefsWindow).toBeUndefined()
   })
 
   test('Quit asks about the service only under a service manager', () => {
