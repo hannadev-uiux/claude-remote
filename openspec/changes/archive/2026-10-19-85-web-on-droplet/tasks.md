@@ -18,5 +18,5 @@
 ## 4. Verify and cut over
 
 - [x] 4.1 `pnpm check` and `openspec validate --strict`
-- [ ] 4.2 Deploy to the droplet, copy the R2 contents, check every route through the droplet before the DNS change
-- [ ] 4.3 DNS to the droplet, remove the fallback redirect rule and the Worker, new publish tokens (server `.env`, `OTA_DEV_TOKEN`); check the live site, the manifest of both platforms and the install link
+- [x] 4.2 Deploy to the droplet, copy the R2 contents, check every route through the droplet before the DNS change
+- [x] 4.3 DNS to the droplet, remove the fallback redirect rule and the Worker, new publish tokens (server `.env`, `OTA_DEV_TOKEN`); check the live site, the manifest of both platforms and the install link
