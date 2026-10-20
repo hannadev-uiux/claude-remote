@@ -856,6 +856,8 @@ const esES = {
     version: 'versión',
     protocol: 'protocolo',
     appearance: 'Apariencia',
+    theme: 'Tema · {{theme}}',
+    themeTitle: 'Tema',
     themes: {
       system: 'Sistema',
       dark: 'Oscuro',
@@ -864,6 +866,11 @@ const esES = {
       mocha: 'Catppuccin Mocha',
       latte: 'Catppuccin Latte',
     },
+    themeTag: {
+      dark: 'Oscuro',
+      light: 'Claro',
+    },
+    themeDone: 'Listo',
     profiles: 'Perfiles',
     noProfiles: 'No se ha encontrado ningún perfil en el ordenador.',
     forgetButton: 'Olvidar esta máquina',
