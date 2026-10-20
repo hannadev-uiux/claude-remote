@@ -42,7 +42,7 @@ Mientras el agente delega trabajo, el menú de la cabecera muestra **Subagentes 
 
 ## Abrir, reanudar y cerrar sesiones
 
-**Nueva sesión** (el botón `+`) pide el perfil, el modelo cuando el perfil tiene un proveedor, y el directorio: escríbelo con autocompletado, navega por las carpetas o elige uno reciente (con su rama y cuántas veces se usó esta semana). Activa **Copia aislada (git worktree)** para abrir Claude Code con `--worktree`: trabaja en su propia rama en `<repo>/.claude/worktrees/<nombre>`, así dos sesiones pueden compartir un repositorio sin tocarse. Abrir en un checkout que otra sesión en vivo ya usa pide confirmación antes.
+**Nueva sesión** (el botón `+`) pide el perfil, el modelo cuando el perfil tiene un proveedor, y el directorio: escríbelo con autocompletado, navega por las carpetas o elige uno reciente (con su rama y cuántas veces se usó esta semana). Activa **Copia aislada (git worktree)** para abrir Claude Code con `--worktree`: trabaja en su propia rama en `<repo>/.claude/worktrees/<nombre>`, así dos sesiones pueden compartir un repositorio sin tocarse. Abrir en un checkout que otra sesión en vivo ya usa pide confirmación antes. Un **Nombre** opcional (con la rama y nombres de sesiones recientes como sugerencias) se convierte en el título de la sesión al momento, en el `--name` de Claude Code y en el nombre del worktree cuando la copia aislada está activada.
 
 **Reanudar** vuelve a abrir una sesión terminada o de solo lectura dentro de tmux, con el mismo historial. **Cerrar** termina la sesión; cuando se ejecutó en un worktree, la app ofrece borrarlo solo si está limpio y subido, hacer commit y push antes, o descartar el trabajo, preguntando dos veces antes de descartar nada.
 

@@ -32,6 +32,8 @@ export type AgentAdapter = {
   resumeArgs(sessionId: string): string[]
   /** Arguments that start in a new git worktree with that name; null when the CLI cannot. */
   worktreeArgs(name: string): string[] | null
+  /** Arguments that give a new session a display name; null when the CLI has none. */
+  nameArgs(name: string): string[] | null
   /** How the CLI writes its transcripts (one module per format). */
   transcript: TranscriptFormat
   /** Main-session transcripts of a config dir modified since `cutoffMs`. */

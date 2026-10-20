@@ -119,6 +119,16 @@ export class GitClient {
     }
   }
 
+  /** Whether the repository of `dir` has the local branch `branch` (false when git fails). */
+  async hasBranch(dir: string, branch: string): Promise<boolean> {
+    try {
+      const result = await this.run(dir, ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])
+      return result.exitCode === 0 && !result.timedOut
+    } catch {
+      return false
+    }
+  }
+
   /**
    * The linked worktree that contains `dir` with its state, or `null` for the repository's main
    * checkout (its git dir is the common dir) and for anything outside git.

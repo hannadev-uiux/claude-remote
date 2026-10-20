@@ -484,6 +484,17 @@ export type DirectoryItem = z.infer<typeof DirectoryItemSchema>
 export const DIRECTORY_LIST_LIMIT = 200
 export const MAX_DIRECTORY_LIST_LIMIT = 500
 
+/** Longest name a session can be given when it starts. */
+export const SESSION_NAME_MAX = 80
+/** A session's display name: trimmed, one line, no control characters. */
+export const SessionNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(SESSION_NAME_MAX)
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: control characters are what is rejected.
+  .refine((name) => !/[\u0000-\u001f\u007f]/.test(name), 'the name must be a single line')
+
 export const MuteStateSchema = z.object({
   profiles: z.array(z.string()).default([]),
   sessions: z.array(z.string()).default([]),

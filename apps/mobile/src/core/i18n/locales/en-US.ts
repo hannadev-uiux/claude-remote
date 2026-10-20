@@ -625,6 +625,8 @@ const enUS = {
     modelDefault: 'Provider default',
     directory: 'Directory',
     placeholder: '~/workspaces/project',
+    name: 'Name (optional)',
+    namePlaceholder: 'e.g. Rate limit on login',
     start: 'Start session',
     starting: 'Starting {{agent}} in {{path}}…',
     recent: 'Recent',

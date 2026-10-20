@@ -41,3 +41,30 @@ export function worktreeName(date: Date): string {
   const time = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
   return `remote-${day}-${time}`
 }
+
+/** Longest worktree name derived from a session name. */
+export const WORKTREE_SLUG_MAX = 40
+
+/**
+ * A session name as a worktree and branch name: accents folded, lowercase, anything else than
+ * letters and digits turned into single dashes, cut at a dash within the limit. Empty when nothing
+ * usable is left.
+ */
+export function worktreeSlug(name: string): string {
+  const slug = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  if (slug.length <= WORKTREE_SLUG_MAX) return slug
+  const cut = slug.slice(0, WORKTREE_SLUG_MAX)
+  const dash = cut.lastIndexOf('-')
+  return (dash > 0 ? cut.slice(0, dash) : cut).replace(/-+$/, '')
+}
+
+/** Names tried in order for a named worktree: the slug, then `-2` to `-9`. */
+export function worktreeCandidates(slug: string): string[] {
+  if (!slug) return []
+  return [slug, ...Array.from({ length: 8 }, (_, i) => `${slug}-${i + 2}`)]
+}

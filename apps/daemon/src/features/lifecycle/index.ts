@@ -1,6 +1,8 @@
+import { join } from 'node:path'
 import { DaemonError } from '../../core/errors.ts'
 import type { KeyedMutex } from '../../core/keyed-mutex.ts'
 import { paths } from '../../core/paths.ts'
+import { isDirectory } from '../../infra/fs.ts'
 import { GitClient } from '../../infra/git.ts'
 import type { DaemonContext } from '../../main.ts'
 import type { CheckoutResolver } from '../checkout/resolver.ts'
@@ -44,6 +46,13 @@ export function registerLifecycleFeature(
     denyPending: (sessionId: string) => void
   },
 ) {
+  const git = new GitClient(ctx.exec, {
+    onPurgeError: (path, error) =>
+      ctx.logger.warn(
+        { path, reason: error instanceof Error ? error.message : String(error) },
+        'worktree purge failed',
+      ),
+  })
   const service = new LifecycleService(
     ctx.exec,
     store,
@@ -55,17 +64,16 @@ export function registerLifecycleFeature(
     undefined,
     START_SETTLE_MS,
     (paneId, timeoutMs) => waitForPaneSession(store, paneId, timeoutMs),
+    async (root, name) =>
+      (await isDirectory(join(root, '.claude', 'worktrees', name))) ||
+      (await git.hasBranch(root, `worktree-${name}`)),
   )
+  // A named session that registers after \`session.started\` still gets its name as the title.
+  store.onChange((session) => service.applyName(session.id, session.paneId))
   const closer = new CloseService({
     store,
     tmux: ctx.tmux,
-    git: new GitClient(ctx.exec, {
-      onPurgeError: (path, error) =>
-        ctx.logger.warn(
-          { path, reason: error instanceof Error ? error.message : String(error) },
-          'worktree purge failed',
-        ),
-    }),
+    git,
     lock: closing.lock,
     denyPending: closing.denyPending,
     log: ctx.logger,
@@ -77,6 +85,7 @@ export function registerLifecycleFeature(
       const data = await service.start(msg.profileId, msg.cwd, {
         worktree,
         ...(msg.model ? { model: msg.model } : {}),
+        ...(msg.name ? { name: msg.name } : {}),
       })
       ctx.logger.info(
         {
@@ -85,6 +94,7 @@ export function registerLifecycleFeature(
           sessionId: data.sessionId,
           worktree,
           model: msg.model ?? null,
+          named: msg.name !== undefined,
         },
         'session started',
       )

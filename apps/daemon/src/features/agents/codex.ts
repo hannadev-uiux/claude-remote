@@ -86,6 +86,7 @@ export const codex: AgentAdapter = {
   defaultConfigDir: '~/.codex',
   resumeArgs: (sessionId) => ['resume', sessionId],
   worktreeArgs: () => null,
+  nameArgs: () => null,
   transcript: codexTranscript,
   findTranscripts: findCodexTranscripts,
   readSummary: readCodexSummary,
