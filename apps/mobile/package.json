@@ -1,6 +1,6 @@
 {
   "name": "@remote-harness/mobile",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
