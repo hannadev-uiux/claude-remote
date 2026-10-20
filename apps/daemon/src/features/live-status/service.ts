@@ -23,6 +23,8 @@ export type LiveRegistration = {
   relay?: PushRelay
   /** App theme colors, echoed in every update so remote updates never reset the widget colors. */
   palette?: LivePalette
+  /** Android: the app draws the notification from data messages. */
+  androidDataMessages?: boolean
 }
 
 type Entry = LiveRegistration & {
@@ -188,6 +190,7 @@ export class LiveStatusService {
         fcmToken: entry.fcmToken,
         ...(entry.activityToken ? { activityToken: entry.activityToken } : {}),
         ...(entry.relay ? { relay: entry.relay } : {}),
+        ...(entry.androidDataMessages ? { androidDataMessages: true } : {}),
         props: {
           ...liveProps(entry.status, this.options.info(entry.sessionId, profileId), this.options.messages),
           ...(entry.palette ? { palette: entry.palette } : {}),

@@ -114,6 +114,8 @@ export function useLiveStatus() {
           palette,
           ...(activityToken ? { activityToken } : {}),
           ...(relay ? { relay } : {}),
+          // The app draws the Android notification itself, with Allow / Deny (see push/background.ts).
+          ...(platform === 'android' ? { androidDataMessages: true } : {}),
         })
         const entry = tracked.get(sessionId)
         // Only an activity token lets the daemon update an iOS activity.

@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   type ClientMessage,
   checkoutPeers,
+  LiveDataMessageSchema,
   LiveStatusPropsSchema,
+  liveNotificationText,
   parseClientMessage,
   parseServerMessage,
   type ServerMessage,
@@ -48,6 +50,14 @@ const clientSamples: ClientMessage[] = [
   { type: 'push.test', id: '1', fcmToken: 'tok' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'ios', fcmToken: 'tok', activityToken: 'ab12' },
   { type: 'live.register', id: '1', sessionId: 's', platform: 'android', fcmToken: 'tok' },
+  {
+    type: 'live.register',
+    id: '1',
+    sessionId: 's',
+    platform: 'android',
+    fcmToken: 'tok',
+    androidDataMessages: true,
+  },
   { type: 'live.unregister', id: '1', sessionId: 's' },
   { type: 'session.close', id: '1', sessionId: 's' },
   { type: 'session.close', id: '1', sessionId: 's', worktree: 'push-delete' },
@@ -445,6 +455,35 @@ describe('client messages', () => {
       hint: '',
       tasks: '',
     })
+  })
+
+  test('Android data messages carry the event and validated props', () => {
+    const props = { title: 'Work', state: 'waiting', status: 'Waiting', step: '', tools: '', startedAt: 1 }
+    const parsed = LiveDataMessageSchema.parse({ event: 'update', props: { ...props, prompt: 'secret' } })
+    expect(parsed.props).not.toHaveProperty('prompt')
+    expect(LiveDataMessageSchema.safeParse({ event: 'start', props }).success).toBe(false)
+  })
+
+  test('Android notification text: session and state, then the state line with the glyphs', () => {
+    const props = LiveStatusPropsSchema.parse({
+      title: 'Work',
+      state: 'working',
+      status: 'Working',
+      step: 'running a command',
+      tools: '3 tools',
+      startedAt: 1,
+      glyphs: ['⌘', '✎'],
+    })
+    expect(liveNotificationText(props)).toEqual({
+      title: 'Work · Working',
+      body: 'running a command · 3 tools · ✎ ⌘',
+    })
+    expect(liveNotificationText({ ...props, session: 'Fix login', step: '', tools: '', glyphs: [] })).toEqual(
+      {
+        title: 'Fix login · Working',
+        body: 'Working',
+      },
+    )
   })
 
   test('relay URLs must be HTTPS', () => {

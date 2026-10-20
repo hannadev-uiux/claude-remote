@@ -64,7 +64,9 @@ Edits to the file take effect when the daemon restarts (`remote-harness service 
 
 ## Profiles and OpenRouter
 
-A profile can route Claude Code through OpenRouter instead of the Anthropic account: add a `provider` with `kind: "openrouter"` and, optionally, `baseUrl` (another Anthropic-compatible gateway), a default `model` and a `smallFastModel`.
+A profile can route Claude Code through OpenRouter instead of the Anthropic account. The easiest way is `remote-harness setup` → "Add an OpenRouter profile": it asks the name, the alias, the folder (`~/.claude-openrouter`), an optional default model and the key (hidden), checks the key with OpenRouter and shows the credits left when the key can read them. Running the setup again lists these profiles and lets you keep them, replace the key or remove the profile (its launcher, hooks and key; the folder stays).
+
+By hand: add a `provider` with `kind: "openrouter"` and, optionally, `baseUrl` (another Anthropic-compatible gateway), a default `model` and a `smallFastModel`.
 
 ```json
 {
