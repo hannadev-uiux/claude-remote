@@ -202,8 +202,8 @@ export const enUS = {
         body: 'The app never offers the agent’s “bypass permissions” mode. Edits to your dotfiles are merged, backed up and fully reversible.',
       },
       {
-        title: 'No telemetry',
-        body: 'Nothing is sent anywhere unless you set up push through your own Firebase project or the content-free relay.',
+        title: 'Opt-in only',
+        body: 'Nothing is sent anywhere unless you choose it: push through your own Firebase project or the content-free relay, error reports and performance data, all without session content.',
       },
       {
         title: 'Open source',

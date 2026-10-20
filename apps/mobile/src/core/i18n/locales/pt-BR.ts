@@ -890,6 +890,9 @@ const ptBR = {
     title: 'Relatórios de erro',
     hint: 'Ajude a corrigir bugs enviando relatórios de erro. Eles nunca incluem suas sessões: nada de prompts, conversa, saída do terminal, caminhos ou nomes.',
     preferences: { auto: 'Enviar automaticamente', ask: 'Perguntar sempre', never: 'Nunca' },
+    performance: 'Enviar dados de desempenho',
+    performanceHint:
+      'Início do app, telas travadas e momentos lentos do app, para achar o que o deixa lento. Nunca suas sessões nem o endereço do seu computador.',
     unavailable:
       'Este build não tem Firebase: os relatórios só podem ser compartilhados ou abertos como issue no GitHub.',
     recorded_one: '{{count}} erro registrado neste aparelho',

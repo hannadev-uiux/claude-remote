@@ -62,6 +62,16 @@ O atalho se recusa a abrir uma janela quando o perfil não tem chave e imprime o
 
 Quando a build do TestFlight ou do Google Play estiver disponível, instale-a ao lado da build que você mesmo fez: ela tem outra assinatura, então começa vazia. Pareie de novo escaneando `remote-harness pair`; o pareamento antigo continua funcionando até você tocar em **Esquecer esta máquina** naquela build ou trocar o token. O push se registra sozinho na primeira abertura da nova build, e o computador descarta o registro antigo quando ele para de conectar. Depois apague o development build.
 
+## O app está lento ou trava
+
+Ligue Configurações → Relatórios de erro → **Enviar dados de desempenho** naquele celular (só nas builds com Firebase) e use o app normalmente. Depois de alguns minutos, a página **Performance** do console do Firebase mostra, por modelo de aparelho e sistema:
+
+- `_app_start` e o trace `app_ready` (`ready_ms`: do início do app até a primeira conexão com o seu computador; `outcome` `connected` ou `timeout`);
+- `js_responsiveness`: um trace por período em primeiro plano, com `stalls` (JavaScript travado 1 s ou mais), `long_stalls` (5 s ou mais), `stall_max_ms` e `stall_total_ms`, filtrável por `layout`;
+- quadros lentos e congelados em **Screen rendering**.
+
+Um travamento que termina com o sistema fechando o app perde o último `js_responsiveness`. Um `app_ready` longo ou um crash no Crashlytics na abertura seguinte ainda dão uma pista. Builds de debug só enviam com a flag de debug do Firebase ligada.
+
 ## Pedindo ajuda
 
 Abra uma issue com a saída de `remote-harness doctor`, as versões (sistema, Node, Claude Code, app) e os logs do daemon em `~/.remote-harness/logs`, depois de remover tokens e conteúdo de sessões. Problemas de segurança vão para [Segurança e privacidade](/pt-br/docs/security/#relatar-uma-vulnerabilidade), nunca para issues públicas.
