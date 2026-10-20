@@ -6,13 +6,18 @@ import { type ColorName, radius, useTheme } from '@/core/theme'
 export function IconButton({
   icon: Icon,
   onPress,
+  onPressIn,
+  onPressOut,
   label,
   color = 'textMuted',
   size = 20,
   disabled,
 }: {
   icon: LucideIcon
-  onPress: () => void
+  /** Omit when using `onPressIn`/`onPressOut` for a press-and-hold interaction instead. */
+  onPress?: () => void
+  onPressIn?: () => void
+  onPressOut?: () => void
   label: string
   color?: ColorName
   size?: number
@@ -27,6 +32,8 @@ export function IconButton({
       hitSlop={8}
       disabled={disabled}
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={({ pressed }) => [

@@ -619,6 +619,18 @@ const esES = {
     languageTitle: 'Idioma de la transcripción por voz',
     languageHint: 'Qué idioma espera oír el dictado — te permite usar la app en un idioma y hablar en otro.',
     languageApp: 'El mismo de la app',
+    pause: 'Pausar grabación',
+    resume: 'Reanudar grabación',
+    paused: 'Pausado — toca Reanudar para seguir grabando',
+    reviewTitle: 'Dictado mejorado',
+    useOriginal: 'Usar original',
+    usePolished: 'Usar mejorado',
+    polishTitle: 'Mejorar dictado',
+    polishHint:
+      'Reescribe la transcripción como un prompt limpio antes de insertarla. Solo sesiones de Claude Code.',
+    pushToTalkTitle: 'Mantener pulsado para grabar',
+    pushToTalkHint:
+      'Mantén pulsado el micrófono para grabar y suéltalo para detener, en vez de tocar para alternar.',
   },
   newSession: {
     profile: 'Agente y perfil',

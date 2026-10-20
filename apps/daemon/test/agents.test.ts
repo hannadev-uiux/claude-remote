@@ -30,6 +30,14 @@ describe('agent adapters', () => {
     expect(claude.resumeArgs('abc')).toEqual(['--resume', 'abc'])
     expect(claude.worktreeArgs('remote-1')).toEqual(['--worktree', 'remote-1'])
     expect(claude.hooks.file('/Users/me/.claude')).toBe('/Users/me/.claude/settings.json')
+    const polishArgs = claude.polish?.args('so, um, continue the tests')
+    expect(polishArgs?.slice(0, 2)).toEqual(['-p', 'so, um, continue the tests'])
+    expect(polishArgs).toContain('--model')
+    expect(polishArgs).toContain('haiku')
+    expect(polishArgs).toContain('--output-format')
+    expect(polishArgs).toContain('json')
+    expect(polishArgs).toContain('--allowedTools')
+    expect(polishArgs).toContain('--append-system-prompt')
   })
 
   test('Codex: CODEX_HOME, codex resume, no worktree, hooks.json', () => {
@@ -49,6 +57,7 @@ describe('agent adapters', () => {
     expect(codex.hooks).toMatchObject({ style: 'codex-hooks' })
     expect(codex.hooks.file('/Users/me/.codex')).toBe('/Users/me/.codex/hooks.json')
     expect(codex.input.minEnterDelayMs).toBeGreaterThanOrEqual(250)
+    expect(codex.polish).toBeNull()
   })
 
   test('agents without an adapter are known to the protocol but cannot run', () => {
