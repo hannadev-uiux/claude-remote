@@ -5,6 +5,7 @@ import {
   type ConfigPlugin,
   type ExportedConfig,
   withAndroidManifest,
+  withAppBuildGradle,
   withAppDelegate,
   withDangerousMod,
   withInfoPlist,
@@ -259,6 +260,23 @@ const withLiveActivityIcon: ConfigPlugin = (config) => {
   })
 }
 
+/**
+ * `locales` (the iOS system prompts above) also lands in the Android string resources, per language
+ * and without a default, which the release lint (`lintVitalRelease`) rejects as extra translations.
+ * Android never reads those strings, so that one check is turned off.
+ */
+const withIosOnlyLocaleStrings: ConfigPlugin = (config) =>
+  withAppBuildGradle(config, (mod) => {
+    const marker = '// remote-harness: iOS-only locale strings'
+    if (!mod.modResults.contents.includes(marker)) {
+      mod.modResults.contents = mod.modResults.contents.replace(
+        /\nandroid \{\n/,
+        `\nandroid {\n    ${marker}\n    lint {\n        disable 'ExtraTranslation'\n    }\n`,
+      )
+    }
+    return mod
+  })
+
 /** Attributes of FCM's notification defaults that both expo-notifications and RNFirebase messaging set. */
 const FCM_DEFAULTS: Record<string, 'android:value' | 'android:resource'> = {
   'com.google.firebase.messaging.default_notification_channel_id': 'android:value',
@@ -308,9 +326,11 @@ const withFirebase: ConfigPlugin = (config) => {
 }
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const expo = withLiveActivityIcon(
-    withKeyCommandAppDelegate(
-      withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+  const expo = withIosOnlyLocaleStrings(
+    withLiveActivityIcon(
+      withKeyCommandAppDelegate(
+        withKeyCommandBridgingHeader(withPerIdiomOrientation(withSceneLifecycle(appConfig(config)))),
+      ),
     ),
   )
   return firebase.ios || firebase.android ? withFirebase(expo) : expo
