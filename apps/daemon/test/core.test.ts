@@ -115,7 +115,7 @@ describe('secret-tool token store', () => {
     const token = await ensureToken(new SecretToolTokenStore(exec))
     expect(exec.calls.map((c) => [c.file, ...c.args].join(' '))).toEqual([
       'secret-tool lookup service claude-remote account pairing-token',
-      'secret-tool store --label=Claude Remote pairing token service claude-remote account pairing-token',
+      'secret-tool store --label=Remote Harness pairing token service claude-remote account pairing-token',
     ])
     expect(exec.calls[1]?.options?.input).toBe(token)
     for (const call of exec.calls) expect(call.args).not.toContain(token)
