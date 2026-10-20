@@ -871,6 +871,13 @@ const ptBR = {
       light: 'Claro',
     },
     themeDone: 'Concluído',
+    appIcon: {
+      title: 'Ícone do app',
+      row: 'Ícone do app · {{icon}}',
+      matchTheme: 'Seguir o tema',
+      original: 'Original',
+      done: 'Concluído',
+    },
     profiles: 'Perfis',
     noProfiles: 'Nenhum perfil encontrado no computador.',
     forgetButton: 'Esquecer esta máquina',

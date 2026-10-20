@@ -117,9 +117,31 @@ function iconSvg(weight: Weight = 'regular'): string {
 }
 
 /** Android adaptive foreground: the mark inside the 66 % safe zone, background from app.config. */
-function adaptiveForegroundSvg(): string {
+function adaptiveForegroundSvg(color = ACCENT): string {
   const inset = (1024 * 18) / 108
-  return svg(1024, 1024, markAt('regular', ACCENT, inset, inset, 1024 - 2 * inset))
+  return svg(1024, 1024, markAt('regular', color, inset, inset, 1024 - 2 * inset))
+}
+
+/**
+ * Background and accent of each theme that gets its own alternate app icon (#233), matching
+ * `src/core/theme/palettes.ts` (duplicated here for the same reason as `ACCENT`/`BG` above: this
+ * script runs in Node, outside the app's module graph).
+ */
+const ICON_THEMES = {
+  dark: { bg: '#0D0D0D', accent: '#E8A33D' },
+  light: { bg: '#F3F3F1', accent: '#E8A33D' },
+  dracula: { bg: '#282A36', accent: '#BD93F9' },
+  mocha: { bg: '#1E1E2E', accent: '#FAB387' },
+  latte: { bg: '#E6E9EF', accent: '#FE640B' },
+} as const
+
+/** Flat alternate app icon for a theme: solid background, the mark in the theme's accent, no glow. */
+function themedIconSvg(bg: string, accent: string): string {
+  return svg(
+    1024,
+    1024,
+    `<rect width="100%" height="100%" fill="${bg}"/>${markAt('regular', accent, 192, 182, 640)}`,
+  )
 }
 
 /** Bold mark in white on transparent: Android themed (monochrome) icon and the notification icon. */
@@ -299,3 +321,10 @@ await render(monochromeSvg(82), join(assets, 'notification-icon.png'), 96)
 await render(bannerSvg(), join(brand, 'og.png'))
 write(join(store, 'feature-graphic.svg'), featureGraphicSvg())
 await render(featureGraphicSvg(), join(store, 'feature-graphic.png'))
+
+// Alternate app icons, one per theme (#233); app.config.ts's expo-alternate-app-icons plugin wires
+// them up, src/features/settings/app-icon-store.ts picks one by name at runtime.
+for (const [theme, { bg, accent }] of Object.entries(ICON_THEMES)) {
+  await render(themedIconSvg(bg, accent), join(assets, 'app-icon', `${theme}.png`), 1024, bg)
+  await render(adaptiveForegroundSvg(accent), join(assets, 'app-icon', `${theme}-foreground.png`), 1024)
+}
