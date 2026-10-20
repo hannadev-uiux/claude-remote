@@ -5,16 +5,28 @@ import { Pressable, TextInput, View } from 'react-native'
 import { fontSize, fonts, makeStyles, radius, space, useTheme } from '@/core/theme'
 import { useSearchFocus } from '../search-focus'
 
-/** Search field above the session list (title and folder); ⌘K focuses it through `requestSearchFocus`. */
-export function SessionSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+/**
+ * Search field above the session list (title and folder); ⌘K focuses it through `requestSearchFocus`.
+ * `focusable` false for a copy currently hidden behind the collapsing header's compact bar, so a
+ * focus request cannot land on an invisible field.
+ */
+export function SessionSearch({
+  value,
+  onChange,
+  focusable = true,
+}: {
+  value: string
+  onChange: (value: string) => void
+  focusable?: boolean
+}) {
   const { t } = useTranslation()
   const { colors } = useTheme()
   const styles = useStyles()
   const input = useRef<TextInput>(null)
   const requests = useSearchFocus((s) => s.requests)
   useEffect(() => {
-    if (requests > 0) input.current?.focus()
-  }, [requests])
+    if (requests > 0 && focusable) input.current?.focus()
+  }, [requests, focusable])
   return (
     <View style={styles.box}>
       <Search size={16} color={colors.textDim} />

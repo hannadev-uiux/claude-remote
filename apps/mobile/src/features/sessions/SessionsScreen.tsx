@@ -12,15 +12,36 @@ import {
   Power,
   Radio,
   RadioOff,
+  SlidersHorizontal,
 } from 'lucide-react-native'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, RefreshControl, ScrollView, TextInput, View } from 'react-native'
+import { Alert, type LayoutChangeEvent, RefreshControl, ScrollView, TextInput, View } from 'react-native'
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { selectProfiles, useConnectionStore, useDaemonClient } from '@/core/connection'
 import { errorMessage } from '@/core/connection/error-message'
 import { keys, useKeyCommand } from '@/core/keyboard/key-commands'
+import { useWidthClass } from '@/core/layout'
 import { makeStyles, space, useTheme } from '@/core/theme'
-import { Button, Chip, ConnectionBanner, DaemonUpdateBanner, EmptyState, Screen, Text } from '@/ui'
+import {
+  Button,
+  ConnectionBanner,
+  DaemonUpdateBanner,
+  EmptyState,
+  IconButton,
+  Mark,
+  Screen,
+  Text,
+} from '@/ui'
 import { useLiveFollowStore } from '../live-status/follow-store'
 import { useLiveStatusSettings } from '../live-status/settings-store'
 import { followSession, unfollowSession } from '../live-status/use-live-follow'
@@ -33,6 +54,8 @@ import { CloseSessionSheet } from './components/CloseSessionSheet'
 import { MachineLine } from './components/MachineLine'
 import { NEW_SESSION_FAB_SPACE, NewSessionFab } from './components/NewSessionFab'
 import { SessionActionsSheet } from './components/SessionActionsSheet'
+import { SessionFilterChips } from './components/SessionFilterChips'
+import { SessionFiltersSheet } from './components/SessionFiltersSheet'
 import { SessionRow } from './components/SessionRow'
 import { SessionSearch } from './components/SessionSearch'
 import { closeOpenRow, type SwipeAction, SwipeableRow, type SwipeTone } from './components/SwipeableRow'
@@ -42,6 +65,14 @@ import { openSession } from './open-session'
 import { setHidden, setPinned, useSessionPrefsStore } from './prefs-store'
 import { setSessionSort, useSessionSortStore } from './sort-store'
 import { refreshSessions, useSessionsStore } from './store'
+
+const AnimatedFlashList = Animated.createAnimatedComponent(FlashList) as unknown as typeof FlashList
+
+/** Natural heights before the real ones are measured (`onLayout`); avoids a flash on first mount. */
+const HEADER_HEIGHT_FALLBACK = 132
+const COMPACT_BAR_HEIGHT_FALLBACK = 56
+/** Scroll delta (px) past which a direction counts as a deliberate up/down, not jitter. */
+const SCROLL_DIRECTION_THRESHOLD = 2
 
 type Props = {
   pendingBySession?: Record<string, number>
@@ -90,6 +121,7 @@ export function SessionsScreen({
   const [keyboardCursor, setKeyboardCursor] = useState<string | null>(null)
   const [actionsFor, setActionsFor] = useState<Session | null>(null)
   const [closing, setClosing] = useState<{ session: Session; mode: 'close' | 'cleanup' } | null>(null)
+  const [filtersSheetOpen, setFiltersSheetOpen] = useState(false)
   const listRef = useRef<FlashListRef<Session>>(null)
 
   // A new filter is a new list: start from the top.
@@ -99,6 +131,57 @@ export function SessionsScreen({
   }
   const toggleState = (state: Exclude<StateFilter, 'all'>) =>
     changeFilter({ state: filter.state === state ? 'all' : state })
+  const changeSort = () => {
+    void setSessionSort(sort === 'recent' ? 'state' : 'recent')
+    listRef.current?.scrollToOffset({ offset: 0, animated: false })
+  }
+
+  // Collapsing header (compact width only): scrolling down gives way to a slim bar with the mark,
+  // the search field and a filters button; scrolling up, or reaching the top, restores it.
+  const widthClass = useWidthClass()
+  const collapsible = widthClass === 'compact'
+  const reducedMotion = useReducedMotion()
+  const collapsed = useSharedValue(0)
+  const lastScrollY = useSharedValue(0)
+  const fullHeaderHeight = useSharedValue(HEADER_HEIGHT_FALLBACK)
+  const compactBarHeight = useSharedValue(COMPACT_BAR_HEIGHT_FALLBACK)
+  const [headerCollapsed, setHeaderCollapsed] = useState(false)
+  const onFullHeaderLayout = (event: LayoutChangeEvent) => {
+    fullHeaderHeight.value = event.nativeEvent.layout.height
+  }
+  const onCompactBarLayout = (event: LayoutChangeEvent) => {
+    compactBarHeight.value = event.nativeEvent.layout.height
+  }
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      if (!collapsible) return
+      const y = Math.max(0, event.contentOffset.y)
+      const dy = y - lastScrollY.value
+      const next =
+        y <= 0 || dy < -SCROLL_DIRECTION_THRESHOLD ? 0 : dy > SCROLL_DIRECTION_THRESHOLD ? 1 : collapsed.value
+      lastScrollY.value = y
+      if (next !== collapsed.value) {
+        collapsed.value = reducedMotion ? next : withTiming(next, { duration: 220 })
+        runOnJS(setHeaderCollapsed)(next === 1)
+      }
+    },
+  })
+  const containerStyle = useAnimatedStyle(() => ({
+    height: collapsible
+      ? interpolate(
+          collapsed.value,
+          [0, 1],
+          [fullHeaderHeight.value, compactBarHeight.value],
+          Extrapolation.CLAMP,
+        )
+      : fullHeaderHeight.value,
+  }))
+  const fullHeaderStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(collapsed.value, [0, 1], [1, 0], Extrapolation.CLAMP),
+  }))
+  const compactBarStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(collapsed.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+  }))
 
   const sort = useSessionSortStore((s) => s.sort)
   const items = useMemo(
@@ -199,57 +282,64 @@ export function SessionsScreen({
     <Screen>
       <ConnectionBanner />
       <DaemonUpdateBanner />
-      <MachineLine sessions={items} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        style={styles.filterBar}
-        contentContainerStyle={styles.filters}
-      >
-        {profiles.length > 1 ? (
-          <>
-            <Chip
-              label={t('sessions.all')}
-              selected={filter.profileId === null}
-              onPress={() => changeFilter({ profileId: null })}
+      <Animated.View style={[collapsible && styles.headerContainer, collapsible && containerStyle]}>
+        <Animated.View
+          style={[collapsible && styles.headerLayer, collapsible && fullHeaderStyle]}
+          onLayout={onFullHeaderLayout}
+          pointerEvents={collapsible && headerCollapsed ? 'none' : 'auto'}
+        >
+          <MachineLine sessions={items} stateFilter={filter.state} onToggleState={toggleState} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            style={styles.filterBar}
+            contentContainerStyle={styles.filters}
+          >
+            <SessionFilterChips
+              profiles={profiles}
+              filter={filter}
+              sort={sort}
+              onChangeFilter={changeFilter}
+              onToggleState={toggleState}
+              onChangeSort={changeSort}
             />
-            {profiles.map((p) => (
-              <Chip
-                key={p.id}
-                label={p.name}
-                selected={filter.profileId === p.id}
-                onPress={() => changeFilter({ profileId: filter.profileId === p.id ? null : p.id })}
+          </ScrollView>
+          <SessionSearch
+            value={filter.query}
+            onChange={(query) => changeFilter({ query })}
+            focusable={!collapsible || !headerCollapsed}
+          />
+        </Animated.View>
+        {collapsible ? (
+          <Animated.View
+            style={[styles.headerLayer, styles.compactBar, compactBarStyle]}
+            onLayout={onCompactBarLayout}
+            pointerEvents={headerCollapsed ? 'auto' : 'none'}
+          >
+            <Mark size={18} />
+            <View style={styles.compactSearch}>
+              <SessionSearch
+                value={filter.query}
+                onChange={(query) => changeFilter({ query })}
+                focusable={headerCollapsed}
               />
-            ))}
-            <View style={styles.divider} />
-          </>
+            </View>
+            <View>
+              <IconButton
+                icon={SlidersHorizontal}
+                label={t('sessions.filters')}
+                onPress={() => setFiltersSheetOpen(true)}
+              />
+              {isFiltering(filter) ? <View style={styles.filterDot} /> : null}
+            </View>
+          </Animated.View>
         ) : null}
-        <Chip
-          label={t('sessions.active')}
-          selected={filter.state === 'active'}
-          onPress={() => toggleState('active')}
-        />
-        <Chip
-          label={t('sessions.ended')}
-          selected={filter.state === 'ended'}
-          onPress={() => toggleState('ended')}
-        />
-        <View style={styles.divider} />
-        <Chip
-          ghost
-          label={`${t(`sessions.sort.${sort}`)} ▾`}
-          onPress={() => {
-            void setSessionSort(sort === 'recent' ? 'state' : 'recent')
-            listRef.current?.scrollToOffset({ offset: 0, animated: false })
-          }}
-        />
-      </ScrollView>
-      <SessionSearch value={filter.query} onChange={(query) => changeFilter({ query })} />
+      </Animated.View>
       <View style={styles.strip}>
         <WaitingStrip />
       </View>
-      <FlashList<Session>
+      <AnimatedFlashList<Session>
         ref={listRef}
         data={items}
         extraData={[muted, prefs, followed]}
@@ -258,6 +348,8 @@ export function SessionsScreen({
         maintainVisibleContentPosition={{ disabled: true }}
         keyExtractor={(session) => session.id}
         onScrollBeginDrag={closeOpenRow}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         renderItem={({ item: session }) => {
           const sides = swipeSides(session, { muted: isMuted(session), pinned: isPinned(session) })
           return (
@@ -339,6 +431,16 @@ export function SessionsScreen({
         <CloseSessionSheet session={closing.session} mode={closing.mode} onDone={() => setClosing(null)} />
       ) : null}
       {fab ? <NewSessionFab /> : null}
+      <SessionFiltersSheet
+        visible={filtersSheetOpen}
+        profiles={profiles}
+        filter={filter}
+        sort={sort}
+        onChangeFilter={changeFilter}
+        onToggleState={toggleState}
+        onChangeSort={changeSort}
+        onClose={() => setFiltersSheetOpen(false)}
+      />
     </Screen>
   )
 }
@@ -347,11 +449,26 @@ const useStyles = makeStyles((theme) => ({
   // A horizontal ScrollView grows to fill a column parent; keep it at the height of the chips.
   filterBar: { flexGrow: 0 },
   filters: { gap: space.xs, paddingHorizontal: space.lg, paddingBottom: space.sm, alignItems: 'center' },
-  divider: {
-    width: 1,
-    alignSelf: 'stretch',
-    backgroundColor: theme.colors.border,
-    marginHorizontal: space.xs,
+  // Clips the two layers below to the animated height; on regular width this gets no special style.
+  headerContainer: { overflow: 'hidden' },
+  // Stacked on top of each other so the crossfade doesn't shift layout; unused on regular width.
+  headerLayer: { position: 'absolute', left: 0, right: 0, top: 0 },
+  compactBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+  },
+  compactSearch: { flex: 1 },
+  filterDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.accent,
   },
   strip: { paddingTop: space.sm },
   list: { paddingTop: space.sm, paddingBottom: space.xxl },
