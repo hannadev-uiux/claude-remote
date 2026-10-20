@@ -222,6 +222,9 @@ const ptBR = {
     discardTitle: 'Descartar as alterações?',
     discardBody: 'Arquivos modificados e commits sem push são perdidos de vez.',
     discardConfirm: 'Descartar e excluir',
+    cleanupFailed: 'O worktree não foi excluído. Nada foi perdido.',
+    retry: 'Tentar de novo',
+    keepAfterFailure: 'Manter o worktree',
   },
   providers: {
     via: 'via {{provider}}',

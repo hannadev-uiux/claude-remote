@@ -226,6 +226,9 @@ const enUS = {
     discardTitle: 'Discard the changes?',
     discardBody: 'Modified files and commits that were not pushed are lost for good.',
     discardConfirm: 'Discard and delete',
+    cleanupFailed: 'The worktree was not deleted. Nothing was lost.',
+    retry: 'Retry',
+    keepAfterFailure: 'Keep the worktree',
   },
   providers: {
     /** Dashed chip on profile rows and in Settings; the provider is a product name. */

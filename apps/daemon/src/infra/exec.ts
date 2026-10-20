@@ -1,6 +1,7 @@
 import { execa } from 'execa'
 
-export type ExecResult = { stdout: string; stderr: string; exitCode: number }
+/** `timedOut`: the program was killed for running past `timeoutMs` (it then has no useful stderr). */
+export type ExecResult = { stdout: string; stderr: string; exitCode: number; timedOut?: boolean }
 export type ExecOptions = { input?: string; cwd?: string; env?: Record<string, string>; timeoutMs?: number }
 
 /** Runs an external program. Injected everywhere so tests can fake tmux/git/security. */
@@ -19,6 +20,7 @@ export const execaExecutor: Executor = async (file, args, options = {}) => {
     stdout: String(result.stdout ?? ''),
     stderr: String(result.stderr ?? ''),
     exitCode: result.exitCode ?? 1,
+    ...(result.timedOut ? { timedOut: true } : {}),
   }
 }
 
