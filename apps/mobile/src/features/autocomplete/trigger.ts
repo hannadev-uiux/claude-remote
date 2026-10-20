@@ -63,23 +63,3 @@ export function isInteractiveCommand(text: string, commands: readonly CommandIte
 export function triggerKey(trigger: Trigger | null): string | null {
   return trigger ? `${trigger.kind}:${trigger.start}` : null
 }
-
-/** Local filtering for commands (the list is small and fetched once per session). */
-export function filterCommands(commands: readonly CommandItem[], query: string, limit = 20): CommandItem[] {
-  const q = query.toLowerCase()
-  const scored = commands
-    .map((c) => {
-      const name = c.name.toLowerCase()
-      const score = name.startsWith(q)
-        ? 0
-        : name.includes(q)
-          ? 1
-          : c.description.toLowerCase().includes(q)
-            ? 2
-            : -1
-      return { c, score }
-    })
-    .filter((x) => x.score >= 0)
-  scored.sort((a, b) => a.score - b.score || a.c.name.localeCompare(b.c.name))
-  return scored.slice(0, limit).map((x) => x.c)
-}

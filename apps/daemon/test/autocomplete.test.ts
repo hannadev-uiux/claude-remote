@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
+import { BUILTIN_COMMANDS } from '../src/features/autocomplete/builtin-commands.ts'
 import { commandsSignature, loadCommands, parseFrontmatter } from '../src/features/autocomplete/commands.ts'
 import { FileIndex, withDirectories } from '../src/features/autocomplete/file-index.ts'
 import { execaExecutor } from '../src/infra/exec.ts'
@@ -90,5 +91,21 @@ describe('commands', () => {
     await new Promise((r) => setTimeout(r, 20))
     await write(join(cfg, 'skills/new/SKILL.md'), '---\nname: new\n---\n')
     expect(await commandsSignature(cfg, home.dir())).not.toBe(before)
+  })
+
+  test('built-in table: unique valid names, descriptions, current commands', () => {
+    const names = BUILTIN_COMMANDS.map((c) => c.name)
+    expect(new Set(names).size).toBe(names.length)
+    for (const c of BUILTIN_COMMANDS) {
+      expect(c.name).toMatch(/^[a-z][a-z0-9-]*$/)
+      expect(c.description.trim()).not.toBe('')
+      expect(c.source).toBe('builtin')
+    }
+    expect(names).toEqual(expect.arrayContaining(['rename', 'add-dir', 'tasks', 'btw', 'diff', 'skills']))
+    // Gone from the CLI, now an alias, or cut the remote control off.
+    for (const name of ['agents', 'review', 'cost', 'logout', 'remote-control'])
+      expect(names).not.toContain(name)
+    expect(BUILTIN_COMMANDS.find((c) => c.name === 'tasks')?.interactive).toBe(true)
+    expect(BUILTIN_COMMANDS.find((c) => c.name === 'rename')?.interactive).toBe(false)
   })
 })

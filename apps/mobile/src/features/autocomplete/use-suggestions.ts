@@ -2,7 +2,11 @@ import type { CommandItem, FileItem } from '@remote-harness/protocol'
 import { useQuery } from '@tanstack/react-query'
 import { useDaemonClient, useIsConnected } from '@/core/connection'
 import { useDebounced } from '@/core/utils/use-debounced'
-import { filterCommands, type Trigger } from './trigger'
+import { useSessionsStore } from '../sessions/store'
+import { type CommandSection, rankCommands } from './ranking'
+import { recentNames } from './recents'
+import { useCommandRecentsStore } from './recents-store'
+import type { Trigger } from './trigger'
 
 export function useCommands(sessionId: string) {
   const client = useDaemonClient()
@@ -20,15 +24,17 @@ export function useCommands(sessionId: string) {
 
 export type Suggestions =
   | { kind: 'file'; items: FileItem[]; loading: boolean }
-  | { kind: 'command'; items: CommandItem[]; loading: boolean }
+  | { kind: 'command'; sections: CommandSection[]; query: string; loading: boolean }
   | null
 
-/** Suggestions for the trigger under the cursor (files: daemon search with debounce; commands: local filter). */
+/** Suggestions for the trigger under the cursor (files: daemon search with debounce; commands: local ranking). */
 export function useSuggestions(sessionId: string, trigger: Trigger | null): Suggestions {
   const client = useDaemonClient()
   const connected = useIsConnected()
   const fileQuery = useDebounced(trigger?.kind === 'file' ? trigger.query : null, 150)
   const commands = useCommands(sessionId)
+  const profileId = useSessionsStore((s) => s.sessions[sessionId]?.profileId)
+  const recents = useCommandRecentsStore((s) => (profileId ? s.recents[profileId] : undefined))
 
   const files = useQuery({
     queryKey: ['files', sessionId, fileQuery],
@@ -50,7 +56,8 @@ export function useSuggestions(sessionId: string, trigger: Trigger | null): Sugg
   if (trigger.kind === 'file') return { kind: 'file', items: files.data ?? [], loading: files.isFetching }
   return {
     kind: 'command',
-    items: filterCommands(commands.data ?? [], trigger.query),
+    sections: rankCommands(commands.data ?? [], trigger.query, recentNames(recents)),
+    query: trigger.query,
     loading: commands.isLoading,
   }
 }

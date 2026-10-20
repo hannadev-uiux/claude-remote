@@ -16,6 +16,7 @@ import { ConnectionProvider, useConnectionStore } from '@/core/connection'
 import '@/core/i18n'
 import { restoreThemePreference, ThemeProvider, useTheme } from '@/core/theme'
 import { useBackgroundUpdates } from '@/core/updates'
+import { restoreCommandRecents } from '@/features/autocomplete/recents-store'
 import { restoreFollow } from '@/features/conversation/follow-store'
 import { restoreKeyBar } from '@/features/conversation/key-bar-store'
 import { restoreKeyboardToolbar } from '@/features/conversation/keyboard-toolbar-store'
@@ -66,6 +67,7 @@ export default function RootLayout() {
     void restoreFollow()
     void restoreToolTabs()
     void restoreLiveStatusSetting()
+    void restoreCommandRecents()
   }, [])
 
   // Restores the unsent prompts saved on this device and keeps saving them.
