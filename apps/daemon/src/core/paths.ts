@@ -16,9 +16,12 @@ export function shortenHome(path: string, home = homedir()): string {
   return path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path
 }
 
-/** The computer's name, without the `.local` suffix macOS adds. */
-export function hostName(raw = hostname()): string {
-  return raw.replace(/\.local$/i, '')
+/**
+ * The computer's name, without the `.local` suffix macOS adds; `REMOTE_HARNESS_HOST_NAME` replaces
+ * it (the demo sets it so screenshots never show the real one).
+ */
+export function hostName(raw = hostname(), env: NodeJS.ProcessEnv = process.env): string {
+  return envVar('HOST_NAME', env) ?? raw.replace(/\.local$/i, '')
 }
 
 export const DATA_DIR = '.remote-harness'

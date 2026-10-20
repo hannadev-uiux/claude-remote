@@ -20,10 +20,15 @@ Self-hosted: a small daemon on your computer, a native app on your phone, a priv
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/sessions.png" width="23%" alt="Session list" />
-  <img src="docs/screenshots/conversation.png" width="23%" alt="Conversation" />
-  <img src="docs/screenshots/permission.png" width="23%" alt="Permission request" />
-  <img src="docs/screenshots/terminal.png" width="23%" alt="Raw terminal" />
+  <img src="docs/screenshots/sessions.png" width="24%" alt="Session list with a session waiting for you" />
+  <img src="docs/screenshots/conversation.png" width="24%" alt="Conversation with the model and context line" />
+  <img src="docs/screenshots/permission.png" width="24%" alt="Permission request" />
+  <img src="docs/screenshots/terminal.png" width="24%" alt="Raw terminal" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/new-session.png" width="24%" alt="New session" />
+  <img src="docs/screenshots/settings.png" width="24%" alt="Settings" />
+  <img src="docs/screenshots/ipad.png" width="44%" alt="iPad with the session sidebar" />
 </p>
 
 ---

@@ -13,10 +13,15 @@ Auto-hospedado: um daemon pequeno no computador, um app nativo no celular e um l
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/sessions.png" width="23%" alt="Lista de sessões" />
-  <img src="docs/screenshots/conversation.png" width="23%" alt="Conversa" />
-  <img src="docs/screenshots/permission.png" width="23%" alt="Pedido de permissão" />
-  <img src="docs/screenshots/terminal.png" width="23%" alt="Terminal bruto" />
+  <img src="docs/screenshots/sessions.png" width="24%" alt="Lista de sessões com uma sessão esperando você" />
+  <img src="docs/screenshots/conversation.png" width="24%" alt="Conversa com a linha de modelo e contexto" />
+  <img src="docs/screenshots/permission.png" width="24%" alt="Pedido de permissão" />
+  <img src="docs/screenshots/terminal.png" width="24%" alt="Terminal bruto" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/new-session.png" width="24%" alt="Nova sessão" />
+  <img src="docs/screenshots/settings.png" width="24%" alt="Ajustes" />
+  <img src="docs/screenshots/ipad.png" width="44%" alt="iPad com a lista de sessões ao lado" />
 </p>
 
 ---

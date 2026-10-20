@@ -71,6 +71,7 @@
     "ota:publish": "tsx scripts/publish-update.mts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "screenshots": "tsx scripts/screenshots.mts",
     "icons": "tsx scripts/icons.mts",
     "store:metadata": "tsx scripts/store-metadata.mts",
     "doctor": "expo-doctor",

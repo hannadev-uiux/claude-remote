@@ -170,6 +170,8 @@ describe('live status reducer', () => {
     expect(shortenHome('/srv/app', '/')).toBe('/srv/app')
     expect(hostName('MacBook-Pro.local')).toBe('MacBook-Pro')
     expect(hostName('devbox')).toBe('devbox')
+    expect(hostName('MacBook-Pro.local', { REMOTE_HARNESS_HOST_NAME: 'studio' })).toBe('studio')
+    expect(hostName('MacBook-Pro.local', { REMOTE_HARNESS_HOST_NAME: '' })).toBe('MacBook-Pro')
   })
 })
 
