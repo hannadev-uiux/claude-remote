@@ -3,12 +3,13 @@ import { Pressable, StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import type { PaneMode } from '@/core/layout'
 import { useTheme } from '@/core/theme'
+import { OverlaySidebar, SIDEBAR_WIDTH } from './OverlaySidebar'
 
-export const SIDEBAR_WIDTH = 340
+export { SIDEBAR_WIDTH }
 
 /**
  * Columns of the shell: the session list (inline beside the detail, or sliding over it in tablet
- * portrait), the detail navigator in `children`, and the inspector (a third column when it fits, a
+ * portrait, also opened by a swipe from the left edge), the detail navigator in `children`, and the inspector (a third column when it fits, a
  * side sheet on two columns). The sidebar slot stays in the same place in the tree, so the
  * navigator never unmounts when crossing a breakpoint. The detail pane does not need `SafeAreaView`
  * here: its own `Stack` (native header) and screens (`Screen`) already handle the safe area.
@@ -17,6 +18,8 @@ export function MasterDetailLayout({
   sidebar,
   sidebarMode,
   sidebarOpen = false,
+  sidebarEdgeSwipe = false,
+  onOpenSidebar,
   onCloseSidebar,
   inspector,
   inspectorMode = 'none',
@@ -28,6 +31,9 @@ export function MasterDetailLayout({
   sidebar: ReactNode | null
   sidebarMode: PaneMode
   sidebarOpen?: boolean
+  /** The overlay sidebar opens with a swipe from the left edge (see `edgeSwipeEnabled`). */
+  sidebarEdgeSwipe?: boolean
+  onOpenSidebar?: () => void
   onCloseSidebar?: () => void
   inspector?: ReactNode | null
   inspectorMode?: PaneMode
@@ -38,7 +44,7 @@ export function MasterDetailLayout({
 }) {
   const { colors } = useTheme()
   const showInlineSidebar = sidebarMode === 'inline' && sidebar
-  const showOverlaySidebar = sidebarMode === 'overlay' && sidebar && sidebarOpen
+  const showOverlaySidebar = sidebarMode === 'overlay' && sidebar
   const showInlineInspector = inspectorMode === 'inline' && inspector
   const showOverlayInspector = inspectorMode === 'overlay' && inspector && inspectorOpen
   return (
@@ -58,22 +64,14 @@ export function MasterDetailLayout({
         </SafeAreaView>
       ) : null}
       {showOverlaySidebar ? (
-        <>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onCloseSidebar}
-            style={[styles.backdrop, { backgroundColor: colors.backdrop }]}
-          />
-          <SafeAreaView
-            edges={['top', 'left', 'bottom']}
-            style={[
-              styles.overlayLeft,
-              { backgroundColor: colors.background, borderRightColor: colors.border },
-            ]}
-          >
-            {sidebar}
-          </SafeAreaView>
-        </>
+        <OverlaySidebar
+          open={sidebarOpen}
+          edgeSwipe={sidebarEdgeSwipe}
+          onOpen={() => onOpenSidebar?.()}
+          onClose={() => onCloseSidebar?.()}
+        >
+          {sidebar}
+        </OverlaySidebar>
       ) : null}
       {showOverlayInspector ? (
         <>
@@ -103,13 +101,5 @@ const styles = StyleSheet.create({
   detail: { flex: 1 },
   inspector: { borderLeftWidth: 1 },
   backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
-  overlayLeft: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: SIDEBAR_WIDTH,
-    borderRightWidth: 1,
-  },
   overlayRight: { position: 'absolute', top: 0, bottom: 0, right: 0, borderLeftWidth: 1 },
 })
