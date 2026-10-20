@@ -138,6 +138,7 @@ const clientSamples: ClientMessage[] = [
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', worktree: true },
   { type: 'session.start', id: '1', profileId: 'work', cwd: '/tmp', model: 'anthropic/claude-opus-5.5' },
+  { type: 'session.start', id: '1', profileId: 'claudin', cwd: '/tmp', name: 'Rate limit on login' },
   { type: 'checkout.inspect', id: '1', profileId: 'claudin', cwd: '/tmp' },
   { type: 'session.resume', id: '1', profileId: 'claudin', sessionId: 's' },
   { type: 'pane.subscribe', id: '1', sessionId: 's' },
@@ -414,6 +415,17 @@ describe('client messages', () => {
     })
     const result = parseClientMessage({ type: 42, id: '1' })
     expect(result.ok ? undefined : result.error.type).toBeUndefined()
+  })
+
+  test('a session name is trimmed, one line and at most 80 characters', () => {
+    const start = (name: string) =>
+      parseClientMessage({ type: 'session.start', id: '1', profileId: 'p', cwd: '/tmp', name })
+    expect(start('  Login  ')).toMatchObject({ ok: true, value: { name: 'Login' } })
+    expect(start('a\nb').ok).toBe(false)
+    expect(start('a\tb').ok).toBe(false)
+    expect(start('   ').ok).toBe(false)
+    expect(start('x'.repeat(80)).ok).toBe(true)
+    expect(start('x'.repeat(81)).ok).toBe(false)
   })
 
   test('strips unknown fields', () => {

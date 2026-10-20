@@ -624,6 +624,8 @@ const esES = {
     modelDefault: 'Predeterminado del proveedor',
     directory: 'Directorio',
     placeholder: '~/workspaces/proyecto',
+    name: 'Nombre (opcional)',
+    namePlaceholder: 'p. ej.: Límite de intentos en el login',
     start: 'Crear sesión',
     starting: 'Iniciando {{agent}} en {{path}}…',
     recent: 'Recientes',

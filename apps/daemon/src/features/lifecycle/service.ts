@@ -5,7 +5,7 @@ import { DaemonError } from '../../core/errors.ts'
 import type { Executor } from '../../infra/exec.ts'
 import { isDirectory } from '../../infra/fs.ts'
 import { agentFor } from '../agents/index.ts'
-import { worktreeName } from '../checkout/resolver.ts'
+import { worktreeCandidates, worktreeName, worktreeSlug } from '../checkout/resolver.ts'
 import type { SessionStore } from '../sessions/store.ts'
 
 export const MAX_PROJECTS = 30
@@ -27,6 +27,8 @@ export async function validateCwd(raw: string, home = homedir()): Promise<string
 export class LifecycleService {
   /** Launches by \`resume\` that may not have reported SessionStart yet, by session id. */
   private readonly resuming = new Map<string, Promise<string>>()
+  /** Names of started sessions that had not registered when \`start\` returned, by pane id. */
+  private readonly pendingNames = new Map<string, string>()
 
   constructor(
     private readonly exec: Executor,
@@ -44,6 +46,8 @@ export class LifecycleService {
       paneId: string,
       timeoutMs: number,
     ) => Promise<string | null> = async () => null,
+    /** Whether a worktree name is taken in the repository at \`root\` (its directory or branch). */
+    private readonly worktreeTaken: (root: string, name: string) => Promise<boolean> = async () => false,
   ) {}
 
   private profile(id: string): Profile {
@@ -66,25 +70,37 @@ export class LifecycleService {
     return result.stdout.trim()
   }
 
+  /** The worktree name for a new session: its name's slug when free (or `-2`…`-9`), else the time. */
+  private async freeWorktreeName(root: string, name: string | undefined): Promise<string> {
+    for (const candidate of worktreeCandidates(worktreeSlug(name ?? ''))) {
+      if (!(await this.worktreeTaken(root, candidate))) return candidate
+    }
+    return worktreeName(this.now())
+  }
+
   /**
    * `worktree` runs Claude Code with `--worktree <name>` (its own git worktree and branch); `model`
-   * adds `--model <id>` (a provider model picked in the app).
+   * adds `--model <id>` (a provider model picked in the app); `name` adds the agent's display-name
+   * flag and becomes the session's title as soon as it registers.
    */
   async start(
     profileId: string,
     rawCwd: string,
-    options: { worktree?: boolean; model?: string } = {},
+    options: { worktree?: boolean; model?: string; name?: string } = {},
   ): Promise<{ paneId: string; sessionId: string | null }> {
     const profile = this.profile(profileId)
+    const agent = agentFor(profile)
     const cwd = await validateCwd(rawCwd, this.home)
     const args: string[] = []
     if (options.worktree) {
-      if (!(await this.checkout(cwd))) throw new DaemonError('bad_request', `not a git checkout: ${cwd}`)
-      const worktreeArgs = agentFor(profile).worktreeArgs(worktreeName(this.now()))
+      const checkout = await this.checkout(cwd)
+      if (!checkout) throw new DaemonError('bad_request', `not a git checkout: ${cwd}`)
+      const worktreeArgs = agent.worktreeArgs(await this.freeWorktreeName(checkout.root, options.name))
       if (!worktreeArgs) throw new DaemonError('bad_request', 'this agent cannot start in a worktree')
       args.push(...worktreeArgs)
     }
     if (options.model) args.push('--model', options.model)
+    if (options.name) args.push(...(agent.nameArgs(options.name) ?? []))
     const paneId = await this.launch(profile, cwd, args)
     // The launcher only reports the window it created; a window whose command exits closes at once.
     if (this.settleMs > 0) {
@@ -95,8 +111,21 @@ export class LifecycleService {
       }
     }
     // The pane is alive; its SessionStart hook may already have registered it, or may still be pending.
+    if (options.name) this.pendingNames.set(paneId, options.name)
     const sessionId = await this.waitForSession(paneId, WAIT_FOR_SESSION_MS)
+    if (sessionId) this.applyName(sessionId, paneId)
     return { paneId, sessionId }
+  }
+
+  /**
+   * Titles a session that linked to a pane started with a name (once): called by \`start\` and by
+   * the store listener for sessions that register later.
+   */
+  applyName(sessionId: string, paneId: string | null): void {
+    const name = paneId ? this.pendingNames.get(paneId) : undefined
+    if (!paneId || name === undefined) return
+    this.pendingNames.delete(paneId)
+    this.store.upsert(sessionId, { title: name })
   }
 
   async resume(profileId: string, sessionId: string): Promise<{ paneId: string }> {

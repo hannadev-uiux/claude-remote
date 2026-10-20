@@ -624,6 +624,8 @@ const ptBR = {
     modelDefault: 'Padrão do provedor',
     directory: 'Diretório',
     placeholder: '~/workspaces/projeto',
+    name: 'Nome (opcional)',
+    namePlaceholder: 'ex.: Limite de tentativas no login',
     start: 'Iniciar sessão',
     starting: 'Iniciando {{agent}} em {{path}}…',
     recent: 'Recentes',

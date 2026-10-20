@@ -1,4 +1,4 @@
-import type { Profile, ProjectItem } from '@remote-harness/protocol'
+import { type Profile, type ProjectItem, SESSION_NAME_MAX, type Session } from '@remote-harness/protocol'
 import type { TFunction } from '@/core/i18n/create'
 import { AGENT_NAMES, type AgentId } from '@/core/theme/agents'
 import { shortPath } from '@/core/utils/time'
@@ -20,6 +20,38 @@ export function profileDetail(
 ): string {
   const base = `${AGENT_NAMES[profileAgent(profile)]} · ${shortPath(profile.configDir)}`
   return provider ? `${base} · ${provider}` : base
+}
+
+/** The name to send with `session.start`: whitespace collapsed, cut at the limit; undefined when empty. */
+export function cleanSessionName(input: string): string | undefined {
+  const name = input.replace(/\s+/g, ' ').trim().slice(0, SESSION_NAME_MAX).trim()
+  return name || undefined
+}
+
+/** Branches too generic to name a session after. */
+const DEFAULT_BRANCHES = new Set(['main', 'master', 'develop', 'development', 'trunk'])
+const MAX_NAME_SUGGESTIONS = 4
+
+/**
+ * Chips under the name field: the directory's branch (not a default one), then the titles of the
+ * latest sessions there that are not just the folder name. No duplicates.
+ */
+export function nameSuggestions(
+  branch: string | null,
+  sessions: readonly Pick<Session, 'cwd' | 'title' | 'updatedAt'>[],
+  cwd: string,
+): string[] {
+  const dir = cwd.replace(/\/+$/, '')
+  const folder = dir.split('/').pop() ?? ''
+  const titles = sessions
+    .filter((s) => s.cwd.replace(/\/+$/, '') === dir && s.title && s.title !== folder)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .map((s) => s.title)
+  const all = [...(branch && !DEFAULT_BRANCHES.has(branch) ? [branch] : []), ...titles]
+  return [...new Set(all.map((name) => cleanSessionName(name)).filter((n): n is string => !!n))].slice(
+    0,
+    MAX_NAME_SUGGESTIONS,
+  )
 }
 
 /** `⎇ main · 2 sessions this week` for a recent directory; `null` when nothing is known. */

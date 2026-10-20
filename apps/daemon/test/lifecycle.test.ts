@@ -198,6 +198,59 @@ describe('LifecycleService', () => {
     expect(exec.calls[1]).toMatchObject({ args: [] })
   })
 
+  test('a named session gets the name flag, a slug worktree and its title', async () => {
+    const { exec, store, project } = await setup()
+    const taken = new Set(['rate-limit-on-login'])
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      undefined,
+      async () => ({ root: project, branch: 'main' }),
+      () => new Date(2026, 9, 15, 16, 5, 0),
+      undefined,
+      async () => null,
+      async (root, name) => root === project && taken.has(name),
+    )
+    const started = await service.start('claudin', project, { worktree: true, name: 'Rate limit on login' })
+    expect(exec.calls[0]).toMatchObject({
+      args: ['--worktree', 'rate-limit-on-login-2', '--name', 'Rate limit on login'],
+    })
+    expect(started.sessionId).toBeNull()
+    // The session registers after `session.started`: the store listener titles it.
+    store.upsert('s1', {}, () => record('s1', { paneId: '%9', title: 'proj' }))
+    service.applyName('s1', '%9')
+    expect(store.get('s1')?.title).toBe('Rate limit on login')
+    // Once only: a later session in the same pane keeps its own title.
+    store.upsert('s2', {}, () => record('s2', { paneId: '%9', title: 'proj' }))
+    service.applyName('s2', '%9')
+    expect(store.get('s2')?.title).toBe('proj')
+    // A name with nothing usable for a slug falls back to the time.
+    await service.start('claudin', project, { worktree: true, name: '🚀' })
+    expect(exec.calls[1]).toMatchObject({ args: ['--worktree', 'remote-20261015-160500', '--name', '🚀'] })
+  })
+
+  test('a session that registers in time is titled before the reply', async () => {
+    const { exec, store, project } = await setup()
+    store.upsert('s1', {}, () => record('s1', { paneId: '%9', title: 'proj' }))
+    const service = new LifecycleService(
+      exec,
+      store,
+      [{ id: 'claudin', name: 'P', configDir: '/c', color: '' }],
+      '/bin-dir',
+      home.dir(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      async () => 's1',
+    )
+    await service.start('claudin', project, { name: 'Login' })
+    expect(store.get('s1')?.title).toBe('Login')
+  })
+
   test('resumes an ended session in its original directory', async () => {
     const { exec, store, service, project } = await setup()
     store.upsert('old', {}, () => record('old', { cwd: project }))

@@ -47,6 +47,7 @@ export const claudeCode: AgentAdapter = {
   defaultConfigDir: '~/.claude',
   resumeArgs: (sessionId) => ['--resume', sessionId],
   worktreeArgs: (name) => ['--worktree', name],
+  nameArgs: (name) => ['--name', name],
   transcript: claudeTranscript,
   findTranscripts: findClaudeTranscripts,
   readSummary: async (path) => ({ ...(await readTranscriptMeta(path)), approvalPolicy: null }),
