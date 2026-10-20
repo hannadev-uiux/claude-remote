@@ -5,7 +5,14 @@ import { makeStyles, radius, space } from '@/core/theme'
 import { formatElapsed } from '@/core/utils/time'
 import { useNow } from '@/core/utils/use-now'
 import { Badge, Text } from '@/ui'
-import { sortSubagents, subagentElapsed, subagentLabel } from './sort'
+import {
+  SUBAGENT_TONES,
+  sortSubagents,
+  subagentElapsed,
+  subagentKind,
+  subagentLabel,
+  subagentStatus,
+} from './sort'
 
 /**
  * Rows of a session's subagents, running first: label, state pill, elapsed time (live while
@@ -25,8 +32,10 @@ export function SubagentRows({
     <>
       {sortSubagents(subagents).map((sub) => {
         const live = sub.state === 'running'
+        const status = subagentStatus(sub)
         const elapsed = subagentElapsed(sub, now)
         const detail = [
+          subagentKind(sub),
           elapsed === null ? null : formatElapsed(elapsed),
           sub.toolCount > 0 ? t('subagents.tools', { count: sub.toolCount }) : null,
         ]
@@ -40,18 +49,14 @@ export function SubagentRows({
             style={({ pressed }) => [styles.row, live && styles.live, pressed && styles.pressed]}
           >
             <View style={styles.text}>
-              <Text numberOfLines={1}>{subagentLabel(sub)}</Text>
+              <Text numberOfLines={1}>{subagentLabel(sub, subagents, t)}</Text>
               {detail ? (
                 <Text size="xs" color={live ? 'accentText' : 'textMuted'} numberOfLines={1}>
                   {detail}
                 </Text>
               ) : null}
             </View>
-            <Badge
-              label={live ? t('subagents.state.running') : t('subagents.state.done')}
-              tone={live ? 'accent' : 'muted'}
-              dot={live}
-            />
+            <Badge label={t(`subagents.state.${status}`)} tone={SUBAGENT_TONES[status]} dot={live} />
           </Pressable>
         )
       })}

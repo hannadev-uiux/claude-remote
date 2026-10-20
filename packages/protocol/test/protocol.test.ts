@@ -259,6 +259,20 @@ const serverSamples: ServerMessage[] = [
       toolCount: 0,
     },
   },
+  {
+    type: 'subagent.updated',
+    sessionId: 's',
+    subagent: {
+      agentId: 'b',
+      agentType: 'Explore',
+      description: 'Find usages',
+      state: 'done',
+      outcome: 'failed',
+      updatedAt: 'now',
+      startedAt: 'earlier',
+      toolCount: 3,
+    },
+  },
   { type: 'files.results', replyTo: '1', query: 'q', items: [{ path: 'src/', kind: 'dir' }] },
   {
     type: 'commands.results',

@@ -75,6 +75,8 @@ export const SubagentInfoSchema = z.object({
   agentType: z.string().nullable(),
   description: z.string().nullable().default(null),
   state: z.enum(['running', 'done']),
+  /** How a `done` subagent ended when it did not complete: an error result, or killed/cancelled. */
+  outcome: z.enum(['failed', 'stopped']).optional(),
   updatedAt: z.string(),
   /** When the subagent was first seen (`null` from older daemons). */
   startedAt: z.string().nullable().default(null),
